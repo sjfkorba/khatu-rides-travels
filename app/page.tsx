@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 const phone1 = "9244137353";
 const phone2 = "8319376115";
 
@@ -45,6 +49,39 @@ const services = [
 ];
 
 export default function Home() {
+  const [form, setForm] = useState({
+    name: "",
+    mobile: "",
+    pickup: "",
+    drop: "",
+    date: "",
+    time: "",
+    vehicle: "Dzire",
+    tripType: "One Way Taxi",
+  });
+
+  const sendBookingEnquiry = () => {
+    const message = `Namaste Khatu Rides Travels Co.
+
+Mujhe cab booking ke liye enquiry karni hai.
+
+Customer Name: ${form.name}
+Mobile Number: ${form.mobile}
+Pickup Location: ${form.pickup}
+Drop Location: ${form.drop}
+Booking Date: ${form.date}
+Booking Time: ${form.time}
+Vehicle: ${form.vehicle}
+Trip Type: ${form.tripType}
+
+Please mujhe best fare bata dijiye.`;
+
+    window.open(
+      `https://wa.me/91${phone1}?text=${encodeURIComponent(message)}`,
+      "_blank"
+    );
+  };
+
   return (
     <main className="min-h-screen bg-white text-gray-900">
       {/* Header */}
@@ -113,12 +150,104 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="rounded-3xl overflow-hidden shadow-2xl">
-            <img
-              src="https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?q=80&w=1400"
-              alt="Khatu Rides Travels taxi service"
-              className="w-full h-[420px] object-cover"
-            />
+          {/* Booking Form */}
+          <div className="bg-white rounded-3xl shadow-2xl p-6 border">
+            <h3 className="text-2xl font-bold text-gray-900">
+              Get Best Fare Estimate
+            </h3>
+            <p className="text-sm text-gray-500 mt-1 mb-5">
+              Apni trip details bhejiye, hum WhatsApp par best fare batayenge.
+            </p>
+
+            <div className="grid gap-3">
+              <input
+                className="w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="Customer Name"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
+
+              <input
+                className="w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="Mobile Number"
+                value={form.mobile}
+                onChange={(e) => setForm({ ...form, mobile: e.target.value })}
+              />
+
+              <div className="grid md:grid-cols-2 gap-3">
+                <input
+                  className="w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-orange-500"
+                  placeholder="Pickup Location"
+                  value={form.pickup}
+                  onChange={(e) =>
+                    setForm({ ...form, pickup: e.target.value })
+                  }
+                />
+
+                <input
+                  className="w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-orange-500"
+                  placeholder="Drop Location"
+                  value={form.drop}
+                  onChange={(e) => setForm({ ...form, drop: e.target.value })}
+                />
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-3">
+                <input
+                  type="date"
+                  className="w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-orange-500"
+                  value={form.date}
+                  onChange={(e) => setForm({ ...form, date: e.target.value })}
+                />
+
+                <input
+                  type="time"
+                  className="w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-orange-500"
+                  value={form.time}
+                  onChange={(e) => setForm({ ...form, time: e.target.value })}
+                />
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-3">
+                <select
+                  className="w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-orange-500"
+                  value={form.vehicle}
+                  onChange={(e) =>
+                    setForm({ ...form, vehicle: e.target.value })
+                  }
+                >
+                  <option>Dzire</option>
+                  <option>Ertiga</option>
+                  <option>Innova Crysta</option>
+                  <option>Sedan</option>
+                </select>
+
+                <select
+                  className="w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-orange-500"
+                  value={form.tripType}
+                  onChange={(e) =>
+                    setForm({ ...form, tripType: e.target.value })
+                  }
+                >
+                  <option>One Way Taxi</option>
+                  <option>Round Trip Booking</option>
+                  <option>Outstation Tour</option>
+                  <option>Commercial Booking</option>
+                  <option>Airport / Railway Pickup</option>
+                </select>
+              </div>
+
+              <button
+                onClick={sendBookingEnquiry}
+                className="w-full mt-2 bg-green-600 hover:bg-green-700 text-white rounded-full py-3 font-bold shadow-lg transition"
+              >
+                Send Enquiry on WhatsApp
+              </button>
+
+              <p className="text-xs text-center text-gray-500">
+                Direct Call: {phone1} / {phone2}
+              </p>
+            </div>
           </div>
         </div>
       </section>
