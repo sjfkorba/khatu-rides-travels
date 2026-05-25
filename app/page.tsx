@@ -40,12 +40,48 @@ const vehicles = [
 ];
 
 const services = [
-  "One Way Taxi",
-  "Round Trip Booking",
-  "Outstation Tour",
-  "Commercial Booking",
-  "Airport / Railway Pickup",
-  "Chhattisgarh Local Travel",
+  {
+    title: "One Way Taxi in Chhattisgarh",
+    desc: "Korba, Raipur, Bilaspur, Durg, Bhilai aur nearby cities ke liye affordable one way taxi booking. Sirf ek side travel ke liye best fare option.",
+  },
+  {
+    title: "Round Trip Cab Booking",
+    desc: "Family trip, business meeting ya personal travel ke liye clean cars, experienced drivers aur transparent fare ke saath round trip cab service.",
+  },
+  {
+    title: "Outstation Taxi Service",
+    desc: "Chhattisgarh se Odisha, Jharkhand, Madhya Pradesh aur nearby states ke liye safe aur comfortable outstation cab booking.",
+  },
+  {
+    title: "Commercial Cab Booking",
+    desc: "Company staff travel, office duty, monthly cab, business visit aur corporate travel ke liye reliable commercial taxi service.",
+  },
+  {
+    title: "Airport & Railway Pickup Drop",
+    desc: "Raipur Airport, railway station aur city pickup-drop ke liye on-time taxi service. Early morning aur late night booking available.",
+  },
+  {
+    title: "Local Taxi Service in Korba",
+    desc: "Korba city, NTPC, BALCO, Kusmunda, Gevra, Dipka aur nearby industrial areas ke liye local cab booking service.",
+  },
+];
+
+const locations = [
+  "Korba",
+  "Raipur",
+  "Bilaspur",
+  "Durg",
+  "Bhilai",
+  "Jagdalpur",
+  "Ambikapur",
+  "Raigarh",
+  "Janjgir",
+  "Champa",
+  "NTPC Korba",
+  "BALCO",
+  "Kusmunda",
+  "Gevra",
+  "Dipka",
 ];
 
 export default function Home() {
@@ -85,19 +121,21 @@ Please mujhe best fare bata dijiye.`;
   return (
     <main className="min-h-screen bg-white text-gray-900">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b">
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-xl font-bold text-orange-600">
+            <h1 className="text-xl md:text-2xl font-extrabold text-orange-600">
               Khatu Rides Travels Co.
             </h1>
-            <p className="text-xs text-gray-500">Chhattisgarh Taxi Service</p>
+            <p className="text-xs text-gray-500">
+              Taxi Service in Korba & Chhattisgarh
+            </p>
           </div>
 
           <div className="hidden md:flex gap-3">
             <a
               href={`tel:${phone1}`}
-              className="px-4 py-2 rounded-full bg-gray-900 text-white text-sm"
+              className="px-4 py-2 rounded-full bg-gray-900 text-white text-sm font-semibold"
             >
               Call Now
             </a>
@@ -105,7 +143,7 @@ Please mujhe best fare bata dijiye.`;
               href={`https://wa.me/91${phone1}?text=${encodeURIComponent(
                 whatsappMessage
               )}`}
-              className="px-4 py-2 rounded-full bg-green-600 text-white text-sm"
+              className="px-4 py-2 rounded-full bg-green-600 text-white text-sm font-semibold"
             >
               WhatsApp
             </a>
@@ -114,24 +152,47 @@ Please mujhe best fare bata dijiye.`;
       </header>
 
       {/* Hero */}
-      <section className="bg-gradient-to-br from-orange-50 to-yellow-100">
-        <div className="max-w-7xl mx-auto px-4 py-16 grid md:grid-cols-2 gap-10 items-center">
+      <section
+        className="relative bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage:
+            "linear-gradient(90deg, rgba(255,247,237,0.98) 0%, rgba(255,247,237,0.92) 45%, rgba(255,255,255,0.72) 100%), url('https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?q=80&w=1600')",
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-4 py-16 md:py-20 grid md:grid-cols-2 gap-10 items-center">
           <div>
-            <p className="text-orange-600 font-semibold mb-3">
+            <p className="inline-block bg-orange-100 text-orange-700 px-4 py-2 rounded-full font-bold mb-4">
               Trusted Taxi Service in Chhattisgarh
             </p>
+
             <h2 className="text-4xl md:text-6xl font-extrabold leading-tight">
-              Safe, Comfortable & Affordable Cab Booking
+              Best Taxi Service in Korba, Raipur & Chhattisgarh
             </h2>
-            <p className="mt-5 text-gray-700 text-lg">
-              Dzire, Ertiga, Innova Crysta aur Sedan ke saath One Way, Round
-              Trip, Outstation Tour aur Commercial Booking available.
+
+            <p className="mt-5 text-gray-700 text-lg leading-relaxed">
+              Khatu Rides Travels Co. Korba, Raipur, Bilaspur aur poore
+              Chhattisgarh me Dzire, Ertiga, Innova Crysta aur Sedan ke saath
+              one way taxi, round trip cab, outstation tour, airport pickup-drop
+              aur commercial booking provide karta hai.
             </p>
+
+            <div className="mt-6 grid grid-cols-2 gap-3 max-w-xl">
+              {["Clean Cars", "Expert Drivers", "Best Fare", "Fast WhatsApp Booking"].map(
+                (item) => (
+                  <div
+                    key={item}
+                    className="bg-white/90 border rounded-2xl px-4 py-3 shadow-sm font-semibold"
+                  >
+                    ✓ {item}
+                  </div>
+                )
+              )}
+            </div>
 
             <div className="mt-8 flex flex-wrap gap-4">
               <a
                 href={`tel:${phone1}`}
-                className="px-6 py-3 rounded-full bg-orange-600 text-white font-semibold shadow-lg"
+                className="px-6 py-3 rounded-full bg-orange-600 text-white font-bold shadow-lg hover:bg-orange-700 transition"
               >
                 Call: {phone1}
               </a>
@@ -139,24 +200,21 @@ Please mujhe best fare bata dijiye.`;
                 href={`https://wa.me/91${phone2}?text=${encodeURIComponent(
                   whatsappMessage
                 )}`}
-                className="px-6 py-3 rounded-full bg-green-600 text-white font-semibold shadow-lg"
+                className="px-6 py-3 rounded-full bg-green-600 text-white font-bold shadow-lg hover:bg-green-700 transition"
               >
-                WhatsApp Booking
+                Get Fare on WhatsApp
               </a>
             </div>
-
-            <p className="mt-4 text-sm text-gray-600">
-              Contact: {phone1} / {phone2}
-            </p>
           </div>
 
           {/* Booking Form */}
-          <div className="bg-white rounded-3xl shadow-2xl p-6 border">
+          <div className="bg-white/95 backdrop-blur rounded-3xl shadow-2xl p-6 border">
             <h3 className="text-2xl font-bold text-gray-900">
               Get Best Fare Estimate
             </h3>
             <p className="text-sm text-gray-500 mt-1 mb-5">
-              Apni trip details bhejiye, hum WhatsApp par best fare batayenge.
+              Trip details bhejiye, hum WhatsApp par fare aur availability
+              confirm karenge.
             </p>
 
             <div className="grid gap-3">
@@ -254,57 +312,106 @@ Please mujhe best fare bata dijiye.`;
 
       {/* Services */}
       <section className="max-w-7xl mx-auto px-4 py-16">
-        <h2 className="text-3xl font-bold text-center mb-10">
-          Our Taxi Services
+        <h2 className="text-3xl md:text-4xl font-extrabold text-center mb-4">
+          Taxi Services in Korba, Raipur, Bilaspur & Chhattisgarh
         </h2>
+
+        <p className="max-w-3xl mx-auto text-center text-gray-600 mb-10 leading-relaxed">
+          Khatu Rides Travels Co. Chhattisgarh me one way taxi, round trip cab,
+          outstation taxi, airport pickup-drop aur commercial cab booking ke
+          liye trusted travel partner hai.
+        </p>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {services.map((service) => (
             <div
-              key={service}
-              className="p-6 rounded-2xl border shadow-sm hover:shadow-lg transition"
+              key={service.title}
+              className="p-6 rounded-3xl border bg-white shadow-sm hover:shadow-xl hover:-translate-y-1 transition"
             >
-              <h3 className="text-xl font-bold text-orange-600">{service}</h3>
-              <p className="mt-3 text-gray-600">
-                Comfortable ride, trained driver aur transparent pricing ke
-                saath booking.
+              <div className="w-12 h-12 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-xl font-bold mb-4">
+                ✓
+              </div>
+
+              <h3 className="text-xl font-bold text-gray-900">
+                {service.title}
+              </h3>
+
+              <p className="mt-3 text-gray-600 leading-relaxed">
+                {service.desc}
               </p>
+
+              <a
+                href={`https://wa.me/91${phone1}?text=${encodeURIComponent(
+                  `Namaste, mujhe ${service.title} ke liye fare details chahiye.`
+                )}`}
+                className="inline-block mt-5 text-orange-600 font-bold hover:underline"
+              >
+                Get Fare →
+              </a>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Locations */}
+      <section className="bg-orange-50 py-14">
+        <div className="max-w-7xl mx-auto px-4">
+          <h2 className="text-3xl font-extrabold text-center mb-4">
+            Cab Booking Available Across Chhattisgarh
+          </h2>
+          <p className="text-center text-gray-600 max-w-3xl mx-auto mb-8">
+            Korba aur nearby industrial areas se lekar Raipur, Bilaspur, Durg,
+            Bhilai, Jagdalpur aur Ambikapur tak reliable taxi service.
+          </p>
+
+          <div className="flex flex-wrap justify-center gap-3">
+            {locations.map((loc) => (
+              <span
+                key={loc}
+                className="bg-white border border-orange-200 rounded-full px-5 py-2 font-semibold text-gray-700 shadow-sm"
+              >
+                {loc} Taxi Service
+              </span>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Vehicles */}
       <section className="bg-gray-50 py-16">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-10">
-            Available Vehicles
+          <h2 className="text-3xl md:text-4xl font-extrabold text-center mb-4">
+            Available Vehicles for Taxi Booking
           </h2>
+          <p className="text-center text-gray-600 max-w-3xl mx-auto mb-10">
+            Budget sedan se premium SUV tak — family trip, airport transfer,
+            business travel aur outstation journey ke liye suitable cars.
+          </p>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {vehicles.map((car) => (
               <div
                 key={car.name}
-                className="bg-white rounded-2xl overflow-hidden shadow hover:shadow-xl transition"
+                className="bg-white rounded-3xl overflow-hidden shadow hover:shadow-xl hover:-translate-y-1 transition"
               >
                 <img
                   src={car.image}
-                  alt={car.name}
+                  alt={`${car.name} taxi booking in Chhattisgarh`}
                   className="h-44 w-full object-cover"
                 />
                 <div className="p-5">
                   <h3 className="text-xl font-bold">{car.name}</h3>
                   <p className="text-gray-500">{car.type}</p>
-                  <p className="mt-3 font-semibold text-orange-600">
+                  <p className="mt-3 font-bold text-orange-600">
                     {car.price}
                   </p>
                   <a
                     href={`https://wa.me/91${phone1}?text=${encodeURIComponent(
                       `Namaste, mujhe ${car.name} booking ke liye details chahiye.`
                     )}`}
-                    className="mt-4 block text-center bg-gray-900 text-white rounded-full py-2"
+                    className="mt-4 block text-center bg-gray-900 text-white rounded-full py-2 font-semibold"
                   >
-                    Book Now
+                    Book {car.name}
                   </a>
                 </div>
               </div>
@@ -315,16 +422,20 @@ Please mujhe best fare bata dijiye.`;
 
       {/* Pricing */}
       <section className="max-w-7xl mx-auto px-4 py-16">
-        <h2 className="text-3xl font-bold text-center mb-8">
-          Estimated Pricing
+        <h2 className="text-3xl md:text-4xl font-extrabold text-center mb-4">
+          Estimated Taxi Pricing
         </h2>
+        <p className="text-center text-gray-600 mb-8">
+          Starting fare display kiya gaya hai. Final fare route, distance,
+          vehicle, toll, parking aur driver allowance ke hisaab se confirm hoga.
+        </p>
 
-        <div className="overflow-x-auto rounded-2xl border">
+        <div className="overflow-x-auto rounded-2xl border shadow-sm">
           <table className="w-full text-left">
             <thead className="bg-orange-600 text-white">
               <tr>
                 <th className="p-4">Vehicle</th>
-                <th className="p-4">Local / Outstation</th>
+                <th className="p-4">Starting Fare</th>
                 <th className="p-4">Best For</th>
               </tr>
             </thead>
@@ -339,34 +450,29 @@ Please mujhe best fare bata dijiye.`;
             </tbody>
           </table>
         </div>
-
-        <p className="mt-4 text-sm text-gray-500 text-center">
-          Final fare distance, route, toll, parking aur booking type ke hisaab
-          se confirm hoga.
-        </p>
       </section>
 
-      {/* Booking CTA */}
+      {/* CTA */}
       <section className="bg-gray-900 text-white py-16">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold">
-            Cab Booking ke liye abhi contact karein
+          <h2 className="text-3xl md:text-4xl font-extrabold">
+            Need Taxi in Korba, Raipur or Anywhere in Chhattisgarh?
           </h2>
           <p className="mt-4 text-gray-300">
-            One Way, Round Trip, Outstation Tour aur Commercial Booking ke liye
-            direct call ya WhatsApp karein.
+            One way taxi, round trip, outstation tour, airport pickup-drop aur
+            commercial cab booking ke liye direct call ya WhatsApp karein.
           </p>
 
           <div className="mt-8 flex justify-center flex-wrap gap-4">
             <a
               href={`tel:${phone1}`}
-              className="px-7 py-3 bg-orange-600 rounded-full font-semibold"
+              className="px-7 py-3 bg-orange-600 rounded-full font-bold"
             >
               Call {phone1}
             </a>
             <a
               href={`tel:${phone2}`}
-              className="px-7 py-3 bg-orange-600 rounded-full font-semibold"
+              className="px-7 py-3 bg-orange-600 rounded-full font-bold"
             >
               Call {phone2}
             </a>
@@ -374,7 +480,7 @@ Please mujhe best fare bata dijiye.`;
               href={`https://wa.me/91${phone1}?text=${encodeURIComponent(
                 whatsappMessage
               )}`}
-              className="px-7 py-3 bg-green-600 rounded-full font-semibold"
+              className="px-7 py-3 bg-green-600 rounded-full font-bold"
             >
               WhatsApp Now
             </a>
@@ -382,12 +488,10 @@ Please mujhe best fare bata dijiye.`;
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="py-8 text-center text-sm text-gray-500">
-        © 2026 Khatu Rides Travels Co. | Taxi Service in Chhattisgarh
+        © 2026 Khatu Rides Travels Co. | Best Taxi Service in Chhattisgarh
       </footer>
 
-      {/* Floating Buttons */}
       <div className="fixed bottom-5 right-5 flex flex-col gap-3 z-50">
         <a
           href={`https://wa.me/91${phone1}?text=${encodeURIComponent(

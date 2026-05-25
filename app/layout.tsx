@@ -1,28 +1,60 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+const siteUrl = "https://khatu-rides-travels.vercel.app";
+
 export const metadata: Metadata = {
-  title:
-    "Khatu Rides Travels Co. | Taxi Service in Chhattisgarh | Cab Booking",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default:
+      "Khatu Rides Travels Co. | Best Taxi Service in Chhattisgarh",
+    template: "%s | Khatu Rides Travels Co.",
+  },
   description:
-    "Khatu Rides Travels Co. provides Dzire, Ertiga, Innova Crysta and Sedan cab service in Chhattisgarh for one way, round trip, outstation tour and commercial booking.",
+    "Book reliable taxi service in Chhattisgarh with Khatu Rides Travels Co. Dzire, Ertiga, Innova Crysta and Sedan available for one way, round trip, outstation and commercial booking.",
   keywords: [
-    "taxi service in chhattisgarh",
-    "cab booking chhattisgarh",
-    "korba taxi service",
-    "raipur taxi service",
-    "bilaspur taxi service",
-    "outstation cab chhattisgarh",
-    "innova crysta booking chhattisgarh",
-    "ertiga taxi chhattisgarh",
-    "one way taxi chhattisgarh",
+    "rahul travels korba",
+    "rahul travels raipur",
+    "rahul travels bilaspur",
+    "one way service at korba",
+    "rahul travels one way taxi service",
+    "dezire car on rent at korba",
+    "dezire car on rent at raipur",
+    "raipur airport to korba taxi",
+    "raipur airport to bilaspur taxi",
+    "raipur airport to ambikapur taxi",
+    "raipur airport to raigarh taxi",
+    "korba to banaras taxi on rent",
+    "korba to amarkantak car",
+    "katghora to raipur car",
+    
+    "taxi service in Chhattisgarh",
+    "best taxi service in Chhattisgarh",
+    "cab booking Chhattisgarh",
+    "one way taxi Chhattisgarh",
+    "outstation cab Chhattisgarh",
+    "Raipur taxi service",
+    "Korba taxi service",
+    "Bilaspur taxi service",
+    "Innova Crysta booking Chhattisgarh",
+    "Ertiga taxi Chhattisgarh",
+    "commercial cab booking Chhattisgarh",
   ],
+  alternates: {
+    canonical: siteUrl,
+  },
   openGraph: {
-    title: "Khatu Rides Travels Co. | Chhattisgarh Cab Service",
+    title: "Khatu Rides Travels Co. | Best Taxi Service in Chhattisgarh",
     description:
-      "Book Dzire, Ertiga, Innova Crysta and Sedan for one way, round trip, outstation and commercial travel.",
-    type: "website",
+      "Trusted cab booking in Chhattisgarh for one way, round trip, outstation tour and commercial booking.",
+    url: siteUrl,
+    siteName: "Khatu Rides Travels Co.",
     locale: "en_IN",
+    type: "website",
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 
@@ -35,17 +67,38 @@ export default function RootLayout({
     "@context": "https://schema.org",
     "@type": "TaxiService",
     name: "Khatu Rides Travels Co.",
-    areaServed: "Chhattisgarh, India",
+    url: siteUrl,
     telephone: ["+919244137353", "+918319376115"],
+    areaServed: [
+      "Chhattisgarh",
+      "Raipur",
+      "Korba",
+      "Bilaspur",
+      "Jagdalpur",
+      "Ambikapur",
+      "Durg",
+      "Bhilai",
+    ],
     priceRange: "₹₹",
     description:
-      "Taxi and cab booking service in Chhattisgarh for one way, round trip, outstation tour and commercial booking.",
+      "Khatu Rides Travels Co. Chhattisgarh ki trusted taxi aur cab booking service hai, jo Korba, Raipur, Bilaspur, Durg, Bhilai, Jagdalpur, Ambikapur aur nearby areas me reliable travel service provide karti hai. Dzire, Ertiga, Innova Crysta aur Sedan cars ke saath one way taxi, round trip cab, outstation tour, airport/railway pickup-drop aur commercial booking available hai.",
     serviceType: [
       "One Way Taxi",
       "Round Trip Taxi",
       "Outstation Cab",
       "Commercial Cab Booking",
+      "Airport Taxi",
     ],
+    availableChannel: {
+      "@type": "ServiceChannel",
+      servicePhone: {
+        "@type": "ContactPoint",
+        telephone: "+919244137353",
+        contactType: "booking",
+        areaServed: "IN",
+        availableLanguage: ["Hindi", "English"],
+      },
+    },
   };
 
   return (
