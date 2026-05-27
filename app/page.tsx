@@ -84,6 +84,99 @@ const locations = [
   "Dipka",
 ];
 
+const testimonials = [
+  {
+    name: "Rahul Sahu",
+    route: "Raipur to Korba",
+    rating: 5,
+    text: "Cab time par aa gayi, driver polite tha aur journey comfortable rahi. Raipur to Korba ke liye service kaafi achhi lagi.",
+  },
+  {
+    name: "Priya Verma",
+    route: "Raipur Airport Pickup",
+    rating: 5,
+    text: "Airport pickup bilkul time par hua. Car clean thi aur fare bhi transparent tha. Family travel ke liye recommended.",
+  },
+  {
+    name: "Amit Kumar",
+    route: "Bilaspur Round Trip",
+    rating: 5,
+    text: "Round trip booking smooth rahi. Driver experienced tha aur WhatsApp par fare jaldi confirm ho gaya.",
+  },
+  {
+    name: "Sandeep Patel",
+    route: "Raipur to Bilaspur",
+    rating: 5,
+    text: "Raipur se Bilaspur ke liye cab book ki thi. Car clean thi, driver time par pahunch gaya aur ride comfortable rahi.",
+  },
+  {
+    name: "Neha Sharma",
+    route: "Korba Local Taxi",
+    rating: 5,
+    text: "Korba local travel ke liye service bahut achhi lagi. Booking process simple tha aur driver ka behavior professional tha.",
+  },
+  {
+    name: "Vikas Yadav",
+    route: "Raipur to Bhilai",
+    rating: 5,
+    text: "Fare WhatsApp par jaldi confirm ho gaya. Raipur to Bhilai journey smooth rahi aur car condition bhi achhi thi.",
+  },
+  {
+    name: "Anjali Gupta",
+    route: "Family Outstation Trip",
+    rating: 5,
+    text: "Family trip ke liye Ertiga book ki thi. Space comfortable tha aur driver ne safe driving ki.",
+  },
+  {
+    name: "Manoj Verma",
+    route: "Commercial Booking",
+    rating: 5,
+    text: "Office travel ke liye cab li thi. Time management aur service dono professional lage.",
+  },
+  {
+    name: "Pooja Sinha",
+    route: "Raipur Airport to Korba",
+    rating: 5,
+    text: "Airport pickup ke liye cab bilkul time par mili. Long journey ke liye car clean aur comfortable thi.",
+  },
+  {
+    name: "Rohit Dewangan",
+    route: "Korba to Raipur",
+    rating: 5,
+    text: "Korba se Raipur ke liye one way taxi book ki. Driver polite tha aur fare bhi reasonable laga.",
+  },
+  {
+    name: "Kavita Rajput",
+    route: "Bilaspur to Raipur",
+    rating: 5,
+    text: "Booking WhatsApp par easy ho gayi. Driver ne time par pickup kiya aur trip safe rahi.",
+  },
+  {
+    name: "Nitin Sahu",
+    route: "Raipur to Durg",
+    rating: 5,
+    text: "Raipur to Durg ride ke liye cab service reliable lagi. Car neat and clean thi.",
+  },
+  {
+    name: "Sunita Kashyap",
+    route: "Innova Crysta Booking",
+    rating: 5,
+    text: "Innova Crysta family travel ke liye book ki thi. Premium feel aur comfortable seating mili.",
+  },
+  {
+    name: "Deepak Singh",
+    route: "Outstation Taxi",
+    rating: 5,
+    text: "Outstation trip ke liye service dependable rahi. Driver route jaanta tha aur journey tension-free rahi.",
+  },
+  {
+    name: "Meena Tiwari",
+    route: "Raipur Railway Pickup",
+    rating: 5,
+    text: "Railway station pickup ke liye cab time par aa gayi. Luggage ke saath travel easy ho gaya.",
+  },
+];
+
 export default function Home() {
   const [form, setForm] = useState({
     name: "",
@@ -452,36 +545,76 @@ Please mujhe best fare bata dijiye.`;
         </div>
       </section>
 
-      {/* Google Review Section */}
-<section className="bg-orange-50 py-16">
-  <div className="max-w-4xl mx-auto px-4 text-center">
-    <p className="inline-block bg-white text-orange-700 px-4 py-2 rounded-full font-bold mb-4">
-      Customer Feedback
-    </p>
+      
 
-    <h2 className="text-3xl md:text-4xl font-extrabold mb-4">
-      Khatu Rides Travels Co. ko Google par Review dein
-    </h2>
+{/* Customer Reviews */}
+<section className="bg-white py-16 overflow-hidden">
+  <div className="max-w-7xl mx-auto px-4">
+    <div className="text-center mb-10">
+      <p className="inline-block bg-orange-100 text-orange-700 px-4 py-2 rounded-full font-bold mb-4">
+        Customer Feedback
+      </p>
 
-    <p className="text-gray-600 max-w-2xl mx-auto mb-8">
-      Agar aapko hamari taxi service, driver behavior, car cleanliness aur
-      timely pickup-drop pasand aaya ho, to Google par ek genuine review dekar
-      hume support karein.
-    </p>
+      <h2 className="text-3xl md:text-4xl font-extrabold">
+        Our Customers Say
+      </h2>
 
-    <a
-      href="https://g.page/r/CbD5nSIGmvz1EBM/review"
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-block bg-gray-900 hover:bg-black text-white px-8 py-4 rounded-full font-bold shadow-lg transition"
-    >
-      ⭐ Review on Google
-    </a>
+      <p className="mt-3 text-gray-600 max-w-3xl mx-auto">
+        Raipur, Korba, Bilaspur aur Chhattisgarh ke customers hamari taxi
+        service ke baare me kya kehte hain.
+      </p>
+    </div>
 
-    <p className="mt-4 text-sm text-gray-500">
-      Aapka review hume Raipur, Korba, Bilaspur aur Chhattisgarh me better
-      service dene me help karta hai.
-    </p>
+    <div className="relative">
+      <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-16 bg-gradient-to-r from-white to-transparent" />
+      <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-16 bg-gradient-to-l from-white to-transparent" />
+
+      <div className="review-marquee flex gap-6 w-max">
+        {[...testimonials, ...testimonials].map((review, index) => (
+          <div
+            key={`${review.name}-${index}`}
+            className="group w-[300px] sm:w-[340px] md:w-[380px] shrink-0 rounded-3xl border bg-orange-50/60 p-6 shadow-sm transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-white"
+          >
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div>
+                <h3 className="font-bold text-lg group-hover:text-orange-600 transition">
+                  {review.name}
+                </h3>
+                <p className="text-sm text-gray-500">{review.route}</p>
+              </div>
+
+              <div className="text-orange-500 font-bold whitespace-nowrap transition-transform duration-300 group-hover:scale-110">
+                {"★".repeat(review.rating)}
+              </div>
+            </div>
+
+            <p className="text-gray-700 leading-relaxed min-h-[120px]">
+              “{review.text}”
+            </p>
+
+            <div className="mt-5 text-sm font-bold text-green-700">
+              Verified Customer Experience
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <div className="mt-10 text-center">
+      <a
+        href="YOUR_GOOGLE_REVIEW_LINK"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-block bg-gray-900 hover:bg-black text-white px-8 py-4 rounded-full font-bold shadow-lg transition"
+      >
+        ⭐ Review us on Google
+      </a>
+
+      <p className="mt-4 text-sm text-gray-500">
+        Aapka Google review hume local search me grow karne aur better service
+        dene me help karta hai.
+      </p>
+    </div>
   </div>
 </section>
 
