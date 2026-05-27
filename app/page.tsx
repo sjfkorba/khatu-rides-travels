@@ -226,9 +226,9 @@ Please mujhe best fare bata dijiye.`;
           </div>
 
           <div className="hidden md:flex gap-3">
-            <a
+ <a
   href="/admin/login"
-  className="hidden md:inline-flex items-center justify-center rounded-full border border-orange-500 bg-white px-5 py-2.5 text-sm font-bold text-orange-600 shadow-sm transition hover:bg-orange-50 hover:shadow-md"
+  className="inline-flex items-center justify-center rounded-full border border-orange-500 bg-white px-3 py-2 text-xs font-bold text-orange-600 shadow-sm transition hover:bg-orange-50 md:px-5 md:py-2.5 md:text-sm"
 >
   Official Login
 </a>

@@ -15,10 +15,10 @@ export default function AdminLoginPage() {
 
       await signInWithEmailAndPassword(auth, email, password);
       router.push("/admin/leads");
-    } catch (error) {
-      alert("Invalid email or password");
-      console.log(error);
-    }
+    } catch (error: any) {
+  console.error("LOGIN ERROR:", error);
+  alert(error?.code || error?.message || "Login failed");
+}
   };
 
   return (
