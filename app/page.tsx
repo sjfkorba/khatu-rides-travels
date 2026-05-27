@@ -452,6 +452,39 @@ Please mujhe best fare bata dijiye.`;
         </div>
       </section>
 
+      {/* Google Review Section */}
+<section className="bg-orange-50 py-16">
+  <div className="max-w-4xl mx-auto px-4 text-center">
+    <p className="inline-block bg-white text-orange-700 px-4 py-2 rounded-full font-bold mb-4">
+      Customer Feedback
+    </p>
+
+    <h2 className="text-3xl md:text-4xl font-extrabold mb-4">
+      Khatu Rides Travels Co. ko Google par Review dein
+    </h2>
+
+    <p className="text-gray-600 max-w-2xl mx-auto mb-8">
+      Agar aapko hamari taxi service, driver behavior, car cleanliness aur
+      timely pickup-drop pasand aaya ho, to Google par ek genuine review dekar
+      hume support karein.
+    </p>
+
+    <a
+      href="https://g.page/r/CbD5nSIGmvz1EBM/review"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-block bg-gray-900 hover:bg-black text-white px-8 py-4 rounded-full font-bold shadow-lg transition"
+    >
+      ⭐ Review on Google
+    </a>
+
+    <p className="mt-4 text-sm text-gray-500">
+      Aapka review hume Raipur, Korba, Bilaspur aur Chhattisgarh me better
+      service dene me help karta hai.
+    </p>
+  </div>
+</section>
+
       {/* CTA */}
       <section className="bg-gray-900 text-white py-16">
         <div className="max-w-4xl mx-auto px-4 text-center">
