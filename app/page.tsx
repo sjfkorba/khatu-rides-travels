@@ -227,19 +227,11 @@ Please mujhe best fare bata dijiye.`;
 
           <div className="hidden md:flex gap-3">
             <a
-              href={`tel:${phone1}`}
-              className="px-4 py-2 rounded-full bg-gray-900 text-white text-sm font-semibold"
-            >
-              Call Now
-            </a>
-            <a
-              href={`https://wa.me/91${phone1}?text=${encodeURIComponent(
-                whatsappMessage
-              )}`}
-              className="px-4 py-2 rounded-full bg-green-600 text-white text-sm font-semibold"
-            >
-              WhatsApp
-            </a>
+  href="/admin/login"
+  className="hidden md:inline-flex items-center justify-center rounded-full border border-orange-500 bg-white px-5 py-2.5 text-sm font-bold text-orange-600 shadow-sm transition hover:bg-orange-50 hover:shadow-md"
+>
+  Official Login
+</a>
           </div>
         </div>
       </header>
