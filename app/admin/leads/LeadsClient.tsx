@@ -1,6 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { auth, db } from "@/lib/firebase";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import {
+  addDoc,
+  collection,
+  getDocs,
+  updateDoc,
+  doc,
+  serverTimestamp,
+  query,
+  orderBy,
+} from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
 type Lead = {
@@ -18,11 +30,6 @@ export default function LeadsPage() {
   const [phone, setPhone] = useState("");
 
   const loadLeads = async () => {
-    const { collection, getDocs, query, orderBy } = await import(
-      "firebase/firestore"
-    );
-    const { db } = await import("@/lib/firebase");
-
     const q = query(collection(db, "leads"), orderBy("createdAt", "desc"));
     const snapshot = await getDocs(q);
 
@@ -40,11 +47,6 @@ export default function LeadsPage() {
       return;
     }
 
-    const { addDoc, collection, serverTimestamp } = await import(
-      "firebase/firestore"
-    );
-    const { db } = await import("@/lib/firebase");
-
     await addDoc(collection(db, "leads"), {
       name: name.trim(),
       phone: phone.trim(),
@@ -60,11 +62,6 @@ export default function LeadsPage() {
   };
 
   const callLead = async (lead: Lead) => {
-    const { updateDoc, doc, serverTimestamp } = await import(
-      "firebase/firestore"
-    );
-    const { db } = await import("@/lib/firebase");
-
     await updateDoc(doc(db, "leads", lead.id), {
       status: "called",
       callAgain: false,
@@ -76,9 +73,6 @@ export default function LeadsPage() {
   };
 
   const markCallAgain = async (lead: Lead) => {
-    const { updateDoc, doc } = await import("firebase/firestore");
-    const { db } = await import("@/lib/firebase");
-
     await updateDoc(doc(db, "leads", lead.id), {
       callAgain: true,
       status: "new",
@@ -88,9 +82,6 @@ export default function LeadsPage() {
   };
 
   const markDone = async (lead: Lead) => {
-    const { updateDoc, doc } = await import("firebase/firestore");
-    const { db } = await import("@/lib/firebase");
-
     await updateDoc(doc(db, "leads", lead.id), {
       status: "called",
       callAgain: false,
@@ -99,31 +90,16 @@ export default function LeadsPage() {
     loadLeads();
   };
 
-  const logout = async () => {
-    const { signOut } = await import("firebase/auth");
-    const { auth } = await import("@/lib/firebase");
-    await signOut(auth);
-    router.push("/admin/login");
-  };
-
   useEffect(() => {
-    let unsub: undefined | (() => void);
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        router.push("/admin/login");
+      } else {
+        loadLeads();
+      }
+    });
 
-    async function checkAuth() {
-      const { onAuthStateChanged } = await import("firebase/auth");
-      const { auth } = await import("@/lib/firebase");
-
-      unsub = onAuthStateChanged(auth, (user) => {
-        if (!user) router.push("/admin/login");
-        else loadLeads();
-      });
-    }
-
-    checkAuth();
-
-    return () => {
-      if (unsub) unsub();
-    };
+    return () => unsub();
   }, [router]);
 
   const activeLeads = leads.filter(
@@ -146,7 +122,7 @@ export default function LeadsPage() {
           </div>
 
           <button
-            onClick={logout}
+            onClick={() => signOut(auth)}
             className="bg-gray-900 text-white px-5 py-2 rounded-full font-bold"
           >
             Logout
