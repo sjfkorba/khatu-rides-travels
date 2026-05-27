@@ -225,14 +225,14 @@ Please mujhe best fare bata dijiye.`;
             </p>
           </div>
 
-          <div className="hidden md:flex gap-3">
- <a
-  href="/admin/login"
-  className="inline-flex items-center justify-center rounded-full border border-orange-500 bg-white px-3 py-2 text-xs font-bold text-orange-600 shadow-sm transition hover:bg-orange-50 md:px-5 md:py-2.5 md:text-sm"
->
-  Official Login
-</a>
-          </div>
+ <div className="flex items-center gap-2">
+  <a
+    href="/admin/login"
+    className="inline-flex items-center justify-center rounded-full border border-orange-500 bg-white px-3 py-2 text-xs font-bold text-orange-600 shadow-sm transition hover:bg-orange-50 md:px-5 md:py-2.5 md:text-sm"
+  >
+    Login
+  </a>
+</div>
         </div>
       </header>
 
