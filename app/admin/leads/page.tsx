@@ -1,7 +1,5 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
 import { useEffect, useState } from "react";
 import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -44,14 +42,14 @@ export default function LeadsPage() {
   };
 
   const addLead = async () => {
-    if (!name || !phone) {
+    if (!name.trim() || !phone.trim()) {
       alert("Name aur mobile number fill karo");
       return;
     }
 
     await addDoc(collection(db, "leads"), {
-      name,
-      phone,
+      name: name.trim(),
+      phone: phone.trim(),
       status: "new",
       callAgain: false,
       createdAt: serverTimestamp(),
@@ -64,14 +62,13 @@ export default function LeadsPage() {
   };
 
   const callLead = async (lead: Lead) => {
-    window.location.href = `tel:${lead.phone}`;
-
     await updateDoc(doc(db, "leads", lead.id), {
       status: "called",
       callAgain: false,
       lastCalledAt: serverTimestamp(),
     });
 
+    window.location.href = `tel:${lead.phone}`;
     loadLeads();
   };
 
@@ -95,8 +92,11 @@ export default function LeadsPage() {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
-      if (!user) router.push("/admin/login");
-      else loadLeads();
+      if (!user) {
+        router.push("/admin/login");
+      } else {
+        loadLeads();
+      }
     });
 
     return () => unsub();
@@ -113,7 +113,7 @@ export default function LeadsPage() {
   return (
     <main className="min-h-screen bg-gray-50 px-4 py-6">
       <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center gap-4 mb-6">
+        <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-extrabold">Lead Call Dashboard</h1>
             <p className="text-gray-500">
@@ -149,7 +149,7 @@ export default function LeadsPage() {
 
             <button
               onClick={addLead}
-              className="bg-orange-600 text-white rounded-xl font-bold"
+              className="bg-orange-600 text-white rounded-xl font-bold py-3"
             >
               Add Lead
             </button>
@@ -209,25 +209,31 @@ export default function LeadsPage() {
           </h2>
 
           <div className="grid md:grid-cols-2 gap-4">
-            {calledLeads.map((lead) => (
-              <div
-                key={lead.id}
-                className="bg-white rounded-3xl border p-5 opacity-60"
-              >
-                <h3 className="text-xl font-bold">{lead.name}</h3>
-                <p className="text-gray-600">{lead.phone}</p>
-                <p className="text-sm text-green-700 font-bold mt-2">
-                  Called - Hidden from active list
-                </p>
-
-                <button
-                  onClick={() => markCallAgain(lead)}
-                  className="mt-3 bg-orange-600 text-white px-5 py-2 rounded-full font-bold"
-                >
-                  Call Again
-                </button>
+            {calledLeads.length === 0 ? (
+              <div className="bg-white rounded-2xl p-5 border text-gray-500">
+                Abhi koi hidden lead nahi hai.
               </div>
-            ))}
+            ) : (
+              calledLeads.map((lead) => (
+                <div
+                  key={lead.id}
+                  className="bg-white rounded-3xl border p-5 opacity-60"
+                >
+                  <h3 className="text-xl font-bold">{lead.name}</h3>
+                  <p className="text-gray-600">{lead.phone}</p>
+                  <p className="text-sm text-green-700 font-bold mt-2">
+                    Called - Hidden from active list
+                  </p>
+
+                  <button
+                    onClick={() => markCallAgain(lead)}
+                    className="mt-3 bg-orange-600 text-white px-5 py-2 rounded-full font-bold"
+                  >
+                    Call Again
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         </section>
       </div>
