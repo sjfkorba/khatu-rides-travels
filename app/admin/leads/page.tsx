@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState,  } from "react";
 import { useRouter } from "next/navigation";
 import {
   Phone,
@@ -20,6 +20,7 @@ import {
   Car,
   Send,
   X,
+  CalendarDays,
 } from "lucide-react";
 
 type Lead = {
@@ -612,21 +613,29 @@ Call / WhatsApp: ${OWNER_PHONE}`;
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowAdd(true)}
-              className="flex items-center gap-2 rounded-full bg-orange-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-orange-200"
-            >
-              <Plus size={18} />
-              Add
-            </button>
+  <button
+    onClick={() => router.push("/admin/bookings")}
+    className="flex items-center gap-2 rounded-full bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-sm hover:bg-slate-800"
+  >
+    <CalendarDays size={18} />
+    <span className="hidden sm:inline">Bookings</span>
+  </button>
 
-            <button
-              onClick={logout}
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-950 text-white"
-            >
-              <LogOut size={18} />
-            </button>
-          </div>
+  <button
+    onClick={() => setShowAdd(true)}
+    className="flex items-center gap-2 rounded-full bg-orange-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-orange-200"
+  >
+    <Plus size={18} />
+    Add
+  </button>
+
+  <button
+    onClick={logout}
+    className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-950 text-white"
+  >
+    <LogOut size={18} />
+  </button>
+</div>
         </div>
       </header>
 
