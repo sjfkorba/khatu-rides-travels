@@ -594,7 +594,7 @@ Please mujhe best fare bata dijiye.`;
 
     <div className="mt-10 text-center">
       <a
-        href="YOUR_GOOGLE_REVIEW_LINK"
+        href="https://g.page/r/CbD5nSIGmvz1EBM/review"
         target="_blank"
         rel="noopener noreferrer"
         className="inline-block bg-gray-900 hover:bg-black text-white px-8 py-4 rounded-full font-bold shadow-lg transition"

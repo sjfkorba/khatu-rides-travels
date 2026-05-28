@@ -1,7 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  Phone,
+  LogOut,
+  Plus,
+  User,
+  Smartphone,
+  EyeOff,
+  Trash2,
+  CheckCircle2,
+  RotateCcw,
+  Loader2,
+  Search,
+  ShieldCheck,
+  MessageCircle,
+  MapPin,
+  Car,
+  Send,
+  X,
+} from "lucide-react";
 
 type Lead = {
   id: string;
@@ -23,13 +42,23 @@ type DialogState = {
 };
 
 const DELETE_PASSWORD = "989369";
+const OWNER_PHONE = "9244137353";
 
 export default function LeadsPage() {
   const router = useRouter();
+  const tabRef = useRef<HTMLDivElement | null>(null);
 
   const [leads, setLeads] = useState<Lead[]>([]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState(0);
+  const [showAdd, setShowAdd] = useState(false);
+
+  const [vehicleLocation, setVehicleLocation] = useState("Raipur Airport");
+  const [availableFor, setAvailableFor] = useState(
+    "Korba, Bilaspur, Raigarh aur nearby outstation trips"
+  );
 
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(false);
@@ -65,34 +94,22 @@ export default function LeadsPage() {
 
   const closeDialog = () => {
     setDeletePassword("");
-    setDialog({
-      open: false,
-      title: "",
-      message: "",
-      type: "success",
-    });
+    setDialog({ open: false, title: "", message: "", type: "success" });
   };
 
-  const getLast10Digits = (value?: string) => {
-    return (value || "").replace(/\D/g, "").slice(-10);
-  };
+  const getLast10Digits = (value?: string) =>
+    (value || "").replace(/\D/g, "").slice(-10);
 
   const getNextCallingSlot = () => {
     const now = new Date();
-
     const morningSlot = new Date(now);
     morningSlot.setHours(6, 0, 0, 0);
 
     const eveningSlot = new Date(now);
     eveningSlot.setHours(16, 0, 0, 0);
 
-    if (now < morningSlot) {
-      return morningSlot;
-    }
-
-    if (now < eveningSlot) {
-      return eveningSlot;
-    }
+    if (now < morningSlot) return morningSlot;
+    if (now < eveningSlot) return eveningSlot;
 
     const nextMorning = new Date(now);
     nextMorning.setDate(nextMorning.getDate() + 1);
@@ -105,16 +122,11 @@ export default function LeadsPage() {
     const now = new Date();
 
     if (lead.callAgain) return true;
-
     if (!lead.status || lead.status === "new") return true;
 
     if (lead.hiddenUntil) {
       const hiddenDate = new Date(lead.hiddenUntil);
-
-      if (isNaN(hiddenDate.getTime())) {
-        return false;
-      }
-
+      if (isNaN(hiddenDate.getTime())) return false;
       return hiddenDate <= now;
     }
 
@@ -122,19 +134,27 @@ export default function LeadsPage() {
   };
 
   const getLeadStatusText = (lead: Lead) => {
-    if (isLeadActive(lead) && lead.status !== "new") {
-      return "Auto Active for Next Calling Slot";
-    }
-
-    if (lead.status === "converted") {
-      return "Converted / Done";
-    }
-
-    if (lead.status === "called") {
-      return "Hidden until next calling slot";
-    }
-
+    if (lead.callAgain) return "Call Again";
+    if (isLeadActive(lead) && lead.status !== "new") return "Active Again";
+    if (lead.status === "converted") return "Converted";
+    if (lead.status === "called") return "Hidden";
     return "New Lead";
+  };
+
+  const getB2BMessage = () => {
+    return `Namaste ji B2B Travel Partner,
+
+Khatu Rides Travels Co. se bol rahe hain.
+
+Hamare paas New Ertiga VXI 2026 model available hai.
+
+Vehicle Location: ${vehicleLocation}
+Available For: ${availableFor}
+
+Yadi aapke paas one way, round trip, airport pickup-drop ya outstation booking ho to reply karein. Hame aapke sath milke business karne me bahut khushi hogi aur aapke leads ko apna samajh ke best service provide karenge. Customer ki satisfaction se aapke aur hamare business ki image ko stable rakhenge.
+
+Khatu Rides Travels Co.
+Call / WhatsApp: ${OWNER_PHONE}`;
   };
 
   const loadLeads = async () => {
@@ -201,7 +221,6 @@ export default function LeadsPage() {
 
       if (!duplicateSnapshot.empty) {
         const existingLead = duplicateSnapshot.docs[0].data() as Lead;
-
         openDialog(
           "Duplicate Lead Found",
           `Ye number already saved hai. Customer: ${
@@ -209,7 +228,6 @@ export default function LeadsPage() {
           } | Mobile: ${existingLead.phone || last10Digits}`,
           "error"
         );
-
         return;
       }
 
@@ -226,17 +244,13 @@ export default function LeadsPage() {
 
       setName("");
       setPhone("");
-
+      setShowAdd(false);
       await loadLeads();
 
       openDialog("Lead Saved", "New lead successfully save ho gayi.", "success");
     } catch (error) {
       console.error(error);
-      openDialog(
-        "Save Failed",
-        "Lead save nahi ho payi. Internet ya Firebase setting check karein.",
-        "error"
-      );
+      openDialog("Save Failed", "Lead save nahi ho payi.", "error");
     } finally {
       setLoading(false);
       stopProgress();
@@ -264,7 +278,6 @@ export default function LeadsPage() {
       });
 
       await loadLeads();
-
       stopProgress();
 
       window.location.href = `tel:${lead.phone}`;
@@ -334,7 +347,7 @@ export default function LeadsPage() {
   const markCallAgain = (lead: Lead) => {
     openDialog(
       "Call Again?",
-      `${lead.name || "Customer"} ko active list me dobara rakhna hai?`,
+      `${lead.name || "Customer"} ko Call Again list me rakhna hai?`,
       "confirm",
       async () => {
         closeDialog();
@@ -354,11 +367,7 @@ export default function LeadsPage() {
       async () => {
         closeDialog();
         await markDoneDirect(lead);
-        openDialog(
-          "Hidden",
-          "Lead next calling slot tak hide ho gayi hai.",
-          "success"
-        );
+        openDialog("Hidden", "Lead next calling slot tak hide ho gayi.", "success");
       }
     );
   };
@@ -449,50 +458,73 @@ export default function LeadsPage() {
     };
   }, [router]);
 
-  const activeLeads = leads.filter((lead) => isLeadActive(lead));
-  const hiddenLeads = leads.filter((lead) => !isLeadActive(lead));
+  const filteredLeads = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    if (!q) return leads;
+
+    return leads.filter((lead) => {
+      return (
+        lead.name?.toLowerCase().includes(q) ||
+        lead.phone?.toLowerCase().includes(q) ||
+        lead.phoneLast10?.toLowerCase().includes(q)
+      );
+    });
+  }, [leads, search]);
+
+  const activeLeads = filteredLeads.filter(
+    (lead) => isLeadActive(lead) && !lead.callAgain
+  );
+  const callAgainLeads = filteredLeads.filter((lead) => lead.callAgain);
+  const hiddenLeads = filteredLeads.filter((lead) => !isLeadActive(lead));
+
+  const tabs = [
+    { label: "Active", leads: activeLeads, empty: "Abhi koi active lead nahi hai." },
+    { label: "Call Again", leads: callAgainLeads, empty: "Abhi koi call again lead nahi hai." },
+    { label: "Hidden", leads: hiddenLeads, empty: "Abhi koi hidden lead nahi hai." },
+  ];
+
+  const scrollToTab = (index: number) => {
+    setActiveTab(index);
+    const el = tabRef.current;
+    if (!el) return;
+    el.scrollTo({ left: index * el.clientWidth, behavior: "smooth" });
+  };
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-6">
+    <main className="min-h-screen bg-[#f4f5f7] text-slate-950">
       {pageLoading && (
-        <>
-          <div className="fixed left-0 top-0 z-[1000] h-1 w-full overflow-hidden bg-orange-100">
-            <div className="h-full w-1/3 animate-progressBar bg-orange-600" />
+        <div className="fixed inset-0 z-[998] flex items-center justify-center bg-black/30 px-4 backdrop-blur-sm">
+          <div className="rounded-[28px] bg-white px-7 py-6 text-center shadow-2xl">
+            <Loader2 className="mx-auto mb-3 h-10 w-10 animate-spin text-orange-600" />
+            <p className="font-bold">{loadingText}</p>
+            <p className="mt-1 text-sm text-slate-500">Please wait...</p>
           </div>
-
-          <div className="fixed inset-0 z-[998] flex items-center justify-center bg-black/30 px-4 backdrop-blur-sm">
-            <div className="rounded-3xl bg-white px-6 py-5 text-center shadow-2xl">
-              <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-4 border-orange-200 border-t-orange-600" />
-              <p className="font-bold text-gray-900">{loadingText}</p>
-              <p className="mt-1 text-sm text-gray-500">Please wait...</p>
-            </div>
-          </div>
-        </>
+        </div>
       )}
 
       {dialog.open && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
+          <div className="w-full max-w-md rounded-[30px] bg-white p-6 shadow-2xl">
             <div
-              className={`mb-4 flex h-14 w-14 items-center justify-center rounded-full text-2xl font-bold ${
+              className={`mb-4 flex h-14 w-14 items-center justify-center rounded-2xl ${
                 dialog.type === "success"
                   ? "bg-green-100 text-green-700"
-                  : dialog.type === "error"
-                  ? "bg-red-100 text-red-700"
-                  : dialog.type === "delete"
+                  : dialog.type === "error" || dialog.type === "delete"
                   ? "bg-red-100 text-red-700"
                   : "bg-orange-100 text-orange-700"
               }`}
             >
-              {dialog.type === "success"
-                ? "✓"
-                : dialog.type === "error" || dialog.type === "delete"
-                ? "!"
-                : "?"}
+              {dialog.type === "success" ? (
+                <CheckCircle2 size={28} />
+              ) : dialog.type === "delete" ? (
+                <Trash2 size={26} />
+              ) : (
+                <ShieldCheck size={26} />
+              )}
             </div>
 
-            <h2 className="text-2xl font-extrabold">{dialog.title}</h2>
-            <p className="mt-3 text-gray-600">{dialog.message}</p>
+            <h2 className="text-2xl font-black">{dialog.title}</h2>
+            <p className="mt-3 text-slate-600">{dialog.message}</p>
 
             {dialog.type === "delete" && (
               <input
@@ -500,7 +532,7 @@ export default function LeadsPage() {
                 value={deletePassword}
                 onChange={(e) => setDeletePassword(e.target.value)}
                 placeholder="Enter delete password"
-                className="mt-5 w-full rounded-xl border px-4 py-3"
+                className="mt-5 w-full rounded-2xl border px-4 py-3 outline-none focus:border-orange-500"
               />
             )}
 
@@ -511,13 +543,9 @@ export default function LeadsPage() {
                     onClick={async () => {
                       closeDialog();
                       await markCallAgainDirect(dialog.lead!);
-                      openDialog(
-                        "Updated",
-                        "Lead active list me Call Again ke liye aa gayi.",
-                        "success"
-                      );
+                      openDialog("Updated", "Lead Call Again me aa gayi.", "success");
                     }}
-                    className="rounded-full bg-orange-600 px-5 py-2 font-bold text-white"
+                    className="rounded-full bg-orange-600 px-5 py-3 font-bold text-white"
                   >
                     Call Again
                   </button>
@@ -526,13 +554,9 @@ export default function LeadsPage() {
                     onClick={async () => {
                       closeDialog();
                       await markDoneDirect(dialog.lead!);
-                      openDialog(
-                        "Hidden",
-                        "Lead next calling slot tak hide ho gayi.",
-                        "success"
-                      );
+                      openDialog("Hidden", "Lead next slot tak hide ho gayi.", "success");
                     }}
-                    className="rounded-full bg-green-600 px-5 py-2 font-bold text-white"
+                    className="rounded-full bg-green-600 px-5 py-3 font-bold text-white"
                   >
                     Done / Hide
                   </button>
@@ -541,7 +565,7 @@ export default function LeadsPage() {
                 <>
                   <button
                     onClick={closeDialog}
-                    className="rounded-full border px-5 py-2 font-bold text-gray-700"
+                    className="rounded-full border px-5 py-3 font-bold text-slate-700"
                   >
                     Cancel
                   </button>
@@ -549,21 +573,21 @@ export default function LeadsPage() {
                   {dialog.type === "confirm" ? (
                     <button
                       onClick={dialog.confirmAction}
-                      className="rounded-full bg-orange-600 px-5 py-2 font-bold text-white"
+                      className="rounded-full bg-orange-600 px-5 py-3 font-bold text-white"
                     >
                       Confirm
                     </button>
                   ) : dialog.type === "delete" ? (
                     <button
                       onClick={confirmDeleteLead}
-                      className="rounded-full bg-red-600 px-5 py-2 font-bold text-white"
+                      className="rounded-full bg-red-600 px-5 py-3 font-bold text-white"
                     >
                       Delete
                     </button>
                   ) : (
                     <button
                       onClick={closeDialog}
-                      className="rounded-full bg-gray-900 px-5 py-2 font-bold text-white"
+                      className="rounded-full bg-slate-950 px-5 py-3 font-bold text-white"
                     >
                       OK
                     </button>
@@ -575,165 +599,318 @@ export default function LeadsPage() {
         </div>
       )}
 
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4">
           <div>
-            <h1 className="text-3xl font-extrabold">Lead Call Dashboard</h1>
-            <p className="text-gray-500">
-              Duplicate-free customer follow-up system with 6 AM & 4 PM calling slots.
+            <h1 className="text-xl font-black tracking-tight md:text-2xl">
+              Khatu Rides CRM
+            </h1>
+            <p className="text-xs font-medium text-slate-500">
+              Leads, follow-up aur B2B broadcast
             </p>
           </div>
 
-          <button
-            onClick={logout}
-            className="rounded-full bg-gray-900 px-5 py-2 font-bold text-white"
-          >
-            Logout
-          </button>
-        </div>
-
-        <div className="mb-8 rounded-3xl border bg-white p-5 shadow-sm">
-          <h2 className="mb-4 text-xl font-bold">Add New Lead</h2>
-
-          <div className="grid gap-3 md:grid-cols-3">
-            <input
-              className="rounded-xl border px-4 py-3"
-              placeholder="Customer Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-
-            <input
-              className="rounded-xl border px-4 py-3"
-              placeholder="Mobile Number"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowAdd(true)}
+              className="flex items-center gap-2 rounded-full bg-orange-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-orange-200"
+            >
+              <Plus size={18} />
+              Add
+            </button>
 
             <button
-              onClick={addLead}
-              disabled={loading}
-              className="rounded-xl bg-orange-600 py-3 font-bold text-white disabled:opacity-60"
+              onClick={logout}
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-950 text-white"
             >
-              {loading ? "Checking..." : "Add Lead"}
+              <LogOut size={18} />
             </button>
           </div>
         </div>
+      </header>
 
-        <section className="mb-10">
-          <h2 className="mb-4 text-2xl font-extrabold">
-            Active Leads ({activeLeads.length})
-          </h2>
+      <div className="mx-auto max-w-6xl px-4 py-5">
+        <section className="grid grid-cols-3 gap-3">
+          <MiniStat title="Active" value={activeLeads.length} />
+          <MiniStat title="Again" value={callAgainLeads.length} />
+          <MiniStat title="Hidden" value={hiddenLeads.length} />
+        </section>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            {activeLeads.length === 0 ? (
-              <div className="rounded-2xl border bg-white p-5 text-gray-500">
-                Abhi koi active lead nahi hai.
-              </div>
-            ) : (
-              activeLeads.map((lead) => (
-                <div
-                  key={lead.id}
-                  className="rounded-3xl border bg-white p-5 shadow-sm"
-                >
-                  <h3 className="text-xl font-bold">
-                    {lead.name || "Unknown Customer"}
-                  </h3>
-                  <p className="mb-2 text-gray-600">
-                    {lead.phone || "No number"}
-                  </p>
+        <section className="mt-4 rounded-[28px] bg-slate-950 p-5 text-white shadow-xl">
+          <div className="flex items-start gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10">
+              <Car size={24} />
+            </div>
 
-                  <p className="mb-4 text-sm font-bold text-green-700">
-                    {getLeadStatusText(lead)}
-                  </p>
+            <div className="flex-1">
+              <h2 className="text-lg font-black">Ertiga Availability Broadcast</h2>
+              <p className="mt-1 text-sm text-white/60">
+                Ek baar location set karo, phir har B2B partner ko professional WhatsApp message bhejo.
+              </p>
+            </div>
+          </div>
 
-                  <div className="flex flex-wrap gap-3">
-                    <button
-                      onClick={() => callLead(lead)}
-                      className="rounded-full bg-green-600 px-5 py-2 font-bold text-white"
-                    >
-                      Call
-                    </button>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <div className="rounded-2xl bg-white/10 px-4 py-3">
+              <label className="mb-1 block text-xs font-bold text-white/50">
+                Vehicle Location
+              </label>
+              <input
+                value={vehicleLocation}
+                onChange={(e) => setVehicleLocation(e.target.value)}
+                className="w-full bg-transparent text-sm font-bold outline-none placeholder:text-white/40"
+                placeholder="Raipur Airport"
+              />
+            </div>
 
-                    <button
-                      onClick={() => markCallAgain(lead)}
-                      className="rounded-full bg-orange-600 px-5 py-2 font-bold text-white"
-                    >
-                      Call Again
-                    </button>
-
-                    <button
-                      onClick={() => markDone(lead)}
-                      className="rounded-full bg-gray-900 px-5 py-2 font-bold text-white"
-                    >
-                      Done / Hide
-                    </button>
-
-                    <button
-                      onClick={() => requestDeleteLead(lead)}
-                      className="rounded-full bg-red-600 px-5 py-2 font-bold text-white"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
+            <div className="rounded-2xl bg-white/10 px-4 py-3">
+              <label className="mb-1 block text-xs font-bold text-white/50">
+                Available For
+              </label>
+              <input
+                value={availableFor}
+                onChange={(e) => setAvailableFor(e.target.value)}
+                className="w-full bg-transparent text-sm font-bold outline-none placeholder:text-white/40"
+                placeholder="Korba, Bilaspur, Raigarh..."
+              />
+            </div>
           </div>
         </section>
 
-        <section>
-          <h2 className="mb-4 text-2xl font-extrabold">
-            Hidden Until Next Slot ({hiddenLeads.length})
-          </h2>
+        <section className="mt-4 rounded-[24px] bg-white p-3 shadow-sm">
+          <div className="flex items-center gap-3 rounded-2xl bg-slate-100 px-4 py-3">
+            <Search size={18} className="text-slate-400" />
+            <input
+              className="w-full bg-transparent text-sm font-semibold outline-none"
+              placeholder="Search name or mobile number..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        </section>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            {hiddenLeads.length === 0 ? (
-              <div className="rounded-2xl border bg-white p-5 text-gray-500">
-                Abhi koi hidden lead nahi hai.
-              </div>
-            ) : (
-              hiddenLeads.map((lead) => (
-                <div
-                  key={lead.id}
-                  className="rounded-3xl border bg-white p-5 opacity-70"
-                >
-                  <h3 className="text-xl font-bold">
-                    {lead.name || "Unknown Customer"}
-                  </h3>
-                  <p className="text-gray-600">{lead.phone || "No number"}</p>
+        <section className="mt-4 overflow-hidden rounded-[28px] bg-white shadow-sm">
+          <div className="grid grid-cols-3 border-b border-slate-100 bg-white">
+            {tabs.map((tab, index) => (
+              <button
+                key={tab.label}
+                onClick={() => scrollToTab(index)}
+                className={`relative py-4 text-sm font-black transition ${
+                  activeTab === index
+                    ? "text-orange-600"
+                    : "text-slate-400 hover:text-slate-800"
+                }`}
+              >
+                {tab.label}
+                <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px]">
+                  {tab.leads.length}
+                </span>
 
-                  <p className="mt-2 text-sm font-bold text-orange-700">
-                    {getLeadStatusText(lead)}
-                  </p>
+                {activeTab === index && (
+                  <span className="absolute bottom-0 left-1/2 h-1 w-16 -translate-x-1/2 rounded-full bg-orange-600" />
+                )}
+              </button>
+            ))}
+          </div>
 
-                  {lead.hiddenUntil && (
-                    <p className="mt-1 text-sm text-gray-500">
-                      Active again: {new Date(lead.hiddenUntil).toLocaleString()}
-                    </p>
-                  )}
-
-                  <div className="mt-3 flex flex-wrap gap-3">
-                    <button
-                      onClick={() => markCallAgain(lead)}
-                      className="rounded-full bg-orange-600 px-5 py-2 font-bold text-white"
-                    >
-                      Call Again Now
-                    </button>
-
-                    <button
-                      onClick={() => requestDeleteLead(lead)}
-                      className="rounded-full bg-red-600 px-5 py-2 font-bold text-white"
-                    >
-                      Delete
-                    </button>
+          <div
+            ref={tabRef}
+            className="flex snap-x snap-mandatory overflow-x-auto scroll-smooth"
+            onScroll={(e) => {
+              const width = e.currentTarget.clientWidth;
+              const index = Math.round(e.currentTarget.scrollLeft / width);
+              setActiveTab(index);
+            }}
+          >
+            {tabs.map((tab) => (
+              <div key={tab.label} className="min-w-full snap-start p-4">
+                {tab.leads.length === 0 ? (
+                  <div className="rounded-3xl bg-slate-50 p-8 text-center text-sm font-semibold text-slate-500">
+                    {tab.empty}
                   </div>
-                </div>
-              ))
-            )}
+                ) : (
+                  <div className="max-h-[68vh] space-y-3 overflow-y-auto pr-1">
+                    {tab.leads.map((lead) => (
+                      <LeadCard
+                        key={lead.id}
+                        lead={lead}
+                        statusText={getLeadStatusText(lead)}
+                        callLead={callLead}
+                        markCallAgain={markCallAgain}
+                        markDone={markDone}
+                        requestDeleteLead={requestDeleteLead}
+                        b2bMessage={getB2BMessage()}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </section>
       </div>
+
+      {showAdd && (
+        <div className="fixed inset-0 z-[997] flex items-end bg-black/40 px-4 pb-4 md:items-center md:justify-center">
+          <div className="w-full max-w-lg rounded-[30px] bg-white p-5 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-black">Add New Lead</h2>
+                <p className="text-sm text-slate-500">Duplicate number auto check</p>
+              </div>
+
+              <button
+                onClick={() => setShowAdd(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="grid gap-3">
+              <input
+                className="rounded-2xl border px-4 py-3 outline-none focus:border-orange-500"
+                placeholder="Customer / Partner Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+
+              <input
+                className="rounded-2xl border px-4 py-3 outline-none focus:border-orange-500"
+                placeholder="Mobile Number"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+
+              <button
+                onClick={addLead}
+                disabled={loading}
+                className="flex items-center justify-center gap-2 rounded-2xl bg-orange-600 py-4 font-black text-white disabled:opacity-60"
+              >
+                {loading ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
+                {loading ? "Checking..." : "Save Lead"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
+}
+
+function MiniStat({ title, value }: { title: string; value: number }) {
+  return (
+    <div className="rounded-[22px] bg-white p-4 shadow-sm">
+      <p className="text-xs font-bold text-slate-400">{title}</p>
+      <h2 className="mt-1 text-3xl font-black text-slate-950">{value}</h2>
+    </div>
+  );
+}
+
+function LeadCard({
+  lead,
+  statusText,
+  callLead,
+  markCallAgain,
+  markDone,
+  requestDeleteLead,
+  b2bMessage,
+}: any) {
+  const phone10 = getPhone10(lead.phone);
+
+  return (
+    <div className="rounded-[26px] bg-white p-4 shadow-sm ring-1 ring-slate-100 transition hover:shadow-md">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-100 text-orange-600">
+            <User size={22} />
+          </div>
+
+          <div>
+            <h3 className="text-base font-black text-slate-950">
+              {lead.name || "Unknown Partner"}
+            </h3>
+
+            <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-slate-500">
+              <Smartphone size={15} />
+              {lead.phone || "No number"}
+            </p>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-black text-orange-700">
+                {statusText}
+              </span>
+
+              {lead.phoneLast10 && (
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500">
+                  ID: {lead.phoneLast10}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => requestDeleteLead(lead)}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600"
+        >
+          <Trash2 size={16} />
+        </button>
+      </div>
+
+      {lead.hiddenUntil && (
+        <p className="mt-3 rounded-2xl bg-slate-50 px-4 py-3 text-xs font-bold text-slate-500">
+          Active again: {new Date(lead.hiddenUntil).toLocaleString()}
+        </p>
+      )}
+
+      <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-5">
+        <button
+          onClick={() => callLead(lead)}
+          className="flex items-center justify-center gap-2 rounded-2xl bg-green-600 px-3 py-3 text-sm font-black text-white"
+        >
+          <Phone size={16} />
+          Call
+        </button>
+
+        <a
+          href={`https://wa.me/91${phone10}?text=${encodeURIComponent(b2bMessage)}`}
+          target="_blank"
+          className="flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-3 py-3 text-sm font-black text-white"
+        >
+          <Send size={16} />
+          Ertiga Msg
+        </a>
+
+        <button
+          onClick={() => markCallAgain(lead)}
+          className="flex items-center justify-center gap-2 rounded-2xl bg-orange-600 px-3 py-3 text-sm font-black text-white"
+        >
+          <RotateCcw size={16} />
+          Again
+        </button>
+
+        <button
+          onClick={() => markDone(lead)}
+          className="flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-3 py-3 text-sm font-black text-white"
+        >
+          <EyeOff size={16} />
+          Hide
+        </button>
+
+        <a
+          href={`https://wa.me/91${phone10}`}
+          target="_blank"
+          className="flex items-center justify-center gap-2 rounded-2xl bg-slate-100 px-3 py-3 text-sm font-black text-slate-700"
+        >
+          <MessageCircle size={16} />
+          WA
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function getPhone10(phone?: string) {
+  return (phone || "").replace(/\D/g, "").slice(-10);
 }
