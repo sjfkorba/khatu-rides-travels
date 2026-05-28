@@ -154,6 +154,7 @@ Available For: ${availableFor}
 Yadi aapke paas one way, round trip, airport pickup-drop ya outstation booking ho to reply karein. Hame aapke sath milke business karne me bahut khushi hogi aur aapke leads ko apna samajh ke best service provide karenge. Customer ki satisfaction se aapke aur hamare business ki image ko stable rakhenge.
 
 Khatu Rides Travels Co.
+www.khaturidescg.in
 Call / WhatsApp: ${OWNER_PHONE}`;
   };
 
