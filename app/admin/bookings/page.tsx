@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Wallet } from "lucide-react";
 import {
   Plus,
   Car,
@@ -29,9 +30,16 @@ type BookingStatus =
 type Booking = {
   id: string;
   vehicle?: string;
-  date: string;
-  startTime: string;
-  endTime: string;
+
+  pickupDate?: string;
+  pickupTime?: string;
+  returnDate?: string;
+  returnTime?: string;
+
+  date?: string;
+  startTime?: string;
+  endTime?: string;
+
   pickup: string;
   drop: string;
   customerName: string;
@@ -48,9 +56,10 @@ const OWNER_PHONE = "9244137353";
 const DRIVER_PHONE = "9111025461";
 
 const emptyForm = {
-  date: "",
-  startTime: "",
-  endTime: "",
+  pickupDate: "",
+  pickupTime: "",
+  returnDate: "",
+  returnTime: "",
   pickup: "",
   drop: "",
   customerName: "",
@@ -69,6 +78,7 @@ function formatDateIN(date: string) {
 }
 
 function toMinutes(time: string) {
+  if (!time) return 0;
   const [h, m] = time.split(":").map(Number);
   return h * 60 + m;
 }
@@ -84,36 +94,107 @@ function money(value: string | number) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function getToday() {
+  return new Date().toISOString().split("T")[0];
+}
+
+function addDays(date: string, days: number) {
+  const d = new Date(date + "T00:00:00");
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split("T")[0];
+}
+
 function getNextDays(days: number) {
   const arr: string[] = [];
-  const base = new Date();
+  const today = getToday();
 
   for (let i = 0; i < days; i++) {
-    const d = new Date(base);
-    d.setDate(base.getDate() + i);
-    arr.push(d.toISOString().split("T")[0]);
+    arr.push(addDays(today, i));
   }
 
   return arr;
 }
 
-function getSlots(dayBookings: Booking[]) {
+function normalizeBooking(b: Booking) {
+  return {
+    pickupDate: b.pickupDate || b.date || "",
+    pickupTime: b.pickupTime || b.startTime || "",
+    returnDate: b.returnDate || b.date || "",
+    returnTime: b.returnTime || b.endTime || "",
+  };
+}
+
+function getBookingRangeMinutes(b: Booking) {
+  const n = normalizeBooking(b);
+  const start = new Date(`${n.pickupDate}T${n.pickupTime || "00:00"}`).getTime();
+  const end = new Date(`${n.returnDate}T${n.returnTime || "23:59"}`).getTime();
+
+  return { start, end };
+}
+
+function bookingTouchesDate(b: Booking, date: string) {
+  const n = normalizeBooking(b);
+  if (!n.pickupDate || !n.returnDate) return false;
+
+  const dayStart = new Date(`${date}T00:00`).getTime();
+  const dayEnd = new Date(`${date}T23:59`).getTime();
+  const { start, end } = getBookingRangeMinutes(b);
+
+  return start <= dayEnd && end >= dayStart;
+}
+
+function getBookingSegmentForDate(b: Booking, date: string) {
+  const n = normalizeBooking(b);
+
+  if (!bookingTouchesDate(b, date)) return null;
+
+  const start =
+    n.pickupDate === date ? toMinutes(n.pickupTime || "00:00") : 0;
+
+  const end =
+    n.returnDate === date ? toMinutes(n.returnTime || "23:59") : 1439;
+
+  return {
+    start,
+    end,
+    startTime: fromMinutes(start),
+    endTime: fromMinutes(end),
+  };
+}
+
+function getBookingsForDate(bookings: Booking[], date: string) {
+  return bookings
+    .filter((b) => b.status !== "cancelled")
+    .filter((b) => bookingTouchesDate(b, date))
+    .sort((a, b) => {
+      const sa = getBookingSegmentForDate(a, date)?.start || 0;
+      const sb = getBookingSegmentForDate(b, date)?.start || 0;
+      return sa - sb;
+    });
+}
+
+function getSlots(dayBookings: Booking[], date: string) {
   const active = dayBookings
     .filter((b) => b.status !== "cancelled")
-    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+    .map((b) => getBookingSegmentForDate(b, date))
+    .filter(Boolean) as {
+    start: number;
+    end: number;
+    startTime: string;
+    endTime: string;
+  }[];
+
+  active.sort((a, b) => a.start - b.start);
 
   const slots: string[] = [];
   let current = 0;
 
-  active.forEach((b) => {
-    const start = toMinutes(b.startTime);
-    const end = toMinutes(b.endTime);
-
-    if (current < start) {
-      slots.push(`${fromMinutes(current)} - ${fromMinutes(start)}`);
+  active.forEach((seg) => {
+    if (current < seg.start) {
+      slots.push(`${fromMinutes(current)} - ${fromMinutes(seg.start)}`);
     }
 
-    if (end > current) current = end;
+    if (seg.end > current) current = seg.end;
   });
 
   if (current < 1439) {
@@ -123,19 +204,17 @@ function getSlots(dayBookings: Booking[]) {
   return slots;
 }
 
-function getBookedMinutes(dayBookings: Booking[]) {
-  return dayBookings
-    .filter((b) => b.status !== "cancelled")
-    .reduce(
-      (sum, b) =>
-        sum + Math.max(0, toMinutes(b.endTime) - toMinutes(b.startTime)),
-      0
-    );
+function getBookedMinutes(dayBookings: Booking[], date: string) {
+  return dayBookings.reduce((sum, b) => {
+    const seg = getBookingSegmentForDate(b, date);
+    if (!seg) return sum;
+    return sum + Math.max(0, seg.end - seg.start);
+  }, 0);
 }
 
-function getDayStatus(dayBookings: Booking[]) {
+function getDayStatus(dayBookings: Booking[], date: string) {
   const active = dayBookings.filter((b) => b.status !== "cancelled");
-  const bookedMinutes = getBookedMinutes(active);
+  const bookedMinutes = getBookedMinutes(active, date);
   const freeMinutes = 1439 - bookedMinutes;
 
   if (active.length === 0) {
@@ -143,19 +222,34 @@ function getDayStatus(dayBookings: Booking[]) {
   }
 
   if (freeMinutes <= 180) {
-    return { label: "Fully Booked", freeHours: `${Math.max(0, Math.round(freeMinutes / 60))}h free` };
+    return {
+      label: "Fully Booked",
+      freeHours: `${Math.max(0, Math.round(freeMinutes / 60))}h free`,
+    };
   }
 
   if (freeMinutes <= 420) {
-    return { label: "Almost Full", freeHours: `${Math.round(freeMinutes / 60)}h free` };
+    return {
+      label: "Almost Full",
+      freeHours: `${Math.round(freeMinutes / 60)}h free`,
+    };
   }
 
-  return { label: "Partially Available", freeHours: `${Math.round(freeMinutes / 60)}h free` };
+  return {
+    label: "Partially Available",
+    freeHours: `${Math.round(freeMinutes / 60)}h free`,
+  };
+}
+
+function rangesOverlap(a: Booking, b: Booking) {
+  const ar = getBookingRangeMinutes(a);
+  const br = getBookingRangeMinutes(b);
+  return ar.start < br.end && ar.end > br.start;
 }
 
 export default function BookingCalendarPage() {
   const router = useRouter();
-  const today = new Date().toISOString().split("T")[0];
+  const today = getToday();
 
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [selectedDate, setSelectedDate] = useState(today);
@@ -163,10 +257,15 @@ export default function BookingCalendarPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const [form, setForm] = useState({ ...emptyForm, date: today });
+  const [form, setForm] = useState({
+    ...emptyForm,
+    pickupDate: today,
+    returnDate: today,
+  });
 
   const loadBookings = async () => {
     setLoading(true);
+
     try {
       const { collection, getDocs } = await import("firebase/firestore");
       const { db } = await import("@/lib/firebase");
@@ -179,10 +278,14 @@ export default function BookingCalendarPage() {
       }));
 
       data.sort((a, b) => {
-        if ((a.date || "") === (b.date || "")) {
-          return (a.startTime || "").localeCompare(b.startTime || "");
+        const an = normalizeBooking(a);
+        const bn = normalizeBooking(b);
+
+        if (an.pickupDate === bn.pickupDate) {
+          return an.pickupTime.localeCompare(bn.pickupTime);
         }
-        return (a.date || "").localeCompare(b.date || "");
+
+        return an.pickupDate.localeCompare(bn.pickupDate);
       });
 
       setBookings(data);
@@ -195,65 +298,107 @@ export default function BookingCalendarPage() {
   };
 
   const selectedBookings = useMemo(() => {
-    return bookings
-      .filter((b) => b.date === selectedDate)
-      .sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
+    return getBookingsForDate(bookings, selectedDate);
   }, [bookings, selectedDate]);
 
-  const freeSlots = useMemo(() => getSlots(selectedBookings), [selectedBookings]);
+  const freeSlots = useMemo(
+    () => getSlots(selectedBookings, selectedDate),
+    [selectedBookings, selectedDate]
+  );
+
+  const currentFormBooking: Booking = {
+    id: "temp",
+    pickupDate: form.pickupDate,
+    pickupTime: form.pickupTime,
+    returnDate: form.returnDate,
+    returnTime: form.returnTime,
+    pickup: form.pickup,
+    drop: form.drop,
+    customerName: form.customerName,
+    phone: form.phone,
+    bookingType: form.bookingType,
+    fare: form.fare,
+    advance: form.advance,
+    status: form.status,
+    notes: form.notes,
+  };
 
   const hasConflict = useMemo(() => {
-    if (!form.date || !form.startTime || !form.endTime) return false;
+    if (
+      !form.pickupDate ||
+      !form.pickupTime ||
+      !form.returnDate ||
+      !form.returnTime
+    ) {
+      return false;
+    }
 
     return bookings.some((b) => {
-      if (b.date !== form.date || b.status === "cancelled") return false;
-
-      const aStart = toMinutes(form.startTime);
-      const aEnd = toMinutes(form.endTime);
-      const bStart = toMinutes(b.startTime);
-      const bEnd = toMinutes(b.endTime);
-
-      return aStart < bEnd && aEnd > bStart;
+      if (b.status === "cancelled") return false;
+      return rangesOverlap(currentFormBooking, b);
     });
-  }, [bookings, form.date, form.startTime, form.endTime]);
+  }, [
+    bookings,
+    form.pickupDate,
+    form.pickupTime,
+    form.returnDate,
+    form.returnTime,
+  ]);
 
   const addBooking = async () => {
     const phone10 = form.phone.replace(/\D/g, "").slice(-10);
 
     if (
-      !form.date ||
-      !form.startTime ||
-      !form.endTime ||
+      !form.pickupDate ||
+      !form.pickupTime ||
+      !form.returnDate ||
+      !form.returnTime ||
       !form.pickup.trim() ||
       !form.drop.trim() ||
       !form.customerName.trim() ||
       phone10.length !== 10
     ) {
-      alert("Date, time, pickup, drop, customer name aur valid mobile number required hai.");
+      alert(
+        "Pickup date/time, return date/time, pickup, drop, customer name aur valid mobile number required hai."
+      );
       return;
     }
 
-    if (form.startTime >= form.endTime) {
-      alert("End time start time ke baad hona chahiye.");
+    const start = new Date(`${form.pickupDate}T${form.pickupTime}`).getTime();
+    const end = new Date(`${form.returnDate}T${form.returnTime}`).getTime();
+
+    if (start >= end) {
+      alert("Return date/time pickup date/time ke baad hona chahiye.");
       return;
     }
 
     if (hasConflict) {
-      const ok = confirm("Warning: Is time slot me already booking hai. Fir bhi booking save karni hai?");
+      const ok = confirm(
+        "Warning: Is booking duration me already booking hai. Fir bhi booking save karni hai?"
+      );
       if (!ok) return;
     }
 
     setSaving(true);
 
     try {
-      const { addDoc, collection, serverTimestamp } = await import("firebase/firestore");
+      const { addDoc, collection, serverTimestamp } = await import(
+        "firebase/firestore"
+      );
       const { db } = await import("@/lib/firebase");
 
       await addDoc(collection(db, "bookings"), {
         vehicle: VEHICLE_NAME,
-        date: form.date,
-        startTime: form.startTime,
-        endTime: form.endTime,
+        pickupDate: form.pickupDate,
+        pickupTime: form.pickupTime,
+        returnDate: form.returnDate,
+        returnTime: form.returnTime,
+
+        // old compatibility
+        date: form.pickupDate,
+        startTime: form.pickupTime,
+        endTime: form.returnTime,
+
         pickup: form.pickup.trim(),
         drop: form.drop.trim(),
         customerName: form.customerName.trim(),
@@ -267,8 +412,12 @@ export default function BookingCalendarPage() {
       });
 
       setShowAdd(false);
-      setSelectedDate(form.date);
-      setForm({ ...emptyForm, date: today });
+      setSelectedDate(form.pickupDate);
+      setForm({
+        ...emptyForm,
+        pickupDate: today,
+        returnDate: today,
+      });
 
       await loadBookings();
       alert("Booking successfully save ho gayi.");
@@ -309,6 +458,7 @@ export default function BookingCalendarPage() {
   const logout = async () => {
     const { signOut } = await import("firebase/auth");
     const { auth } = await import("@/lib/firebase");
+
     await signOut(auth);
     router.push("/admin/login");
   };
@@ -335,25 +485,42 @@ export default function BookingCalendarPage() {
 
   const next15Days = useMemo(() => {
     return getNextDays(15).map((date) => {
-      const dayBookings = bookings.filter((b) => b.date === date);
+      const dayBookings = getBookingsForDate(bookings, date);
+
       return {
         date,
         bookings: dayBookings,
-        slots: getSlots(dayBookings),
-        status: getDayStatus(dayBookings),
+        slots: getSlots(dayBookings, date),
+        status: getDayStatus(dayBookings, date),
       };
     });
   }, [bookings]);
 
-  const selectedStatus = getDayStatus(selectedBookings);
-  const todayBookings = bookings.filter((b) => b.date === today);
-  const selectedRevenue = selectedBookings.reduce((sum, b) => sum + money(b.fare), 0);
-  const selectedAdvance = selectedBookings.reduce((sum, b) => sum + money(b.advance), 0);
+  const selectedStatus = getDayStatus(selectedBookings, selectedDate);
+  const todayBookings = getBookingsForDate(bookings, today);
+
+  const selectedRevenue = selectedBookings.reduce(
+    (sum, b) => sum + money(b.fare),
+    0
+  );
+
+  const selectedAdvance = selectedBookings.reduce(
+    (sum, b) => sum + money(b.advance),
+    0
+  );
+
   const selectedBalance = selectedRevenue - selectedAdvance;
 
   const month = today.slice(0, 7);
-  const monthBookings = bookings.filter((b) => b.date?.startsWith(month));
-  const monthRevenue = monthBookings.reduce((sum, b) => sum + money(b.fare), 0);
+  const monthBookings = bookings.filter((b) => {
+    const n = normalizeBooking(b);
+    return n.pickupDate?.startsWith(month);
+  });
+
+  const monthRevenue = monthBookings.reduce(
+    (sum, b) => sum + money(b.fare),
+    0
+  );
 
   const availableDays = next15Days.filter((d) => d.bookings.length === 0);
   const fullDays = next15Days.filter((d) => d.status.label === "Fully Booked");
@@ -363,18 +530,33 @@ export default function BookingCalendarPage() {
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4">
           <div>
-            <h1 className="text-xl font-black md:text-2xl">Ertiga Booking Manager</h1>
+            <h1 className="text-xl font-black md:text-2xl">
+              Ertiga Booking Manager
+            </h1>
             <p className="text-xs font-semibold text-slate-500">
-              Booking, availability, revenue aur planning dashboard
+              Multi-day round trip, availability aur revenue dashboard
             </p>
           </div>
 
           <div className="flex gap-2">
-            <button onClick={() => router.push("/admin/leads")} className="rounded-full bg-slate-100 px-4 py-3 text-sm font-black">
+            <button
+  onClick={() => router.push("/admin/payments")}
+  className="flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-3 text-sm font-black text-white shadow-lg"
+>
+  <Wallet size={18} />
+  Payments
+</button>
+            <button
+              onClick={() => router.push("/admin/leads")}
+              className="rounded-full bg-slate-100 px-4 py-3 text-sm font-black"
+            >
               Leads
             </button>
 
-            <button onClick={logout} className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-950 text-white">
+            <button
+              onClick={logout}
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-950 text-white"
+            >
               <LogOut size={18} />
             </button>
           </div>
@@ -391,7 +573,8 @@ export default function BookingCalendarPage() {
             <div className="flex-1">
               <h2 className="text-2xl font-black">{VEHICLE_NAME}</h2>
               <p className="mt-1 text-sm text-white/60">
-                Kis din gaadi free hai, kis din full booked hai aur kitna revenue pending hai — sab yahi.
+                Round trip multi-day booking me beech ke din automatically full
+                blocked honge.
               </p>
             </div>
 
@@ -409,15 +592,47 @@ export default function BookingCalendarPage() {
         </section>
 
         <section className="mt-5 grid gap-3 md:grid-cols-3">
-          <AlertCard icon={<CheckCircle2 size={20} />} title="Available Days" value={`${availableDays.length} days`} text={availableDays.slice(0, 3).map((d) => formatDateIN(d.date)).join(", ") || "No full free day"} tone="green" />
-          <AlertCard icon={<AlertTriangle size={20} />} title="Full Booked Days" value={`${fullDays.length} days`} text={fullDays.slice(0, 3).map((d) => formatDateIN(d.date)).join(", ") || "No fully booked day"} tone="red" />
-          <AlertCard icon={<IndianRupee size={20} />} title="Selected Balance" value={`₹${selectedBalance}`} text={`Advance received: ₹${selectedAdvance}`} tone="orange" />
+          <AlertCard
+            icon={<CheckCircle2 size={20} />}
+            title="Available Days"
+            value={`${availableDays.length} days`}
+            text={
+              availableDays
+                .slice(0, 3)
+                .map((d) => formatDateIN(d.date))
+                .join(", ") || "No full free day"
+            }
+            tone="green"
+          />
+
+          <AlertCard
+            icon={<AlertTriangle size={20} />}
+            title="Full Booked Days"
+            value={`${fullDays.length} days`}
+            text={
+              fullDays
+                .slice(0, 3)
+                .map((d) => formatDateIN(d.date))
+                .join(", ") || "No fully booked day"
+            }
+            tone="red"
+          />
+
+          <AlertCard
+            icon={<IndianRupee size={20} />}
+            title="Selected Balance"
+            value={`₹${selectedBalance}`}
+            text={`Advance received: ₹${selectedAdvance}`}
+            tone="orange"
+          />
         </section>
 
         <section className="mt-5 grid gap-4 md:grid-cols-[360px_1fr]">
           <aside className="space-y-4">
             <div className="rounded-[30px] bg-white p-5 shadow-sm">
-              <label className="text-sm font-black text-slate-500">Select Date</label>
+              <label className="text-sm font-black text-slate-500">
+                Select Date
+              </label>
 
               <input
                 type="date"
@@ -428,7 +643,11 @@ export default function BookingCalendarPage() {
 
               <button
                 onClick={() => {
-                  setForm({ ...emptyForm, date: selectedDate });
+                  setForm({
+                    ...emptyForm,
+                    pickupDate: selectedDate,
+                    returnDate: selectedDate,
+                  });
                   setShowAdd(true);
                 }}
                 className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-600 py-4 font-black text-white shadow-lg shadow-orange-200"
@@ -445,7 +664,8 @@ export default function BookingCalendarPage() {
               </h3>
 
               <p className="mt-1 text-sm font-bold text-slate-500">
-                Date: {formatDateIN(selectedDate)} • {selectedStatus.label} • {selectedStatus.freeHours}
+                Date: {formatDateIN(selectedDate)} • {selectedStatus.label} •{" "}
+                {selectedStatus.freeHours}
               </p>
 
               <div className="mt-3 space-y-2">
@@ -455,7 +675,10 @@ export default function BookingCalendarPage() {
                   </p>
                 ) : (
                   freeSlots.map((slot) => (
-                    <div key={slot} className="rounded-2xl bg-green-50 px-3 py-3 text-sm font-black text-green-700">
+                    <div
+                      key={slot}
+                      className="rounded-2xl bg-green-50 px-3 py-3 text-sm font-black text-green-700"
+                    >
                       {slot}
                     </div>
                   ))
@@ -467,9 +690,11 @@ export default function BookingCalendarPage() {
           <section className="rounded-[30px] bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-xl font-black">Schedule: {formatDateIN(selectedDate)}</h2>
+                <h2 className="text-xl font-black">
+                  Schedule: {formatDateIN(selectedDate)}
+                </h2>
                 <p className="text-sm font-medium text-slate-500">
-                  Same date me multiple bookings allowed hain.
+                  Multi-day booking selected date par bhi show hogi.
                 </p>
               </div>
 
@@ -482,7 +707,9 @@ export default function BookingCalendarPage() {
               </div>
             ) : selectedBookings.length === 0 ? (
               <div className="rounded-3xl bg-green-50 p-8 text-center">
-                <h3 className="font-black text-green-700">Full Day Available</h3>
+                <h3 className="font-black text-green-700">
+                  Full Day Available
+                </h3>
                 <p className="mt-1 text-sm font-bold text-green-600">
                   Is date ke liye booking lene ka best chance hai.
                 </p>
@@ -490,7 +717,13 @@ export default function BookingCalendarPage() {
             ) : (
               <div className="space-y-3">
                 {selectedBookings.map((booking) => (
-                  <BookingCard key={booking.id} booking={booking} updateStatus={updateStatus} deleteBooking={deleteBooking} />
+                  <BookingCard
+                    key={booking.id}
+                    booking={booking}
+                    selectedDate={selectedDate}
+                    updateStatus={updateStatus}
+                    deleteBooking={deleteBooking}
+                  />
                 ))}
               </div>
             )}
@@ -501,7 +734,7 @@ export default function BookingCalendarPage() {
           <div className="mb-4">
             <h2 className="text-xl font-black">Next 15 Days Vehicle Plan</h2>
             <p className="text-sm font-medium text-slate-500">
-              Khali dates pe pehle se B2B partners se booking push kar sakte ho.
+              Multi-day trips ke beech wale dates automatically blocked dikhengi.
             </p>
           </div>
 
@@ -537,35 +770,86 @@ export default function BookingCalendarPage() {
               <div>
                 <h2 className="text-xl font-black">Add Ertiga Booking</h2>
                 <p className="text-sm font-medium text-slate-500">
-                  Time slot ke hisaab se booking save karein
+                  Pickup se return tak vehicle block rahegi
                 </p>
               </div>
 
-              <button onClick={() => setShowAdd(false)} className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100">
+              <button
+                onClick={() => setShowAdd(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100"
+              >
                 <X size={18} />
               </button>
             </div>
 
             {hasConflict && (
               <div className="mb-4 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700">
-                Warning: Is time slot me already booking hai.
+                Warning: Is booking duration me already booking hai.
               </div>
             )}
 
             <div className="grid gap-3 md:grid-cols-2">
-              <Input label="Date" type="date" value={form.date} onChange={(v) => setForm({ ...form, date: v })} />
-              <Input label="Start Time" type="time" value={form.startTime} onChange={(v) => setForm({ ...form, startTime: v })} />
-              <Input label="End Time" type="time" value={form.endTime} onChange={(v) => setForm({ ...form, endTime: v })} />
-              <Input label="Customer / Partner Name" value={form.customerName} onChange={(v) => setForm({ ...form, customerName: v })} />
-              <Input label="Mobile Number" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
-              <Input label="Pickup Location" value={form.pickup} onChange={(v) => setForm({ ...form, pickup: v })} />
-              <Input label="Drop Location" value={form.drop} onChange={(v) => setForm({ ...form, drop: v })} />
+              <Input
+                label="Pickup Date"
+                type="date"
+                value={form.pickupDate}
+                onChange={(v) => setForm({ ...form, pickupDate: v })}
+              />
+
+              <Input
+                label="Pickup Time"
+                type="time"
+                value={form.pickupTime}
+                onChange={(v) => setForm({ ...form, pickupTime: v })}
+              />
+
+              <Input
+                label="Return Date"
+                type="date"
+                value={form.returnDate}
+                onChange={(v) => setForm({ ...form, returnDate: v })}
+              />
+
+              <Input
+                label="Return Time"
+                type="time"
+                value={form.returnTime}
+                onChange={(v) => setForm({ ...form, returnTime: v })}
+              />
+
+              <Input
+                label="Customer / Partner Name"
+                value={form.customerName}
+                onChange={(v) => setForm({ ...form, customerName: v })}
+              />
+
+              <Input
+                label="Mobile Number"
+                value={form.phone}
+                onChange={(v) => setForm({ ...form, phone: v })}
+              />
+
+              <Input
+                label="Pickup Location"
+                value={form.pickup}
+                onChange={(v) => setForm({ ...form, pickup: v })}
+              />
+
+              <Input
+                label="Drop Location"
+                value={form.drop}
+                onChange={(v) => setForm({ ...form, drop: v })}
+              />
 
               <div>
-                <label className="text-xs font-black text-slate-400">Booking Type</label>
+                <label className="text-xs font-black text-slate-400">
+                  Booking Type
+                </label>
                 <select
                   value={form.bookingType}
-                  onChange={(e) => setForm({ ...form, bookingType: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, bookingType: e.target.value })
+                  }
                   className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-3 font-bold outline-none focus:border-orange-500"
                 >
                   <option>One Way</option>
@@ -576,14 +860,30 @@ export default function BookingCalendarPage() {
                 </select>
               </div>
 
-              <Input label="Total Fare" value={form.fare} onChange={(v) => setForm({ ...form, fare: v })} />
-              <Input label="Advance" value={form.advance} onChange={(v) => setForm({ ...form, advance: v })} />
+              <Input
+                label="Total Fare"
+                value={form.fare}
+                onChange={(v) => setForm({ ...form, fare: v })}
+              />
+
+              <Input
+                label="Advance"
+                value={form.advance}
+                onChange={(v) => setForm({ ...form, advance: v })}
+              />
 
               <div>
-                <label className="text-xs font-black text-slate-400">Status</label>
+                <label className="text-xs font-black text-slate-400">
+                  Status
+                </label>
                 <select
                   value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value as BookingStatus })}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      status: e.target.value as BookingStatus,
+                    })
+                  }
                   className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-3 font-bold outline-none focus:border-orange-500"
                 >
                   <option value="pending">Pending</option>
@@ -594,10 +894,14 @@ export default function BookingCalendarPage() {
               </div>
 
               <div className="md:col-span-2">
-                <label className="text-xs font-black text-slate-400">Notes</label>
+                <label className="text-xs font-black text-slate-400">
+                  Notes
+                </label>
                 <textarea
                   value={form.notes}
-                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, notes: e.target.value })
+                  }
                   className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-3 font-bold outline-none focus:border-orange-500"
                   placeholder="B2B partner, payment, driver note..."
                 />
@@ -609,7 +913,11 @@ export default function BookingCalendarPage() {
               disabled={saving}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-600 py-4 font-black text-white disabled:opacity-60"
             >
-              {saving ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
+              {saving ? (
+                <Loader2 className="animate-spin" size={18} />
+              ) : (
+                <Plus size={18} />
+              )}
               {saving ? "Saving..." : "Save Booking"}
             </button>
           </div>
@@ -619,7 +927,13 @@ export default function BookingCalendarPage() {
   );
 }
 
-function MiniStat({ title, value }: { title: string; value: string | number }) {
+function MiniStat({
+  title,
+  value,
+}: {
+  title: string;
+  value: string | number;
+}) {
   return (
     <div className="rounded-2xl bg-white/10 p-4">
       <p className="text-xs font-bold text-white/50">{title}</p>
@@ -670,7 +984,11 @@ function StatusPill({ label }: { label: string }) {
       ? "bg-orange-100 text-orange-700"
       : "bg-blue-100 text-blue-700";
 
-  return <span className={`rounded-full px-3 py-1 text-[11px] font-black ${cls}`}>{label}</span>;
+  return (
+    <span className={`rounded-full px-3 py-1 text-[11px] font-black ${cls}`}>
+      {label}
+    </span>
+  );
 }
 
 function Input({
@@ -699,13 +1017,17 @@ function Input({
 
 function BookingCard({
   booking,
+  selectedDate,
   updateStatus,
   deleteBooking,
 }: {
   booking: Booking;
+  selectedDate: string;
   updateStatus: (booking: Booking, status: BookingStatus) => void;
   deleteBooking: (booking: Booking) => void;
 }) {
+  const n = normalizeBooking(booking);
+  const seg = getBookingSegmentForDate(booking, selectedDate);
   const phone10 = booking.phone.replace(/\D/g, "").slice(-10);
   const balance = money(booking.fare) - money(booking.advance);
 
@@ -725,8 +1047,8 @@ function BookingCard({
 Khatu Rides Travels Co. se bol rahe hain.
 
 Aapki Ertiga booking details:
-Date: ${formatDateIN(booking.date)}
-Time: ${booking.startTime} - ${booking.endTime}
+Pickup: ${formatDateIN(n.pickupDate)} ${n.pickupTime}
+Return: ${formatDateIN(n.returnDate)} ${n.returnTime}
 Route: ${booking.pickup} to ${booking.drop}
 Booking Type: ${booking.bookingType}
 Fare: ₹${booking.fare || "0"}
@@ -743,12 +1065,12 @@ Call / WhatsApp: ${OWNER_PHONE}`;
 Aapko Ertiga booking duty assign ki ja rahi hai.
 
 Booking Details:
-Date: ${formatDateIN(booking.date)}
-Time: ${booking.startTime} - ${booking.endTime}
+Pickup: ${formatDateIN(n.pickupDate)} ${n.pickupTime}
+Return: ${formatDateIN(n.returnDate)} ${n.returnTime}
 Customer/Partner: ${booking.customerName}
 Customer Mobile: ${booking.phone}
-Pickup: ${booking.pickup}
-Drop: ${booking.drop}
+Pickup Location: ${booking.pickup}
+Drop Location: ${booking.drop}
 Booking Type: ${booking.bookingType}
 Fare: ₹${booking.fare || "0"}
 Advance: ₹${booking.advance || "0"}
@@ -765,7 +1087,7 @@ Admin: ${OWNER_PHONE}`;
         <div>
           <div className="flex flex-wrap gap-2">
             <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-black text-orange-700">
-              {formatDateIN(booking.date)} • {booking.startTime} - {booking.endTime}
+              {seg?.startTime} - {seg?.endTime} on {formatDateIN(selectedDate)}
             </span>
 
             <span className={`rounded-full px-3 py-1 text-xs font-black ${statusClass}`}>
@@ -791,6 +1113,12 @@ Admin: ${OWNER_PHONE}`;
 
       <div className="mt-4 grid gap-2 text-sm font-bold text-slate-700">
         <p className="flex items-center gap-2">
+          <Clock3 size={16} className="text-orange-600" />
+          Pickup: {formatDateIN(n.pickupDate)} {n.pickupTime} → Return:{" "}
+          {formatDateIN(n.returnDate)} {n.returnTime}
+        </p>
+
+        <p className="flex items-center gap-2">
           <MapPin size={16} className="text-orange-600" />
           {booking.pickup} → {booking.drop}
         </p>
@@ -802,7 +1130,8 @@ Admin: ${OWNER_PHONE}`;
 
         <p className="flex items-center gap-2">
           <IndianRupee size={16} className="text-orange-600" />
-          Fare: ₹{booking.fare || "0"} | Advance: ₹{booking.advance || "0"} | Balance: ₹{balance}
+          Fare: ₹{booking.fare || "0"} | Advance: ₹{booking.advance || "0"} |
+          Balance: ₹{balance}
         </p>
       </div>
 
@@ -813,12 +1142,17 @@ Admin: ${OWNER_PHONE}`;
       )}
 
       <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-6">
-        <a href={`tel:${booking.phone}`} className="rounded-2xl bg-green-600 px-3 py-3 text-center text-sm font-black text-white">
+        <a
+          href={`tel:${booking.phone}`}
+          className="rounded-2xl bg-green-600 px-3 py-3 text-center text-sm font-black text-white"
+        >
           Call
         </a>
 
         <a
-          href={`https://wa.me/91${phone10}?text=${encodeURIComponent(customerMessage)}`}
+          href={`https://wa.me/91${phone10}?text=${encodeURIComponent(
+            customerMessage
+          )}`}
           target="_blank"
           className="flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-3 py-3 text-sm font-black text-white"
         >
@@ -827,22 +1161,33 @@ Admin: ${OWNER_PHONE}`;
         </a>
 
         <a
-          href={`https://wa.me/91${DRIVER_PHONE}?text=${encodeURIComponent(driverMessage)}`}
+          href={`https://wa.me/91${DRIVER_PHONE}?text=${encodeURIComponent(
+            driverMessage
+          )}`}
           target="_blank"
           className="flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-3 py-3 text-sm font-black text-white"
         >
           Driver
         </a>
 
-        <button onClick={() => updateStatus(booking, "on-trip")} className="rounded-2xl bg-purple-600 px-3 py-3 text-sm font-black text-white">
+        <button
+          onClick={() => updateStatus(booking, "on-trip")}
+          className="rounded-2xl bg-purple-600 px-3 py-3 text-sm font-black text-white"
+        >
           On Trip
         </button>
 
-        <button onClick={() => updateStatus(booking, "completed")} className="rounded-2xl bg-blue-600 px-3 py-3 text-sm font-black text-white">
+        <button
+          onClick={() => updateStatus(booking, "completed")}
+          className="rounded-2xl bg-blue-600 px-3 py-3 text-sm font-black text-white"
+        >
           Complete
         </button>
 
-        <button onClick={() => updateStatus(booking, "cancelled")} className="rounded-2xl bg-red-600 px-3 py-3 text-sm font-black text-white">
+        <button
+          onClick={() => updateStatus(booking, "cancelled")}
+          className="rounded-2xl bg-red-600 px-3 py-3 text-sm font-black text-white"
+        >
           Cancel
         </button>
       </div>

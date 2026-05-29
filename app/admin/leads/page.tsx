@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState,  } from "react";
 import { useRouter } from "next/navigation";
+import { Wallet } from "lucide-react";
 import {
   Phone,
   LogOut,
@@ -613,6 +614,13 @@ Call / WhatsApp: ${OWNER_PHONE}`;
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+  onClick={() => router.push("/admin/payments")}
+  className="flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-3 text-sm font-black text-white shadow-lg"
+>
+  <Wallet size={18} />
+  Payments
+</button>
   <button
     onClick={() => router.push("/admin/bookings")}
     className="flex items-center gap-2 rounded-full bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-sm hover:bg-slate-800"
