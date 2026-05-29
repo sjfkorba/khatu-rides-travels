@@ -3,84 +3,253 @@ import { notFound } from "next/navigation";
 
 const phone1 = "9244137353";
 const phone2 = "8319376115";
-const siteUrl = "https://khatu-rides-travels.vercel.app";
+const siteUrl = "https://khaturidescg.in";
 
-const routeData: Record<
-  string,
-  {
-    title: string;
-    from: string;
-    to: string;
-    distance: string;
-    duration: string;
-    description: string;
-    keywords: string[];
-  }
-> = {
+const routeData = {
+  // ==========================
+  // RAIPUR ROUTES
+  // ==========================
+
   "raipur-to-korba-taxi": {
     title: "Raipur to Korba Taxi Service",
     from: "Raipur",
     to: "Korba",
-    distance: "Approx. 200–220 km",
-    duration: "Approx. 4.5–5.5 hours",
+    distance: 210,
+    duration: "4.5 - 5 Hours",
+    fare: "₹2800 Onwards",
     description:
-      "Book reliable Raipur to Korba taxi service with Khatu Rides Travels Co. Dzire, Ertiga, Innova Crysta and Sedan available for one way and round trip booking.",
-    keywords: [
-      "Raipur to Korba taxi",
-      "Raipur to Korba cab",
-      "taxi service Raipur to Korba",
-      "one way taxi Raipur to Korba",
-    ],
+    "Book Raipur to Korba taxi service with Khatu Rides Travels. One way taxi, round trip cab, airport transfer and outstation travel available with professional drivers and affordable fares.",
+
   },
 
   "korba-to-raipur-taxi": {
     title: "Korba to Raipur Taxi Service",
     from: "Korba",
     to: "Raipur",
-    distance: "Approx. 200–220 km",
-    duration: "Approx. 4.5–5.5 hours",
+    distance: 210,
+    duration: "4.5 - 5 Hours",
+    fare: "₹2800 Onwards",
     description:
-      "Book safe and affordable Korba to Raipur taxi service for airport drop, railway station drop, business travel, family trip and one way cab booking.",
-    keywords: [
-      "Korba to Raipur taxi",
-      "Korba to Raipur cab",
-      "taxi service Korba to Raipur",
-      "Korba to Raipur one way taxi",
-    ],
-  },
+    "Book Korba to Raipur taxi service with Khatu Rides Travels. One way taxi, round trip cab, airport transfer and outstation travel available with professional drivers and affordable fares.",
+},
 
   "raipur-to-bilaspur-taxi": {
     title: "Raipur to Bilaspur Taxi Service",
     from: "Raipur",
     to: "Bilaspur",
-    distance: "Approx. 115–130 km",
-    duration: "Approx. 2.5–3.5 hours",
+    distance: 125,
+    duration: "2.5 - 3 Hours",
+    fare: "₹2200 Onwards",
     description:
-      "Book Raipur to Bilaspur taxi service with clean cars, experienced drivers and transparent fare. Available for one way, round trip and commercial booking.",
-    keywords: [
-      "Raipur to Bilaspur taxi",
-      "Raipur to Bilaspur cab",
-      "taxi service Raipur to Bilaspur",
-      "Raipur Bilaspur taxi booking",
-    ],
+    "Book Raipur to Bilaspur taxi service with Khatu Rides Travels. One way taxi, round trip cab, airport transfer and outstation travel available with professional drivers and affordable fares.",
+},
+
+  "bilaspur-to-raipur-taxi": {
+    title: "Bilaspur to Raipur Taxi Service",
+    from: "Bilaspur",
+    to: "Raipur",
+    distance: 125,
+    duration: "2.5 - 3 Hours",
+    fare: "₹2200 Onwards",
+    description:
+    "Book Bilaspur to Raipur taxi service with Khatu Rides Travels. One way taxi, round trip cab, airport transfer and outstation travel available with professional drivers and affordable fares.",
+
   },
+
+  "raipur-to-raigarh-taxi": {
+    title: "Raipur to Raigarh Taxi Service",
+    from: "Raipur",
+    to: "Raigarh",
+    distance: 255,
+    duration: "5 - 6 Hours",
+    fare: "₹3500 Onwards",description:
+    "Book Raipur to Raigarh taxi service with Khatu Rides Travels. One way taxi, round trip cab, airport transfer and outstation travel available with professional drivers and affordable fares.",
+},
+
+  "raigarh-to-raipur-taxi": {
+    title: "Raigarh to Raipur Taxi Service",
+    from: "Raigarh",
+    to: "Raipur",
+    distance: 255,
+    duration: "5 - 6 Hours",
+    fare: "₹3500 Onwards",
+    description:
+    "Book Raigarh to Raipur taxi service with Khatu Rides Travels. One way taxi, round trip cab, airport transfer and outstation travel available with professional drivers and affordable fares.",
+},
+
+  "raipur-to-bhilai-taxi": {
+    title: "Raipur to Bhilai Taxi Service",
+    from: "Raipur",
+    to: "Bhilai",
+    distance: 35,
+    duration: "45 Minutes",
+    fare: "₹900 Onwards",
+    description:
+    "Book Raipur to Bhilai taxi service with Khatu Rides Travels. One way taxi, round trip cab, airport transfer and outstation travel available with professional drivers and affordable fares.",
+},
+
+  "bhilai-to-raipur-taxi": {
+    title: "Bhilai to Raipur Taxi Service",
+    from: "Bhilai",
+    to: "Raipur",
+    distance: 35,
+    duration: "45 Minutes",
+    fare: "₹900 Onwards",
+    description:
+    "Book Bhilai to Raipur taxi service with Khatu Rides Travels. One way taxi, round trip cab, airport transfer and outstation travel available with professional drivers and affordable fares.",
+},
+
+  "raipur-to-durg-taxi": {
+    title: "Raipur to Durg Taxi Service",
+    from: "Raipur",
+    to: "Durg",
+    distance: 40,
+    duration: "1 Hour",
+    fare: "₹1000 Onwards",
+    description:
+    "Book Raipur to Durg taxi service with Khatu Rides Travels. One way taxi, round trip cab, airport transfer and outstation travel available with professional drivers and affordable fares.",
+},
+
+  "durg-to-raipur-taxi": {
+    title: "Durg to Raipur Taxi Service",
+    from: "Durg",
+    to: "Raipur",
+    distance: 40,
+    duration: "1 Hour",
+    fare: "₹1000 Onwards",
+    description:
+    "Book Durg to Raipur taxi service with Khatu Rides Travels. One way taxi, round trip cab, airport transfer and outstation travel available with professional drivers and affordable fares.",
+},
+
+  "raipur-to-ambikapur-taxi": {
+    title: "Raipur to Ambikapur Taxi Service",
+    from: "Raipur",
+    to: "Ambikapur",
+    distance: 350,
+    duration: "7 - 8 Hours",
+    fare: "₹5000 Onwards",
+    description:
+     "Book Raipur to Ambikapur taxi service with Khatu Rides Travels. One way taxi, round trip cab, airport transfer and outstation travel available with professional drivers and affordable fares."
+},
+
+  "ambikapur-to-raipur-taxi": {
+    title: "Ambikapur to Raipur Taxi Service",
+    from: "Ambikapur",
+    to: "Raipur",
+    distance: 350,
+    duration: "7 - 8 Hours",
+    fare: "₹5000 Onwards",
+    description:
+     "Book Ambikapur to Raipur taxi service with Khatu Rides Travels. One way taxi, round trip cab, airport transfer and outstation travel available with professional drivers and affordable fares."
+},
+
+  "raipur-to-jagdalpur-taxi": {
+    title: "Raipur to Jagdalpur Taxi Service",
+    from: "Raipur",
+    to: "Jagdalpur",
+    distance: 300,
+    duration: "6 - 7 Hours",
+    fare: "₹4500 Onwards",
+    description:
+     "Book Raipur to Jagdalpur taxi service with Khatu Rides Travels. One way taxi, round trip cab, airport transfer and outstation travel available with professional drivers and affordable fares.",
+},
+
+  "jagdalpur-to-raipur-taxi": {
+    title: "Jagdalpur to Raipur Taxi Service",
+    from: "Jagdalpur",
+    to: "Raipur",
+    distance: 300,
+    duration: "6 - 7 Hours",
+    fare: "₹4500 Onwards",
+    description:
+     "Book Jagdalpur to Raipur taxi service with Khatu Rides Travels. One way taxi, round trip cab, airport transfer and outstation travel available with professional drivers and affordable fares.",
+},
+
+  // ==========================
+  // AIRPORT ROUTES
+  // ==========================
 
   "raipur-airport-taxi": {
     title: "Raipur Airport Taxi Service",
     from: "Raipur Airport",
     to: "Chhattisgarh",
-    distance: "As per destination",
-    duration: "As per route",
+    distance: 0,
+    duration: "As Per Destination",
+    fare: "₹800 Onwards",
     description:
-      "Book Raipur Airport taxi service for pickup and drop across Chhattisgarh. Dzire, Ertiga, Innova Crysta and Sedan available for airport transfer.",
-    keywords: [
-      "Raipur airport taxi",
-      "Raipur airport cab booking",
-      "airport taxi Raipur",
-      "Raipur airport pickup drop taxi",
-    ],
-  },
-};
+     "Book taxi from Raipur Airport for all over Chhattisgarh like Raipur intercity, Bilaspur, Durg, Bhilai, Champa, Ambikapur, Raigarh, Bhatapara, Korba, NTPC, Sipat, Katghora, Dhramjaigarh with Khatu Rides Travels. One way taxi, round trip cab, airport transfer and outstation travel available with professional drivers and affordable fares.",
+},
+
+  "raipur-airport-to-korba-taxi": {
+    title: "Raipur Airport to Korba Taxi",
+    from: "Raipur Airport",
+    to: "Korba",
+    distance: 220,
+    duration: "5 Hours",
+    fare: "₹3000 Onwards",
+    description:
+     "Book Raipur Airport to Korba taxi service with Khatu Rides Travels. One way taxi, round trip cab, airport transfer and outstation travel available with professional drivers and affordable fares.",
+},
+
+  "raipur-airport-to-bilaspur-taxi": {
+    title: "Raipur Airport to Bilaspur Taxi",
+    from: "Raipur Airport",
+    to: "Bilaspur",
+    distance: 140,
+    duration: "3 Hours",
+    fare: "₹2500 Onwards",
+    description:
+     "Book Raipur Airport to Bilaspur taxi service with Khatu Rides Travels. One way taxi, round trip cab, airport transfer and outstation travel available with professional drivers and affordable fares.",
+},
+
+  "raipur-airport-to-raigarh-taxi": {
+    title: "Raipur Airport to Raigarh Taxi",
+    from: "Raipur Airport",
+    to: "Raigarh",
+    distance: 270,
+    duration: "5.5 - 6 Hours",
+    fare: "₹3800 Onwards",
+    description:
+     "Book Raipur Airport to Raigarh taxi service with Khatu Rides Travels. One way taxi, round trip cab, airport transfer and outstation travel available with professional drivers and affordable fares.",
+},
+
+  "raipur-airport-to-ambikapur-taxi": {
+    title: "Raipur Airport to Ambikapur Taxi",
+    from: "Raipur Airport",
+    to: "Ambikapur",
+    distance: 360,
+    duration: "7 - 8 Hours",
+    fare: "₹5200 Onwards",
+    description:
+     "Book Raipur Airport to Ambikapur taxi service with Khatu Rides Travels. One way taxi, round trip cab, airport transfer and outstation travel available with professional drivers and affordable fares.",
+},
+
+  // ==========================
+  // KORBA LOCAL SEO
+  // ==========================
+
+  "korba-to-bilaspur-taxi": {
+    title: "Korba to Bilaspur Taxi Service",
+    from: "Korba",
+    to: "Bilaspur",
+    distance: 90,
+    duration: "2 Hours",
+    fare: "₹1800 Onwards",
+    description:
+     "Book Korba to Bilaspur taxi service with Khatu Rides Travels. One way taxi, round trip cab, airport transfer and outstation travel available with professional drivers and affordable fares.",
+},
+
+  "bilaspur-to-korba-taxi": {
+    title: "Bilaspur to Korba Taxi Service",
+    from: "Bilaspur",
+    to: "Korba",
+    distance: 90,
+    duration: "2 Hours",
+    fare: "₹1800 Onwards",
+    description:
+     "Book Bilaspur to Korba taxi service with Khatu Rides Travels. One way taxi, round trip cab, airport transfer and outstation travel available with professional drivers and affordable fares.",
+},
+} as const;
 
 const vehicles = [
   { name: "Dzire", type: "Sedan", price: "₹11/km se" },
@@ -103,7 +272,8 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const route = routeData[slug];
+  const route =
+  routeData[slug as keyof typeof routeData];
 
   if (!route) {
     return {
@@ -114,7 +284,7 @@ export async function generateMetadata({
   return {
     title: `${route.title} | Best Cab Booking in Chhattisgarh`,
     description: route.description,
-    keywords: route.keywords,
+    keywords: route.title,
     alternates: {
       canonical: `${siteUrl}/routes/${slug}`,
     },
@@ -131,7 +301,8 @@ export async function generateMetadata({
 
 export default async function RoutePage({ params }: PageProps) {
   const { slug } = await params;
-  const route = routeData[slug];
+  const route =
+  routeData[slug as keyof typeof routeData];
 
   if (!route) {
     notFound();
