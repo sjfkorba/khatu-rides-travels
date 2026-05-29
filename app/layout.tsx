@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Footer from "@/components/Footer";
 
 const siteUrl = "https://khatu-rides-travels.vercel.app";
 
@@ -124,6 +125,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(businessSchema) }}
         />
         {children}
+        <Footer />
       </body>
     </html>
   );

@@ -599,10 +599,6 @@ Please mujhe best fare bata dijiye.`;
         </div>
       </section>
 
-      <footer className="py-8 text-center text-sm text-gray-500">
-        © 2026 Khatu Rides Travels Co. | Taxi Service in Chhattisgarh
-      </footer>
-
       {/* Floating Buttons */}
       <div className="fixed bottom-5 right-5 flex flex-col gap-3 z-50">
         <a

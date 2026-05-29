@@ -1,671 +1,1108 @@
 "use client";
 
+import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
+import TopBar from "@/components/TopBar";
 
-const phone1 = "9244137353";
-const phone2 = "8319376115";
-
-const whatsappMessage =
-  "Namaste Khatu Rides Travels, mujhe cab booking ke liye details chahiye.";
+import {
+  Phone,
+  MessageCircle,
+  Car,
+  ShieldCheck,
+  Clock3,
+  Star,
+  MapPin,
+  ArrowRight,
+  CheckCircle2,
+  Building2,
+  Plane,
+} from "lucide-react";
 
 const vehicles = [
   {
     name: "Dzire",
     type: "Sedan",
-    price: "₹11/km se",
+    price: "₹11/km onwards",
+    seats: "4+1",
+    luggage: "2 Bags",
     image:
       "https://content.carlelo.com/media/models/Dzire/base/maruti-suzuki-dzire-1.webp",
   },
+
   {
     name: "Ertiga",
     type: "7 Seater",
-    price: "₹14/km se",
+    price: "₹14/km onwards",
+    seats: "6+1",
+    luggage: "4 Bags",
     image:
       "https://imgd.aeplcdn.com/642x361/n/cw/ec/171147/maruti-suzuki-ertiga-left-rear-three-quarter0.jpeg?isig=0&q=75",
   },
+
   {
     name: "Innova Crysta",
     type: "Premium SUV",
-    price: "₹18/km se",
+    price: "₹18/km onwards",
+    seats: "7+1",
+    luggage: "5 Bags",
     image:
       "https://stimg.cardekho.com/images/expert-review/select-model/20250728_160805/930x620/5_1200x67520250728_160805.jpg",
   },
+];
+
+const popularRoutes = [
   {
-    name: "Sedan",
-    type: "Comfort Ride",
-    price: "₹12/km se",
-    image:
-      "https://spn-sta.spinny.com/blog/20220308152631/VW-Virtus-launch.jpg",
+    title: "Raipur to Korba",
+    fare: "₹2800+",
+    link: "/routes/raipur-to-korba-taxi",
+  },
+
+  {
+    title: "Raipur to Bilaspur",
+    fare: "₹2200+",
+    link: "/routes/raipur-to-bilaspur-taxi",
+  },
+
+  {
+    title: "Raipur to Raigarh",
+    fare: "₹3500+",
+    link: "/routes/raipur-to-raigarh-taxi",
+  },
+
+  {
+    title: "Airport to Korba",
+    fare: "₹3000+",
+    link: "/routes/raipur-airport-to-korba-taxi",
+  },
+
+  {
+    title: "Airport to Bilaspur",
+    fare: "₹2500+",
+    link: "/routes/raipur-airport-to-bilaspur-taxi",
+  },
+
+  {
+    title: "Korba to Bilaspur",
+    fare: "₹1800+",
+    link: "/routes/korba-to-bilaspur-taxi",
   },
 ];
 
-const services = [
+const faqs = [
   {
-    title: "One Way Taxi in Chhattisgarh",
-    desc: "Korba, Raipur, Bilaspur, Durg, Bhilai aur nearby cities ke liye affordable one way taxi booking. Sirf ek side travel ke liye best fare option.",
+    q: "What is the Raipur to Korba taxi fare?",
+    a: "Taxi fare starts from approximately ₹2800 depending on vehicle type and travel date.",
+  },
+
+  {
+    q: "Do you provide airport pickup service?",
+    a: "Yes. Airport pickup and drop services are available across Chhattisgarh.",
+  },
+
+  {
+    q: "Can I book one-way taxi?",
+    a: "Yes. One-way taxi services are available on most routes.",
+  },
+
+  {
+    q: "Do you provide GST invoices?",
+    a: "Yes. GST invoices can be provided for eligible bookings.",
+  },
+];
+const reviews = [
+  {
+    name: "Amit Verma",
+    city: "Raipur",
+    review:
+      "Excellent taxi service. Clean vehicle and professional driver.",
   },
   {
-    title: "Round Trip Cab Booking",
-    desc: "Family trip, business meeting ya personal travel ke liye clean cars, experienced drivers aur transparent fare ke saath round trip cab service.",
+    name: "Sanjay Agrawal",
+    city: "Korba",
+    review:
+      "Airport pickup was on time and the journey was comfortable.",
   },
   {
-    title: "Outstation Taxi Service",
-    desc: "Chhattisgarh se Odisha, Jharkhand, Madhya Pradesh aur nearby states ke liye safe aur comfortable outstation cab booking.",
+    name: "Rohit Sharma",
+    city: "Bilaspur",
+    review:
+      "Best taxi service for business travel across Chhattisgarh.",
   },
   {
-    title: "Commercial Cab Booking",
-    desc: "Company staff travel, office duty, monthly cab, business visit aur corporate travel ke liye reliable commercial taxi service.",
+    name: "Deepak Yadav",
+    city: "Raigarh",
+    review:
+      "Transparent fare and quick WhatsApp support.",
   },
   {
-    title: "Airport & Railway Pickup Drop",
-    desc: "Raipur Airport, railway station aur city pickup-drop ke liye on-time taxi service. Early morning aur late night booking available.",
+    name: "Pooja Singh",
+    city: "Raipur",
+    review:
+      "Family trip was smooth and comfortable.",
   },
   {
-    title: "Local Taxi Service in Korba",
-    desc: "Korba city, NTPC, BALCO, Kusmunda, Gevra, Dipka aur nearby industrial areas ke liye local cab booking service.",
+    name: "Nitin Gupta",
+    city: "Korba",
+    review:
+      "Booked Ertiga for airport transfer. Great experience.",
+  },
+  {
+    name: "Rajesh Patel",
+    city: "Bilaspur",
+    review:
+      "Professional driver and well maintained vehicle.",
+  },
+  {
+    name: "Mukesh Agrawal",
+    city: "Raipur",
+    review:
+      "Affordable pricing and hassle free booking process.",
+  },
+  {
+    name: "Vivek Sahu",
+    city: "Raigarh",
+    review:
+      "Reliable taxi service for monthly corporate travel.",
+  },
+  {
+    name: "Aakash Jain",
+    city: "Korba",
+    review:
+      "Quick confirmation and smooth journey.",
+  },
+  {
+    name: "Shubham Verma",
+    city: "Raipur",
+    review:
+      "Best option for one way taxi bookings.",
+  },
+  {
+    name: "Ashish Gupta",
+    city: "Bilaspur",
+    review:
+      "Airport taxi service was perfectly managed.",
+  },
+  {
+    name: "Pankaj Sharma",
+    city: "Raigarh",
+    review:
+      "Comfortable trip and transparent billing.",
+  },
+  {
+    name: "Ravi Tiwari",
+    city: "Raipur",
+    review:
+      "Driver was polite and vehicle was very clean.",
+  },
+  {
+    name: "Anjali Soni",
+    city: "Korba",
+    review:
+      "Great support team and timely pickup.",
+  },
+  {
+    name: "Manoj Patel",
+    city: "Bilaspur",
+    review:
+      "Good service for family travel.",
+  },
+  {
+    name: "Rakesh Agrawal",
+    city: "Raigarh",
+    review:
+      "Highly recommended for airport transfers.",
+  },
+  {
+    name: "Harsh Jain",
+    city: "Raipur",
+    review:
+      "Professional and trustworthy service.",
+  },
+  {
+    name: "Abhishek Sahu",
+    city: "Korba",
+    review:
+      "Very convenient booking process.",
+  },
+  {
+    name: "Vikas Verma",
+    city: "Bilaspur",
+    review:
+      "Comfortable long-distance journey.",
   },
 ];
 
-const locations = [
-  "Korba",
-  "Raipur",
-  "Bilaspur",
-  "Durg",
-  "Bhilai",
-  "Jagdalpur",
-  "Ambikapur",
-  "Raigarh",
-  "Janjgir",
-  "Champa",
-  "NTPC Korba",
-  "BALCO",
-  "Kusmunda",
-  "Gevra",
-  "Dipka",
-];
+export default function HomePage() {
 
-const testimonials = [
-  {
-    name: "Rahul Sahu",
-    route: "Raipur to Korba",
-    rating: 5,
-    text: "Cab time par aa gayi, driver polite tha aur journey comfortable rahi. Raipur to Korba ke liye service kaafi achhi lagi.",
-  },
-  {
-    name: "Priya Verma",
-    route: "Raipur Airport Pickup",
-    rating: 5,
-    text: "Airport pickup bilkul time par hua. Car clean thi aur fare bhi transparent tha. Family travel ke liye recommended.",
-  },
-  {
-    name: "Amit Kumar",
-    route: "Bilaspur Round Trip",
-    rating: 5,
-    text: "Round trip booking smooth rahi. Driver experienced tha aur WhatsApp par fare jaldi confirm ho gaya.",
-  },
-  {
-    name: "Sandeep Patel",
-    route: "Raipur to Bilaspur",
-    rating: 5,
-    text: "Raipur se Bilaspur ke liye cab book ki thi. Car clean thi, driver time par pahunch gaya aur ride comfortable rahi.",
-  },
-  {
-    name: "Neha Sharma",
-    route: "Korba Local Taxi",
-    rating: 5,
-    text: "Korba local travel ke liye service bahut achhi lagi. Booking process simple tha aur driver ka behavior professional tha.",
-  },
-  {
-    name: "Vikas Yadav",
-    route: "Raipur to Bhilai",
-    rating: 5,
-    text: "Fare WhatsApp par jaldi confirm ho gaya. Raipur to Bhilai journey smooth rahi aur car condition bhi achhi thi.",
-  },
-  {
-    name: "Anjali Gupta",
-    route: "Family Outstation Trip",
-    rating: 5,
-    text: "Family trip ke liye Ertiga book ki thi. Space comfortable tha aur driver ne safe driving ki.",
-  },
-  {
-    name: "Manoj Verma",
-    route: "Commercial Booking",
-    rating: 5,
-    text: "Office travel ke liye cab li thi. Time management aur service dono professional lage.",
-  },
-  {
-    name: "Pooja Sinha",
-    route: "Raipur Airport to Korba",
-    rating: 5,
-    text: "Airport pickup ke liye cab bilkul time par mili. Long journey ke liye car clean aur comfortable thi.",
-  },
-  {
-    name: "Rohit Dewangan",
-    route: "Korba to Raipur",
-    rating: 5,
-    text: "Korba se Raipur ke liye one way taxi book ki. Driver polite tha aur fare bhi reasonable laga.",
-  },
-  {
-    name: "Kavita Rajput",
-    route: "Bilaspur to Raipur",
-    rating: 5,
-    text: "Booking WhatsApp par easy ho gayi. Driver ne time par pickup kiya aur trip safe rahi.",
-  },
-  {
-    name: "Nitin Sahu",
-    route: "Raipur to Durg",
-    rating: 5,
-    text: "Raipur to Durg ride ke liye cab service reliable lagi. Car neat and clean thi.",
-  },
-  {
-    name: "Sunita Kashyap",
-    route: "Innova Crysta Booking",
-    rating: 5,
-    text: "Innova Crysta family travel ke liye book ki thi. Premium feel aur comfortable seating mili.",
-  },
-  {
-    name: "Deepak Singh",
-    route: "Outstation Taxi",
-    rating: 5,
-    text: "Outstation trip ke liye service dependable rahi. Driver route jaanta tha aur journey tension-free rahi.",
-  },
-  {
-    name: "Meena Tiwari",
-    route: "Raipur Railway Pickup",
-    rating: 5,
-    text: "Railway station pickup ke liye cab time par aa gayi. Luggage ke saath travel easy ho gaya.",
-  },
-];
+  const [pickup, setPickup] = useState("");
+  const [drop, setDrop] = useState("");
 
-export default function Home() {
-  const [form, setForm] = useState({
-    name: "",
-    mobile: "",
-    pickup: "",
-    drop: "",
-    date: "",
-    time: "",
-    vehicle: "Dzire",
-    tripType: "One Way Taxi",
-  });
+  const whatsappUrl = `https://wa.me/919244137353?text=${encodeURIComponent(
+    `Hello Khatu Rides Travels,
+Pickup: ${pickup}
+Drop: ${drop}`
+  )}`;
 
-  const sendBookingEnquiry = () => {
-    const message = `Namaste Khatu Rides Travels Co.
+    return (
+      <>
+      <TopBar />
+      
+    <main className="min-h-screen bg-slate-50">
+      {/* HERO SECTION */}
 
-Mujhe cab booking ke liye enquiry karni hai.
+      <section className="relative overflow-hidden bg-slate-950 text-white">
 
-Customer Name: ${form.name}
-Mobile Number: ${form.mobile}
-Pickup Location: ${form.pickup}
-Drop Location: ${form.drop}
-Booking Date: ${form.date}
-Booking Time: ${form.time}
-Vehicle: ${form.vehicle}
-Trip Type: ${form.tripType}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.25),transparent_35%)]" />
 
-Please mujhe best fare bata dijiye.`;
+        <div className="relative max-w-7xl mx-auto px-4 py-14 md:py-24">
 
-    window.open(
-      `https://wa.me/91${phone1}?text=${encodeURIComponent(message)}`,
-      "_blank"
-    );
-  };
+          <div className="grid lg:grid-cols-2 gap-10 items-center">
 
-  return (
-    <main className="min-h-screen bg-white text-gray-900">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-xl md:text-2xl font-extrabold text-orange-600">
-              Khatu Rides Travels Co.
-            </h1>
-            <p className="text-xs text-gray-500">
-              Taxi Service in Korba & Chhattisgarh
-            </p>
-          </div>
+            {/* LEFT */}
 
- <div className="flex items-center gap-2">
-  <a
-    href="/admin/login"
-    className="inline-flex items-center justify-center rounded-full border border-orange-500 bg-white px-3 py-2 text-xs font-bold text-orange-600 shadow-sm transition hover:bg-orange-50 md:px-5 md:py-2.5 md:text-sm"
-  >
-    Login
-  </a>
-</div>
-        </div>
-      </header>
+            <div>
 
-      {/* Hero */}
-      <section
-        className="relative bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage:
-            "linear-gradient(90deg, rgba(255,247,237,0.98) 0%, rgba(255,247,237,0.92) 45%, rgba(255,255,255,0.72) 100%), url('https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?q=80&w=1600')",
-        }}
-      >
-        <div className="max-w-7xl mx-auto px-4 py-16 md:py-20 grid md:grid-cols-2 gap-10 items-center">
-          <div>
-            <p className="inline-block bg-orange-100 text-orange-700 px-4 py-2 rounded-full font-bold mb-4">
-              Trusted Taxi Service in Chhattisgarh
-            </p>
+              <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-4 py-2 text-orange-300 text-sm font-semibold">
 
-            <h2 className="text-4xl md:text-6xl font-extrabold leading-tight">
-              Best Taxi Service in Korba, Raipur & Chhattisgarh
-            </h2>
+                ⭐ Trusted Taxi Service in Chhattisgarh
 
-            <p className="mt-5 text-gray-700 text-lg leading-relaxed">
-              Khatu Rides Travels Co. Korba, Raipur, Bilaspur aur poore
-              Chhattisgarh me Dzire, Ertiga, Innova Crysta aur Sedan ke saath
-              one way taxi, round trip cab, outstation tour, airport pickup-drop
-              aur commercial booking provide karta hai.
-            </p>
-
-            <div className="mt-6 grid grid-cols-2 gap-3 max-w-xl">
-              {["Clean Cars", "Expert Drivers", "Best Fare", "Fast WhatsApp Booking"].map(
-                (item) => (
-                  <div
-                    key={item}
-                    className="bg-white/90 border rounded-2xl px-4 py-3 shadow-sm font-semibold"
-                  >
-                    ✓ {item}
-                  </div>
-                )
-              )}
-            </div>
-
-            <div className="mt-8 flex flex-wrap gap-4">
-              <a
-                href={`tel:${phone1}`}
-                className="px-6 py-3 rounded-full bg-orange-600 text-white font-bold shadow-lg hover:bg-orange-700 transition"
-              >
-                Call: {phone1}
-              </a>
-              <a
-                href={`https://wa.me/91${phone2}?text=${encodeURIComponent(
-                  whatsappMessage
-                )}`}
-                className="px-6 py-3 rounded-full bg-green-600 text-white font-bold shadow-lg hover:bg-green-700 transition"
-              >
-                Get Fare on WhatsApp
-              </a>
-            </div>
-          </div>
-
-          {/* Booking Form */}
-          <div className="bg-white/95 backdrop-blur rounded-3xl shadow-2xl p-6 border">
-            <h3 className="text-2xl font-bold text-gray-900">
-              Get Best Fare Estimate
-            </h3>
-            <p className="text-sm text-gray-500 mt-1 mb-5">
-              Trip details bhejiye, hum WhatsApp par fare aur availability
-              confirm karenge.
-            </p>
-
-            <div className="grid gap-3">
-              <input
-                className="w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-orange-500"
-                placeholder="Customer Name"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
-
-              <input
-                className="w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-orange-500"
-                placeholder="Mobile Number"
-                value={form.mobile}
-                onChange={(e) => setForm({ ...form, mobile: e.target.value })}
-              />
-
-              <div className="grid md:grid-cols-2 gap-3">
-                <input
-                  className="w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-orange-500"
-                  placeholder="Pickup Location"
-                  value={form.pickup}
-                  onChange={(e) =>
-                    setForm({ ...form, pickup: e.target.value })
-                  }
-                />
-
-                <input
-                  className="w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-orange-500"
-                  placeholder="Drop Location"
-                  value={form.drop}
-                  onChange={(e) => setForm({ ...form, drop: e.target.value })}
-                />
               </div>
 
-              <div className="grid md:grid-cols-2 gap-3">
-                <input
-                  type="date"
-                  className="w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-orange-500"
-                  value={form.date}
-                  onChange={(e) => setForm({ ...form, date: e.target.value })}
-                />
+              <h1 className="mt-6 text-4xl md:text-6xl font-black leading-tight">
 
-                <input
-                  type="time"
-                  className="w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-orange-500"
-                  value={form.time}
-                  onChange={(e) => setForm({ ...form, time: e.target.value })}
-                />
-              </div>
+                Book Reliable Taxi Service Across
 
-              <div className="grid md:grid-cols-2 gap-3">
-                <select
-                  className="w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-orange-500"
-                  value={form.vehicle}
-                  onChange={(e) =>
-                    setForm({ ...form, vehicle: e.target.value })
-                  }
-                >
-                  <option>Dzire</option>
-                  <option>Ertiga</option>
-                  <option>Innova Crysta</option>
-                  <option>Sedan</option>
-                </select>
+                <span className="text-orange-500">
+                  {" "}Chhattisgarh
+                </span>
 
-                <select
-                  className="w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-orange-500"
-                  value={form.tripType}
-                  onChange={(e) =>
-                    setForm({ ...form, tripType: e.target.value })
-                  }
-                >
-                  <option>One Way Taxi</option>
-                  <option>Round Trip Booking</option>
-                  <option>Outstation Tour</option>
-                  <option>Commercial Booking</option>
-                  <option>Airport / Railway Pickup</option>
-                </select>
-              </div>
+              </h1>
 
-              <button
-                onClick={sendBookingEnquiry}
-                className="w-full mt-2 bg-green-600 hover:bg-green-700 text-white rounded-full py-3 font-bold shadow-lg transition"
-              >
-                Send Enquiry on WhatsApp
-              </button>
+              <p className="mt-6 text-lg text-slate-300 leading-8">
 
-              <p className="text-xs text-center text-gray-500">
-                Direct Call: {phone1} / {phone2}
+                Airport Transfer • One Way Taxi • Round Trip
+
+                <br />
+
+                Raipur • Korba • Bilaspur • Raigarh
+
               </p>
+
+              <div className="grid grid-cols-2 gap-3 mt-8">
+
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                  ✓ Transparent Fare
+                </div>
+
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                  ✓ Verified Drivers
+                </div>
+
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                  ✓ Clean Vehicles
+                </div>
+
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                  ✓ 24×7 Support
+                </div>
+
+              </div>
+
+              <div className="flex flex-wrap gap-4 mt-8">
+
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  className="bg-orange-500 hover:bg-orange-600 px-8 py-4 rounded-2xl font-bold transition"
+                >
+                  Get Fare on WhatsApp
+                </a>
+
+                <a
+                  href="tel:9244137353"
+                  className="border border-white px-8 py-4 rounded-2xl font-bold"
+                >
+                  Call Now
+                </a>
+
+              </div>
+
             </div>
+
+            {/* RIGHT FORM */}
+
+            <div>
+
+              <div className="bg-white rounded-3xl p-6 md:p-8 shadow-2xl">
+
+                <h2 className="text-2xl font-black text-slate-900">
+
+                  Get Instant Fare Quote
+
+                </h2>
+
+                <p className="text-slate-500 mt-2">
+                  Get fare & availability in under 2 minutes.
+                </p>
+
+                <div className="space-y-4 mt-6">
+
+                  <input
+                    value={pickup}
+                    onChange={(e) => setPickup(e.target.value)}
+                    placeholder="Pickup Location"
+                    className="w-full border rounded-xl px-4 py-4 text-black"
+                  />
+
+                  <input
+                    value={drop}
+                    onChange={(e) => setDrop(e.target.value)}
+                    placeholder="Drop Location"
+                    className="w-full border rounded-xl px-4 py-4 text-black"
+                  />
+
+                  <input
+                    type="date"
+                    className="w-full border rounded-xl px-4 py-4 text-black"
+                  />
+
+                  <a
+                    href={whatsappUrl}
+                    target="_blank"
+                    className="block text-center bg-orange-500 text-white py-4 rounded-xl font-bold"
+                  >
+                    Check Fare Now
+                  </a>
+
+                </div>
+
+                <div className="mt-5 text-sm text-slate-500">
+
+                  Example:
+
+                  <span className="font-semibold">
+                    {" "}
+                    Raipur → Korba
+                  </span>
+
+                </div>
+
+              </div>
+
+            </div>
+
           </div>
+
         </div>
+
       </section>
 
-      {/* Services */}
+      {/* TRUST BAR */}
+
+      <section className="bg-white border-b">
+
+        <div className="max-w-7xl mx-auto px-4 py-6">
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-5 text-center">
+
+            <div>
+
+              <p className="text-3xl font-black text-orange-600">
+                1000+
+              </p>
+
+              <p className="text-slate-600">
+                Trips Completed
+              </p>
+
+            </div>
+
+            <div>
+
+              <p className="text-3xl font-black text-orange-600">
+                24×7
+              </p>
+
+              <p className="text-slate-600">
+                Support
+              </p>
+
+            </div>
+
+            <div>
+
+              <p className="text-3xl font-black text-orange-600">
+                100%
+              </p>
+
+              <p className="text-slate-600">
+                Transparent Fare
+              </p>
+
+            </div>
+
+            <div>
+
+              <p className="text-3xl font-black text-orange-600">
+                4.9★
+              </p>
+
+              <p className="text-slate-600">
+                Customer Rating
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* POPULAR ROUTES */}
+
       <section className="max-w-7xl mx-auto px-4 py-16">
-        <h2 className="text-3xl md:text-4xl font-extrabold text-center mb-4">
-          Taxi Services in Korba, Raipur, Bilaspur & Chhattisgarh
-        </h2>
 
-        <p className="max-w-3xl mx-auto text-center text-gray-600 mb-10 leading-relaxed">
-          Khatu Rides Travels Co. Chhattisgarh me one way taxi, round trip cab,
-          outstation taxi, airport pickup-drop aur commercial cab booking ke
-          liye trusted travel partner hai.
-        </p>
+        <div className="text-center mb-12">
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((service) => (
-            <div
-              key={service.title}
-              className="p-6 rounded-3xl border bg-white shadow-sm hover:shadow-xl hover:-translate-y-1 transition"
+          <h2 className="text-4xl font-black">
+
+            Popular Taxi Routes
+
+          </h2>
+
+          <p className="text-slate-600 mt-4">
+
+            Most booked routes across Chhattisgarh
+
+          </p>
+
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+          {popularRoutes.map((route) => (
+
+            <Link
+              key={route.title}
+              href={route.link}
+              className="bg-white border rounded-3xl p-6 hover:border-orange-500 hover:shadow-lg transition"
             >
-              <div className="w-12 h-12 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-xl font-bold mb-4">
-                ✓
-              </div>
 
-              <h3 className="text-xl font-bold text-gray-900">
-                {service.title}
+              <h3 className="text-xl font-black">
+                {route.title}
               </h3>
 
-              <p className="mt-3 text-gray-600 leading-relaxed">
-                {service.desc}
+              <p className="text-orange-600 font-bold mt-3">
+                Starting {route.fare}
+              </p>
+
+              <p className="mt-4 text-slate-500">
+                View Route →
+              </p>
+
+            </Link>
+
+          ))}
+
+        </div>
+
+      </section>
+            {/* WHY CHOOSE US */}
+
+      <section className="bg-slate-100 py-20">
+
+        <div className="max-w-7xl mx-auto px-4">
+
+          <div className="text-center mb-14">
+
+            <h2 className="text-4xl md:text-5xl font-black">
+
+              Why Choose Khatu Rides Travels?
+
+            </h2>
+
+            <p className="text-slate-600 mt-4 max-w-2xl mx-auto">
+
+              Trusted by travelers across Chhattisgarh for airport transfers,
+              one-way taxi bookings, corporate travel and family trips.
+
+            </p>
+
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+            <div className="bg-white rounded-3xl p-6 shadow-sm">
+
+              <ShieldCheck
+                className="text-orange-500 mb-4"
+                size={40}
+              />
+
+              <h3 className="font-black text-xl">
+                Safe & Reliable
+              </h3>
+
+              <p className="text-slate-600 mt-3">
+                Professional service with customer-first approach.
+              </p>
+
+            </div>
+
+            <div className="bg-white rounded-3xl p-6 shadow-sm">
+
+              <Clock3
+                className="text-orange-500 mb-4"
+                size={40}
+              />
+
+              <h3 className="font-black text-xl">
+                On-Time Pickup
+              </h3>
+
+              <p className="text-slate-600 mt-3">
+                Airport and city pickups without delays.
+              </p>
+
+            </div>
+
+            <div className="bg-white rounded-3xl p-6 shadow-sm">
+
+              <Star
+                className="text-orange-500 mb-4"
+                size={40}
+              />
+
+              <h3 className="font-black text-xl">
+                Transparent Pricing
+              </h3>
+
+              <p className="text-slate-600 mt-3">
+                No hidden charges. Clear fare information.
+              </p>
+
+            </div>
+
+            <div className="bg-white rounded-3xl p-6 shadow-sm">
+
+              <Phone
+                className="text-orange-500 mb-4"
+                size={40}
+              />
+
+              <h3 className="font-black text-xl">
+                Quick Support
+              </h3>
+
+              <p className="text-slate-600 mt-3">
+                Call or WhatsApp for instant booking assistance.
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* FLEET SECTION */}
+
+      <section className="max-w-7xl mx-auto px-4 py-20">
+
+        <div className="text-center mb-14">
+
+          <h2 className="text-4xl md:text-5xl font-black">
+
+            Available Vehicles
+
+          </h2>
+
+          <p className="text-slate-600 mt-4">
+
+            Comfortable vehicles for every travel need
+
+          </p>
+
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-8">
+
+          {vehicles.map((vehicle) => (
+
+            <div
+              key={vehicle.name}
+              className="bg-white rounded-3xl overflow-hidden shadow-lg border"
+            >
+
+              <div className="relative h-56">
+
+                <Image
+                  src={vehicle.image}
+                  alt={vehicle.name}
+                  fill
+                  className="object-cover"
+                />
+
+              </div>
+
+              <div className="p-6">
+
+                <h3 className="text-2xl font-black">
+                  {vehicle.name}
+                </h3>
+
+                <p className="text-orange-600 font-semibold mt-2">
+                  {vehicle.type}
+                </p>
+
+                <div className="grid grid-cols-2 gap-3 mt-5">
+
+                  <div className="bg-slate-100 rounded-xl p-3">
+
+                    <p className="text-xs text-slate-500">
+                      Seats
+                    </p>
+
+                    <p className="font-bold">
+                      {vehicle.seats}
+                    </p>
+
+                  </div>
+
+                  <div className="bg-slate-100 rounded-xl p-3">
+
+                    <p className="text-xs text-slate-500">
+                      Luggage
+                    </p>
+
+                    <p className="font-bold">
+                      {vehicle.luggage}
+                    </p>
+
+                  </div>
+
+                </div>
+
+                <div className="mt-5 flex items-center justify-between">
+
+                  <div>
+
+                    <p className="text-sm text-slate-500">
+                      Starting
+                    </p>
+
+                    <p className="text-xl font-black text-orange-600">
+                      {vehicle.price}
+                    </p>
+
+                  </div>
+
+                  <a
+                    href="https://wa.me/919244137353"
+                    target="_blank"
+                    className="bg-orange-500 text-white px-5 py-3 rounded-xl font-bold"
+                  >
+                    Book
+                  </a>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          ))}
+
+        </div>
+
+      </section>
+
+      {/* AIRPORT TAXI */}
+
+      <section className="bg-slate-950 text-white py-20">
+
+        <div className="max-w-7xl mx-auto px-4">
+
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+
+            <div>
+
+              <Plane
+                size={60}
+                className="text-orange-500"
+              />
+
+              <h2 className="text-4xl md:text-5xl font-black mt-6">
+
+                Raipur Airport Taxi Service
+
+              </h2>
+
+              <p className="mt-6 text-slate-300 leading-8">
+
+                Book airport pickup and drop services from
+                Swami Vivekananda Airport to Korba, Bilaspur,
+                Raigarh and other destinations across Chhattisgarh.
+
               </p>
 
               <a
-                href={`https://wa.me/91${phone1}?text=${encodeURIComponent(
-                  `Namaste, mujhe ${service.title} ke liye fare details chahiye.`
-                )}`}
-                className="inline-block mt-5 text-orange-600 font-bold hover:underline"
+                href="/routes/raipur-airport-taxi"
+                className="inline-flex items-center gap-2 mt-8 bg-orange-500 px-8 py-4 rounded-2xl font-bold"
               >
-                Get Fare →
+                Explore Airport Taxi
+                <ArrowRight size={18} />
               </a>
-            </div>
-          ))}
-        </div>
-      </section>
 
-      {/* Locations */}
-      <section className="bg-orange-50 py-14">
-        <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl font-extrabold text-center mb-4">
-            Cab Booking Available Across Chhattisgarh
-          </h2>
-          <p className="text-center text-gray-600 max-w-3xl mx-auto mb-8">
-            Korba aur nearby industrial areas se lekar Raipur, Bilaspur, Durg,
-            Bhilai, Jagdalpur aur Ambikapur tak reliable taxi service.
-          </p>
-
-          <div className="flex flex-wrap justify-center gap-3">
-            {locations.map((loc) => (
-              <span
-                key={loc}
-                className="bg-white border border-orange-200 rounded-full px-5 py-2 font-semibold text-gray-700 shadow-sm"
-              >
-                {loc} Taxi Service
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Vehicles */}
-      <section className="bg-gray-50 py-16">
-        <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-center mb-4">
-            Available Vehicles for Taxi Booking
-          </h2>
-          <p className="text-center text-gray-600 max-w-3xl mx-auto mb-10">
-            Budget sedan se premium SUV tak — family trip, airport transfer,
-            business travel aur outstation journey ke liye suitable cars.
-          </p>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {vehicles.map((car) => (
-              <div
-                key={car.name}
-                className="bg-white rounded-3xl overflow-hidden shadow hover:shadow-xl hover:-translate-y-1 transition"
-              >
-                <img
-                  src={car.image}
-                  alt={`${car.name} taxi booking in Chhattisgarh`}
-                  className="h-44 w-full object-cover"
-                />
-                <div className="p-5">
-                  <h3 className="text-xl font-bold">{car.name}</h3>
-                  <p className="text-gray-500">{car.type}</p>
-                  <p className="mt-3 font-bold text-orange-600">
-                    {car.price}
-                  </p>
-                  <a
-                    href={`https://wa.me/91${phone1}?text=${encodeURIComponent(
-                      `Namaste, mujhe ${car.name} booking ke liye details chahiye.`
-                    )}`}
-                    className="mt-4 block text-center bg-gray-900 text-white rounded-full py-2 font-semibold"
-                  >
-                    Book {car.name}
-                  </a>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing */}
-      <section className="max-w-7xl mx-auto px-4 py-16">
-        <h2 className="text-3xl md:text-4xl font-extrabold text-center mb-4">
-          Estimated Taxi Pricing
-        </h2>
-        <p className="text-center text-gray-600 mb-8">
-          Starting fare display kiya gaya hai. Final fare route, distance,
-          vehicle, toll, parking aur driver allowance ke hisaab se confirm hoga.
-        </p>
-
-        <div className="overflow-x-auto rounded-2xl border shadow-sm">
-          <table className="w-full text-left">
-            <thead className="bg-orange-600 text-white">
-              <tr>
-                <th className="p-4">Vehicle</th>
-                <th className="p-4">Starting Fare</th>
-                <th className="p-4">Best For</th>
-              </tr>
-            </thead>
-            <tbody>
-              {vehicles.map((car) => (
-                <tr key={car.name} className="border-b">
-                  <td className="p-4 font-semibold">{car.name}</td>
-                  <td className="p-4">{car.price}</td>
-                  <td className="p-4">{car.type}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      
-
-{/* Customer Reviews */}
-<section className="bg-white py-16 overflow-hidden">
-  <div className="max-w-7xl mx-auto px-4">
-    <div className="text-center mb-10">
-      <p className="inline-block bg-orange-100 text-orange-700 px-4 py-2 rounded-full font-bold mb-4">
-        Customer Feedback
-      </p>
-
-      <h2 className="text-3xl md:text-4xl font-extrabold">
-        Our Customers Say
-      </h2>
-
-      <p className="mt-3 text-gray-600 max-w-3xl mx-auto">
-        Raipur, Korba, Bilaspur aur Chhattisgarh ke customers hamari taxi
-        service ke baare me kya kehte hain.
-      </p>
-    </div>
-
-    <div className="relative">
-      <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-16 bg-gradient-to-r from-white to-transparent" />
-      <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-16 bg-gradient-to-l from-white to-transparent" />
-
-      <div className="review-marquee flex gap-6 w-max">
-        {[...testimonials, ...testimonials].map((review, index) => (
-          <div
-            key={`${review.name}-${index}`}
-            className="group w-[300px] sm:w-[340px] md:w-[380px] shrink-0 rounded-3xl border bg-orange-50/60 p-6 shadow-sm transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-white"
-          >
-            <div className="flex items-start justify-between gap-4 mb-4">
-              <div>
-                <h3 className="font-bold text-lg group-hover:text-orange-600 transition">
-                  {review.name}
-                </h3>
-                <p className="text-sm text-gray-500">{review.route}</p>
-              </div>
-
-              <div className="text-orange-500 font-bold whitespace-nowrap transition-transform duration-300 group-hover:scale-110">
-                {"★".repeat(review.rating)}
-              </div>
             </div>
 
-            <p className="text-gray-700 leading-relaxed min-h-[120px]">
-              “{review.text}”
+            <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
+
+              <ul className="space-y-5">
+
+                <li className="flex gap-3">
+                  <CheckCircle2 className="text-green-400" />
+                  Flight Tracking Support
+                </li>
+
+                <li className="flex gap-3">
+                  <CheckCircle2 className="text-green-400" />
+                  Direct Airport Pickup
+                </li>
+
+                <li className="flex gap-3">
+                  <CheckCircle2 className="text-green-400" />
+                  Comfortable Luggage Space
+                </li>
+
+                <li className="flex gap-3">
+                  <CheckCircle2 className="text-green-400" />
+                  Advance Booking Available
+                </li>
+
+              </ul>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* CORPORATE TRAVEL */}
+
+      <section className="max-w-7xl mx-auto px-4 py-20">
+
+        <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-3xl p-10 text-white">
+
+          <Building2 size={52} />
+
+          <h2 className="text-4xl font-black mt-6">
+
+            Corporate Travel Solutions
+
+          </h2>
+
+          <p className="mt-4 max-w-3xl text-white/90 leading-8">
+
+            Dedicated taxi services for businesses, factories,
+            project sites, consultants, executives and repeat
+            monthly travelers across Chhattisgarh.
+
+          </p>
+
+          <div className="flex flex-wrap gap-4 mt-8">
+
+            <a
+              href="tel:9244137353"
+              className="bg-white text-orange-600 px-8 py-4 rounded-2xl font-bold"
+            >
+              Discuss Corporate Rates
+            </a>
+
+            <a
+              href="https://wa.me/919244137353"
+              className="border border-white px-8 py-4 rounded-2xl font-bold"
+            >
+              WhatsApp Us
+            </a>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* SERVICE AREAS */}
+
+      <section className="bg-slate-100 py-20">
+
+        <div className="max-w-7xl mx-auto px-4">
+
+          <div className="text-center mb-12">
+
+            <h2 className="text-4xl md:text-5xl font-black">
+
+              Areas We Serve
+
+            </h2>
+
+            <p className="text-slate-600 mt-4">
+
+              Taxi services available across major cities of Chhattisgarh
+
             </p>
 
-            <div className="mt-5 text-sm font-bold text-green-700">
-              Verified Customer Experience
-            </div>
           </div>
-        ))}
-      </div>
-    </div>
 
-    <div className="mt-10 text-center">
-      <a
-        href="https://g.page/r/CbD5nSIGmvz1EBM/review"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-block bg-gray-900 hover:bg-black text-white px-8 py-4 rounded-full font-bold shadow-lg transition"
-      >
-        ⭐ Review us on Google
-      </a>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
 
-      <p className="mt-4 text-sm text-gray-500">
-        Aapka Google review hume local search me grow karne aur better service
-        dene me help karta hai.
+            {[
+              "Raipur",
+              "Korba",
+              "Bilaspur",
+              "Raigarh",
+              "Bhilai",
+              "Durg",
+              "Ambikapur",
+              "Jagdalpur",
+              "Raipur Airport",
+              "Champa",
+              "Katghora",
+              "Pendra",
+            ].map((city) => (
+
+              <div
+                key={city}
+                className="bg-white rounded-2xl p-4 text-center font-semibold border"
+              >
+                {city}
+              </div>
+
+            ))}
+
+          </div>
+
+        </div>
+
+      </section>
+ {/* CUSTOMER REVIEWS */}
+
+<section className="py-20 bg-white overflow-hidden">
+
+  <div className="max-w-7xl mx-auto px-4">
+
+    <div className="text-center mb-14">
+
+      <h2 className="text-4xl md:text-5xl font-black">
+        What Our Customers Say
+      </h2>
+
+      <p className="text-slate-600 mt-4">
+        Trusted by travelers across Chhattisgarh
       </p>
+
     </div>
+
+    <div className="relative overflow-hidden">
+
+      <div className="flex gap-6 animate-[scroll_45s_linear_infinite] w-max">
+
+        {[...reviews, ...reviews].map((review, index) => (
+
+          <div
+            key={index}
+            className="w-[320px] flex-shrink-0 bg-slate-50 border rounded-3xl p-6 shadow-sm"
+          >
+
+            <div className="flex gap-1 text-yellow-500 mb-4">
+
+              <Star size={18} fill="currentColor" />
+              <Star size={18} fill="currentColor" />
+              <Star size={18} fill="currentColor" />
+              <Star size={18} fill="currentColor" />
+              <Star size={18} fill="currentColor" />
+
+            </div>
+
+            <p className="text-slate-600 leading-7">
+              {review.review}
+            </p>
+
+            <div className="mt-5">
+
+              <h3 className="font-black">
+                {review.name}
+              </h3>
+
+              <p className="text-sm text-slate-500">
+                {review.city}
+              </p>
+
+            </div>
+
+          </div>
+
+        ))}
+
+      </div>
+
+    </div>
+
   </div>
+
 </section>
 
-      {/* CTA */}
-      <section className="bg-gray-900 text-white py-16">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-extrabold">
-            Need Taxi in Korba, Raipur or Anywhere in Chhattisgarh?
+      {/* FAQ SECTION */}
+
+      <section className="bg-slate-100 py-20">
+
+        <div className="max-w-5xl mx-auto px-4">
+
+          <div className="text-center mb-14">
+
+            <h2 className="text-4xl md:text-5xl font-black">
+              Frequently Asked Questions
+            </h2>
+
+          </div>
+
+          <div className="space-y-5">
+
+            {faqs.map((faq) => (
+
+              <div
+                key={faq.q}
+                className="bg-white rounded-2xl border p-6"
+              >
+
+                <h3 className="font-black text-lg">
+                  {faq.q}
+                </h3>
+
+                <p className="mt-3 text-slate-600 leading-7">
+                  {faq.a}
+                </p>
+
+              </div>
+
+            ))}
+
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* LOCAL SEO CONTENT */}
+
+      <section className="max-w-6xl mx-auto px-4 py-20">
+
+        <div className="bg-white rounded-3xl border p-8 md:p-12">
+
+          <h2 className="text-4xl font-black mb-8">
+            Taxi Service Across Chhattisgarh
           </h2>
-          <p className="mt-4 text-gray-300">
-            One way taxi, round trip, outstation tour, airport pickup-drop aur
-            commercial cab booking ke liye direct call ya WhatsApp karein.
+
+          <div className="space-y-6 text-slate-600 leading-8">
+
+            <p>
+              Khatu Rides Travels provides professional taxi services
+              across Chhattisgarh including Raipur, Korba, Bilaspur,
+              Raigarh, Bhilai, Durg, Ambikapur and Jagdalpur.
+            </p>
+
+            <p>
+              Whether you need a one-way taxi, airport transfer,
+              round trip booking or corporate travel solution,
+              our goal is to provide safe, comfortable and reliable
+              transportation at transparent pricing.
+            </p>
+
+            <p>
+              We serve individual travelers, families, business
+              professionals, corporate clients and tourists looking
+              for dependable transportation throughout Chhattisgarh.
+            </p>
+
+            <p>
+              Popular routes include Raipur to Korba Taxi,
+              Raipur to Bilaspur Taxi, Raipur Airport Taxi,
+              Korba to Bilaspur Taxi and Raipur to Raigarh Taxi.
+            </p>
+
+            <p>
+              Customers can easily book through phone call
+              or WhatsApp and receive quick fare details,
+              route guidance and vehicle availability.
+            </p>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* FINAL CTA */}
+
+      <section className="bg-slate-950 text-white">
+
+        <div className="max-w-6xl mx-auto px-4 py-20 text-center">
+
+          <h2 className="text-4xl md:text-6xl font-black">
+
+            Ready To Book Your Taxi?
+
+          </h2>
+
+          <p className="mt-6 text-slate-300 text-lg max-w-2xl mx-auto">
+
+            Get fare, availability and booking confirmation
+            in less than 2 minutes.
+
           </p>
 
-          <div className="mt-8 flex justify-center flex-wrap gap-4">
+          <div className="flex flex-wrap justify-center gap-4 mt-10">
+
             <a
-              href={`tel:${phone1}`}
-              className="px-7 py-3 bg-orange-600 rounded-full font-bold"
-            >
-              Call {phone1}
-            </a>
-            <a
-              href={`tel:${phone2}`}
-              className="px-7 py-3 bg-orange-600 rounded-full font-bold"
-            >
-              Call {phone2}
-            </a>
-            <a
-              href={`https://wa.me/91${phone1}?text=${encodeURIComponent(
-                whatsappMessage
-              )}`}
-              className="px-7 py-3 bg-green-600 rounded-full font-bold"
+              href="https://wa.me/919244137353"
+              target="_blank"
+              className="bg-orange-500 hover:bg-orange-600 px-8 py-4 rounded-2xl font-bold transition"
             >
               WhatsApp Now
             </a>
+
+            <a
+              href="tel:9244137353"
+              className="border border-white px-8 py-4 rounded-2xl font-bold"
+            >
+              Call 9244137353
+            </a>
+
           </div>
+
         </div>
+
       </section>
 
-      <footer className="py-8 text-center text-sm text-gray-500">
-        © 2026 Khatu Rides Travels Co. | Best Taxi Service in Chhattisgarh
-      </footer>
+      {/* FLOATING WHATSAPP */}
 
-      <div className="fixed bottom-5 right-5 flex flex-col gap-3 z-50">
-        <a
-          href={`https://wa.me/91${phone1}?text=${encodeURIComponent(
-            whatsappMessage
-          )}`}
-          className="bg-green-600 text-white px-5 py-3 rounded-full shadow-lg font-semibold"
-        >
+      <a
+        href="https://wa.me/919244137353"
+        target="_blank"
+        className="fixed bottom-5 right-5 z-50 bg-green-500 hover:bg-green-600 text-white px-5 py-4 rounded-full shadow-2xl flex items-center gap-2 font-bold"
+      >
+        <MessageCircle size={22} />
+        <span className="hidden md:block">
           WhatsApp
-        </a>
-        <a
-          href={`tel:${phone1}`}
-          className="bg-orange-600 text-white px-5 py-3 rounded-full shadow-lg font-semibold"
-        >
-          Call
-        </a>
-      </div>
+        </span>
+      </a>
+
     </main>
+    </>
   );
 }

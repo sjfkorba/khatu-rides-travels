@@ -5,57 +5,130 @@ const siteUrl = "https://khaturidescg.in";
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
 
-  const routes = [
-    // Home
-    "",
+  return [
+    {
+      url: siteUrl,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 1,
+    },
+
+    // Main Pages
+    {
+      url: `${siteUrl}/about-us`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl}/contact-us`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl}/blog`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+
+    // Legal Pages
+    {
+      url: `${siteUrl}/privacy-policy`,
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.5,
+    },
+    {
+      url: `${siteUrl}/terms-and-conditions`,
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.5,
+    },
+    {
+      url: `${siteUrl}/refund-policy`,
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.5,
+    },
+    {
+      url: `${siteUrl}/payment-terms`,
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.5,
+    },
 
     // Service Pages
-    "/services/taxi-service-in-raipur",
-    "/services/taxi-service-in-korba",
-    "/services/taxi-service-in-bilaspur",
+    {
+      url: `${siteUrl}/services/taxi-service-in-raipur`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${siteUrl}/services/taxi-service-in-korba`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${siteUrl}/services/taxi-service-in-bilaspur`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
 
     // Route Pages
-    "/routes/raipur-to-korba-taxi",
-    "/routes/korba-to-raipur-taxi",
+    {
+      url: `${siteUrl}/routes/raipur-to-korba-taxi`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl}/routes/korba-to-raipur-taxi`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl}/routes/raipur-to-bilaspur-taxi`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl}/routes/bilaspur-to-raipur-taxi`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl}/routes/raipur-to-raigarh-taxi`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl}/routes/raigarh-to-raipur-taxi`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl}/routes/raipur-airport-taxi`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
 
-    "/routes/raipur-to-bilaspur-taxi",
-    "/routes/bilaspur-to-raipur-taxi",
-
-    "/routes/raipur-to-raigarh-taxi",
-    "/routes/raigarh-to-raipur-taxi",
-
-    "/routes/raipur-to-bhilai-taxi",
-    "/routes/bhilai-to-raipur-taxi",
-
-    "/routes/raipur-to-durg-taxi",
-    "/routes/durg-to-raipur-taxi",
-
-    "/routes/raipur-to-ambikapur-taxi",
-    "/routes/ambikapur-to-raipur-taxi",
-
-    "/routes/raipur-to-jagdalpur-taxi",
-    "/routes/jagdalpur-to-raipur-taxi",
-
-    "/routes/raipur-airport-taxi",
-
-    "/routes/raipur-airport-to-korba-taxi",
-    "/routes/raipur-airport-to-bilaspur-taxi",
-    "/routes/raipur-airport-to-raigarh-taxi",
-    "/routes/raipur-airport-to-ambikapur-taxi",
-
-    "/routes/korba-to-bilaspur-taxi",
-    "/routes/bilaspur-to-korba-taxi",
+    // Blog Posts
+    {
+      url: `${siteUrl}/blog/raipur-to-korba-taxi-fare-guide`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
   ];
-
-  return routes.map((route) => ({
-    url: `${siteUrl}${route}`,
-    lastModified: now,
-    changeFrequency: "weekly" as const,
-    priority:
-      route === ""
-        ? 1.0
-        : route.startsWith("/services/")
-        ? 0.9
-        : 0.8,
-  }));
 }
