@@ -1,8 +1,9 @@
+import Script from "next/script";
 import type { Metadata } from "next";
 import "./globals.css";
 import Footer from "@/components/Footer";
 
-const siteUrl = "https://khatu-rides-travels.vercel.app";
+const siteUrl = "https://khaturidescg.in";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -118,15 +119,36 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="hi">
-      <body>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(businessSchema) }}
-        />
-        {children}
-        <Footer />
-      </body>
-    </html>
-  );
+  <html lang="hi">
+    <body>
+
+      <Script
+        src="https://www.googletagmanager.com/gtag/js?id=G-FXZZCTGQ4R"
+        strategy="afterInteractive"
+      />
+
+      <Script id="google-tags" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+
+          gtag('config', 'G-FXZZCTGQ4R');
+          gtag('config', 'AW-18196199181');
+        `}
+      </Script>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(businessSchema),
+        }}
+      />
+
+      {children}
+      <Footer />
+
+    </body>
+  </html>
+);
 }
