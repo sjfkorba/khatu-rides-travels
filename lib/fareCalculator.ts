@@ -40,7 +40,7 @@ export function calculateFare({
       ? Math.max(baseRate - 2, 0)
       : baseRate;
 
-  const billableDistance = safeDistance + 25;
+  const billableDistance = safeDistance + 0;
 
   let fare = 0;
 
@@ -62,7 +62,7 @@ export function calculateFare({
       break;
 
     default:
-      fare = billableDistance * effectiveRate * 1.7;
+      fare = billableDistance * effectiveRate * 1.6;
       break;
   }
 

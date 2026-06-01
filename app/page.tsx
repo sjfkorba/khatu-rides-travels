@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import TopBar from "@/components/TopBar";
 import { Autocomplete, useJsApiLoader } from "@react-google-maps/api";
 import {
@@ -20,9 +20,12 @@ import {
   CheckCircle2,
   Building2,
   Plane,
+  Gift,
+  X,
 } from "lucide-react";
 
 const libraries: "places"[] = ["places"];
+const GOOGLE_REVIEW_LINK = "https://g.page/r/CbD5nSIGmvz1EBM/review";
 
 const vehicles = [
   {
@@ -39,7 +42,7 @@ const vehicles = [
     name: "Ertiga",
     type: "7 Seater",
     value: "ertiga" as VehicleType,
-    price: "₹14/km onwards",
+    price: "₹13/km onwards",
     seats: "6+1",
     luggage: "4 Bags",
     image:
@@ -49,32 +52,13 @@ const vehicles = [
     name: "Innova",
     type: "MPV",
     value: "innova" as VehicleType,
-    price: "₹19/km onwards",
+    price: "₹17/km onwards",
     seats: "7+1",
     luggage: "5 Bags",
     image:
       "https://stimg.cardekho.com/images/expert-review/select-model/20250728_160805/930x620/5_1200x67520250728_160805.jpg",
   },
-  {
-    name: "Innova Crysta",
-    type: "Premium SUV",
-    value: "crysta" as VehicleType,
-    price: "₹22/km onwards",
-    seats: "7+1",
-    luggage: "5 Bags",
-    image:
-      "https://stimg.cardekho.com/images/expert-review/select-model/20250728_160805/930x620/5_1200x67520250728_160805.jpg",
-  },
-  {
-    name: "Scorpio",
-    type: "SUV",
-    value: "scorpio" as VehicleType,
-    price: "₹20/km onwards",
-    seats: "6+1",
-    luggage: "4 Bags",
-    image:
-      "https://imgd.aeplcdn.com/664x374/n/cw/ec/124839/scorpio-classic-exterior-right-front-three-quarter.jpeg?isig=0&q=80",
-  },
+  
 ];
 
 const popularRoutes = [
@@ -182,10 +166,16 @@ export default function HomePage() {
 
   const [loadingFare, setLoadingFare] = useState(false);
   const [hasCalculated, setHasCalculated] = useState(false);
+  const [isFormLocked, setIsFormLocked] = useState(false);
+
   const [distance, setDistance] = useState(0);
   const [fare, setFare] = useState(0);
   const [discount, setDiscount] = useState(0);
   const [finalFare, setFinalFare] = useState(0);
+
+  const [showReviewPopup, setShowReviewPopup] = useState(false);
+  const popupRef = useRef<HTMLDivElement | null>(null);
+  const triggerButtonRef = useRef<HTMLAnchorElement | null>(null);
 
   const selectedVehicle = useMemo(() => {
     return vehicles.find((v) => v.value === vehicleType)?.name || vehicleType;
@@ -203,6 +193,32 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
 
     return `https://wa.me/919244137353?text=${encodeURIComponent(message)}`;
   }, [pickup, drop, bookingType, selectedVehicle, pickupDate, pickupTime, finalFare]);
+
+  useEffect(() => {
+    if (!showReviewPopup) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const focusable = popupRef.current?.querySelector<
+      HTMLButtonElement | HTMLAnchorElement
+    >("button, a[href]");
+    focusable?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setShowReviewPopup(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+      triggerButtonRef.current?.focus();
+    };
+  }, [showReviewPopup]);
 
   const onPickupLoad = (autocomplete: google.maps.places.Autocomplete) => {
     setPickupAutocomplete(autocomplete);
@@ -226,9 +242,24 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
     setDrop(address);
   };
 
+  const applyFareResult = (tripDistance: number) => {
+    const result = calculateFare({
+      distance: tripDistance,
+      vehicleType,
+      bookingType,
+    });
+
+    setDistance(result.distance);
+    setFare(result.fare);
+    setDiscount(result.discount);
+    setFinalFare(result.finalFare);
+    setHasCalculated(true);
+    setIsFormLocked(true);
+  };
+
   const handleFareCalculation = async () => {
-    if (!pickup || !drop) {
-      alert("Please select pickup and drop location.");
+    if (!pickup || !drop || !pickupDate || !pickupTime) {
+      alert("Please fill pickup, drop, date and time.");
       return;
     }
 
@@ -248,37 +279,44 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
 
       const data = await response.json();
       const tripDistance =
-        typeof data?.distanceKm === "number" ? data.distanceKm : 0;
+        typeof data?.distanceKm === "number" && data.distanceKm > 0
+          ? data.distanceKm
+          : estimateDistance(pickup, drop);
 
-      const result = calculateFare({
-        distance: tripDistance,
-        vehicleType,
-        bookingType,
-      });
-
-      setDistance(result.distance);
-      setFare(result.fare);
-      setDiscount(result.discount);
-      setFinalFare(result.finalFare);
-      setHasCalculated(true);
+      applyFareResult(tripDistance);
     } catch (error) {
       console.error(error);
-
       const tripDistance = estimateDistance(pickup, drop);
-      const result = calculateFare({
-        distance: tripDistance,
-        vehicleType,
-        bookingType,
-      });
-
-      setDistance(result.distance);
-      setFare(result.fare);
-      setDiscount(result.discount);
-      setFinalFare(result.finalFare);
-      setHasCalculated(true);
+      applyFareResult(tripDistance);
     } finally {
       setLoadingFare(false);
     }
+  };
+
+  const handleRecalculate = () => {
+    setIsFormLocked(false);
+    setHasCalculated(false);
+    setDistance(0);
+    setFare(0);
+    setDiscount(0);
+    setFinalFare(0);
+  };
+
+  const openReviewPopup = (
+    e: React.MouseEvent<HTMLAnchorElement, MouseEvent>
+  ) => {
+    e.preventDefault();
+    triggerButtonRef.current = e.currentTarget;
+    setShowReviewPopup(true);
+  };
+
+  const closeReviewPopup = () => {
+    setShowReviewPopup(false);
+  };
+
+  const continueToWhatsApp = () => {
+    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+    setShowReviewPopup(false);
   };
 
   return (
@@ -325,8 +363,7 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
                 <div className="mt-8 flex flex-wrap gap-4">
                   <a
                     href={whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    onClick={openReviewPopup}
                     className="rounded-2xl bg-orange-500 px-8 py-4 font-bold transition hover:bg-orange-600"
                   >
                     Get Fare on WhatsApp
@@ -352,110 +389,123 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
                 </div>
 
                 <div className="space-y-4">
-                  {loadError ? (
-                    <input
-                      value={pickup}
-                      onChange={(e) => setPickup(e.target.value)}
-                      placeholder="Pickup Location"
-                      className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500"
-                    />
-                  ) : isLoaded ? (
-                    <Autocomplete
-                      onLoad={onPickupLoad}
-                      onPlaceChanged={onPickupPlaceChanged}
-                      options={{
-                        fields: ["formatted_address", "name", "geometry"],
-                        componentRestrictions: { country: "in" },
-                      }}
-                    >
+                  <fieldset
+                    disabled={isFormLocked || loadingFare}
+                    className={`space-y-4 ${isFormLocked ? "opacity-75" : ""}`}
+                  >
+                    {loadError ? (
                       <input
                         value={pickup}
                         onChange={(e) => setPickup(e.target.value)}
-                        placeholder="Pickup Location (Raipur, Bilaspur, Korba...)"
-                        className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500"
+                        placeholder="Pickup Location"
+                        className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
                       />
-                    </Autocomplete>
-                  ) : (
-                    <input
-                      value={pickup}
-                      onChange={(e) => setPickup(e.target.value)}
-                      placeholder="Loading pickup suggestions..."
-                      className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500"
-                    />
-                  )}
+                    ) : isLoaded ? (
+                      <Autocomplete
+                        onLoad={onPickupLoad}
+                        onPlaceChanged={onPickupPlaceChanged}
+                        options={{
+                          fields: ["formatted_address", "name", "geometry"],
+                          componentRestrictions: { country: "in" },
+                        }}
+                      >
+                        <input
+                          value={pickup}
+                          onChange={(e) => setPickup(e.target.value)}
+                          placeholder="Pickup Location (Raipur, Bilaspur, Korba...)"
+                          className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                        />
+                      </Autocomplete>
+                    ) : (
+                      <input
+                        value={pickup}
+                        onChange={(e) => setPickup(e.target.value)}
+                        placeholder="Loading pickup suggestions..."
+                        className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                      />
+                    )}
 
-                  {loadError ? (
-                    <input
-                      value={drop}
-                      onChange={(e) => setDrop(e.target.value)}
-                      placeholder="Drop Location"
-                      className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500"
-                    />
-                  ) : isLoaded ? (
-                    <Autocomplete
-                      onLoad={onDropLoad}
-                      onPlaceChanged={onDropPlaceChanged}
-                      options={{
-                        fields: ["formatted_address", "name", "geometry"],
-                        componentRestrictions: { country: "in" },
-                      }}
-                    >
+                    {loadError ? (
                       <input
                         value={drop}
                         onChange={(e) => setDrop(e.target.value)}
                         placeholder="Drop Location"
-                        className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500"
+                        className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
                       />
-                    </Autocomplete>
-                  ) : (
+                    ) : isLoaded ? (
+                      <Autocomplete
+                        onLoad={onDropLoad}
+                        onPlaceChanged={onDropPlaceChanged}
+                        options={{
+                          fields: ["formatted_address", "name", "geometry"],
+                          componentRestrictions: { country: "in" },
+                        }}
+                      >
+                        <input
+                          value={drop}
+                          onChange={(e) => setDrop(e.target.value)}
+                          placeholder="Drop Location"
+                          className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                        />
+                      </Autocomplete>
+                    ) : (
+                      <input
+                        value={drop}
+                        onChange={(e) => setDrop(e.target.value)}
+                        placeholder="Loading drop suggestions..."
+                        className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                      />
+                    )}
+
+                    <select
+                      value={bookingType}
+                      onChange={(e) =>
+                        setBookingType(e.target.value as BookingType)
+                      }
+                      className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                    >
+                      <option value="oneway">One Way Trip</option>
+                      <option value="roundtrip">Round Trip</option>
+                      <option value="local">Local Ride</option>
+                      <option value="outstation">Outstation Trip</option>
+                    </select>
+
+                    <select
+                      value={vehicleType}
+                      onChange={(e) =>
+                        setVehicleType(e.target.value as VehicleType)
+                      }
+                      className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                    >
+                      <option value="sedan">Sedan / Dzire</option>
+                      <option value="ertiga">Ertiga</option>
+                      <option value="innova">Innova</option>
+                      <option value="crysta">Innova Crysta</option>
+                      <option value="scorpio">Scorpio</option>
+                    </select>
+
                     <input
-                      value={drop}
-                      onChange={(e) => setDrop(e.target.value)}
-                      placeholder="Loading drop suggestions..."
-                      className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500"
+                      type="date"
+                      value={pickupDate}
+                      onChange={(e) => setPickupDate(e.target.value)}
+                      className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
                     />
+
+                    <input
+                      type="time"
+                      value={pickupTime}
+                      onChange={(e) => setPickupTime(e.target.value)}
+                      className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                    />
+                  </fieldset>
+
+                  {isFormLocked && (
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+                      Fare calculated. Trip details are locked for security.
+                      Click <span className="font-bold">Recalculate Fare</span>{" "}
+                      to edit details.
+                    </div>
                   )}
-
-                  <select
-                    value={bookingType}
-                    onChange={(e) =>
-                      setBookingType(e.target.value as BookingType)
-                    }
-                    className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500"
-                  >
-                    <option value="oneway">One Way Trip</option>
-                    <option value="roundtrip">Round Trip</option>
-                    <option value="local">Local Ride</option>
-                    <option value="outstation">Outstation Trip</option>
-                  </select>
-
-                  <select
-                    value={vehicleType}
-                    onChange={(e) =>
-                      setVehicleType(e.target.value as VehicleType)
-                    }
-                    className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500"
-                  >
-                    <option value="sedan">Sedan / Dzire</option>
-                    <option value="ertiga">Ertiga</option>
-                    <option value="innova">Innova</option>
-                    <option value="crysta">Innova Crysta</option>
-                    <option value="scorpio">Scorpio</option>
-                  </select>
-
-                  <input
-                    type="date"
-                    value={pickupDate}
-                    onChange={(e) => setPickupDate(e.target.value)}
-                    className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500"
-                  />
-
-                  <input
-                    type="time"
-                    value={pickupTime}
-                    onChange={(e) => setPickupTime(e.target.value)}
-                    className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500"
-                  />
 
                   {!hasCalculated ? (
                     <button
@@ -467,7 +517,7 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
                     </button>
                   ) : (
                     <button
-                      onClick={() => window.location.reload()}
+                      onClick={handleRecalculate}
                       className="w-full rounded-xl bg-slate-900 py-4 font-bold text-white hover:bg-slate-800"
                     >
                       Recalculate Fare
@@ -509,8 +559,7 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
 
                   <a
                     href={whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    onClick={openReviewPopup}
                     className="block rounded-xl bg-orange-500 py-4 text-center font-bold text-white hover:bg-orange-600"
                   >
                     Book On WhatsApp
@@ -668,9 +717,8 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
                     </div>
 
                     <a
-                      href="https://wa.me/919244137353"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      href={whatsappUrl}
+                      onClick={openReviewPopup}
                       className="rounded-xl bg-orange-500 px-5 py-3 font-bold text-white"
                     >
                       Book
@@ -749,9 +797,8 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
               </a>
 
               <a
-                href="https://wa.me/919244137353"
-                target="_blank"
-                rel="noopener noreferrer"
+                href={whatsappUrl}
+                onClick={openReviewPopup}
                 className="rounded-2xl border border-white px-8 py-4 font-bold"
               >
                 WhatsApp Us
@@ -907,9 +954,8 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
 
             <div className="mt-10 flex flex-wrap justify-center gap-4">
               <a
-                href="https://wa.me/919244137353"
-                target="_blank"
-                rel="noopener noreferrer"
+                href={whatsappUrl}
+                onClick={openReviewPopup}
                 className="rounded-2xl bg-orange-500 px-8 py-4 font-bold transition hover:bg-orange-600"
               >
                 WhatsApp Now
@@ -926,14 +972,96 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
         </section>
 
         <a
-          href="https://wa.me/919244137353"
-          target="_blank"
-          rel="noopener noreferrer"
+          href={whatsappUrl}
+          onClick={openReviewPopup}
           className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-green-500 px-5 py-4 font-bold text-white shadow-2xl hover:bg-green-600"
         >
           <MessageCircle size={22} />
           <span className="hidden md:block">WhatsApp</span>
         </a>
+
+        {showReviewPopup && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-4"
+            onClick={closeReviewPopup}
+          >
+            <div
+              ref={popupRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="review-popup-title"
+              aria-describedby="review-popup-desc"
+              className="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-orange-600">
+                    Special Offer
+                  </p>
+                  <h3
+                    id="review-popup-title"
+                    className="mt-1 text-xl font-black text-slate-900"
+                  >
+                    Get booking bonus
+                  </h3>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={closeReviewPopup}
+                  aria-label="Close popup"
+                  className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-orange-500 text-white">
+                    <Gift size={18} />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-extrabold text-slate-900">
+                      Review do, next trip par cash discount pao
+                    </p>
+                    <p
+                      id="review-popup-desc"
+                      className="mt-1 text-xs leading-5 text-slate-600"
+                    >
+                      Screenshot WhatsApp karein aur offer claim karein.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-2">
+                <a
+                  href={GOOGLE_REVIEW_LINK}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex w-full items-center justify-center rounded-xl bg-orange-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
+                >
+                  Give Google Review
+                </a>
+
+                <button
+                  type="button"
+                  onClick={continueToWhatsApp}
+                  className="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-900 transition hover:bg-slate-50"
+                >
+                  Continue to WhatsApp
+                </button>
+              </div>
+
+              <p className="mt-3 text-center text-[11px] leading-5 text-slate-500">
+                Review ke baad screenshot WhatsApp bhejkar bonus claim karein.
+              </p>
+            </div>
+          </div>
+        )}
 
         <style jsx global>{`
           @keyframes scroll {
