@@ -1,3 +1,4 @@
+
 export const VEHICLES = {
   sedan: {
     ratePerKm: 12,
@@ -46,6 +47,8 @@ type CalculateFareParams = {
 };
 
 type CalculateFareResult = {
+  actualDistance: number;
+  extraDistance: number;
   distance: number;
   fare: number;
   discount: number;
@@ -62,11 +65,25 @@ export function calculateFare({
   const vehicle =
     VEHICLES[vehicleType];
 
-  const km =
+  const actualKm =
     Number.isFinite(distance) &&
     distance > 0
       ? distance
       : 0;
+
+  const extraKm =
+    bookingType === "local"
+      ? 0
+      : Math.min(
+          Math.max(
+            Math.round(actualKm * 0.05),
+            5
+          ),
+          25
+        );
+
+  const km =
+    actualKm + extraKm;
 
   let fare = 0;
 
@@ -75,7 +92,7 @@ export function calculateFare({
       fare =
         km *
         vehicle.ratePerKm *
-        1.7;
+        1.55;
       break;
 
     case "roundtrip":
@@ -89,7 +106,7 @@ export function calculateFare({
           km *
           vehicle.ratePerKm *
           2 *
-          1.5;
+          1.15;
       }
       break;
 
@@ -111,16 +128,23 @@ export function calculateFare({
         vehicle.ratePerKm;
   }
 
-  // UI compatibility ke liye
   const discount = 0;
 
   const finalFare =
     Math.round(fare);
 
   return {
-    distance: Math.round(km),
+    actualDistance:
+      Math.round(actualKm),
 
-    fare: Math.round(fare),
+    extraDistance:
+      Math.round(extraKm),
+
+    distance:
+      Math.round(km),
+
+    fare:
+      Math.round(fare),
 
     discount,
 
