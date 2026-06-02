@@ -1,12 +1,37 @@
-export const VEHICLE_RATES = {
-  sedan: 12,
-  ertiga: 14,
-  innova: 17,
-  crysta: 18,
-  scorpio: 16,
+export const VEHICLES = {
+  sedan: {
+    ratePerKm: 12,
+    nightHalt: 500,
+    localPackage: 2800,
+  },
+
+  ertiga: {
+    ratePerKm: 14,
+    nightHalt: 600,
+    localPackage: 3500,
+  },
+
+  innova: {
+    ratePerKm: 17,
+    nightHalt: 800,
+    localPackage: 4500,
+  },
+
+  crysta: {
+    ratePerKm: 18,
+    nightHalt: 900,
+    localPackage: 5000,
+  },
+
+  scorpio: {
+    ratePerKm: 16,
+    nightHalt: 700,
+    localPackage: 4000,
+  },
 } as const;
 
-export type VehicleType = keyof typeof VEHICLE_RATES;
+export type VehicleType =
+  keyof typeof VEHICLES;
 
 export type BookingType =
   | "oneway"
@@ -25,6 +50,8 @@ type CalculateFareResult = {
   fare: number;
   discount: number;
   finalFare: number;
+  nightHalt: number;
+  remarks: string[];
 };
 
 export function calculateFare({
@@ -32,47 +59,82 @@ export function calculateFare({
   vehicleType,
   bookingType,
 }: CalculateFareParams): CalculateFareResult {
-  const safeDistance = Number.isFinite(distance) && distance > 0 ? distance : 0;
-  const baseRate = VEHICLE_RATES[vehicleType];
+  const vehicle =
+    VEHICLES[vehicleType];
 
-  const effectiveRate =
-    bookingType === "roundtrip" || bookingType === "outstation"
-      ? Math.max(baseRate - 2, 0)
-      : baseRate;
-
-  const billableDistance = safeDistance + 0;
+  const km =
+    Number.isFinite(distance) &&
+    distance > 0
+      ? distance
+      : 0;
 
   let fare = 0;
 
   switch (bookingType) {
     case "oneway":
-      fare = billableDistance * effectiveRate * 1.7;
+      fare =
+        km *
+        vehicle.ratePerKm *
+        1.7;
       break;
 
     case "roundtrip":
-      fare = billableDistance * 2 * effectiveRate * 1.5;
+      if (km > 180) {
+        fare =
+          km *
+          vehicle.ratePerKm *
+          2;
+      } else {
+        fare =
+          km *
+          vehicle.ratePerKm *
+          2 *
+          1.5;
+      }
       break;
 
     case "local":
-      fare = Math.max(billableDistance * effectiveRate, 1800);
+      fare =
+        vehicle.localPackage;
       break;
 
     case "outstation":
-      fare = billableDistance * effectiveRate * 2 + 300;
+      fare =
+        km *
+        vehicle.ratePerKm *
+        2;
       break;
 
     default:
-      fare = billableDistance * effectiveRate * 1.6;
-      break;
+      fare =
+        km *
+        vehicle.ratePerKm;
   }
 
-  const discount = fare * 0.15;
-  const finalFare = fare - discount;
+  // UI compatibility ke liye
+  const discount = 0;
+
+  const finalFare =
+    Math.round(fare);
 
   return {
-    distance: Math.round(billableDistance),
+    distance: Math.round(km),
+
     fare: Math.round(fare),
-    discount: Math.round(discount),
-    finalFare: Math.round(finalFare),
+
+    discount,
+
+    finalFare,
+
+    nightHalt:
+      vehicle.nightHalt,
+
+    remarks: [
+      "Toll Tax Extra",
+      "Parking Charges Extra",
+      `Night Halt ₹${vehicle.nightHalt}/Night (if applicable)`,
+      "Driver fooding & allowance extra for round trips",
+      "Final discount will be confirmed during booking",
+    ],
   };
 }

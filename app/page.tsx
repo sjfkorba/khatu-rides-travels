@@ -544,8 +544,8 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
                           Base Fare: <strong>₹{fare}</strong>
                         </p>
                         <p>
-                          Discount:{" "}
-                          <strong className="text-red-600">-₹{discount}</strong>
+                          Ramarks: {""}
+                          <strong className="text-red-600">Night Haulting and Toll will be applies as per actual. For final best amount, share your travel plan on whatsapp.</strong>
                         </p>
 
                         <hr className="my-3" />
