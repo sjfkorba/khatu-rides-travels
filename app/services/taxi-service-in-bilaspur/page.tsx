@@ -8,6 +8,9 @@ import {
   Phone,
   Building2,
 } from "lucide-react";
+import TrackedWhatsAppButton from "@/components/TrackedWhatsAppButton";
+import TrackedCallButton from "@/components/TrackedCallButton";
+
 
 export const metadata = {
   title:
@@ -81,20 +84,19 @@ export default function TaxiServiceInBilaspurPage() {
           </p>
 
           <div className="mt-8 flex flex-wrap gap-4">
-            <a
-              href="https://wa.me/919244137353"
-              target="_blank"
-              className="rounded-full bg-orange-600 px-8 py-4 font-black text-white"
-            >
-              Book on WhatsApp
-            </a>
+           <TrackedWhatsAppButton
+  href="https://wa.me/919244137353"
+  className="rounded-full bg-orange-600 px-8 py-4 font-black text-white"
+>
+  Book on WhatsApp
+</TrackedWhatsAppButton>
 
-            <a
-              href="tel:9244137353"
-              className="rounded-full border border-white/30 px-8 py-4 font-black text-white"
-            >
-              Call Now
-            </a>
+<TrackedCallButton
+  href="tel:9244137353"
+  className="rounded-full border border-white/30 px-8 py-4 font-black text-white"
+>
+  Call Now
+</TrackedCallButton>
           </div>
         </div>
       </section>
@@ -323,19 +325,19 @@ export default function TaxiServiceInBilaspurPage() {
           </p>
 
           <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <a
-              href="https://wa.me/919244137353"
-              className="rounded-full bg-white px-8 py-4 font-black text-orange-600"
-            >
-              WhatsApp Now
-            </a>
+           <TrackedWhatsAppButton
+  href="https://wa.me/919244137353"
+  className="rounded-full bg-white px-8 py-4 font-black text-orange-600"
+>
+  WhatsApp Now
+</TrackedWhatsAppButton>
 
-            <a
-              href="tel:9244137353"
-              className="rounded-full border border-white px-8 py-4 font-black"
-            >
-              Call 9244137353
-            </a>
+<TrackedCallButton
+  href="tel:9244137353"
+  className="rounded-full border border-white px-8 py-4 font-black"
+>
+  Call 9244137353
+</TrackedCallButton>
           </div>
         </div>
       </section>

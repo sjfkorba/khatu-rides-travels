@@ -22,7 +22,15 @@ import {
   Plane,
   Gift,
   X,
+  MapPin,
+  CarFront,
 } from "lucide-react";
+
+declare global {
+  interface Window {
+    gtag?: (...args: any[]) => void;
+  }
+}
 
 const libraries: "places"[] = ["places"];
 const GOOGLE_REVIEW_LINK = "https://g.page/r/CbD5nSIGmvz1EBM/review";
@@ -58,7 +66,26 @@ const vehicles = [
     image:
       "https://stimg.cardekho.com/images/expert-review/select-model/20250728_160805/930x620/5_1200x67520250728_160805.jpg",
   },
-  
+  {
+    name: "Innova Crysta",
+    type: "Premium MPV",
+    value: "crysta" as VehicleType,
+    price: "₹18/km onwards",
+    seats: "7+1",
+    luggage: "5 Bags",
+    image:
+      "https://imgd.aeplcdn.com/664x374/n/cw/ec/51435/innova-crysta-exterior-right-front-three-quarter-2.jpeg?q=75",
+  },
+  {
+    name: "Scorpio",
+    type: "SUV",
+    value: "scorpio" as VehicleType,
+    price: "₹16/km onwards",
+    seats: "6+1",
+    luggage: "4 Bags",
+    image:
+      "https://stimg.cardekho.com/images/carexteriorimages/930x620/Mahindra/Scorpio-Classic/10764/1690185761481/front-left-side-47.jpg",
+  },
 ];
 
 const popularRoutes = [
@@ -146,6 +173,16 @@ function estimateDistance(pickup: string, drop: string) {
   return 120;
 }
 
+function getApproximateDistance(actualDistance: number) {
+  if (!Number.isFinite(actualDistance) || actualDistance <= 0) return 0;
+
+  if (actualDistance <= 200) {
+    return Math.round(actualDistance + 20);
+  }
+
+  return Math.round(actualDistance + 40);
+}
+
 export default function HomePage() {
   const [pickupAutocomplete, setPickupAutocomplete] =
     useState<google.maps.places.Autocomplete | null>(null);
@@ -177,15 +214,35 @@ export default function HomePage() {
   const popupRef = useRef<HTMLDivElement | null>(null);
   const triggerButtonRef = useRef<HTMLAnchorElement | null>(null);
 
+  const estimatedRouteDistance = useMemo(() => {
+    if (!pickup || !drop) return 0;
+    return estimateDistance(pickup, drop);
+  }, [pickup, drop]);
+
+  const shouldHideLocalRide = estimatedRouteDistance > 100;
+
+  useEffect(() => {
+    if (shouldHideLocalRide && bookingType === "local") {
+      setBookingType("oneway");
+    }
+  }, [shouldHideLocalRide, bookingType]);
+
   const selectedVehicle = useMemo(() => {
     return vehicles.find((v) => v.value === vehicleType)?.name || vehicleType;
   }, [vehicleType]);
 
   const whatsappUrl = useMemo(() => {
+    const tripLabelMap: Record<BookingType, string> = {
+      oneway: "One Way Trip",
+      roundtrip: "Round Trip",
+      local: "Local Ride",
+      outstation: "Outstation Trip",
+    };
+
     const message = `Hello Khatu Rides Travels,
 Pickup: ${pickup || "-"}
 Drop: ${drop || "-"}
-Trip Type: ${bookingType}
+Trip Type: ${tripLabelMap[bookingType]}
 Vehicle: ${selectedVehicle}
 Pickup Date: ${pickupDate || "-"}
 Pickup Time: ${pickupTime || "-"}
@@ -242,12 +299,23 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
     setDrop(address);
   };
 
-  const applyFareResult = (tripDistance: number) => {
+  const applyFareResult = (actualTripDistance: number) => {
+    const totalApproxDistance = getApproximateDistance(actualTripDistance);
+
+    const safeBookingType =
+      actualTripDistance > 100 && bookingType === "local"
+        ? "oneway"
+        : bookingType;
+
     const result = calculateFare({
-      distance: tripDistance,
+      distance: totalApproxDistance,
       vehicleType,
-      bookingType,
+      bookingType: safeBookingType,
     });
+
+    if (safeBookingType !== bookingType) {
+      setBookingType(safeBookingType);
+    }
 
     setDistance(result.distance);
     setFare(result.fare);
@@ -315,8 +383,26 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
   };
 
   const continueToWhatsApp = () => {
+    if (typeof window !== "undefined" && window.gtag) {
+      window.gtag("event", "conversion", {
+        send_to: "AW-18196199181/1OB8CJ0zTbgcEI3uz-RD",
+        value: 1.0,
+        currency: "INR",
+      });
+    }
+
     window.open(whatsappUrl, "_blank", "noopener,noreferrer");
     setShowReviewPopup(false);
+  };
+
+  const trackCallConversion = () => {
+    if (typeof window !== "undefined" && window.gtag) {
+      window.gtag("event", "conversion", {
+        send_to: "AW-18196199181/1OB8CJ0zTbgcEI3uz-RD",
+        value: 1.0,
+        currency: "INR",
+      });
+    }
   };
 
   return (
@@ -326,244 +412,295 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
       <main className="min-h-screen bg-slate-50">
         <section className="relative overflow-hidden bg-slate-950 text-white">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.25),transparent_35%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.82),rgba(15,23,42,0.96))]" />
 
-          <div className="relative mx-auto max-w-7xl px-4 py-14 md:py-24">
-            <div className="grid items-center gap-10 lg:grid-cols-2">
-              <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-4 py-2 text-sm font-semibold text-orange-300">
+          <div className="relative mx-auto max-w-7xl px-4 py-6 md:py-16 lg:py-20">
+            <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+              <div className="order-2 lg:order-1">
+                <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-orange-300 md:text-sm">
                   ⭐ Trusted Taxi Service in Chhattisgarh
                 </div>
 
-                <h1 className="mt-6 text-4xl font-black leading-tight md:text-6xl">
+                <h1 className="mt-4 max-w-3xl text-3xl font-black leading-tight sm:text-4xl md:mt-6 md:text-5xl lg:text-6xl">
                   Book Reliable Taxi Service Across
                   <span className="text-orange-500"> Chhattisgarh</span>
                 </h1>
 
-                <p className="mt-6 text-lg leading-8 text-slate-300">
-                  Airport Transfer • One Way Taxi • Round Trip
-                  <br />
-                  Raipur • Korba • Bilaspur • Raigarh
+                <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300 md:mt-6 md:text-lg md:leading-8">
+                  Airport Transfer, One Way Taxi, Round Trip and Outstation
+                  rides with transparent fare and quick WhatsApp booking support.
                 </p>
 
-                <div className="mt-8 grid grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                <div className="mt-5 grid grid-cols-2 gap-3 md:mt-8">
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm md:text-base">
                     ✓ Transparent Fare
                   </div>
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm md:text-base">
                     ✓ Verified Drivers
                   </div>
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm md:text-base">
                     ✓ Clean Vehicles
                   </div>
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm md:text-base">
                     ✓ 24×7 Support
                   </div>
                 </div>
 
-                <div className="mt-8 flex flex-wrap gap-4">
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap md:mt-8">
                   <a
                     href={whatsappUrl}
                     onClick={openReviewPopup}
-                    className="rounded-2xl bg-orange-500 px-8 py-4 font-bold transition hover:bg-orange-600"
+                    className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-orange-500 px-6 py-4 text-center font-bold text-white transition hover:bg-orange-600"
                   >
                     Get Fare on WhatsApp
                   </a>
 
                   <a
                     href="tel:9244137353"
-                    className="rounded-2xl border border-white px-8 py-4 font-bold"
+                    onClick={trackCallConversion}
+                    className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border border-white px-6 py-4 text-center font-bold text-white"
                   >
                     Call Now
                   </a>
                 </div>
               </div>
 
-              <div className="rounded-3xl bg-white p-6 shadow-2xl md:p-8">
-                <div className="mb-5">
-                  <h2 className="text-2xl font-black text-slate-900">
-                    Get Instant Fare Estimate
-                  </h2>
-                  <p className="mt-2 text-slate-600">
-                    Enter trip details and calculate your taxi fare.
-                  </p>
-                </div>
+              <div className="order-1 lg:order-2">
+                <div className="rounded-[28px] bg-white p-5 shadow-2xl ring-1 ring-black/5 md:p-7">
+                  <div className="mb-5">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-orange-700">
+                      <CarFront size={14} />
+                      Fast enquiry form
+                    </div>
 
-                <div className="space-y-4">
-                  <fieldset
-                    disabled={isFormLocked || loadingFare}
-                    className={`space-y-4 ${isFormLocked ? "opacity-75" : ""}`}
-                  >
-                    {loadError ? (
-                      <input
-                        value={pickup}
-                        onChange={(e) => setPickup(e.target.value)}
-                        placeholder="Pickup Location"
-                        className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                      />
-                    ) : isLoaded ? (
-                      <Autocomplete
-                        onLoad={onPickupLoad}
-                        onPlaceChanged={onPickupPlaceChanged}
-                        options={{
-                          fields: ["formatted_address", "name", "geometry"],
-                          componentRestrictions: { country: "in" },
-                        }}
-                      >
+                    <h2 className="mt-3 text-2xl font-black text-slate-900 md:text-3xl">
+                      Get Instant Fare Estimate
+                    </h2>
+
+                    <p className="mt-2 text-sm leading-6 text-slate-600 md:text-base">
+                      Mobile users ke liye form top par rakha gaya hai taki enquiry
+                      jaldi aaye aur booking fast ho.
+                    </p>
+                  </div>
+
+                  <div className="mb-4 grid grid-cols-2 gap-3">
+                    <a
+                      href={whatsappUrl}
+                      onClick={openReviewPopup}
+                      className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-green-500 px-4 py-3 text-center text-sm font-bold text-white transition hover:bg-green-600"
+                    >
+                      WhatsApp
+                    </a>
+
+                    <a
+                      href="tel:9244137353"
+                      onClick={trackCallConversion}
+                      className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-center text-sm font-bold text-white transition hover:bg-slate-800"
+                    >
+                      Call Now
+                    </a>
+                  </div>
+
+                  <div className="space-y-4">
+                    <fieldset
+                      disabled={isFormLocked || loadingFare}
+                      className={`space-y-4 ${isFormLocked ? "opacity-75" : ""}`}
+                    >
+                      {loadError ? (
                         <input
                           value={pickup}
                           onChange={(e) => setPickup(e.target.value)}
-                          placeholder="Pickup Location (Raipur, Bilaspur, Korba...)"
-                          className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                          placeholder="Pickup Location"
+                          className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
                         />
-                      </Autocomplete>
-                    ) : (
-                      <input
-                        value={pickup}
-                        onChange={(e) => setPickup(e.target.value)}
-                        placeholder="Loading pickup suggestions..."
-                        className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                      />
-                    )}
+                      ) : isLoaded ? (
+                        <Autocomplete
+                          onLoad={onPickupLoad}
+                          onPlaceChanged={onPickupPlaceChanged}
+                          options={{
+                            fields: ["formatted_address", "name", "geometry"],
+                            componentRestrictions: { country: "in" },
+                          }}
+                        >
+                          <input
+                            value={pickup}
+                            onChange={(e) => setPickup(e.target.value)}
+                            placeholder="Pickup Location (Raipur, Bilaspur, Korba...)"
+                            className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                          />
+                        </Autocomplete>
+                      ) : (
+                        <input
+                          value={pickup}
+                          onChange={(e) => setPickup(e.target.value)}
+                          placeholder="Loading pickup suggestions..."
+                          className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                        />
+                      )}
 
-                    {loadError ? (
-                      <input
-                        value={drop}
-                        onChange={(e) => setDrop(e.target.value)}
-                        placeholder="Drop Location"
-                        className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                      />
-                    ) : isLoaded ? (
-                      <Autocomplete
-                        onLoad={onDropLoad}
-                        onPlaceChanged={onDropPlaceChanged}
-                        options={{
-                          fields: ["formatted_address", "name", "geometry"],
-                          componentRestrictions: { country: "in" },
-                        }}
-                      >
+                      {loadError ? (
                         <input
                           value={drop}
                           onChange={(e) => setDrop(e.target.value)}
                           placeholder="Drop Location"
-                          className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                          className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
                         />
-                      </Autocomplete>
-                    ) : (
-                      <input
-                        value={drop}
-                        onChange={(e) => setDrop(e.target.value)}
-                        placeholder="Loading drop suggestions..."
-                        className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                      />
+                      ) : isLoaded ? (
+                        <Autocomplete
+                          onLoad={onDropLoad}
+                          onPlaceChanged={onDropPlaceChanged}
+                          options={{
+                            fields: ["formatted_address", "name", "geometry"],
+                            componentRestrictions: { country: "in" },
+                          }}
+                        >
+                          <input
+                            value={drop}
+                            onChange={(e) => setDrop(e.target.value)}
+                            placeholder="Drop Location"
+                            className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                          />
+                        </Autocomplete>
+                      ) : (
+                        <input
+                          value={drop}
+                          onChange={(e) => setDrop(e.target.value)}
+                          placeholder="Loading drop suggestions..."
+                          className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                        />
+                      )}
+
+                      {pickup && drop && (
+                        <div className="rounded-2xl border border-orange-100 bg-orange-50 px-4 py-3 text-sm text-slate-700">
+                          <div className="flex items-start gap-2">
+                            <MapPin className="mt-0.5 text-orange-600" size={16} />
+                            <div>
+                              <p className="font-semibold text-slate-900">
+                                Estimated route distance check enabled
+                              </p>
+                              {shouldHideLocalRide ? (
+                                <p className="mt-1 text-xs leading-5 text-red-600">
+                                  Distance 100 KM se zyada hone ki wajah se Local Ride option
+                                  hide kar diya gaya hai.
+                                </p>
+                              ) : (
+                                <p className="mt-1 text-xs leading-5 text-emerald-700">
+                                  Local Ride option available hai.
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <select
+                        value={bookingType}
+                        onChange={(e) => setBookingType(e.target.value as BookingType)}
+                        className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                      >
+                        <option value="oneway">One Way Trip</option>
+                        <option value="roundtrip">Round Trip</option>
+                        {!shouldHideLocalRide && <option value="local">Local Ride</option>}
+                        <option value="outstation">Outstation Trip</option>
+                      </select>
+
+                      <select
+                        value={vehicleType}
+                        onChange={(e) => setVehicleType(e.target.value as VehicleType)}
+                        className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                      >
+                        <option value="sedan">Sedan / Dzire</option>
+                        <option value="ertiga">Ertiga</option>
+                        <option value="innova">Innova</option>
+                        <option value="crysta">Innova Crysta</option>
+                        <option value="scorpio">Scorpio</option>
+                      </select>
+
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <input
+                          type="date"
+                          value={pickupDate}
+                          onChange={(e) => setPickupDate(e.target.value)}
+                          className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                        />
+
+                        <input
+                          type="time"
+                          value={pickupTime}
+                          onChange={(e) => setPickupTime(e.target.value)}
+                          className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                        />
+                      </div>
+                    </fieldset>
+
+                    {isFormLocked && (
+                      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+                        Fare calculated. Trip details are locked for security.
+                        Click <span className="font-bold">Recalculate Fare</span> to edit details.
+                      </div>
                     )}
 
-                    <select
-                      value={bookingType}
-                      onChange={(e) =>
-                        setBookingType(e.target.value as BookingType)
-                      }
-                      className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                    >
-                      <option value="oneway">One Way Trip</option>
-                      <option value="roundtrip">Round Trip</option>
-                      <option value="local">Local Ride</option>
-                      <option value="outstation">Outstation Trip</option>
-                    </select>
+                    {!hasCalculated ? (
+                      <button
+                        onClick={handleFareCalculation}
+                        disabled={loadingFare}
+                        className="w-full rounded-xl bg-blue-600 py-4 font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+                      >
+                        {loadingFare ? "Calculating Fare..." : "Calculate Fare"}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleRecalculate}
+                        className="w-full rounded-xl bg-slate-900 py-4 font-bold text-white transition hover:bg-slate-800"
+                      >
+                        Recalculate Fare
+                      </button>
+                    )}
 
-                    <select
-                      value={vehicleType}
-                      onChange={(e) =>
-                        setVehicleType(e.target.value as VehicleType)
-                      }
-                      className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                    >
-                      <option value="sedan">Sedan / Dzire</option>
-                      <option value="ertiga">Ertiga</option>
-                      <option value="innova">Innova</option>
-                      <option value="crysta">Innova Crysta</option>
-                      <option value="scorpio">Scorpio</option>
-                    </select>
+                    {finalFare > 0 && (
+                      <div className="rounded-2xl border border-green-200 bg-green-50 p-5">
+                        <h3 className="text-lg font-black text-green-800">
+                          Fare Estimate
+                        </h3>
 
-                    <input
-                      type="date"
-                      value={pickupDate}
-                      onChange={(e) => setPickupDate(e.target.value)}
-                      className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                    />
+                        <div className="mt-4 space-y-2 text-sm text-slate-700">
+                          <p>
+                            Vehicle: <strong>{selectedVehicle}</strong>
+                          </p>
+                          <p>
+                            Trip: <strong>{bookingType}</strong>
+                          </p>
+                          <p>
+                            Total Approximate Distance: <strong>{distance} KM</strong>
+                          </p>
+                          <p>
+                            Base Fare: <strong>₹{fare}</strong>
+                          </p>
+                          <p>
+                            Remarks:{" "}
+                            <strong className="text-red-600">
+                              Night halting and toll will apply as per actual.
+                              Final best amount ke liye apna travel plan WhatsApp par share karein.
+                            </strong>
+                          </p>
 
-                    <input
-                      type="time"
-                      value={pickupTime}
-                      onChange={(e) => setPickupTime(e.target.value)}
-                      className="w-full rounded-xl border px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                    />
-                  </fieldset>
+                          <hr className="my-3 border-green-200" />
 
-                  {isFormLocked && (
-                    <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
-                      Fare calculated. Trip details are locked for security.
-                      Click <span className="font-bold">Recalculate Fare</span>{" "}
-                      to edit details.
-                    </div>
-                  )}
-
-                  {!hasCalculated ? (
-                    <button
-                      onClick={handleFareCalculation}
-                      disabled={loadingFare}
-                      className="w-full rounded-xl bg-blue-600 py-4 font-bold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
-                    >
-                      {loadingFare ? "Calculating Fare..." : "Calculate Fare"}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleRecalculate}
-                      className="w-full rounded-xl bg-slate-900 py-4 font-bold text-white hover:bg-slate-800"
-                    >
-                      Recalculate Fare
-                    </button>
-                  )}
-
-                  {finalFare > 0 && (
-                    <div className="rounded-2xl border border-green-200 bg-green-50 p-5">
-                      <h3 className="text-lg font-black text-green-800">
-                        Fare Estimate
-                      </h3>
-
-                      <div className="mt-4 space-y-2 text-sm text-slate-700">
-                        <p>
-                          Vehicle: <strong>{selectedVehicle}</strong>
-                        </p>
-                        <p>
-                          Trip: <strong>{bookingType}</strong>
-                        </p>
-                        <p>
-                          Distance: <strong>{distance} KM</strong>
-                        </p>
-                        <p>
-                          Base Fare: <strong>₹{fare}</strong>
-                        </p>
-                        <p>
-                          Ramarks: {""}
-                          <strong className="text-red-600">Night Haulting and Toll will be applies as per actual. For final best amount, share your travel plan on whatsapp.</strong>
-                        </p>
-
-                        <hr className="my-3" />
-
-                        <p className="text-xl font-black text-green-700">
-                          Final Fare: ₹{finalFare}
-                        </p>
+                          <p className="text-xl font-black text-green-700">
+                            Final Fare: ₹{finalFare}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  <a
-                    href={whatsappUrl}
-                    onClick={openReviewPopup}
-                    className="block rounded-xl bg-orange-500 py-4 text-center font-bold text-white hover:bg-orange-600"
-                  >
-                    Book On WhatsApp
-                  </a>
+                    <a
+                      href={whatsappUrl}
+                      onClick={openReviewPopup}
+                      className="block rounded-xl bg-orange-500 py-4 text-center font-bold text-white transition hover:bg-orange-600"
+                    >
+                      Book On WhatsApp
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
@@ -668,15 +805,13 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
 
         <section className="mx-auto max-w-7xl px-4 py-20">
           <div className="mb-14 text-center">
-            <h2 className="text-4xl font-black md:text-5xl">
-              Available Vehicles
-            </h2>
+            <h2 className="text-4xl font-black md:text-5xl">Available Vehicles</h2>
             <p className="mt-4 text-slate-600">
               Comfortable vehicles for every travel need
             </p>
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-3">
+          <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
             {vehicles.map((vehicle) => (
               <div
                 key={vehicle.name}
@@ -779,9 +914,7 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
         <section className="mx-auto max-w-7xl px-4 py-20">
           <div className="rounded-3xl bg-gradient-to-r from-orange-500 to-orange-600 p-10 text-white">
             <Building2 size={52} />
-            <h2 className="mt-6 text-4xl font-black">
-              Corporate Travel Solutions
-            </h2>
+            <h2 className="mt-6 text-4xl font-black">Corporate Travel Solutions</h2>
             <p className="mt-4 max-w-3xl leading-8 text-white/90">
               Dedicated taxi services for businesses, factories, project sites,
               consultants, executives and repeat monthly travelers across
@@ -791,7 +924,8 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
             <div className="mt-8 flex flex-wrap gap-4">
               <a
                 href="tel:9244137353"
-                className="rounded-2xl bg-white px-8 py-4 font-bold text-orange-600"
+                onClick={trackCallConversion}
+                className="rounded-2xl border border-white px-8 py-4 font-bold"
               >
                 Discuss Corporate Rates
               </a>
@@ -810,9 +944,7 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
         <section className="bg-slate-100 py-20">
           <div className="mx-auto max-w-7xl px-4">
             <div className="mb-12 text-center">
-              <h2 className="text-4xl font-black md:text-5xl">
-                Areas We Serve
-              </h2>
+              <h2 className="text-4xl font-black md:text-5xl">Areas We Serve</h2>
               <p className="mt-4 text-slate-600">
                 Taxi services available across major cities of Chhattisgarh
               </p>
@@ -963,9 +1095,10 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
 
               <a
                 href="tel:9244137353"
+                onClick={trackCallConversion}
                 className="rounded-2xl border border-white px-8 py-4 font-bold"
               >
-                Call 9244137353
+                Call Now
               </a>
             </div>
           </div>

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import TrackedWhatsAppButton from "@/components/TrackedWhatsAppButton";
+import TrackedCallButton from "@/components/TrackedCallButton";
 
 const phone1 = "9244137353";
 const phone2 = "8319376115";
@@ -370,20 +372,20 @@ Please mujhe best fare bata dijiye.`;
           </a>
 
           <div className="hidden md:flex gap-3">
-            <a
-              href={`tel:${phone1}`}
-              className="px-4 py-2 rounded-full bg-gray-900 text-white text-sm"
-            >
-              Call Now
-            </a>
-            <a
-              href={`https://wa.me/91${phone1}?text=${encodeURIComponent(
-                whatsappText
-              )}`}
-              className="px-4 py-2 rounded-full bg-green-600 text-white text-sm"
-            >
-              WhatsApp
-            </a>
+           <TrackedCallButton
+  href={`tel:${phone1}`}
+  className="px-4 py-2 rounded-full bg-gray-900 text-white text-sm"
+>
+  Call Now
+</TrackedCallButton>
+            <TrackedWhatsAppButton
+  href={`https://wa.me/91${phone1}?text=${encodeURIComponent(
+    whatsappText
+  )}`}
+  className="px-4 py-2 rounded-full bg-green-600 text-white text-sm"
+>
+  WhatsApp
+</TrackedWhatsAppButton>
           </div>
         </div>
       </header>
@@ -414,20 +416,20 @@ Please mujhe best fare bata dijiye.`;
             </div>
 
             <div className="mt-8 flex flex-wrap gap-4">
-              <a
-                href={`tel:${phone1}`}
-                className="px-6 py-3 rounded-full bg-orange-600 text-white font-semibold shadow-lg"
-              >
-                Call {phone1}
-              </a>
-              <a
-                href={`https://wa.me/91${phone1}?text=${encodeURIComponent(
-                  whatsappText
-                )}`}
-                className="px-6 py-3 rounded-full bg-green-600 text-white font-semibold shadow-lg"
-              >
-                Get Fare on WhatsApp
-              </a>
+              <TrackedCallButton
+  href={`tel:${phone1}`}
+  className="px-4 py-2 rounded-full bg-gray-900 text-white text-sm"
+>
+  Call Now
+</TrackedCallButton>
+              <TrackedWhatsAppButton
+  href={`https://wa.me/91${phone1}?text=${encodeURIComponent(
+    whatsappText
+  )}`}
+  className="px-4 py-2 rounded-full bg-green-600 text-white text-sm"
+>
+  Get Fare On WhatsApp
+</TrackedWhatsAppButton>
             </div>
           </div>
 
@@ -467,12 +469,12 @@ Please mujhe best fare bata dijiye.`;
                 WhatsApp Fare Enquiry
               </a>
 
-              <a
-                href={`tel:${phone2}`}
-                className="block text-center bg-orange-600 hover:bg-orange-700 text-white rounded-full py-3 font-bold shadow-lg transition"
-              >
-                Call {phone2}
-              </a>
+              <TrackedCallButton
+  href={`tel:${phone1}`}
+  className="px-4 py-2 rounded-full bg-gray-900 text-white text-sm"
+>
+  Call Now
+</TrackedCallButton>
             </div>
           </div>
         </div>
@@ -582,39 +584,39 @@ Please mujhe best fare bata dijiye.`;
         </p>
 
         <div className="mt-8 flex justify-center flex-wrap gap-4">
-          <a
-            href={`tel:${phone1}`}
-            className="px-7 py-3 bg-orange-600 rounded-full font-semibold"
-          >
-            Call {phone1}
-          </a>
-          <a
-            href={`https://wa.me/91${phone1}?text=${encodeURIComponent(
-              whatsappText
-            )}`}
-            className="px-7 py-3 bg-green-600 rounded-full font-semibold"
-          >
-            WhatsApp Now
-          </a>
+         <TrackedCallButton
+  href={`tel:${phone1}`}
+  className="px-4 py-2 rounded-full bg-gray-900 text-white text-sm"
+>
+  Call Now
+</TrackedCallButton>
+          <TrackedWhatsAppButton
+  href={`https://wa.me/91${phone1}?text=${encodeURIComponent(
+    whatsappText
+  )}`}
+  className="px-4 py-2 rounded-full bg-green-600 text-white text-sm"
+>
+  WhatsApp
+</TrackedWhatsAppButton>
         </div>
       </section>
 
       {/* Floating Buttons */}
       <div className="fixed bottom-5 right-5 flex flex-col gap-3 z-50">
-        <a
-          href={`https://wa.me/91${phone1}?text=${encodeURIComponent(
-            whatsappText
-          )}`}
-          className="bg-green-600 text-white px-5 py-3 rounded-full shadow-lg font-semibold"
-        >
-          WhatsApp
-        </a>
-        <a
-          href={`tel:${phone1}`}
-          className="bg-orange-600 text-white px-5 py-3 rounded-full shadow-lg font-semibold"
-        >
-          Call
-        </a>
+        <TrackedWhatsAppButton
+  href={`https://wa.me/91${phone1}?text=${encodeURIComponent(
+    whatsappText
+  )}`}
+  className="px-4 py-2 rounded-full bg-green-600 text-white text-sm"
+>
+  WhatsApp
+</TrackedWhatsAppButton>
+        <TrackedCallButton
+  href={`tel:${phone1}`}
+  className="px-4 py-2 rounded-full bg-gray-900 text-white text-sm"
+>
+  Call Now
+</TrackedCallButton>
       </div>
     </main>
   );

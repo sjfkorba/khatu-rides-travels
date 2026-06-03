@@ -1,4 +1,3 @@
-
 export const VEHICLES = {
   sedan: {
     ratePerKm: 12,
@@ -31,8 +30,7 @@ export const VEHICLES = {
   },
 } as const;
 
-export type VehicleType =
-  keyof typeof VEHICLES;
+export type VehicleType = keyof typeof VEHICLES;
 
 export type BookingType =
   | "oneway"
@@ -62,102 +60,57 @@ export function calculateFare({
   vehicleType,
   bookingType,
 }: CalculateFareParams): CalculateFareResult {
-  const vehicle =
-    VEHICLES[vehicleType];
+  const vehicle = VEHICLES[vehicleType];
 
-  const actualKm =
-    Number.isFinite(distance) &&
-    distance > 0
-      ? distance
+  const totalApproxDistance =
+    Number.isFinite(distance) && distance > 0
+      ? Math.round(distance)
       : 0;
-
-  const extraKm =
-    bookingType === "local"
-      ? 0
-      : Math.min(
-          Math.max(
-            Math.round(actualKm * 0.05),
-            5
-          ),
-          25
-        );
-
-  const km =
-    actualKm + extraKm;
 
   let fare = 0;
 
   switch (bookingType) {
     case "oneway":
-      fare =
-        km *
-        vehicle.ratePerKm *
-        1.55;
+      fare = totalApproxDistance * vehicle.ratePerKm * 1.55;
       break;
 
     case "roundtrip":
-      if (km > 180) {
-        fare =
-          km *
-          vehicle.ratePerKm *
-          2;
+      if (totalApproxDistance > 180) {
+        fare = totalApproxDistance * vehicle.ratePerKm * 2;
       } else {
-        fare =
-          km *
-          vehicle.ratePerKm *
-          2 *
-          1.15;
+        fare = totalApproxDistance * vehicle.ratePerKm * 2 * 1.15;
       }
       break;
 
     case "local":
-      fare =
-        vehicle.localPackage;
+      fare = vehicle.localPackage;
       break;
 
     case "outstation":
-      fare =
-        km *
-        vehicle.ratePerKm *
-        2;
+      fare = totalApproxDistance * vehicle.ratePerKm * 2;
       break;
 
     default:
-      fare =
-        km *
-        vehicle.ratePerKm;
+      fare = totalApproxDistance * vehicle.ratePerKm;
   }
 
   const discount = 0;
-
-  const finalFare =
-    Math.round(fare);
+  const finalFare = Math.round(fare);
 
   return {
-    actualDistance:
-      Math.round(actualKm),
-
-    extraDistance:
-      Math.round(extraKm),
-
-    distance:
-      Math.round(km),
-
-    fare:
-      Math.round(fare),
-
+    actualDistance: 0,
+    extraDistance: 0,
+    distance: totalApproxDistance,
+    fare: Math.round(fare),
     discount,
-
     finalFare,
-
-    nightHalt:
-      vehicle.nightHalt,
-
+    nightHalt: vehicle.nightHalt,
     remarks: [
       "Toll Tax Extra",
       "Parking Charges Extra",
       `Night Halt ₹${vehicle.nightHalt}/Night (if applicable)`,
       "Driver fooding & allowance extra for round trips",
+      "Fare calculated on total approximate distance",
       "Final discount will be confirmed during booking",
     ],
   };
