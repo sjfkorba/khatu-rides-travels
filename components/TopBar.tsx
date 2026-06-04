@@ -1,54 +1,41 @@
-import Link from "next/link";
-import { Phone, MessageCircle, LogIn } from "lucide-react";
+import { Phone, MessageCircle } from "lucide-react";
 
 export default function TopBar() {
   return (
-    <div className="bg-slate-950 text-white border-b border-slate-800">
+    <div className="bg-slate-950 text-white border-b border-slate-800 sticky top-0 z-50">
 
-      <div className="max-w-7xl mx-auto px-4">
+      <div className="max-w-7xl mx-auto px-3">
 
-        <div className="flex flex-col md:flex-row items-center justify-between gap-3 py-3">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 py-3">
 
           {/* Brand */}
-
           <div className="flex items-center gap-2">
-
             <span className="text-xl">🚖</span>
-
-            <span className="font-black text-lg tracking-wide">
+            <span className="font-black text-base sm:text-lg tracking-wide text-center sm:text-left">
               Khatu Rides Travels
             </span>
-
           </div>
 
-          {/* Actions */}
-
-          <div className="flex flex-wrap items-center gap-3">
+          {/* Mobile First CTA */}
+          <div className="flex w-full sm:w-auto gap-2">
 
             <a
               href="tel:9244137353"
-              className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-xl font-semibold transition"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 px-4 py-3 rounded-xl font-bold transition shadow-lg"
             >
-              <Phone size={16} />
+              <Phone size={18} />
               <span>Call Now</span>
             </a>
 
             <a
               href="https://wa.me/919244137353"
               target="_blank"
-              className="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 px-4 py-2 rounded-xl font-semibold transition"
+              rel="noopener noreferrer"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 px-4 py-3 rounded-xl font-bold transition shadow-lg"
             >
-              <MessageCircle size={16} />
+              <MessageCircle size={18} />
               <span>WhatsApp</span>
             </a>
-
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-2 border border-slate-600 hover:border-orange-500 px-4 py-2 rounded-xl font-semibold transition"
-            >
-              <LogIn size={16} />
-              <span>Team Login</span>
-            </Link>
 
           </div>
 

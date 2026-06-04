@@ -24,6 +24,8 @@ import {
   X,
   MapPin,
   CarFront,
+  BadgePercent,
+  PartyPopper,
 } from "lucide-react";
 
 declare global {
@@ -34,6 +36,7 @@ declare global {
 
 const libraries: "places"[] = ["places"];
 const GOOGLE_REVIEW_LINK = "https://g.page/r/CbD5nSIGmvz1EBM/review";
+const ADMIN_WHATSAPP_NUMBER = "919244137353";
 
 const vehicles = [
   {
@@ -60,7 +63,7 @@ const vehicles = [
     name: "Innova",
     type: "MPV",
     value: "innova" as VehicleType,
-    price: "₹17/km onwards",
+    price: "₹16/km onwards",
     seats: "7+1",
     luggage: "5 Bags",
     image:
@@ -70,7 +73,7 @@ const vehicles = [
     name: "Innova Crysta",
     type: "Premium MPV",
     value: "crysta" as VehicleType,
-    price: "₹18/km onwards",
+    price: "₹17/km onwards",
     seats: "7+1",
     luggage: "5 Bags",
     image:
@@ -175,11 +178,7 @@ function estimateDistance(pickup: string, drop: string) {
 
 function getApproximateDistance(actualDistance: number) {
   if (!Number.isFinite(actualDistance) || actualDistance <= 0) return 0;
-
-  if (actualDistance <= 200) {
-    return Math.round(actualDistance + 20);
-  }
-
+  if (actualDistance <= 200) return Math.round(actualDistance + 20);
   return Math.round(actualDistance + 40);
 }
 
@@ -200,6 +199,8 @@ export default function HomePage() {
   const [pickupTime, setPickupTime] = useState("");
   const [pickup, setPickup] = useState("");
   const [drop, setDrop] = useState("");
+  const [passengerCount, setPassengerCount] = useState(1);
+  const [stoppage, setStoppage] = useState(0);
 
   const [loadingFare, setLoadingFare] = useState(false);
   const [hasCalculated, setHasCalculated] = useState(false);
@@ -219,37 +220,59 @@ export default function HomePage() {
     return estimateDistance(pickup, drop);
   }, [pickup, drop]);
 
-  const shouldHideLocalRide = estimatedRouteDistance > 100;
-
-  useEffect(() => {
-    if (shouldHideLocalRide && bookingType === "local") {
-      setBookingType("oneway");
-    }
-  }, [shouldHideLocalRide, bookingType]);
-
   const selectedVehicle = useMemo(() => {
     return vehicles.find((v) => v.value === vehicleType)?.name || vehicleType;
   }, [vehicleType]);
 
+  const discountPercent =
+    fare > 0 && discount > 0 ? Math.round((discount / fare) * 100) : 0;
+
+  const isLocalOverLimit = bookingType === "local" && estimatedRouteDistance > 80;
+
+  const tripLabelMap: Record<BookingType, string> = {
+    oneway: "One Way Trip",
+    roundtrip: "Round Trip",
+    airporttransfer: "Airport Transfer",
+    local: "Local Ride",
+  };
+
+  const whatsappMessage = useMemo(() => {
+    return [
+      "Hello Admin, please find fare estimate below:",
+      `Pickup: ${pickup || "-"}`,
+      `Drop: ${drop || "-"}`,
+      `Pickup Date: ${pickupDate || "-"}`,
+      `Pickup Time: ${pickupTime || "-"}`,
+      `Trip Type: ${tripLabelMap[bookingType]}`,
+      `Vehicle Type: ${selectedVehicle}`,
+      `Passengers: ${passengerCount}`,
+      `Stoppage: ${stoppage}`,
+      `Approx Distance: ${distance} KM`,
+      `Total Fare: ₹${fare}`,
+      discount > 0 ? `Discount: ₹${discount} (${discountPercent}% off)` : null,
+      `Net Payable: ₹${finalFare}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }, [
+    pickup,
+    drop,
+    pickupDate,
+    pickupTime,
+    bookingType,
+    selectedVehicle,
+    passengerCount,
+    stoppage,
+    distance,
+    fare,
+    discount,
+    discountPercent,
+    finalFare,
+  ]);
+
   const whatsappUrl = useMemo(() => {
-    const tripLabelMap: Record<BookingType, string> = {
-      oneway: "One Way Trip",
-      roundtrip: "Round Trip",
-      local: "Local Ride",
-      outstation: "Outstation Trip",
-    };
-
-    const message = `Hello Khatu Rides Travels,
-Pickup: ${pickup || "-"}
-Drop: ${drop || "-"}
-Trip Type: ${tripLabelMap[bookingType]}
-Vehicle: ${selectedVehicle}
-Pickup Date: ${pickupDate || "-"}
-Pickup Time: ${pickupTime || "-"}
-Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
-
-    return `https://wa.me/919244137353?text=${encodeURIComponent(message)}`;
-  }, [pickup, drop, bookingType, selectedVehicle, pickupDate, pickupTime, finalFare]);
+    return `https://wa.me/${ADMIN_WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`;
+  }, [whatsappMessage]);
 
   useEffect(() => {
     if (!showReviewPopup) return;
@@ -302,20 +325,13 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
   const applyFareResult = (actualTripDistance: number) => {
     const totalApproxDistance = getApproximateDistance(actualTripDistance);
 
-    const safeBookingType =
-      actualTripDistance > 100 && bookingType === "local"
-        ? "oneway"
-        : bookingType;
-
     const result = calculateFare({
       distance: totalApproxDistance,
       vehicleType,
-      bookingType: safeBookingType,
+      bookingType,
+      passengerCount,
+      stoppage,
     });
-
-    if (safeBookingType !== bookingType) {
-      setBookingType(safeBookingType);
-    }
 
     setDistance(result.distance);
     setFare(result.fare);
@@ -328,6 +344,11 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
   const handleFareCalculation = async () => {
     if (!pickup || !drop || !pickupDate || !pickupTime) {
       alert("Please fill pickup, drop, date and time.");
+      return;
+    }
+
+    if (bookingType === "local" && estimatedRouteDistance > 80) {
+      alert("Local booking max 80 KM tak hi available hai.");
       return;
     }
 
@@ -354,8 +375,7 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
       applyFareResult(tripDistance);
     } catch (error) {
       console.error(error);
-      const tripDistance = estimateDistance(pickup, drop);
-      applyFareResult(tripDistance);
+      applyFareResult(estimateDistance(pickup, drop));
     } finally {
       setLoadingFare(false);
     }
@@ -378,9 +398,7 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
     setShowReviewPopup(true);
   };
 
-  const closeReviewPopup = () => {
-    setShowReviewPopup(false);
-  };
+  const closeReviewPopup = () => setShowReviewPopup(false);
 
   const continueToWhatsApp = () => {
     if (typeof window !== "undefined" && window.gtag) {
@@ -414,7 +432,13 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.25),transparent_35%)]" />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.82),rgba(15,23,42,0.96))]" />
 
-          <div className="relative mx-auto max-w-7xl px-4 py-6 md:py-16 lg:py-20">
+          <div className="relative mx-auto max-w-7xl px-4 py-4 md:py-16 lg:py-20">
+            <div className="md:hidden mb-4 overflow-hidden rounded-2xl border border-orange-200 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 px-3 py-2 text-white shadow-lg">
+              <div className="whitespace-nowrap text-[11px] font-extrabold tracking-wide animate-[marquee_12s_linear_infinite]">
+                One Way • Round Trip • Local (80 KM) • Airport Transfer • WhatsApp Booking
+              </div>
+            </div>
+
             <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
               <div className="order-2 lg:order-1">
                 <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-orange-300 md:text-sm">
@@ -427,23 +451,14 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
                 </h1>
 
                 <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300 md:mt-6 md:text-lg md:leading-8">
-                  Airport Transfer, One Way Taxi, Round Trip and Outstation
-                  rides with transparent fare and quick WhatsApp booking support.
+                  One Way Taxi, Round Trip, Local Ride and Airport Transfer with transparent fare and quick WhatsApp booking support.
                 </p>
 
                 <div className="mt-5 grid grid-cols-2 gap-3 md:mt-8">
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm md:text-base">
-                    ✓ Transparent Fare
-                  </div>
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm md:text-base">
-                    ✓ Verified Drivers
-                  </div>
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm md:text-base">
-                    ✓ Clean Vehicles
-                  </div>
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm md:text-base">
-                    ✓ 24×7 Support
-                  </div>
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm md:text-base">✓ Transparent Fare</div>
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm md:text-base">✓ Verified Drivers</div>
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm md:text-base">✓ Clean Vehicles</div>
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm md:text-base">✓ 24×7 Support</div>
                 </div>
 
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap md:mt-8">
@@ -478,8 +493,7 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
                     </h2>
 
                     <p className="mt-2 text-sm leading-6 text-slate-600 md:text-base">
-                      Mobile users ke liye form top par rakha gaya hai taki enquiry
-                      jaldi aaye aur booking fast ho.
+                      Passenger count aur stoppage ke saath accurate estimate milega.
                     </p>
                   </div>
 
@@ -578,10 +592,9 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
                               <p className="font-semibold text-slate-900">
                                 Estimated route distance check enabled
                               </p>
-                              {shouldHideLocalRide ? (
+                              {isLocalOverLimit ? (
                                 <p className="mt-1 text-xs leading-5 text-red-600">
-                                  Distance 100 KM se zyada hone ki wajah se Local Ride option
-                                  hide kar diya gaya hai.
+                                  Local booking max 80 KM tak hi available hai.
                                 </p>
                               ) : (
                                 <p className="mt-1 text-xs leading-5 text-emerald-700">
@@ -593,28 +606,30 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
                         </div>
                       )}
 
-                      <select
-                        value={bookingType}
-                        onChange={(e) => setBookingType(e.target.value as BookingType)}
-                        className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                      >
-                        <option value="oneway">One Way Trip</option>
-                        <option value="roundtrip">Round Trip</option>
-                        {!shouldHideLocalRide && <option value="local">Local Ride</option>}
-                        <option value="outstation">Outstation Trip</option>
-                      </select>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <select
+                          value={bookingType}
+                          onChange={(e) => setBookingType(e.target.value as BookingType)}
+                          className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                        >
+                          <option value="oneway">One Way Trip</option>
+                          <option value="roundtrip">Round Trip</option>
+                          {!isLocalOverLimit && <option value="local">Local Ride</option>}
+                          <option value="airporttransfer">Airport Transfer</option>
+                        </select>
 
-                      <select
-                        value={vehicleType}
-                        onChange={(e) => setVehicleType(e.target.value as VehicleType)}
-                        className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                      >
-                        <option value="sedan">Sedan / Dzire</option>
-                        <option value="ertiga">Ertiga</option>
-                        <option value="innova">Innova</option>
-                        <option value="crysta">Innova Crysta</option>
-                        <option value="scorpio">Scorpio</option>
-                      </select>
+                        <select
+                          value={vehicleType}
+                          onChange={(e) => setVehicleType(e.target.value as VehicleType)}
+                          className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                        >
+                          <option value="sedan">Sedan / Dzire</option>
+                          <option value="ertiga">Ertiga</option>
+                          <option value="innova">Innova</option>
+                          <option value="crysta">Innova Crysta</option>
+                          <option value="scorpio">Scorpio</option>
+                        </select>
+                      </div>
 
                       <div className="grid gap-4 sm:grid-cols-2">
                         <input
@@ -631,12 +646,39 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
                           className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
                         />
                       </div>
+
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <select
+                          value={passengerCount}
+                          onChange={(e) => setPassengerCount(Number(e.target.value))}
+                          className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                        >
+                          {Array.from({ length: 10 }).map((_, i) => (
+                            <option key={i + 1} value={i + 1}>
+                              {i + 1} Passenger{i + 1 > 1 ? "s" : ""}
+                            </option>
+                          ))}
+                        </select>
+
+                        <select
+                          value={stoppage}
+                          onChange={(e) => setStoppage(Number(e.target.value))}
+                          className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                        >
+                          {Array.from({ length: 6 }).map((_, i) => (
+                            <option key={i} value={i}>
+                              {i} Stoppage{i > 1 ? "s" : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </fieldset>
 
                     {isFormLocked && (
                       <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
                         Fare calculated. Trip details are locked for security.
-                        Click <span className="font-bold">Recalculate Fare</span> to edit details.
+                        Click{" "}
+                        <span className="font-bold">Recalculate Fare</span> to edit details.
                       </div>
                     )}
 
@@ -657,41 +699,91 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
                       </button>
                     )}
 
-                    {finalFare > 0 && (
-                      <div className="rounded-2xl border border-green-200 bg-green-50 p-5">
-                        <h3 className="text-lg font-black text-green-800">
-                          Fare Estimate
-                        </h3>
+                   {finalFare > 0 && (
+  <div className="rounded-[28px] border border-orange-200 bg-white p-5 shadow-2xl">
+    <div className="flex items-start justify-between gap-4">
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.22em] text-orange-600">
+          Fare Estimate
+        </p>
+        <h3 className="mt-1 text-2xl font-black text-slate-900">
+          Booking Summary
+        </h3>
+      </div>
 
-                        <div className="mt-4 space-y-2 text-sm text-slate-700">
-                          <p>
-                            Vehicle: <strong>{selectedVehicle}</strong>
-                          </p>
-                          <p>
-                            Trip: <strong>{bookingType}</strong>
-                          </p>
-                          <p>
-                            Total Approximate Distance: <strong>{distance} KM</strong>
-                          </p>
-                          <p>
-                            Base Fare: <strong>₹{fare}</strong>
-                          </p>
-                          <p>
-                            Remarks:{" "}
-                            <strong className="text-red-600">
-                              Night halting and toll will apply as per actual.
-                              Final best amount ke liye apna travel plan WhatsApp par share karein.
-                            </strong>
-                          </p>
+      <div className="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-700">
+        Live Estimate
+      </div>
+    </div>
 
-                          <hr className="my-3 border-green-200" />
+    <div className="mt-5 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 p-5 text-white">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-300">
+        Net Payable
+      </p>
+      <div className="mt-2 flex items-end gap-2">
+        <span className="text-4xl font-black">₹{finalFare}</span>
+        <span className="pb-1 text-sm text-slate-300">total amount</span>
+      </div>
+    </div>
 
-                          <p className="text-xl font-black text-green-700">
-                            Final Fare: ₹{finalFare}
-                          </p>
-                        </div>
-                      </div>
-                    )}
+    <div className="mt-5 space-y-3">
+      <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+        <span className="text-sm font-medium text-slate-600">Trip Type</span>
+        <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-700">
+          {bookingType}
+        </span>
+      </div>
+
+      <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+        <span className="text-sm font-medium text-slate-600">Approx Distance</span>
+        <span className="text-sm font-bold text-slate-900">{distance} KM</span>
+      </div>
+
+      <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+        <span className="text-sm font-medium text-slate-600">Base Fare</span>
+        <span className="text-sm font-bold text-slate-900">₹{fare}</span>
+      </div>
+
+      <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+        <span className="text-sm font-medium text-slate-600">Passenger Charge</span>
+        <span className="text-sm font-bold text-slate-900">
+          ₹{passengerCount > 4 ? passengerCount <= 6 ? 100 : passengerCount <= 7 ? 200 : 300 : 0}
+        </span>
+      </div>
+
+      <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+        <span className="text-sm font-medium text-slate-600">Stoppage Charge</span>
+        <span className="text-sm font-bold text-slate-900">₹{stoppage * 150}</span>
+      </div>
+
+      {discount > 0 && (
+        <div className="flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+          <span className="text-sm font-medium text-emerald-700">Discount Applied</span>
+          <span className="text-sm font-bold text-emerald-700">-₹{discount}</span>
+        </div>
+      )}
+    </div>
+
+    <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+      {bookingType === "local"
+        ? "Local booking max 80 KM only."
+        : "Toll tax and parking charges extra."}
+    </div>
+
+    <div className="mt-5 space-y-2 rounded-2xl bg-slate-50 px-4 py-4">
+      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+        Remarks
+      </p>
+      <ul className="space-y-1 text-sm text-slate-700">
+        <li>• Toll Tax Extra</li>
+        <li>• Parking Charges Extra</li>
+        <li>• Night Halt as applicable</li>
+        <li>• Stoppage charge ₹150 per stop</li>
+        <li>• Local ride valid only up to 80 KM</li>
+      </ul>
+    </div>
+  </div>
+)}
 
                     <a
                       href={whatsappUrl}
@@ -711,7 +803,7 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
           <div className="mx-auto max-w-7xl px-4 py-6">
             <div className="grid grid-cols-2 gap-5 text-center md:grid-cols-4">
               <div>
-                <p className="text-3xl font-black text-orange-600">1000+</p>
+                <p className="text-3xl font-black text-orange-600">1500+</p>
                 <p className="text-slate-600">Trips Completed</p>
               </div>
               <div>
@@ -1080,8 +1172,7 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
             </h2>
 
             <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-300">
-              Get fare, availability and booking confirmation in less than 2
-              minutes.
+              Get fare, availability and booking confirmation in less than 2 minutes.
             </p>
 
             <div className="mt-10 flex flex-wrap justify-center gap-4">
@@ -1203,6 +1294,15 @@ Estimated Fare: ${finalFare ? `₹${finalFare}` : "Please share fare"}`;
             }
             to {
               transform: translateX(-50%);
+            }
+          }
+
+          @keyframes marquee {
+            from {
+              transform: translateX(100%);
+            }
+            to {
+              transform: translateX(-100%);
             }
           }
         `}</style>
