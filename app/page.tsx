@@ -24,8 +24,6 @@ import {
   X,
   MapPin,
   CarFront,
-  BadgePercent,
-  PartyPopper,
 } from "lucide-react";
 
 declare global {
@@ -176,12 +174,6 @@ function estimateDistance(pickup: string, drop: string) {
   return 120;
 }
 
-function getApproximateDistance(actualDistance: number) {
-  if (!Number.isFinite(actualDistance) || actualDistance <= 0) return 0;
-  if (actualDistance <= 200) return Math.round(actualDistance + 20);
-  return Math.round(actualDistance + 40);
-}
-
 export default function HomePage() {
   const [pickupAutocomplete, setPickupAutocomplete] =
     useState<google.maps.places.Autocomplete | null>(null);
@@ -208,11 +200,18 @@ export default function HomePage() {
 
   const [distance, setDistance] = useState(0);
   const [fare, setFare] = useState(0);
-  const [discount, setDiscount] = useState(0);
   const [finalFare, setFinalFare] = useState(0);
+  const [passengerCharge, setPassengerCharge] = useState(0);
+  const [stoppageCharge, setStoppageCharge] = useState(0);
+  const [dayHaltCharge, setDayHaltCharge] = useState(0);
+  const [nightHaltCharge, setNightHaltCharge] = useState(0);
+  const [fareRemarks, setFareRemarks] = useState<string[]>([]);
 
   const [showReviewPopup, setShowReviewPopup] = useState(false);
+  const [showFarePopup, setShowFarePopup] = useState(false);
+
   const popupRef = useRef<HTMLDivElement | null>(null);
+  const farePopupRef = useRef<HTMLDivElement | null>(null);
   const triggerButtonRef = useRef<HTMLAnchorElement | null>(null);
 
   const estimatedRouteDistance = useMemo(() => {
@@ -224,17 +223,14 @@ export default function HomePage() {
     return vehicles.find((v) => v.value === vehicleType)?.name || vehicleType;
   }, [vehicleType]);
 
-  const discountPercent =
-    fare > 0 && discount > 0 ? Math.round((discount / fare) * 100) : 0;
-
-  const isLocalOverLimit = bookingType === "local" && estimatedRouteDistance > 80;
-
   const tripLabelMap: Record<BookingType, string> = {
     oneway: "One Way Trip",
     roundtrip: "Round Trip",
     airporttransfer: "Airport Transfer",
     local: "Local Ride",
   };
+
+  const isLocalOverLimit = bookingType === "local" && estimatedRouteDistance > 80;
 
   const whatsappMessage = useMemo(() => {
     return [
@@ -247,9 +243,8 @@ export default function HomePage() {
       `Vehicle Type: ${selectedVehicle}`,
       `Passengers: ${passengerCount}`,
       `Stoppage: ${stoppage}`,
-      `Approx Distance: ${distance} KM`,
+      `Distance: ${distance} KM`,
       `Total Fare: ₹${fare}`,
-      discount > 0 ? `Discount: ₹${discount} (${discountPercent}% off)` : null,
       `Net Payable: ₹${finalFare}`,
     ]
       .filter(Boolean)
@@ -265,8 +260,6 @@ export default function HomePage() {
     stoppage,
     distance,
     fare,
-    discount,
-    discountPercent,
     finalFare,
   ]);
 
@@ -275,19 +268,22 @@ export default function HomePage() {
   }, [whatsappMessage]);
 
   useEffect(() => {
-    if (!showReviewPopup) return;
+    if (!showReviewPopup && !showFarePopup) return;
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
-    const focusable = popupRef.current?.querySelector<
-      HTMLButtonElement | HTMLAnchorElement
-    >("button, a[href]");
+    const activePopup = showFarePopup ? farePopupRef.current : popupRef.current;
+    const focusable =
+      activePopup?.querySelector<HTMLButtonElement | HTMLAnchorElement>(
+        "button, a[href]"
+      );
     focusable?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setShowReviewPopup(false);
+        if (showFarePopup) setShowFarePopup(false);
+        if (showReviewPopup) setShowReviewPopup(false);
       }
     };
 
@@ -298,7 +294,7 @@ export default function HomePage() {
       document.removeEventListener("keydown", handleKeyDown);
       triggerButtonRef.current?.focus();
     };
-  }, [showReviewPopup]);
+  }, [showReviewPopup, showFarePopup]);
 
   const onPickupLoad = (autocomplete: google.maps.places.Autocomplete) => {
     setPickupAutocomplete(autocomplete);
@@ -323,10 +319,8 @@ export default function HomePage() {
   };
 
   const applyFareResult = (actualTripDistance: number) => {
-    const totalApproxDistance = getApproximateDistance(actualTripDistance);
-
     const result = calculateFare({
-      distance: totalApproxDistance,
+      distance: actualTripDistance,
       vehicleType,
       bookingType,
       passengerCount,
@@ -335,10 +329,15 @@ export default function HomePage() {
 
     setDistance(result.distance);
     setFare(result.fare);
-    setDiscount(result.discount);
     setFinalFare(result.finalFare);
+    setPassengerCharge(result.passengerCharge);
+    setStoppageCharge(result.stoppageCharge);
+    setDayHaltCharge(result.dayHaltCharge);
+    setNightHaltCharge(result.nightHaltCharge);
+    setFareRemarks(result.remarks);
     setHasCalculated(true);
     setIsFormLocked(true);
+    setShowFarePopup(true);
   };
 
   const handleFareCalculation = async () => {
@@ -369,7 +368,7 @@ export default function HomePage() {
       const data = await response.json();
       const tripDistance =
         typeof data?.distanceKm === "number" && data.distanceKm > 0
-          ? data.distanceKm
+          ? Math.round(data.distanceKm)
           : estimateDistance(pickup, drop);
 
       applyFareResult(tripDistance);
@@ -384,10 +383,15 @@ export default function HomePage() {
   const handleRecalculate = () => {
     setIsFormLocked(false);
     setHasCalculated(false);
+    setShowFarePopup(false);
     setDistance(0);
     setFare(0);
-    setDiscount(0);
     setFinalFare(0);
+    setPassengerCharge(0);
+    setStoppageCharge(0);
+    setDayHaltCharge(0);
+    setNightHaltCharge(0);
+    setFareRemarks([]);
   };
 
   const openReviewPopup = (
@@ -398,7 +402,19 @@ export default function HomePage() {
     setShowReviewPopup(true);
   };
 
+  const handleFarePopupWhatsApp = (
+    e: React.MouseEvent<HTMLAnchorElement, MouseEvent>
+  ) => {
+    e.preventDefault();
+    triggerButtonRef.current = e.currentTarget;
+    setShowFarePopup(false);
+    setTimeout(() => {
+      setShowReviewPopup(true);
+    }, 100);
+  };
+
   const closeReviewPopup = () => setShowReviewPopup(false);
+  const closeFarePopup = () => setShowFarePopup(false);
 
   const continueToWhatsApp = () => {
     if (typeof window !== "undefined" && window.gtag) {
@@ -677,8 +693,7 @@ export default function HomePage() {
                     {isFormLocked && (
                       <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
                         Fare calculated. Trip details are locked for security.
-                        Click{" "}
-                        <span className="font-bold">Recalculate Fare</span> to edit details.
+                        Click <span className="font-bold">Recalculate Fare</span> to edit details.
                       </div>
                     )}
 
@@ -698,92 +713,6 @@ export default function HomePage() {
                         Recalculate Fare
                       </button>
                     )}
-
-                   {finalFare > 0 && (
-  <div className="rounded-[28px] border border-orange-200 bg-white p-5 shadow-2xl">
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[0.22em] text-orange-600">
-          Fare Estimate
-        </p>
-        <h3 className="mt-1 text-2xl font-black text-slate-900">
-          Booking Summary
-        </h3>
-      </div>
-
-      <div className="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-700">
-        Live Estimate
-      </div>
-    </div>
-
-    <div className="mt-5 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 p-5 text-white">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-300">
-        Net Payable
-      </p>
-      <div className="mt-2 flex items-end gap-2">
-        <span className="text-4xl font-black">₹{finalFare}</span>
-        <span className="pb-1 text-sm text-slate-300">total amount</span>
-      </div>
-    </div>
-
-    <div className="mt-5 space-y-3">
-      <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-        <span className="text-sm font-medium text-slate-600">Trip Type</span>
-        <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-700">
-          {bookingType}
-        </span>
-      </div>
-
-      <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-        <span className="text-sm font-medium text-slate-600">Approx Distance</span>
-        <span className="text-sm font-bold text-slate-900">{distance} KM</span>
-      </div>
-
-      <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-        <span className="text-sm font-medium text-slate-600">Base Fare</span>
-        <span className="text-sm font-bold text-slate-900">₹{fare}</span>
-      </div>
-
-      <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-        <span className="text-sm font-medium text-slate-600">Passenger Charge</span>
-        <span className="text-sm font-bold text-slate-900">
-          ₹{passengerCount > 4 ? passengerCount <= 6 ? 100 : passengerCount <= 7 ? 200 : 300 : 0}
-        </span>
-      </div>
-
-      <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-        <span className="text-sm font-medium text-slate-600">Stoppage Charge</span>
-        <span className="text-sm font-bold text-slate-900">₹{stoppage * 150}</span>
-      </div>
-
-      {discount > 0 && (
-        <div className="flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-          <span className="text-sm font-medium text-emerald-700">Discount Applied</span>
-          <span className="text-sm font-bold text-emerald-700">-₹{discount}</span>
-        </div>
-      )}
-    </div>
-
-    <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-      {bookingType === "local"
-        ? "Local booking max 80 KM only."
-        : "Toll tax and parking charges extra."}
-    </div>
-
-    <div className="mt-5 space-y-2 rounded-2xl bg-slate-50 px-4 py-4">
-      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-        Remarks
-      </p>
-      <ul className="space-y-1 text-sm text-slate-700">
-        <li>• Toll Tax Extra</li>
-        <li>• Parking Charges Extra</li>
-        <li>• Night Halt as applicable</li>
-        <li>• Stoppage charge ₹150 per stop</li>
-        <li>• Local ride valid only up to 80 KM</li>
-      </ul>
-    </div>
-  </div>
-)}
 
                     <a
                       href={whatsappUrl}
@@ -1204,9 +1133,150 @@ export default function HomePage() {
           <span className="hidden md:block">WhatsApp</span>
         </a>
 
+        {showFarePopup && (
+          <div
+            className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/75 p-4"
+            onClick={closeFarePopup}
+          >
+            <div
+              ref={farePopupRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="fare-popup-title"
+              className="w-full max-w-2xl rounded-[28px] bg-white shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between border-b border-slate-200 px-5 py-4 md:px-6">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-orange-600">
+                    Fare Estimate
+                  </p>
+                  <h3
+                    id="fare-popup-title"
+                    className="mt-1 text-2xl font-black text-slate-900"
+                  >
+                    Booking Summary
+                  </h3>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={closeFarePopup}
+                  aria-label="Close fare popup"
+                  className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="max-h-[85vh] overflow-y-auto p-5 md:p-6">
+                <div className="rounded-3xl bg-gradient-to-r from-slate-900 to-slate-800 p-5 text-white">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-300">
+                    Net Payable
+                  </p>
+                  <div className="mt-2 flex items-end gap-2">
+                    <span className="text-4xl font-black md:text-5xl">₹{finalFare}</span>
+                    <span className="pb-1 text-sm text-slate-300">total amount</span>
+                  </div>
+                </div>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                    <p className="text-xs font-medium text-slate-500">Trip Type</p>
+                    <p className="mt-1 font-bold capitalize text-slate-900">
+                      {tripLabelMap[bookingType]}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                    <p className="text-xs font-medium text-slate-500">Vehicle</p>
+                    <p className="mt-1 font-bold text-slate-900">{selectedVehicle}</p>
+                  </div>
+
+                  <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                    <p className="text-xs font-medium text-slate-500">Distance</p>
+                    <p className="mt-1 font-bold text-slate-900">{distance} KM</p>
+                  </div>
+
+                  <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                    <p className="text-xs font-medium text-slate-500">Passengers</p>
+                    <p className="mt-1 font-bold text-slate-900">{passengerCount}</p>
+                  </div>
+                </div>
+
+                <div className="mt-5 space-y-3">
+                  <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+                    <span className="text-sm font-medium text-slate-600">Total Fare</span>
+                    <span className="text-sm font-bold text-slate-900">₹{fare}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+                    <span className="text-sm font-medium text-slate-600">Passenger Charge</span>
+                    <span className="text-sm font-bold text-slate-900">₹{passengerCharge}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+                    <span className="text-sm font-medium text-slate-600">Stoppage Charge</span>
+                    <span className="text-sm font-bold text-slate-900">₹{stoppageCharge}</span>
+                  </div>
+
+                  {dayHaltCharge > 0 && (
+                    <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+                      <span className="text-sm font-medium text-slate-600">Day Halt Charge</span>
+                      <span className="text-sm font-bold text-slate-900">₹{dayHaltCharge}</span>
+                    </div>
+                  )}
+
+                  {nightHaltCharge > 0 && (
+                    <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+                      <span className="text-sm font-medium text-slate-600">Night Halt Charge</span>
+                      <span className="text-sm font-bold text-slate-900">₹{nightHaltCharge}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  {bookingType === "local"
+                    ? "Local booking max 80 KM only."
+                    : "Toll tax and parking charges extra."}
+                </div>
+
+                <div className="mt-5 rounded-2xl bg-slate-50 px-4 py-4">
+                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                    Remarks
+                  </p>
+                  <ul className="mt-3 space-y-2 text-sm text-slate-700">
+                    {fareRemarks.map((remark, index) => (
+                      <li key={index}>• {remark}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={closeFarePopup}
+                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 font-bold text-slate-900 transition hover:bg-slate-50"
+                  >
+                    Close
+                  </button>
+
+                  <a
+                    href={whatsappUrl}
+                    onClick={handleFarePopupWhatsApp}
+                    className="inline-flex items-center justify-center rounded-xl bg-orange-500 px-4 py-3 font-bold text-white transition hover:bg-orange-600"
+                  >
+                    Book on WhatsApp
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {showReviewPopup && (
           <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-4"
+            className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/70 p-4"
             onClick={closeReviewPopup}
           >
             <div
