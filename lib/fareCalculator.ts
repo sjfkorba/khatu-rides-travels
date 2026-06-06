@@ -1,35 +1,35 @@
 export const VEHICLES = {
   sedan: {
     ratePerKm: 13.5,
-    minimumOnewayFare: 1200,
+    minimumOnewayFare: 900,
     localPackage: 1800,
     dayHalt: 500,
     nightHalt: 600,
   },
   ertiga: {
     ratePerKm: 15,
-    minimumOnewayFare: 1600,
+    minimumOnewayFare: 1100,
     localPackage: 2200,
     dayHalt: 600,
     nightHalt: 700,
   },
   innova: {
     ratePerKm: 17,
-    minimumOnewayFare: 2000,
+    minimumOnewayFare: 1300,
     localPackage: 2500,
     dayHalt: 800,
     nightHalt: 900,
   },
   crysta: {
     ratePerKm: 18.5,
-    minimumOnewayFare: 2200,
+    minimumOnewayFare: 1500,
     localPackage: 2800,
     dayHalt: 900,
     nightHalt: 1000,
   },
   scorpio: {
     ratePerKm: 17.25,
-    minimumOnewayFare: 2100,
+    minimumOnewayFare: 1400,
     localPackage: 2500,
     dayHalt: 800,
     nightHalt: 900,
@@ -108,10 +108,10 @@ export function calculateFare({
     if (safeDistance <= 80) {
       baseFare =
         vehicle.minimumOnewayFare + safeDistance * vehicle.ratePerKm;
-    } else if (safeDistance < 180) {
+    } else if (safeDistance < 280) {
       baseFare = safeDistance * vehicle.ratePerKm * 1.55;
     } else {
-      baseFare = safeDistance * vehicle.ratePerKm * 1.25;
+      baseFare = safeDistance * vehicle.ratePerKm * 1.8;
     }
   } else if (bookingType === "roundtrip") {
     baseFare =
@@ -149,11 +149,11 @@ export function calculateFare({
       : "Fare calculated on actual/estimated distance",
     bookingType === "oneway"
       ? safeDistance <= 80
-        ? `One way formula applied: Minimum Fare ₹${vehicle.minimumOnewayFare} + ₹${vehicle.ratePerKm}/KM`
-        : safeDistance < 180
-        ? "One way fare multiplier applied: 1.55 (distance below 180 KM)"
-        : "One way fare multiplier applied: 1.25 (distance 180 KM or above)"
-      : "Standard booking fare rule applied",
+        ? "Oneway slab: minimum fare + per KM applied"
+        : safeDistance < 280
+        ? "Oneway slab: 1.55x applied"
+        : "Oneway slab: 1.80x applied for 280+ KM"
+      : "Standard fare rule applied",
     `Passenger count: ${safePassengerCount}`,
     `Stoppage charge: ₹150 per stop`,
     safeStoppage > 0
