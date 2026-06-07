@@ -52,6 +52,8 @@ type CalculateFareParams = {
   stoppage: number;
   dayHalts?: number;
   nightHalts?: number;
+  pickup?: string;
+  drop?: string;
 };
 
 type CalculateFareResult = {
@@ -64,6 +66,34 @@ type CalculateFareResult = {
   nightHaltCharge: number;
   remarks: string[];
 };
+
+const HIGH_DEMAND_ONEWAY_ROUTES = new Set([
+  "raipur-korba",
+  "korba-raipur",
+  "raipur-bilaspur",
+  "bilaspur-raipur",
+  "raipur-raigarh",
+  "raigarh-raipur",
+  "raipur airport-korba",
+  "korba-raipur airport",
+  "raipur airport-bilaspur",
+  "bilaspur-raipur airport",
+  "korba-bilaspur",
+  "bilaspur-korba",
+]);
+
+function normalizeLocation(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function isHighDemandOnewayRoute(pickup?: string, drop?: string) {
+  const from = normalizeLocation(pickup || "");
+  const to = normalizeLocation(drop || "");
+
+  if (!from || !to) return false;
+
+  return HIGH_DEMAND_ONEWAY_ROUTES.has(`${from}-${to}`);
+}
 
 function getPassengerCharge(passengerCount: number) {
   if (!Number.isFinite(passengerCount) || passengerCount <= 4) return 0;
@@ -80,6 +110,8 @@ export function calculateFare({
   stoppage,
   dayHalts = 0,
   nightHalts = 0,
+  pickup = "",
+  drop = "",
 }: CalculateFareParams): CalculateFareResult {
   const vehicle = VEHICLES[vehicleType];
 
@@ -102,10 +134,14 @@ export function calculateFare({
   const safeNightHalts =
     Number.isFinite(nightHalts) && nightHalts > 0 ? Math.round(nightHalts) : 0;
 
+  const isHighDemandRoute = isHighDemandOnewayRoute(pickup, drop);
+
   let baseFare = 0;
 
   if (bookingType === "oneway") {
-    if (safeDistance <= 80) {
+    if (!isHighDemandRoute) {
+      baseFare = safeDistance * vehicle.ratePerKm * 2.15;
+    } else if (safeDistance <= 80) {
       baseFare =
         vehicle.minimumOnewayFare + safeDistance * vehicle.ratePerKm;
     } else if (safeDistance < 280) {
@@ -147,13 +183,6 @@ export function calculateFare({
     bookingType === "local"
       ? "Local package max 80 KM only"
       : "Fare calculated on actual/estimated distance",
-    bookingType === "oneway"
-      ? safeDistance <= 80
-        ? "Oneway slab: minimum fare + per KM applied"
-        : safeDistance < 280
-        ? "Oneway slab: 1.55x applied"
-        : "Oneway slab: 1.80x applied for 280+ KM"
-      : "Standard fare rule applied",
     `Passenger count: ${safePassengerCount}`,
     `Stoppage charge: ₹150 per stop`,
     safeStoppage > 0

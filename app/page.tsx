@@ -1,1382 +1,420 @@
+// components/FareCalculator.tsx
+
 "use client";
 
-import Link from "next/link";
-import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
-import TopBar from "@/components/TopBar";
-import { Autocomplete, useJsApiLoader } from "@react-google-maps/api";
+import { useMemo, useState } from "react";
 import {
+  BookingType,
+  FareFormData,
+  VehicleType,
+  VEHICLES,
+  buildWhatsAppFareMessage,
   calculateFare,
-  type BookingType,
-  type VehicleType,
-} from "@/lib/fareCalculator";
-import {
-  Phone,
-  MessageCircle,
-  ShieldCheck,
-  Clock3,
-  Star,
-  ArrowRight,
-  CheckCircle2,
-  Building2,
-  Plane,
-  Gift,
-  X,
-  MapPin,
-  CarFront,
-} from "lucide-react";
+  formatCurrency,
+  getBookingTypeLabel,
+  getVehicleLabel,
+  validateFareForm,
+} from "@/lib/fare";
 
-declare global {
-  interface Window {
-    gtag?: (...args: any[]) => void;
-  }
-}
+const ADMIN_WHATSAPP_NUMBER = "91XXXXXXXXXX";
 
-const libraries: "places"[] = ["places"];
-const GOOGLE_REVIEW_LINK = "https://g.page/r/CbD5nSIGmvz1EBM/review";
-const ADMIN_WHATSAPP_NUMBER = "919244137353";
-
-const vehicles = [
-  {
-    name: "Dzire",
-    type: "Sedan",
-    value: "sedan" as VehicleType,
-    price: "₹11/km onwards",
-    seats: "4+1",
-    luggage: "2 Bags",
-    image:
-      "https://content.carlelo.com/media/models/Dzire/base/maruti-suzuki-dzire-1.webp",
-  },
-  {
-    name: "Ertiga",
-    type: "7 Seater",
-    value: "ertiga" as VehicleType,
-    price: "₹13/km onwards",
-    seats: "6+1",
-    luggage: "4 Bags",
-    image:
-      "https://imgd.aeplcdn.com/642x361/n/cw/ec/171147/maruti-suzuki-ertiga-left-rear-three-quarter0.jpeg?isig=0&q=75",
-  },
-  {
-    name: "Innova",
-    type: "MPV",
-    value: "innova" as VehicleType,
-    price: "₹16/km onwards",
-    seats: "7+1",
-    luggage: "5 Bags",
-    image:
-      "https://stimg.cardekho.com/images/expert-review/select-model/20250728_160805/930x620/5_1200x67520250728_160805.jpg",
-  },
-  {
-    name: "Innova Crysta",
-    type: "Premium MPV",
-    value: "crysta" as VehicleType,
-    price: "₹17/km onwards",
-    seats: "7+1",
-    luggage: "5 Bags",
-    image:
-      "https://imgd.aeplcdn.com/664x374/n/cw/ec/51435/innova-crysta-exterior-right-front-three-quarter-2.jpeg?q=75",
-  },
-  {
-    name: "Scorpio",
-    type: "SUV",
-    value: "scorpio" as VehicleType,
-    price: "₹16/km onwards",
-    seats: "6+1",
-    luggage: "4 Bags",
-    image:
-      "https://stimg.cardekho.com/images/carexteriorimages/930x620/Mahindra/Scorpio-Classic/10764/1690185761481/front-left-side-47.jpg",
-  },
-];
-
-const popularRoutes = [
-  { title: "Raipur to Korba", fare: "₹2800+", link: "/routes/raipur-to-korba-taxi" },
-  { title: "Raipur to Bilaspur", fare: "₹2200+", link: "/routes/raipur-to-bilaspur-taxi" },
-  { title: "Raipur to Raigarh", fare: "₹3500+", link: "/routes/raipur-to-raigarh-taxi" },
-  { title: "Airport to Korba", fare: "₹3000+", link: "/routes/raipur-airport-to-korba-taxi" },
-  { title: "Airport to Bilaspur", fare: "₹2500+", link: "/routes/raipur-airport-to-bilaspur-taxi" },
-  { title: "Korba to Bilaspur", fare: "₹1800+", link: "/routes/korba-to-bilaspur-taxi" },
-];
-
-const faqs = [
-  {
-    q: "What is the Raipur to Korba taxi fare?",
-    a: "Taxi fare starts from approximately ₹2800 depending on vehicle type and travel date.",
-  },
-  {
-    q: "Do you provide airport pickup service?",
-    a: "Yes. Airport pickup and drop services are available across Chhattisgarh.",
-  },
-  {
-    q: "Can I book one-way taxi?",
-    a: "Yes. One-way taxi services are available on most routes.",
-  },
-  {
-    q: "Do you provide GST invoices?",
-    a: "Yes. GST invoices can be provided for eligible bookings.",
-  },
-];
-
-const reviews = [
-  { name: "Amit Verma", city: "Raipur", review: "Excellent taxi service. Clean vehicle and professional driver." },
-  { name: "Sanjay Agrawal", city: "Korba", review: "Airport pickup was on time and the journey was comfortable." },
-  { name: "Rohit Sharma", city: "Bilaspur", review: "Best taxi service for business travel across Chhattisgarh." },
-  { name: "Deepak Yadav", city: "Raigarh", review: "Transparent fare and quick WhatsApp support." },
-  { name: "Pooja Singh", city: "Raipur", review: "Family trip was smooth and comfortable." },
-  { name: "Nitin Gupta", city: "Korba", review: "Booked Ertiga for airport transfer. Great experience." },
-  { name: "Rajesh Patel", city: "Bilaspur", review: "Professional driver and well maintained vehicle." },
-  { name: "Mukesh Agrawal", city: "Raipur", review: "Affordable pricing and hassle free booking process." },
-  { name: "Vivek Sahu", city: "Raigarh", review: "Reliable taxi service for monthly corporate travel." },
-  { name: "Aakash Jain", city: "Korba", review: "Quick confirmation and smooth journey." },
-  { name: "Shubham Verma", city: "Raipur", review: "Best option for one way taxi bookings." },
-  { name: "Ashish Gupta", city: "Bilaspur", review: "Airport taxi service was perfectly managed." },
-  { name: "Pankaj Sharma", city: "Raigarh", review: "Comfortable trip and transparent billing." },
-  { name: "Ravi Tiwari", city: "Raipur", review: "Driver was polite and vehicle was very clean." },
-  { name: "Anjali Soni", city: "Korba", review: "Great support team and timely pickup." },
-  { name: "Manoj Patel", city: "Bilaspur", review: "Good service for family travel." },
-  { name: "Rakesh Agrawal", city: "Raigarh", review: "Highly recommended for airport transfers." },
-  { name: "Harsh Jain", city: "Raipur", review: "Professional and trustworthy service." },
-  { name: "Abhishek Sahu", city: "Korba", review: "Very convenient booking process." },
-  { name: "Vikas Verma", city: "Bilaspur", review: "Comfortable long-distance journey." },
-];
-
-const routeDistanceMap: Record<string, number> = {
-  "raipur-korba": 220,
-  "korba-raipur": 220,
-  "raipur-bilaspur": 140,
-  "bilaspur-raipur": 140,
-  "raipur-raigarh": 255,
-  "raigarh-raipur": 255,
-  "raipur airport-korba": 230,
-  "korba-raipur airport": 230,
-  "raipur airport-bilaspur": 150,
-  "bilaspur-raipur airport": 150,
-  "korba-bilaspur": 95,
-  "bilaspur-korba": 95,
+const initialForm: FareFormData = {
+  pickupLocation: "",
+  dropLocation: "",
+  pickupDate: "",
+  pickupTime: "",
+  distance: 0,
+  vehicleType: "sedan",
+  bookingType: "oneway",
 };
 
-function normalizeLocation(value: string) {
-  return value.trim().toLowerCase().replace(/\s+/g, " ");
-}
+export default function FareCalculator() {
+  const [formData, setFormData] = useState<FareFormData>(initialForm);
+  const [touched, setTouched] = useState(false);
 
-function estimateDistance(pickup: string, drop: string) {
-  const from = normalizeLocation(pickup);
-  const to = normalizeLocation(drop);
+  const fareResult = useMemo(() => {
+    if (!formData.distance || formData.distance <= 0) return null;
 
-  if (!from || !to) return 0;
-
-  const exactKey = `${from}-${to}`;
-  if (routeDistanceMap[exactKey]) return routeDistanceMap[exactKey];
-
-  if (from === to) return 10;
-  if (from.includes("airport") || to.includes("airport")) return 160;
-
-  return 120;
-}
-
-export default function HomePage() {
-  const [pickupAutocomplete, setPickupAutocomplete] =
-    useState<google.maps.places.Autocomplete | null>(null);
-  const [dropAutocomplete, setDropAutocomplete] =
-    useState<google.maps.places.Autocomplete | null>(null);
-
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
-    libraries,
-  });
-
-  const [vehicleType, setVehicleType] = useState<VehicleType>("sedan");
-  const [bookingType, setBookingType] = useState<BookingType>("oneway");
-  const [pickupDate, setPickupDate] = useState("");
-  const [pickupTime, setPickupTime] = useState("");
-  const [pickup, setPickup] = useState("");
-  const [drop, setDrop] = useState("");
-  const [passengerCount, setPassengerCount] = useState(1);
-  const [stoppage, setStoppage] = useState(0);
-
-  const [loadingFare, setLoadingFare] = useState(false);
-  const [hasCalculated, setHasCalculated] = useState(false);
-  const [isFormLocked, setIsFormLocked] = useState(false);
-
-  const [distance, setDistance] = useState(0);
-  const [fare, setFare] = useState(0);
-  const [finalFare, setFinalFare] = useState(0);
-  const [passengerCharge, setPassengerCharge] = useState(0);
-  const [stoppageCharge, setStoppageCharge] = useState(0);
-  const [dayHaltCharge, setDayHaltCharge] = useState(0);
-  const [nightHaltCharge, setNightHaltCharge] = useState(0);
-  const [fareRemarks, setFareRemarks] = useState<string[]>([]);
-
-  const [showReviewPopup, setShowReviewPopup] = useState(false);
-  const [showFarePopup, setShowFarePopup] = useState(false);
-
-  const popupRef = useRef<HTMLDivElement | null>(null);
-  const farePopupRef = useRef<HTMLDivElement | null>(null);
-  const triggerButtonRef = useRef<HTMLAnchorElement | null>(null);
-
-  const estimatedRouteDistance = useMemo(() => {
-    if (!pickup || !drop) return 0;
-    return estimateDistance(pickup, drop);
-  }, [pickup, drop]);
-
-  const selectedVehicle = useMemo(() => {
-    return vehicles.find((v) => v.value === vehicleType)?.name || vehicleType;
-  }, [vehicleType]);
-
-  const tripLabelMap: Record<BookingType, string> = {
-    oneway: "One Way Trip",
-    roundtrip: "Round Trip",
-    airporttransfer: "Airport Transfer",
-    local: "Local Ride",
-  };
-
-  const isLocalOverLimit = bookingType === "local" && estimatedRouteDistance > 80;
-
-  const whatsappMessage = useMemo(() => {
-    return [
-      "Hello Admin, please find fare estimate below:",
-      `Pickup: ${pickup || "-"}`,
-      `Drop: ${drop || "-"}`,
-      `Pickup Date: ${pickupDate || "-"}`,
-      `Pickup Time: ${pickupTime || "-"}`,
-      `Trip Type: ${tripLabelMap[bookingType]}`,
-      `Vehicle Type: ${selectedVehicle}`,
-      `Passengers: ${passengerCount}`,
-      `Stoppage: ${stoppage}`,
-      `Distance: ${distance} KM`,
-      `Total Fare: ₹${fare}`,
-      `Net Payable: ₹${finalFare}`,
-    ]
-      .filter(Boolean)
-      .join("\n");
-  }, [
-    pickup,
-    drop,
-    pickupDate,
-    pickupTime,
-    bookingType,
-    selectedVehicle,
-    passengerCount,
-    stoppage,
-    distance,
-    fare,
-    finalFare,
-  ]);
-
-  const whatsappUrl = useMemo(() => {
-    return `https://wa.me/${ADMIN_WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`;
-  }, [whatsappMessage]);
-
-  useEffect(() => {
-    if (!showReviewPopup && !showFarePopup) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const activePopup = showFarePopup ? farePopupRef.current : popupRef.current;
-    const focusable =
-      activePopup?.querySelector<HTMLButtonElement | HTMLAnchorElement>(
-        "button, a[href]"
-      );
-    focusable?.focus();
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        if (showFarePopup) setShowFarePopup(false);
-        if (showReviewPopup) setShowReviewPopup(false);
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", handleKeyDown);
-      triggerButtonRef.current?.focus();
-    };
-  }, [showReviewPopup, showFarePopup]);
-
-  const onPickupLoad = (autocomplete: google.maps.places.Autocomplete) => {
-    setPickupAutocomplete(autocomplete);
-  };
-
-  const onDropLoad = (autocomplete: google.maps.places.Autocomplete) => {
-    setDropAutocomplete(autocomplete);
-  };
-
-  const onPickupPlaceChanged = () => {
-    if (!pickupAutocomplete) return;
-    const place = pickupAutocomplete.getPlace();
-    const address = place.formatted_address || place.name || "";
-    setPickup(address);
-  };
-
-  const onDropPlaceChanged = () => {
-    if (!dropAutocomplete) return;
-    const place = dropAutocomplete.getPlace();
-    const address = place.formatted_address || place.name || "";
-    setDrop(address);
-  };
-
-  const applyFareResult = (actualTripDistance: number) => {
-    const result = calculateFare({
-      distance: actualTripDistance,
-      vehicleType,
-      bookingType,
-      passengerCount,
-      stoppage,
+    return calculateFare({
+      distance: Number(formData.distance),
+      vehicleType: formData.vehicleType,
+      bookingType: formData.bookingType,
     });
+  }, [formData.distance, formData.vehicleType, formData.bookingType]);
 
-    setDistance(result.distance);
-    setFare(result.fare);
-    setFinalFare(result.finalFare);
-    setPassengerCharge(result.passengerCharge);
-    setStoppageCharge(result.stoppageCharge);
-    setDayHaltCharge(result.dayHaltCharge);
-    setNightHaltCharge(result.nightHaltCharge);
-    setFareRemarks(result.remarks);
-    setHasCalculated(true);
-    setIsFormLocked(true);
-    setShowFarePopup(true);
-  };
+  const validation = useMemo(() => validateFareForm(formData), [formData]);
 
-  const handleFareCalculation = async () => {
-    if (!pickup || !drop || !pickupDate || !pickupTime) {
-      alert("Please fill pickup, drop, date and time.");
-      return;
-    }
+  const canSendWhatsApp = Boolean(validation.isValid && fareResult);
 
-    if (bookingType === "local" && estimatedRouteDistance > 80) {
-      alert("Local booking max 80 KM tak hi available hai.");
-      return;
-    }
-
-    setLoadingFare(true);
-
-    try {
-      const response = await fetch("/api/distance", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          origin: pickup,
-          destination: drop,
-        }),
-      });
-
-      const data = await response.json();
-      const tripDistance =
-        typeof data?.distanceKm === "number" && data.distanceKm > 0
-          ? Math.round(data.distanceKm)
-          : estimateDistance(pickup, drop);
-
-      applyFareResult(tripDistance);
-    } catch (error) {
-      console.error(error);
-      applyFareResult(estimateDistance(pickup, drop));
-    } finally {
-      setLoadingFare(false);
-    }
-  };
-
-  const handleRecalculate = () => {
-    setIsFormLocked(false);
-    setHasCalculated(false);
-    setShowFarePopup(false);
-    setDistance(0);
-    setFare(0);
-    setFinalFare(0);
-    setPassengerCharge(0);
-    setStoppageCharge(0);
-    setDayHaltCharge(0);
-    setNightHaltCharge(0);
-    setFareRemarks([]);
-  };
-
-  const openReviewPopup = (
-    e: React.MouseEvent<HTMLAnchorElement, MouseEvent>
+  const handleChange = (
+    key: keyof FareFormData,
+    value: string | number | VehicleType | BookingType
   ) => {
-    e.preventDefault();
-    triggerButtonRef.current = e.currentTarget;
-    setShowReviewPopup(true);
+    setFormData((prev) => ({
+      ...prev,
+      [key]: key === "distance" ? Number(value) : value,
+    }));
   };
 
-  const handleFarePopupWhatsApp = (
-    e: React.MouseEvent<HTMLAnchorElement, MouseEvent>
-  ) => {
-    e.preventDefault();
-    triggerButtonRef.current = e.currentTarget;
-    setShowFarePopup(false);
-    setTimeout(() => {
-      setShowReviewPopup(true);
-    }, 100);
-  };
+  const handleWhatsAppClick = () => {
+    setTouched(true);
 
-  const closeReviewPopup = () => setShowReviewPopup(false);
-  const closeFarePopup = () => setShowFarePopup(false);
+    if (!fareResult || !validation.isValid) return;
 
-  const continueToWhatsApp = () => {
-    if (typeof window !== "undefined" && window.gtag) {
-      window.gtag("event", "conversion", {
-        send_to: "AW-18196199181/1OB8CJ0zTbgcEI3uz-RD",
-        value: 1.0,
-        currency: "INR",
-      });
-    }
+    const rawMessage = buildWhatsAppFareMessage(formData, fareResult);
+    const encodedMessage = encodeURIComponent(rawMessage);
+    const waLink = `https://wa.me/${ADMIN_WHATSAPP_NUMBER}?text=${encodedMessage}`;
 
-    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
-    setShowReviewPopup(false);
-  };
-
-  const trackCallConversion = () => {
-    if (typeof window !== "undefined" && window.gtag) {
-      window.gtag("event", "conversion", {
-        send_to: "AW-18196199181/1OB8CJ0zTbgcEI3uz-RD",
-        value: 1.0,
-        currency: "INR",
-      });
-    }
+    window.open(waLink, "_blank", "noopener,noreferrer");
   };
 
   return (
-    <>
-      <TopBar />
+    <section className="w-full bg-white py-6 md:py-10">
+      <div className="mx-auto max-w-6xl px-4">
+        <div className="mb-4 overflow-hidden rounded-full border border-emerald-200 bg-gradient-to-r from-emerald-50 via-lime-50 to-emerald-50 shadow-sm md:hidden">
+          <div className="offer-marquee flex w-max items-center gap-8 px-4 py-2 text-xs font-semibold text-emerald-700">
+            <span>140+ km rides par 18% OFF</span>
+            <span>One Way Taxi Best Fare</span>
+            <span>Local • Outstation • Roundtrip</span>
+            <span>Instant Fare Estimate on WhatsApp</span>
+            <span>Safe • Quick • Professional Booking</span>
 
-      <main className="min-h-screen bg-slate-50">
-        <section className="relative overflow-hidden bg-slate-950 text-white">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.25),transparent_35%)]" />
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.82),rgba(15,23,42,0.96))]" />
-
-          <div className="relative mx-auto max-w-7xl px-4 py-4 md:py-16 lg:py-20">
-            <div className="md:hidden mb-4 overflow-hidden rounded-2xl border border-orange-200 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 px-3 py-2 text-white shadow-lg">
-              <div className="whitespace-nowrap text-[11px] font-extrabold tracking-wide animate-[marquee_12s_linear_infinite]">
-                One Way • Round Trip • Local (80 KM) • Airport Transfer • WhatsApp Booking
-              </div>
-            </div>
-
-            <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-              <div className="order-2 lg:order-1">
-                <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-orange-300 md:text-sm">
-                  ⭐ Trusted Taxi Service in Chhattisgarh
-                </div>
-
-                <h1 className="mt-4 max-w-3xl text-3xl font-black leading-tight sm:text-4xl md:mt-6 md:text-5xl lg:text-6xl">
-                  Book Reliable Taxi Service Across
-                  <span className="text-orange-500"> Chhattisgarh</span>
-                </h1>
-
-                <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300 md:mt-6 md:text-lg md:leading-8">
-                  One Way Taxi, Round Trip, Local Ride and Airport Transfer with transparent fare and quick WhatsApp booking support.
-                </p>
-
-                <div className="mt-5 grid grid-cols-2 gap-3 md:mt-8">
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm md:text-base">✓ Transparent Fare</div>
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm md:text-base">✓ Verified Drivers</div>
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm md:text-base">✓ Clean Vehicles</div>
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm md:text-base">✓ 24×7 Support</div>
-                </div>
-
-                <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap md:mt-8">
-                  <a
-                    href={whatsappUrl}
-                    onClick={openReviewPopup}
-                    className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-orange-500 px-6 py-4 text-center font-bold text-white transition hover:bg-orange-600"
-                  >
-                    Get Fare on WhatsApp
-                  </a>
-
-                  <a
-                    href="tel:9244137353"
-                    onClick={trackCallConversion}
-                    className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border border-white px-6 py-4 text-center font-bold text-white"
-                  >
-                    Call Now
-                  </a>
-                </div>
-              </div>
-
-              <div className="order-1 lg:order-2">
-                <div className="rounded-[28px] bg-white p-5 shadow-2xl ring-1 ring-black/5 md:p-7">
-                  <div className="mb-5">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-orange-700">
-                      <CarFront size={14} />
-                      Fast enquiry form
-                    </div>
-
-                    <h2 className="mt-3 text-2xl font-black text-slate-900 md:text-3xl">
-                      Get Instant Fare Estimate
-                    </h2>
-
-                    <p className="mt-2 text-sm leading-6 text-slate-600 md:text-base">
-                      Passenger count aur stoppage ke saath accurate estimate milega.
-                    </p>
-                  </div>
-
-                  <div className="mb-4 grid grid-cols-2 gap-3">
-                    <a
-                      href={whatsappUrl}
-                      onClick={openReviewPopup}
-                      className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-green-500 px-4 py-3 text-center text-sm font-bold text-white transition hover:bg-green-600"
-                    >
-                      WhatsApp
-                    </a>
-
-                    <a
-                      href="tel:9244137353"
-                      onClick={trackCallConversion}
-                      className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-center text-sm font-bold text-white transition hover:bg-slate-800"
-                    >
-                      Call Now
-                    </a>
-                  </div>
-
-                  <div className="space-y-4">
-                    <fieldset
-                      disabled={isFormLocked || loadingFare}
-                      className={`space-y-4 ${isFormLocked ? "opacity-75" : ""}`}
-                    >
-                      {loadError ? (
-                        <input
-                          value={pickup}
-                          onChange={(e) => setPickup(e.target.value)}
-                          placeholder="Pickup Location"
-                          className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                        />
-                      ) : isLoaded ? (
-                        <Autocomplete
-                          onLoad={onPickupLoad}
-                          onPlaceChanged={onPickupPlaceChanged}
-                          options={{
-                            fields: ["formatted_address", "name", "geometry"],
-                            componentRestrictions: { country: "in" },
-                          }}
-                        >
-                          <input
-                            value={pickup}
-                            onChange={(e) => setPickup(e.target.value)}
-                            placeholder="Pickup Location (Raipur, Bilaspur, Korba...)"
-                            className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                          />
-                        </Autocomplete>
-                      ) : (
-                        <input
-                          value={pickup}
-                          onChange={(e) => setPickup(e.target.value)}
-                          placeholder="Loading pickup suggestions..."
-                          className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                        />
-                      )}
-
-                      {loadError ? (
-                        <input
-                          value={drop}
-                          onChange={(e) => setDrop(e.target.value)}
-                          placeholder="Drop Location"
-                          className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                        />
-                      ) : isLoaded ? (
-                        <Autocomplete
-                          onLoad={onDropLoad}
-                          onPlaceChanged={onDropPlaceChanged}
-                          options={{
-                            fields: ["formatted_address", "name", "geometry"],
-                            componentRestrictions: { country: "in" },
-                          }}
-                        >
-                          <input
-                            value={drop}
-                            onChange={(e) => setDrop(e.target.value)}
-                            placeholder="Drop Location"
-                            className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                          />
-                        </Autocomplete>
-                      ) : (
-                        <input
-                          value={drop}
-                          onChange={(e) => setDrop(e.target.value)}
-                          placeholder="Loading drop suggestions..."
-                          className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                        />
-                      )}
-
-                      {pickup && drop && (
-                        <div className="rounded-2xl border border-orange-100 bg-orange-50 px-4 py-3 text-sm text-slate-700">
-                          <div className="flex items-start gap-2">
-                            <MapPin className="mt-0.5 text-orange-600" size={16} />
-                            <div>
-                              <p className="font-semibold text-slate-900">
-                                Estimated route distance check enabled
-                              </p>
-                              {isLocalOverLimit ? (
-                                <p className="mt-1 text-xs leading-5 text-red-600">
-                                  Local booking max 80 KM tak hi available hai.
-                                </p>
-                              ) : (
-                                <p className="mt-1 text-xs leading-5 text-emerald-700">
-                                  Local Ride option available hai.
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <select
-                          value={bookingType}
-                          onChange={(e) => setBookingType(e.target.value as BookingType)}
-                          className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                        >
-                          <option value="oneway">One Way Trip</option>
-                          <option value="roundtrip">Round Trip</option>
-                          {!isLocalOverLimit && <option value="local">Local Ride</option>}
-                          <option value="airporttransfer">Airport Transfer</option>
-                        </select>
-
-                        <select
-                          value={vehicleType}
-                          onChange={(e) => setVehicleType(e.target.value as VehicleType)}
-                          className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                        >
-                          <option value="sedan">Sedan / Dzire</option>
-                          <option value="ertiga">Ertiga</option>
-                          <option value="innova">Innova</option>
-                          <option value="crysta">Innova Crysta</option>
-                          <option value="scorpio">Scorpio</option>
-                        </select>
-                      </div>
-
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <input
-                          type="date"
-                          value={pickupDate}
-                          onChange={(e) => setPickupDate(e.target.value)}
-                          className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                        />
-
-                        <input
-                          type="time"
-                          value={pickupTime}
-                          onChange={(e) => setPickupTime(e.target.value)}
-                          className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                        />
-                      </div>
-
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <select
-                          value={passengerCount}
-                          onChange={(e) => setPassengerCount(Number(e.target.value))}
-                          className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                        >
-                          {Array.from({ length: 10 }).map((_, i) => (
-                            <option key={i + 1} value={i + 1}>
-                              {i + 1} Passenger{i + 1 > 1 ? "s" : ""}
-                            </option>
-                          ))}
-                        </select>
-
-                        <select
-                          value={stoppage}
-                          onChange={(e) => setStoppage(Number(e.target.value))}
-                          className="w-full rounded-xl border border-slate-300 px-4 py-4 text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                        >
-                          {Array.from({ length: 6 }).map((_, i) => (
-                            <option key={i} value={i}>
-                              {i} Stoppage{i > 1 ? "s" : ""}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </fieldset>
-
-                    {isFormLocked && (
-                      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
-                        Fare calculated. Trip details are locked for security.
-                        Click <span className="font-bold">Recalculate Fare</span> to edit details.
-                      </div>
-                    )}
-
-                    {!hasCalculated ? (
-                      <button
-                        onClick={handleFareCalculation}
-                        disabled={loadingFare}
-                        className="w-full rounded-xl bg-blue-600 py-4 font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
-                      >
-                        {loadingFare ? "Calculating Fare..." : "Calculate Fare"}
-                      </button>
-                    ) : (
-                      <button
-                        onClick={handleRecalculate}
-                        className="w-full rounded-xl bg-slate-900 py-4 font-bold text-white transition hover:bg-slate-800"
-                      >
-                        Recalculate Fare
-                      </button>
-                    )}
-
-                    <a
-                      href={whatsappUrl}
-                      onClick={openReviewPopup}
-                      className="block rounded-xl bg-orange-500 py-4 text-center font-bold text-white transition hover:bg-orange-600"
-                    >
-                      Book On WhatsApp
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <span>140+ km rides par 18% OFF</span>
+            <span>One Way Taxi Best Fare</span>
+            <span>Local • Outstation • Roundtrip</span>
+            <span>Instant Fare Estimate on WhatsApp</span>
+            <span>Safe • Quick • Professional Booking</span>
           </div>
-        </section>
+        </div>
 
-        <section className="border-b bg-white">
-          <div className="mx-auto max-w-7xl px-4 py-6">
-            <div className="grid grid-cols-2 gap-5 text-center md:grid-cols-4">
-              <div>
-                <p className="text-3xl font-black text-orange-600">1500+</p>
-                <p className="text-slate-600">Trips Completed</p>
-              </div>
-              <div>
-                <p className="text-3xl font-black text-orange-600">24×7</p>
-                <p className="text-slate-600">Support</p>
-              </div>
-              <div>
-                <p className="text-3xl font-black text-orange-600">100%</p>
-                <p className="text-slate-600">Transparent Fare</p>
-              </div>
-              <div>
-                <p className="text-3xl font-black text-orange-600">4.9★</p>
-                <p className="text-slate-600">Customer Rating</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-7xl px-4 py-16">
-          <div className="mb-12 text-center">
-            <h2 className="text-4xl font-black">Popular Taxi Routes</h2>
-            <p className="mt-4 text-slate-600">
-              Most booked routes across Chhattisgarh
-            </p>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {popularRoutes.map((route) => (
-              <Link
-                key={route.title}
-                href={route.link}
-                className="rounded-3xl border bg-white p-6 transition hover:border-orange-500 hover:shadow-lg"
-              >
-                <h3 className="text-xl font-black">{route.title}</h3>
-                <p className="mt-3 font-bold text-orange-600">
-                  Starting {route.fare}
-                </p>
-                <p className="mt-4 text-slate-500">View Route →</p>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        <section className="bg-slate-100 py-20">
-          <div className="mx-auto max-w-7xl px-4">
-            <div className="mb-14 text-center">
-              <h2 className="text-4xl font-black md:text-5xl">
-                Why Choose Khatu Rides Travels?
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <div className="rounded-3xl border border-gray-200 bg-white p-4 shadow-sm md:p-6">
+            <div className="mb-5">
+              <p className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                Get Fare Estimate
+              </p>
+              <h2 className="mt-3 text-2xl font-bold tracking-tight text-gray-900">
+                Book your ride with instant estimate
               </h2>
-              <p className="mx-auto mt-4 max-w-2xl text-slate-600">
-                Trusted by travelers across Chhattisgarh for airport transfers,
-                one-way taxi bookings, corporate travel and family trips.
+              <p className="mt-2 text-sm leading-6 text-gray-500">
+                Fill complete details to generate a clean fare estimate and send
+                it directly on WhatsApp.
               </p>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-3xl bg-white p-6 shadow-sm">
-                <ShieldCheck className="mb-4 text-orange-500" size={40} />
-                <h3 className="text-xl font-black">Safe & Reliable</h3>
-                <p className="mt-3 text-slate-600">
-                  Professional service with customer-first approach.
-                </p>
-              </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field>
+                <Label htmlFor="pickupLocation">Pick-up Location</Label>
+                <Input
+                  id="pickupLocation"
+                  placeholder="Enter pick-up point"
+                  value={formData.pickupLocation}
+                  onChange={(e) =>
+                    handleChange("pickupLocation", e.target.value)
+                  }
+                />
+              </Field>
 
-              <div className="rounded-3xl bg-white p-6 shadow-sm">
-                <Clock3 className="mb-4 text-orange-500" size={40} />
-                <h3 className="text-xl font-black">On-Time Pickup</h3>
-                <p className="mt-3 text-slate-600">
-                  Airport and city pickups without delays.
-                </p>
-              </div>
+              <Field>
+                <Label htmlFor="dropLocation">Drop Location</Label>
+                <Input
+                  id="dropLocation"
+                  placeholder="Enter drop point"
+                  value={formData.dropLocation}
+                  onChange={(e) => handleChange("dropLocation", e.target.value)}
+                />
+              </Field>
 
-              <div className="rounded-3xl bg-white p-6 shadow-sm">
-                <Star className="mb-4 text-orange-500" size={40} />
-                <h3 className="text-xl font-black">Transparent Pricing</h3>
-                <p className="mt-3 text-slate-600">
-                  No hidden charges. Clear fare information.
-                </p>
-              </div>
+              <Field>
+                <Label htmlFor="pickupDate">Pick-up Date</Label>
+                <Input
+                  id="pickupDate"
+                  type="date"
+                  value={formData.pickupDate}
+                  onChange={(e) => handleChange("pickupDate", e.target.value)}
+                />
+              </Field>
 
-              <div className="rounded-3xl bg-white p-6 shadow-sm">
-                <Phone className="mb-4 text-orange-500" size={40} />
-                <h3 className="text-xl font-black">Quick Support</h3>
-                <p className="mt-3 text-slate-600">
-                  Call or WhatsApp for instant booking assistance.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
+              <Field>
+                <Label htmlFor="pickupTime">Pick-up Time</Label>
+                <Input
+                  id="pickupTime"
+                  type="time"
+                  value={formData.pickupTime}
+                  onChange={(e) => handleChange("pickupTime", e.target.value)}
+                />
+              </Field>
 
-        <section className="mx-auto max-w-7xl px-4 py-20">
-          <div className="mb-14 text-center">
-            <h2 className="text-4xl font-black md:text-5xl">Available Vehicles</h2>
-            <p className="mt-4 text-slate-600">
-              Comfortable vehicles for every travel need
-            </p>
-          </div>
+              <Field>
+                <Label htmlFor="distance">Total Approx Distance (KM)</Label>
+                <Input
+                  id="distance"
+                  type="number"
+                  min="1"
+                  placeholder="Example: 165"
+                  value={formData.distance || ""}
+                  onChange={(e) => handleChange("distance", e.target.value)}
+                />
+              </Field>
 
-          <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-            {vehicles.map((vehicle) => (
-              <div
-                key={vehicle.name}
-                className="overflow-hidden rounded-3xl border bg-white shadow-lg"
-              >
-                <div className="relative h-56">
-                  <Image
-                    src={vehicle.image}
-                    alt={vehicle.name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-
-                <div className="p-6">
-                  <h3 className="text-2xl font-black">{vehicle.name}</h3>
-                  <p className="mt-2 font-semibold text-orange-600">
-                    {vehicle.type}
-                  </p>
-
-                  <div className="mt-5 grid grid-cols-2 gap-3">
-                    <div className="rounded-xl bg-slate-100 p-3">
-                      <p className="text-xs text-slate-500">Seats</p>
-                      <p className="font-bold">{vehicle.seats}</p>
-                    </div>
-                    <div className="rounded-xl bg-slate-100 p-3">
-                      <p className="text-xs text-slate-500">Luggage</p>
-                      <p className="font-bold">{vehicle.luggage}</p>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm text-slate-500">Starting</p>
-                      <p className="text-xl font-black text-orange-600">
-                        {vehicle.price}
-                      </p>
-                    </div>
-
-                    <a
-                      href={whatsappUrl}
-                      onClick={openReviewPopup}
-                      className="rounded-xl bg-orange-500 px-5 py-3 font-bold text-white"
-                    >
-                      Book
-                    </a>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="bg-slate-950 py-20 text-white">
-          <div className="mx-auto max-w-7xl px-4">
-            <div className="grid items-center gap-12 lg:grid-cols-2">
-              <div>
-                <Plane size={60} className="text-orange-500" />
-                <h2 className="mt-6 text-4xl font-black md:text-5xl">
-                  Raipur Airport Taxi Service
-                </h2>
-                <p className="mt-6 leading-8 text-slate-300">
-                  Book airport pickup and drop services from Swami Vivekananda
-                  Airport to Korba, Bilaspur, Raigarh and other destinations
-                  across Chhattisgarh.
-                </p>
-                <Link
-                  href="/routes/raipur-airport-taxi"
-                  className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-8 py-4 font-bold"
+              <Field>
+                <Label htmlFor="vehicleType">Vehicle Type</Label>
+                <Select
+                  id="vehicleType"
+                  value={formData.vehicleType}
+                  onChange={(e) =>
+                    handleChange("vehicleType", e.target.value as VehicleType)
+                  }
                 >
-                  Explore Airport Taxi
-                  <ArrowRight size={18} />
-                </Link>
-              </div>
+                  {Object.entries(VEHICLES).map(([key, vehicle]) => (
+                    <option key={key} value={key}>
+                      {vehicle.label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
 
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-8">
-                <ul className="space-y-5">
-                  <li className="flex gap-3">
-                    <CheckCircle2 className="text-green-400" />
-                    Flight Tracking Support
-                  </li>
-                  <li className="flex gap-3">
-                    <CheckCircle2 className="text-green-400" />
-                    Direct Airport Pickup
-                  </li>
-                  <li className="flex gap-3">
-                    <CheckCircle2 className="text-green-400" />
-                    Comfortable Luggage Space
-                  </li>
-                  <li className="flex gap-3">
-                    <CheckCircle2 className="text-green-400" />
-                    Advance Booking Available
-                  </li>
+              <Field className="sm:col-span-2">
+                <Label htmlFor="bookingType">Ride Type</Label>
+                <Select
+                  id="bookingType"
+                  value={formData.bookingType}
+                  onChange={(e) =>
+                    handleChange("bookingType", e.target.value as BookingType)
+                  }
+                >
+                  <option value="oneway">One Way</option>
+                  <option value="roundtrip">Round Trip</option>
+                  <option value="local">Local</option>
+                  <option value="outstation">Outstation</option>
+                </Select>
+              </Field>
+            </div>
+
+            {touched && !validation.isValid && (
+              <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4">
+                <p className="text-sm font-semibold text-red-700">
+                  Please complete all required details:
+                </p>
+                <ul className="mt-2 space-y-1 text-sm text-red-600">
+                  {validation.errors.map((error) => (
+                    <li key={error}>• {error}</li>
+                  ))}
                 </ul>
               </div>
-            </div>
-          </div>
-        </section>
+            )}
 
-        <section className="mx-auto max-w-7xl px-4 py-20">
-          <div className="rounded-3xl bg-gradient-to-r from-orange-500 to-orange-600 p-10 text-white">
-            <Building2 size={52} />
-            <h2 className="mt-6 text-4xl font-black">Corporate Travel Solutions</h2>
-            <p className="mt-4 max-w-3xl leading-8 text-white/90">
-              Dedicated taxi services for businesses, factories, project sites,
-              consultants, executives and repeat monthly travelers across
-              Chhattisgarh.
-            </p>
-
-            <div className="mt-8 flex flex-wrap gap-4">
-              <a
-                href="tel:9244137353"
-                onClick={trackCallConversion}
-                className="rounded-2xl border border-white px-8 py-4 font-bold"
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => setTouched(true)}
+                className="inline-flex w-full items-center justify-center rounded-2xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 sm:w-auto"
               >
-                Discuss Corporate Rates
-              </a>
+                Calculate Fare
+              </button>
 
-              <a
-                href={whatsappUrl}
-                onClick={openReviewPopup}
-                className="rounded-2xl border border-white px-8 py-4 font-bold"
+              <button
+                type="button"
+                onClick={handleWhatsAppClick}
+                disabled={!canSendWhatsApp}
+                className={`inline-flex w-full items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold text-white transition sm:w-auto ${
+                  canSendWhatsApp
+                    ? "bg-green-600 hover:bg-green-700"
+                    : "cursor-not-allowed bg-gray-300"
+                }`}
               >
-                WhatsApp Us
-              </a>
+                Send on WhatsApp
+              </button>
             </div>
           </div>
-        </section>
 
-        <section className="bg-slate-100 py-20">
-          <div className="mx-auto max-w-7xl px-4">
-            <div className="mb-12 text-center">
-              <h2 className="text-4xl font-black md:text-5xl">Areas We Serve</h2>
-              <p className="mt-4 text-slate-600">
-                Taxi services available across major cities of Chhattisgarh
-              </p>
+          <div
+            id="fare-estimate-card"
+            className="rounded-3xl border border-gray-200 bg-white p-4 shadow-sm md:p-6"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 pb-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">
+                  Fare Estimate
+                </p>
+                <h3 className="mt-2 text-2xl font-bold text-gray-900">
+                  Trip summary card
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Review all trip details before sending.
+                </p>
+              </div>
+
+              {fareResult?.discountApplied && (
+                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                  18% Discount Applied
+                </span>
+              )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
-              {[
-                "Raipur",
-                "Korba",
-                "Bilaspur",
-                "Raigarh",
-                "Bhilai",
-                "Durg",
-                "Ambikapur",
-                "Jagdalpur",
-                "Raipur Airport",
-                "Champa",
-                "Katghora",
-                "Pendra",
-              ].map((city) => (
-                <div
-                  key={city}
-                  className="rounded-2xl border bg-white p-4 text-center font-semibold"
-                >
-                  {city}
-                </div>
-              ))}
+            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <DetailCard
+                label="Pick-up Location"
+                value={formData.pickupLocation || "—"}
+              />
+              <DetailCard
+                label="Drop Location"
+                value={formData.dropLocation || "—"}
+              />
+              <DetailCard label="Pick-up Date" value={formData.pickupDate || "—"} />
+              <DetailCard label="Pick-up Time" value={formData.pickupTime || "—"} />
+              <DetailCard
+                label="Approx Distance"
+                value={fareResult ? `${fareResult.distance} km` : "—"}
+              />
+              <DetailCard
+                label="Vehicle Type"
+                value={getVehicleLabel(formData.vehicleType)}
+              />
+              <DetailCard
+                label="Ride Type"
+                value={getBookingTypeLabel(formData.bookingType)}
+              />
+              <DetailCard
+                label="Total Fare"
+                value={fareResult ? formatCurrency(fareResult.fare) : "—"}
+              />
+
+              {fareResult?.discountApplied && (
+                <DetailCard
+                  label="Discount Amount"
+                  value={`- ${formatCurrency(fareResult.discount)}`}
+                  valueClassName="text-emerald-600"
+                />
+              )}
+
+              <DetailCard
+                label="Net Payable"
+                value={fareResult ? formatCurrency(fareResult.finalFare) : "—"}
+                valueClassName="text-gray-900"
+                highlight
+              />
             </div>
-          </div>
-        </section>
 
-        <section className="overflow-hidden bg-white py-20">
-          <div className="mx-auto max-w-7xl px-4">
-            <div className="mb-14 text-center">
-              <h2 className="text-4xl font-black md:text-5xl">
-                What Our Customers Say
-              </h2>
-              <p className="mt-4 text-slate-600">
-                Trusted by travelers across Chhattisgarh
-              </p>
-            </div>
-
-            <div className="relative overflow-hidden">
-              <div className="flex w-max gap-6 animate-[scroll_45s_linear_infinite]">
-                {[...reviews, ...reviews].map((review, index) => (
-                  <div
-                    key={`${review.name}-${index}`}
-                    className="w-[320px] flex-shrink-0 rounded-3xl border bg-slate-50 p-6 shadow-sm"
-                  >
-                    <div className="mb-4 flex gap-1 text-yellow-500">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star key={i} size={18} fill="currentColor" />
-                      ))}
-                    </div>
-
-                    <p className="leading-7 text-slate-600">{review.review}</p>
-
-                    <div className="mt-5">
-                      <h3 className="font-black">{review.name}</h3>
-                      <p className="text-sm text-slate-500">{review.city}</p>
-                    </div>
-                  </div>
+            <div className="mt-5 rounded-2xl bg-gray-50 p-4">
+              <p className="text-sm font-semibold text-gray-900">Important Notes</p>
+              <ul className="mt-2 space-y-2 text-sm text-gray-600">
+                {(fareResult?.remarks ?? [
+                  "Toll Tax Extra",
+                  "Parking Charges Extra",
+                  "Night Halt extra if applicable",
+                  "Driver fooding & allowance extra for round trips",
+                ]).map((item) => (
+                  <li key={item}>• {item}</li>
                 ))}
-              </div>
+              </ul>
             </div>
           </div>
-        </section>
+        </div>
+      </div>
 
-        <section className="bg-slate-100 py-20">
-          <div className="mx-auto max-w-5xl px-4">
-            <div className="mb-14 text-center">
-              <h2 className="text-4xl font-black md:text-5xl">
-                Frequently Asked Questions
-              </h2>
-            </div>
+      <style jsx>{`
+        .offer-marquee {
+          animation: offerTicker 18s linear infinite;
+          white-space: nowrap;
+        }
 
-            <div className="space-y-5">
-              {faqs.map((faq) => (
-                <div key={faq.q} className="rounded-2xl border bg-white p-6">
-                  <h3 className="text-lg font-black">{faq.q}</h3>
-                  <p className="mt-3 leading-7 text-slate-600">{faq.a}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-6xl px-4 py-20">
-          <div className="rounded-3xl border bg-white p-8 md:p-12">
-            <h2 className="mb-8 text-4xl font-black">
-              Taxi Service Across Chhattisgarh
-            </h2>
-
-            <div className="space-y-6 leading-8 text-slate-600">
-              <p>
-                Khatu Rides Travels provides professional taxi services across
-                Chhattisgarh including Raipur, Korba, Bilaspur, Raigarh,
-                Bhilai, Durg, Ambikapur and Jagdalpur.
-              </p>
-
-              <p>
-                Whether you need a one-way taxi, airport transfer, round trip
-                booking or corporate travel solution, our goal is to provide
-                safe, comfortable and reliable transportation at transparent
-                pricing.
-              </p>
-
-              <p>
-                We serve individual travelers, families, business professionals,
-                corporate clients and tourists looking for dependable
-                transportation throughout Chhattisgarh.
-              </p>
-
-              <p>
-                Popular routes include Raipur to Korba Taxi, Raipur to Bilaspur
-                Taxi, Raipur Airport Taxi, Korba to Bilaspur Taxi and Raipur to
-                Raigarh Taxi.
-              </p>
-
-              <p>
-                Customers can easily book through phone call or WhatsApp and
-                receive quick fare details, route guidance and vehicle
-                availability.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-slate-950 text-white">
-          <div className="mx-auto max-w-6xl px-4 py-20 text-center">
-            <h2 className="text-4xl font-black md:text-6xl">
-              Ready To Book Your Taxi?
-            </h2>
-
-            <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-300">
-              Get fare, availability and booking confirmation in less than 2 minutes.
-            </p>
-
-            <div className="mt-10 flex flex-wrap justify-center gap-4">
-              <a
-                href={whatsappUrl}
-                onClick={openReviewPopup}
-                className="rounded-2xl bg-orange-500 px-8 py-4 font-bold transition hover:bg-orange-600"
-              >
-                WhatsApp Now
-              </a>
-
-              <a
-                href="tel:9244137353"
-                onClick={trackCallConversion}
-                className="rounded-2xl border border-white px-8 py-4 font-bold"
-              >
-                Call Now
-              </a>
-            </div>
-          </div>
-        </section>
-
-        <a
-          href={whatsappUrl}
-          onClick={openReviewPopup}
-          className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-green-500 px-5 py-4 font-bold text-white shadow-2xl hover:bg-green-600"
-        >
-          <MessageCircle size={22} />
-          <span className="hidden md:block">WhatsApp</span>
-        </a>
-
-        {showFarePopup && (
-          <div
-            className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/75 p-4"
-            onClick={closeFarePopup}
-          >
-            <div
-              ref={farePopupRef}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="fare-popup-title"
-              className="w-full max-w-2xl rounded-[28px] bg-white shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-start justify-between border-b border-slate-200 px-5 py-4 md:px-6">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-orange-600">
-                    Fare Estimate
-                  </p>
-                  <h3
-                    id="fare-popup-title"
-                    className="mt-1 text-2xl font-black text-slate-900"
-                  >
-                    Booking Summary
-                  </h3>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={closeFarePopup}
-                  aria-label="Close fare popup"
-                  className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              <div className="max-h-[85vh] overflow-y-auto p-5 md:p-6">
-                <div className="rounded-3xl bg-gradient-to-r from-slate-900 to-slate-800 p-5 text-white">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-300">
-                    Net Payable
-                  </p>
-                  <div className="mt-2 flex items-end gap-2">
-                    <span className="text-4xl font-black md:text-5xl">₹{finalFare}</span>
-                    <span className="pb-1 text-sm text-slate-300">total amount</span>
-                  </div>
-                </div>
-
-                <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                    <p className="text-xs font-medium text-slate-500">Trip Type</p>
-                    <p className="mt-1 font-bold capitalize text-slate-900">
-                      {tripLabelMap[bookingType]}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                    <p className="text-xs font-medium text-slate-500">Vehicle</p>
-                    <p className="mt-1 font-bold text-slate-900">{selectedVehicle}</p>
-                  </div>
-
-                  <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                    <p className="text-xs font-medium text-slate-500">Distance</p>
-                    <p className="mt-1 font-bold text-slate-900">{distance} KM</p>
-                  </div>
-
-                  <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                    <p className="text-xs font-medium text-slate-500">Passengers</p>
-                    <p className="mt-1 font-bold text-slate-900">{passengerCount}</p>
-                  </div>
-                </div>
-
-                <div className="mt-5 space-y-3">
-                  <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-                    <span className="text-sm font-medium text-slate-600">Total Fare</span>
-                    <span className="text-sm font-bold text-slate-900">₹{fare}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-                    <span className="text-sm font-medium text-slate-600">Passenger Charge</span>
-                    <span className="text-sm font-bold text-slate-900">₹{passengerCharge}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-                    <span className="text-sm font-medium text-slate-600">Stoppage Charge</span>
-                    <span className="text-sm font-bold text-slate-900">₹{stoppageCharge}</span>
-                  </div>
-
-                  {dayHaltCharge > 0 && (
-                    <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-                      <span className="text-sm font-medium text-slate-600">Day Halt Charge</span>
-                      <span className="text-sm font-bold text-slate-900">₹{dayHaltCharge}</span>
-                    </div>
-                  )}
-
-                  {nightHaltCharge > 0 && (
-                    <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-                      <span className="text-sm font-medium text-slate-600">Night Halt Charge</span>
-                      <span className="text-sm font-bold text-slate-900">₹{nightHaltCharge}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                  {bookingType === "local"
-                    ? "Local booking max 80 KM only."
-                    : "Toll tax and parking charges extra."}
-                </div>
-
-                <div className="mt-5 rounded-2xl bg-slate-50 px-4 py-4">
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                    Remarks
-                  </p>
-                  <ul className="mt-3 space-y-2 text-sm text-slate-700">
-                    {fareRemarks.map((remark, index) => (
-                      <li key={index}>• {remark}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                  <button
-                    type="button"
-                    onClick={closeFarePopup}
-                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 font-bold text-slate-900 transition hover:bg-slate-50"
-                  >
-                    Close
-                  </button>
-
-                  <a
-                    href={whatsappUrl}
-                    onClick={handleFarePopupWhatsApp}
-                    className="inline-flex items-center justify-center rounded-xl bg-orange-500 px-4 py-3 font-bold text-white transition hover:bg-orange-600"
-                  >
-                    Book on WhatsApp
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showReviewPopup && (
-          <div
-            className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/70 p-4"
-            onClick={closeReviewPopup}
-          >
-            <div
-              ref={popupRef}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="review-popup-title"
-              aria-describedby="review-popup-desc"
-              className="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-orange-600">
-                    Special Offer
-                  </p>
-                  <h3
-                    id="review-popup-title"
-                    className="mt-1 text-xl font-black text-slate-900"
-                  >
-                    Get booking bonus
-                  </h3>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={closeReviewPopup}
-                  aria-label="Close popup"
-                  className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div className="mt-4 rounded-2xl border border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-orange-500 text-white">
-                    <Gift size={18} />
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-extrabold text-slate-900">
-                      Review do, next trip par cash discount pao
-                    </p>
-                    <p
-                      id="review-popup-desc"
-                      className="mt-1 text-xs leading-5 text-slate-600"
-                    >
-                      Screenshot WhatsApp karein aur offer claim karein.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4 grid gap-2">
-                <a
-                  href={GOOGLE_REVIEW_LINK}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex w-full items-center justify-center rounded-xl bg-orange-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
-                >
-                  Give Google Review
-                </a>
-
-                <button
-                  type="button"
-                  onClick={continueToWhatsApp}
-                  className="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-900 transition hover:bg-slate-50"
-                >
-                  Continue to WhatsApp
-                </button>
-              </div>
-
-              <p className="mt-3 text-center text-[11px] leading-5 text-slate-500">
-                Review ke baad screenshot WhatsApp bhejkar bonus claim karein.
-              </p>
-            </div>
-          </div>
-        )}
-
-        <style jsx global>{`
-          @keyframes scroll {
-            from {
-              transform: translateX(0);
-            }
-            to {
-              transform: translateX(-50%);
-            }
+        @keyframes offerTicker {
+          0% {
+            transform: translateX(0);
           }
-
-          @keyframes marquee {
-            from {
-              transform: translateX(100%);
-            }
-            to {
-              transform: translateX(-100%);
-            }
+          100% {
+            transform: translateX(-50%);
           }
-        `}</style>
-      </main>
-    </>
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .offer-marquee {
+            animation: none;
+          }
+        }
+      `}</style>
+    </section>
+  );
+}
+
+function Field({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return <div className={className}>{children}</div>;
+}
+
+function Label({
+  children,
+  htmlFor,
+}: {
+  children: React.ReactNode;
+  htmlFor: string;
+}) {
+  return (
+    <label
+      htmlFor={htmlFor}
+      className="mb-2 block text-sm font-semibold text-gray-800"
+    >
+      {children}
+    </label>
+  );
+}
+
+function Input({
+  className = "",
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input
+      {...props}
+      className={`h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 ${className}`}
+    />
+  );
+}
+
+function Select({
+  className = "",
+  children,
+  ...props
+}: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <select
+      {...props}
+      className={`h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 ${className}`}
+    >
+      {children}
+    </select>
+  );
+}
+
+function DetailCard({
+  label,
+  value,
+  valueClassName = "text-gray-900",
+  highlight = false,
+}: {
+  label: string;
+  value: string;
+  valueClassName?: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-2xl border p-4 ${
+        highlight
+          ? "border-emerald-200 bg-emerald-50"
+          : "border-gray-100 bg-gray-50"
+      }`}
+    >
+      <p className="text-xs font-semibold uppercase tracking-[0.15em] text-gray-500">
+        {label}
+      </p>
+      <p className={`mt-2 text-sm font-bold ${valueClassName}`}>{value}</p>
+    </div>
   );
 }
