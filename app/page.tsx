@@ -1,420 +1,1523 @@
-// components/FareCalculator.tsx
-
 "use client";
 
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { useEffect, useMemo, useRef, useState } from "react";
+import TopBar from "@/components/TopBar";
+import { Autocomplete, useJsApiLoader } from "@react-google-maps/api";
 import {
-  BookingType,
-  FareFormData,
-  VehicleType,
-  VEHICLES,
-  buildWhatsAppFareMessage,
   calculateFare,
-  formatCurrency,
-  getBookingTypeLabel,
-  getVehicleLabel,
-  validateFareForm,
-} from "@/lib/fare";
+  VEHICLES,
+  type BookingType,
+  type VehicleType,
+  type PricingMode,
+} from "@/lib/fareCalculator";
+import {
+  Phone,
+  MessageCircle,
+  ShieldCheck,
+  Clock3,
+  Star,
+  ArrowRight,
+  CheckCircle2,
+  Building2,
+  Gift,
+  X,
+  MapPin,
+  CarFront,
+  CalendarDays,
+  Clock4,
+  CarTaxiFront,
+  BadgeCheck,
+  Ticket,
+  Users,
+  Route,
+} from "lucide-react";
 
-const ADMIN_WHATSAPP_NUMBER = "91XXXXXXXXXX";
+declare global {
+  interface Window {
+    gtag?: (...args: any[]) => void;
+  }
+}
 
-const initialForm: FareFormData = {
-  pickupLocation: "",
-  dropLocation: "",
-  pickupDate: "",
-  pickupTime: "",
-  distance: 0,
-  vehicleType: "sedan",
-  bookingType: "oneway",
+const libraries: "places"[] = ["places"];
+const GOOGLE_REVIEW_LINK = "https://g.page/r/CbD5nSIGmvz1EBM/review";
+const ADMIN_WHATSAPP_NUMBER = "919244137353";
+
+const vehicles = [
+  {
+    name: "Dzire",
+    type: "Sedan",
+    value: "sedan" as VehicleType,
+    price: "₹18/km onwards",
+    seats: "4+1",
+    luggage: "2 Bags",
+    image:
+      "https://content.carlelo.com/media/models/Dzire/base/maruti-suzuki-dzire-1.webp",
+  },
+  {
+    name: "Ertiga",
+    type: "6+1",
+    value: "ertiga" as VehicleType,
+    price: "₹20/km onwards",
+    seats: "6+1",
+    luggage: "4 Bags",
+    image:
+      "https://imgd.aeplcdn.com/642x361/n/cw/ec/171147/maruti-suzuki-ertiga-left-rear-three-quarter0.jpeg?isig=0&q=75",
+  },
+  {
+    name: "Innova",
+    type: "7+1",
+    value: "innova" as VehicleType,
+    price: "₹22/km onwards",
+    seats: "7+1",
+    luggage: "5 Bags",
+    image:
+      "https://stimg.cardekho.com/images/expert-review/select-model/20250728_160805/930x620/5_1200x67520250728_160805.jpg",
+  },
+  {
+    name: "Innova Crysta",
+    type: "Premium",
+    value: "crysta" as VehicleType,
+    price: "₹24/km onwards",
+    seats: "7+1",
+    luggage: "5 Bags",
+    image:
+      "https://imgd.aeplcdn.com/664x374/n/cw/ec/51435/innova-crysta-exterior-right-front-three-quarter-2.jpeg?q=75",
+  },
+  {
+    name: "Scorpio",
+    type: "SUV",
+    value: "scorpio" as VehicleType,
+    price: "₹23/km onwards",
+    seats: "6+1",
+    luggage: "4 Bags",
+    image:
+      "https://stimg.cardekho.com/images/carexteriorimages/930x620/Mahindra/Scorpio-Classic/10764/1690185761481/front-left-side-47.jpg",
+  },
+];
+
+const popularRoutes = [
+  { title: "Raipur to Korba", fare: "₹2800+", link: "/routes/raipur-to-korba-taxi" },
+  { title: "Raipur to Bilaspur", fare: "₹2200+", link: "/routes/raipur-to-bilaspur-taxi" },
+  { title: "Raipur to Raigarh", fare: "₹3500+", link: "/routes/raipur-to-raigarh-taxi" },
+  { title: "Airport to Korba", fare: "₹3000+", link: "/routes/raipur-airport-to-korba-taxi" },
+  { title: "Airport to Bilaspur", fare: "₹2500+", link: "/routes/raipur-airport-to-bilaspur-taxi" },
+  { title: "Korba to Bilaspur", fare: "₹1800+", link: "/routes/korba-to-bilaspur-taxi" },
+];
+
+const faqs = [
+  {
+    q: "What is the Raipur to Korba taxi fare?",
+    a: "Taxi fare starts from approximately ₹2800 depending on vehicle type and travel date.",
+  },
+  {
+    q: "Do you provide airport pickup service?",
+    a: "Yes. Airport pickup and drop services are available across Chhattisgarh.",
+  },
+  {
+    q: "Can I book one-way taxi?",
+    a: "Yes. One-way taxi services are available on most routes.",
+  },
+  {
+    q: "Do you provide GST invoices?",
+    a: "Yes. GST invoices can be provided for eligible bookings.",
+  },
+];
+
+const reviews = [
+  { name: "Amit Verma", city: "Raipur", review: "Excellent taxi service. Clean vehicle and professional driver." },
+  { name: "Sanjay Agrawal", city: "Korba", review: "Airport pickup was on time and the journey was comfortable." },
+  { name: "Rohit Sharma", city: "Bilaspur", review: "Best taxi service for business travel across Chhattisgarh." },
+  { name: "Deepak Yadav", city: "Raigarh", review: "Transparent fare and quick WhatsApp support." },
+  { name: "Pooja Singh", city: "Raipur", review: "Family trip was smooth and comfortable." },
+  { name: "Nitin Gupta", city: "Korba", review: "Booked Ertiga for airport transfer. Great experience." },
+];
+
+const routeDistanceMap: Record<string, number> = {
+  "raipur-korba": 220,
+  "korba-raipur": 220,
+  "raipur-bilaspur": 140,
+  "bilaspur-raipur": 140,
+  "raipur-raigarh": 255,
+  "raigarh-raipur": 255,
+  "raipur airport-korba": 230,
+  "korba-raipur airport": 230,
+  "raipur airport-bilaspur": 150,
+  "bilaspur-raipur airport": 150,
+  "korba-bilaspur": 95,
+  "bilaspur-korba": 95,
 };
 
-export default function FareCalculator() {
-  const [formData, setFormData] = useState<FareFormData>(initialForm);
-  const [touched, setTouched] = useState(false);
+function normalizeLocation(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
 
-  const fareResult = useMemo(() => {
-    if (!formData.distance || formData.distance <= 0) return null;
+function estimateDistance(pickup: string, drop: string) {
+  const from = normalizeLocation(pickup);
+  const to = normalizeLocation(drop);
 
-    return calculateFare({
-      distance: Number(formData.distance),
-      vehicleType: formData.vehicleType,
-      bookingType: formData.bookingType,
+  if (!from || !to) return 0;
+
+  const exactKey = `${from}-${to}`;
+  if (routeDistanceMap[exactKey]) return routeDistanceMap[exactKey];
+  if (from === to) return 10;
+  if (from.includes("airport") || to.includes("airport")) return 160;
+  return 120;
+}
+
+function formatCurrency(value: number) {
+  return `₹${Math.round(value).toLocaleString("en-IN")}`;
+}
+
+function formatDisplayDate(date: string) {
+  if (!date) return "-";
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return date;
+  return parsed.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function formatDisplayTime(time: string) {
+  if (!time) return "-";
+  const [hours, minutes] = time.split(":");
+  const h = Number(hours);
+  const suffix = h >= 12 ? "PM" : "AM";
+  const formattedHour = h % 12 || 12;
+  return `${formattedHour}:${minutes} ${suffix}`;
+}
+
+function buildDateTime(date: string, time: string) {
+  if (!date || !time) return null;
+  const dt = new Date(`${date}T${time}`);
+  return Number.isNaN(dt.getTime()) ? null : dt;
+}
+
+function calculateTripEngagement(
+  pickupDate: string,
+  pickupTime: string,
+  returnDate: string,
+  returnTime: string
+) {
+  const start = buildDateTime(pickupDate, pickupTime);
+  const end = buildDateTime(returnDate, returnTime);
+
+  if (!start || !end || end <= start) {
+    return {
+      engagedDays: 0,
+      engagedNights: 0,
+      durationHours: 0,
+    };
+  }
+
+  const diffMs = end.getTime() - start.getTime();
+  const durationHours = diffMs / (1000 * 60 * 60);
+  const engagedDays = Math.max(1, Math.ceil(durationHours / 24));
+  const engagedNights = Math.max(0, engagedDays - 1);
+
+  return {
+    engagedDays,
+    engagedNights,
+    durationHours,
+  };
+}
+
+function shouldSkipFirstNightHalt(pickupTime: string, distance: number) {
+  if (!pickupTime) return false;
+  const [hours = 0] = pickupTime.split(":").map(Number);
+  return hours >= 17 && distance >= 300;
+}
+
+export default function HomePage() {
+  const [pickupAutocomplete, setPickupAutocomplete] =
+    useState<google.maps.places.Autocomplete | null>(null);
+  const [dropAutocomplete, setDropAutocomplete] =
+    useState<google.maps.places.Autocomplete | null>(null);
+
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+    libraries,
+  });
+
+  const [vehicleType, setVehicleType] = useState<VehicleType>("sedan");
+  const [bookingType, setBookingType] = useState<BookingType>("oneway");
+  const [pricingMode, setPricingMode] = useState<PricingMode>("running");
+  const [extraKm, setExtraKm] = useState(25);
+
+  const [pickupDate, setPickupDate] = useState("");
+  const [pickupTime, setPickupTime] = useState("");
+  const [returnDate, setReturnDate] = useState("");
+  const [returnTime, setReturnTime] = useState("");
+  const [pickup, setPickup] = useState("");
+  const [drop, setDrop] = useState("");
+  const [passengerCount, setPassengerCount] = useState(1);
+  const [stoppage, setStoppage] = useState(0);
+
+  const [loadingFare, setLoadingFare] = useState(false);
+  const [hasCalculated, setHasCalculated] = useState(false);
+  const [isFormLocked, setIsFormLocked] = useState(false);
+
+  const [mapDistance, setMapDistance] = useState(0);
+  const [totalRunningDistance, setTotalRunningDistance] = useState(0);
+  const [fare, setFare] = useState(0);
+  const [finalFare, setFinalFare] = useState(0);
+  const [fareRemarks, setFareRemarks] = useState<string[]>([]);
+  const [engagedDays, setEngagedDays] = useState(0);
+  const [engagedNights, setEngagedNights] = useState(0);
+
+  const [showReviewPopup, setShowReviewPopup] = useState(false);
+  const [showFarePopup, setShowFarePopup] = useState(false);
+
+  const popupRef = useRef<HTMLDivElement | null>(null);
+  const farePopupRef = useRef<HTMLDivElement | null>(null);
+  const triggerButtonRef = useRef<HTMLAnchorElement | null>(null);
+
+  const selectedVehicle = useMemo(() => {
+    return vehicles.find((v) => v.value === vehicleType)?.name || vehicleType;
+  }, [vehicleType]);
+
+  const selectedVehicleCard = useMemo(() => {
+    return vehicles.find((v) => v.value === vehicleType);
+  }, [vehicleType]);
+
+  const selectedVehicleConfig = VEHICLES[vehicleType];
+
+  const passengerOptions = useMemo(() => {
+    return Array.from({ length: selectedVehicleConfig.maxPassengers }, (_, i) => i + 1);
+  }, [selectedVehicleConfig.maxPassengers]);
+
+  const tripLabelMap: Record<BookingType, string> = {
+    oneway: "One Way Trip",
+    roundtrip: "Round Trip",
+    airporttransfer: "Airport Transfer",
+    local: "Local Ride",
+  };
+
+  const whatsappMessage = useMemo(() => {
+    const lines = [
+      "Hello Admin, please confirm my booking request:",
+      `Pickup: ${pickup || "-"}`,
+      `Drop: ${drop || "-"}`,
+      `Pickup Date: ${pickupDate || "-"}`,
+      `Pickup Time: ${pickupTime || "-"}`,
+      bookingType === "roundtrip" ? `Return Date: ${returnDate || "-"}` : "",
+      bookingType === "roundtrip" ? `Return Time: ${returnTime || "-"}` : "",
+      `Trip Type: ${tripLabelMap[bookingType]}`,
+      `Vehicle Type: ${selectedVehicle}`,
+      `Passengers: ${passengerCount}`,
+      bookingType === "roundtrip"
+        ? `Vehicle Booking Duration: ${engagedDays} Day(s), ${engagedNights} Night(s)`
+        : "",
+      `Estimated Fare: ${formatCurrency(finalFare || fare)}`,
+    ];
+    return lines.filter(Boolean).join("\n");
+  }, [
+    pickup,
+    drop,
+    pickupDate,
+    pickupTime,
+    returnDate,
+    returnTime,
+    bookingType,
+    selectedVehicle,
+    passengerCount,
+    engagedDays,
+    engagedNights,
+    finalFare,
+    fare,
+  ]);
+
+  const whatsappUrl = useMemo(() => {
+    return `https://wa.me/${ADMIN_WHATSAPP_NUMBER}?text=${encodeURIComponent(
+      whatsappMessage
+    )}`;
+  }, [whatsappMessage]);
+
+  useEffect(() => {
+    if (bookingType === "local") setPricingMode("fixed");
+    else setPricingMode("running");
+  }, [bookingType]);
+
+  useEffect(() => {
+    const maxPassengers = VEHICLES[vehicleType].maxPassengers;
+    if (passengerCount > maxPassengers) setPassengerCount(maxPassengers);
+  }, [vehicleType, passengerCount]);
+
+  useEffect(() => {
+    if (!showReviewPopup && !showFarePopup) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const activePopup = showFarePopup ? farePopupRef.current : popupRef.current;
+    const focusable =
+      activePopup?.querySelector<HTMLButtonElement | HTMLAnchorElement>(
+        "button, a[href]"
+      );
+    focusable?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        if (showFarePopup) setShowFarePopup(false);
+        if (showReviewPopup) setShowReviewPopup(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+      triggerButtonRef.current?.focus();
+    };
+  }, [showReviewPopup, showFarePopup]);
+
+  const onPickupLoad = (autocomplete: google.maps.places.Autocomplete) => {
+    setPickupAutocomplete(autocomplete);
+  };
+
+  const onDropLoad = (autocomplete: google.maps.places.Autocomplete) => {
+    setDropAutocomplete(autocomplete);
+  };
+
+  const onPickupPlaceChanged = () => {
+    if (!pickupAutocomplete) return;
+    const place = pickupAutocomplete.getPlace();
+    const address = place.formatted_address || place.name || "";
+    setPickup(address);
+  };
+
+  const onDropPlaceChanged = () => {
+    if (!dropAutocomplete) return;
+    const place = dropAutocomplete.getPlace();
+    const address = place.formatted_address || place.name || "";
+    setDrop(address);
+  };
+
+  const resetFareState = () => {
+    setMapDistance(0);
+    setTotalRunningDistance(0);
+    setFare(0);
+    setFinalFare(0);
+    setFareRemarks([]);
+    setEngagedDays(0);
+    setEngagedNights(0);
+  };
+
+  const handleBookingTypeChange = (value: BookingType) => {
+    setBookingType(value);
+    if (value !== "roundtrip") {
+      setReturnDate("");
+      setReturnTime("");
+      setEngagedDays(0);
+      setEngagedNights(0);
+    }
+  };
+
+  const applyFareResult = (actualTripDistance: number) => {
+    let autoDayHalts = 0;
+    let autoNightHalts = 0;
+    let tripDays = 1;
+    const popupNotes: string[] = [];
+
+    if (bookingType === "roundtrip" && pricingMode === "running") {
+      const engagement = calculateTripEngagement(
+        pickupDate,
+        pickupTime,
+        returnDate,
+        returnTime
+      );
+
+      tripDays = Math.max(1, engagement.engagedDays);
+      autoDayHalts = engagement.engagedDays;
+
+      const skipFirstNight = shouldSkipFirstNightHalt(
+        pickupTime,
+        actualTripDistance
+      );
+
+      autoNightHalts = skipFirstNight
+        ? Math.max(0, engagement.engagedNights - 1)
+        : engagement.engagedNights;
+
+      setEngagedDays(autoDayHalts);
+      setEngagedNights(autoNightHalts);
+
+      popupNotes.push(
+        `Vehicle booked for ${autoDayHalts} day(s) and ${autoNightHalts} night(s)`
+      );
+    } else {
+      setEngagedDays(0);
+      setEngagedNights(0);
+    }
+
+    const result = calculateFare({
+      distance: actualTripDistance,
+      extraKm,
+      vehicleType,
+      bookingType,
+      pricingMode,
+      passengerCount,
+      stoppage,
+      dayHalts: autoDayHalts,
+      nightHalts: autoNightHalts,
+      tripDays,
+      fuelPricePerLitre: 95,
     });
-  }, [formData.distance, formData.vehicleType, formData.bookingType]);
 
-  const validation = useMemo(() => validateFareForm(formData), [formData]);
+    setMapDistance(result.mapDistance);
+    setTotalRunningDistance(result.totalRunningDistance);
+    setFare(result.fare);
+    setFinalFare(result.finalFare);
+    setFareRemarks([...popupNotes, ...result.remarks]);
+    setHasCalculated(true);
+    setIsFormLocked(true);
+    setShowFarePopup(true);
+  };
 
-  const canSendWhatsApp = Boolean(validation.isValid && fareResult);
+  const handleFareCalculation = async () => {
+    if (!pickup || !drop || !pickupDate || !pickupTime) {
+      alert("Please fill pickup, drop, pickup date and pickup time.");
+      return;
+    }
 
-  const handleChange = (
-    key: keyof FareFormData,
-    value: string | number | VehicleType | BookingType
+    if (bookingType === "roundtrip" && (!returnDate || !returnTime)) {
+      alert("Please fill return date and return time for round trip.");
+      return;
+    }
+
+    if (bookingType === "roundtrip") {
+      const start = buildDateTime(pickupDate, pickupTime);
+      const end = buildDateTime(returnDate, returnTime);
+
+      if (!start || !end || end <= start) {
+        alert("Return date and time must be after pickup date and time.");
+        return;
+      }
+    }
+
+    setLoadingFare(true);
+
+    try {
+      const response = await fetch("/api/distance", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          origin: pickup,
+          destination: drop,
+        }),
+      });
+
+      const data = await response.json();
+      const tripDistance =
+        typeof data?.distanceKm === "number" && data.distanceKm > 0
+          ? Math.round(data.distanceKm)
+          : estimateDistance(pickup, drop);
+
+      applyFareResult(tripDistance);
+    } catch (error) {
+      console.error(error);
+      applyFareResult(estimateDistance(pickup, drop));
+    } finally {
+      setLoadingFare(false);
+    }
+  };
+
+  const handleRecalculate = () => {
+    setIsFormLocked(false);
+    setHasCalculated(false);
+    setShowFarePopup(false);
+    resetFareState();
+  };
+
+  const openReviewPopup = (
+    e: React.MouseEvent<HTMLAnchorElement, MouseEvent>
   ) => {
-    setFormData((prev) => ({
-      ...prev,
-      [key]: key === "distance" ? Number(value) : value,
-    }));
+    e.preventDefault();
+    triggerButtonRef.current = e.currentTarget;
+    setShowReviewPopup(true);
   };
 
-  const handleWhatsAppClick = () => {
-    setTouched(true);
+  const closeReviewPopup = () => setShowReviewPopup(false);
+  const closeFarePopup = () => setShowFarePopup(false);
 
-    if (!fareResult || !validation.isValid) return;
-
-    const rawMessage = buildWhatsAppFareMessage(formData, fareResult);
-    const encodedMessage = encodeURIComponent(rawMessage);
-    const waLink = `https://wa.me/${ADMIN_WHATSAPP_NUMBER}?text=${encodedMessage}`;
-
-    window.open(waLink, "_blank", "noopener,noreferrer");
+  const continueToWhatsApp = () => {
+    if (typeof window !== "undefined" && window.gtag) {
+      window.gtag("event", "conversion", {
+        send_to: "AW-18196199181/1OB8CJ0zTbgcEI3uz-RD",
+        value: 1.0,
+        currency: "INR",
+      });
+    }
+    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+    setShowReviewPopup(false);
   };
 
-  return (
-    <section className="w-full bg-white py-6 md:py-10">
-      <div className="mx-auto max-w-6xl px-4">
-        <div className="mb-4 overflow-hidden rounded-full border border-emerald-200 bg-gradient-to-r from-emerald-50 via-lime-50 to-emerald-50 shadow-sm md:hidden">
-          <div className="offer-marquee flex w-max items-center gap-8 px-4 py-2 text-xs font-semibold text-emerald-700">
-            <span>140+ km rides par 18% OFF</span>
-            <span>One Way Taxi Best Fare</span>
-            <span>Local • Outstation • Roundtrip</span>
-            <span>Instant Fare Estimate on WhatsApp</span>
-            <span>Safe • Quick • Professional Booking</span>
+  const trackCallConversion = () => {
+    if (typeof window !== "undefined" && window.gtag) {
+      window.gtag("event", "conversion", {
+        send_to: "AW-18196199181/1OB8CJ0zTbgcEI3uz-RD",
+        value: 1.0,
+        currency: "INR",
+      });
+    }
+  };
 
-            <span>140+ km rides par 18% OFF</span>
-            <span>One Way Taxi Best Fare</span>
-            <span>Local • Outstation • Roundtrip</span>
-            <span>Instant Fare Estimate on WhatsApp</span>
-            <span>Safe • Quick • Professional Booking</span>
-          </div>
-        </div>
+  const renderLocationField = ({
+    label,
+    value,
+    setValue,
+    placeholder,
+    onLoad,
+    onPlaceChanged,
+    clearLabel,
+  }: {
+    label: string;
+    value: string;
+    setValue: (value: string) => void;
+    placeholder: string;
+    onLoad: (autocomplete: google.maps.places.Autocomplete) => void;
+    onPlaceChanged: () => void;
+    clearLabel: string;
+  }) => {
+    const inputClassName =
+      "h-11 w-full rounded-xl border border-slate-300 bg-white px-3 pr-11 text-sm text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100";
 
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          <div className="rounded-3xl border border-gray-200 bg-white p-4 shadow-sm md:p-6">
-            <div className="mb-5">
-              <p className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                Get Fare Estimate
-              </p>
-              <h2 className="mt-3 text-2xl font-bold tracking-tight text-gray-900">
-                Book your ride with instant estimate
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-gray-500">
-                Fill complete details to generate a clean fare estimate and send
-                it directly on WhatsApp.
-              </p>
-            </div>
+    const inputElement = (
+      <input
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder={placeholder}
+        disabled={isFormLocked}
+        className={inputClassName}
+      />
+    );
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field>
-                <Label htmlFor="pickupLocation">Pick-up Location</Label>
-                <Input
-                  id="pickupLocation"
-                  placeholder="Enter pick-up point"
-                  value={formData.pickupLocation}
-                  onChange={(e) =>
-                    handleChange("pickupLocation", e.target.value)
-                  }
-                />
-              </Field>
+    return (
+      <div className="space-y-1.5">
+        <label className="block text-[12px] font-semibold text-slate-800">
+          {label}
+        </label>
+        <div className="relative">
+          {loadError ? (
+            inputElement
+          ) : isLoaded ? (
+            <Autocomplete
+              onLoad={onLoad}
+              onPlaceChanged={onPlaceChanged}
+              options={{
+                fields: ["formatted_address", "name", "geometry"],
+                componentRestrictions: { country: "in" },
+              }}
+            >
+              {inputElement}
+            </Autocomplete>
+          ) : (
+            <input
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder={`Loading ${label.toLowerCase()} suggestions...`}
+              disabled={isFormLocked}
+              className={inputClassName}
+            />
+          )}
 
-              <Field>
-                <Label htmlFor="dropLocation">Drop Location</Label>
-                <Input
-                  id="dropLocation"
-                  placeholder="Enter drop point"
-                  value={formData.dropLocation}
-                  onChange={(e) => handleChange("dropLocation", e.target.value)}
-                />
-              </Field>
-
-              <Field>
-                <Label htmlFor="pickupDate">Pick-up Date</Label>
-                <Input
-                  id="pickupDate"
-                  type="date"
-                  value={formData.pickupDate}
-                  onChange={(e) => handleChange("pickupDate", e.target.value)}
-                />
-              </Field>
-
-              <Field>
-                <Label htmlFor="pickupTime">Pick-up Time</Label>
-                <Input
-                  id="pickupTime"
-                  type="time"
-                  value={formData.pickupTime}
-                  onChange={(e) => handleChange("pickupTime", e.target.value)}
-                />
-              </Field>
-
-              <Field>
-                <Label htmlFor="distance">Total Approx Distance (KM)</Label>
-                <Input
-                  id="distance"
-                  type="number"
-                  min="1"
-                  placeholder="Example: 165"
-                  value={formData.distance || ""}
-                  onChange={(e) => handleChange("distance", e.target.value)}
-                />
-              </Field>
-
-              <Field>
-                <Label htmlFor="vehicleType">Vehicle Type</Label>
-                <Select
-                  id="vehicleType"
-                  value={formData.vehicleType}
-                  onChange={(e) =>
-                    handleChange("vehicleType", e.target.value as VehicleType)
-                  }
-                >
-                  {Object.entries(VEHICLES).map(([key, vehicle]) => (
-                    <option key={key} value={key}>
-                      {vehicle.label}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-
-              <Field className="sm:col-span-2">
-                <Label htmlFor="bookingType">Ride Type</Label>
-                <Select
-                  id="bookingType"
-                  value={formData.bookingType}
-                  onChange={(e) =>
-                    handleChange("bookingType", e.target.value as BookingType)
-                  }
-                >
-                  <option value="oneway">One Way</option>
-                  <option value="roundtrip">Round Trip</option>
-                  <option value="local">Local</option>
-                  <option value="outstation">Outstation</option>
-                </Select>
-              </Field>
-            </div>
-
-            {touched && !validation.isValid && (
-              <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4">
-                <p className="text-sm font-semibold text-red-700">
-                  Please complete all required details:
-                </p>
-                <ul className="mt-2 space-y-1 text-sm text-red-600">
-                  {validation.errors.map((error) => (
-                    <li key={error}>• {error}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-              <button
-                type="button"
-                onClick={() => setTouched(true)}
-                className="inline-flex w-full items-center justify-center rounded-2xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 sm:w-auto"
-              >
-                Calculate Fare
-              </button>
-
-              <button
-                type="button"
-                onClick={handleWhatsAppClick}
-                disabled={!canSendWhatsApp}
-                className={`inline-flex w-full items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold text-white transition sm:w-auto ${
-                  canSendWhatsApp
-                    ? "bg-green-600 hover:bg-green-700"
-                    : "cursor-not-allowed bg-gray-300"
-                }`}
-              >
-                Send on WhatsApp
-              </button>
-            </div>
-          </div>
-
-          <div
-            id="fare-estimate-card"
-            className="rounded-3xl border border-gray-200 bg-white p-4 shadow-sm md:p-6"
-          >
-            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 pb-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">
-                  Fare Estimate
-                </p>
-                <h3 className="mt-2 text-2xl font-bold text-gray-900">
-                  Trip summary card
-                </h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Review all trip details before sending.
-                </p>
-              </div>
-
-              {fareResult?.discountApplied && (
-                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-                  18% Discount Applied
-                </span>
-              )}
-            </div>
-
-            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <DetailCard
-                label="Pick-up Location"
-                value={formData.pickupLocation || "—"}
-              />
-              <DetailCard
-                label="Drop Location"
-                value={formData.dropLocation || "—"}
-              />
-              <DetailCard label="Pick-up Date" value={formData.pickupDate || "—"} />
-              <DetailCard label="Pick-up Time" value={formData.pickupTime || "—"} />
-              <DetailCard
-                label="Approx Distance"
-                value={fareResult ? `${fareResult.distance} km` : "—"}
-              />
-              <DetailCard
-                label="Vehicle Type"
-                value={getVehicleLabel(formData.vehicleType)}
-              />
-              <DetailCard
-                label="Ride Type"
-                value={getBookingTypeLabel(formData.bookingType)}
-              />
-              <DetailCard
-                label="Total Fare"
-                value={fareResult ? formatCurrency(fareResult.fare) : "—"}
-              />
-
-              {fareResult?.discountApplied && (
-                <DetailCard
-                  label="Discount Amount"
-                  value={`- ${formatCurrency(fareResult.discount)}`}
-                  valueClassName="text-emerald-600"
-                />
-              )}
-
-              <DetailCard
-                label="Net Payable"
-                value={fareResult ? formatCurrency(fareResult.finalFare) : "—"}
-                valueClassName="text-gray-900"
-                highlight
-              />
-            </div>
-
-            <div className="mt-5 rounded-2xl bg-gray-50 p-4">
-              <p className="text-sm font-semibold text-gray-900">Important Notes</p>
-              <ul className="mt-2 space-y-2 text-sm text-gray-600">
-                {(fareResult?.remarks ?? [
-                  "Toll Tax Extra",
-                  "Parking Charges Extra",
-                  "Night Halt extra if applicable",
-                  "Driver fooding & allowance extra for round trips",
-                ]).map((item) => (
-                  <li key={item}>• {item}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
+          {value && !isFormLocked && (
+            <button
+              type="button"
+              onClick={() => setValue("")}
+              aria-label={clearLabel}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
       </div>
+    );
+  };
 
-      <style jsx>{`
-        .offer-marquee {
-          animation: offerTicker 18s linear infinite;
-          white-space: nowrap;
-        }
-
-        @keyframes offerTicker {
-          0% {
-            transform: translateX(0);
-          }
-          100% {
-            transform: translateX(-50%);
-          }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .offer-marquee {
-            animation: none;
-          }
-        }
-      `}</style>
-    </section>
-  );
-}
-
-function Field({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return <div className={className}>{children}</div>;
-}
-
-function Label({
-  children,
-  htmlFor,
-}: {
-  children: React.ReactNode;
-  htmlFor: string;
-}) {
   return (
-    <label
-      htmlFor={htmlFor}
-      className="mb-2 block text-sm font-semibold text-gray-800"
-    >
-      {children}
-    </label>
-  );
-}
+    <>
+      <TopBar />
 
-function Input({
-  className = "",
-  ...props
-}: React.InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <input
-      {...props}
-      className={`h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 ${className}`}
-    />
-  );
-}
+      <main className="min-h-screen overflow-x-hidden bg-slate-50">
+        <section className="relative overflow-hidden bg-slate-950 text-white">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.24),transparent_36%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0.76),rgba(2,6,23,0.95))]" />
 
-function Select({
-  className = "",
-  children,
-  ...props
-}: React.SelectHTMLAttributes<HTMLSelectElement>) {
-  return (
-    <select
-      {...props}
-      className={`h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 ${className}`}
-    >
-      {children}
-    </select>
-  );
-}
+          <div className="relative mx-auto max-w-7xl px-4 py-6 md:py-14 lg:py-20">
+            <div className="mb-4 overflow-hidden rounded-2xl border border-orange-200 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 px-3 py-2 text-white shadow-lg md:hidden">
+              <div className="whitespace-nowrap text-[11px] font-extrabold tracking-wide animate-[marquee_12s_linear_infinite]">
+                One Way • Round Trip • Local • Airport Transfer • Instant WhatsApp Booking
+              </div>
+            </div>
 
-function DetailCard({
-  label,
-  value,
-  valueClassName = "text-gray-900",
-  highlight = false,
-}: {
-  label: string;
-  value: string;
-  valueClassName?: string;
-  highlight?: boolean;
-}) {
-  return (
-    <div
-      className={`rounded-2xl border p-4 ${
-        highlight
-          ? "border-emerald-200 bg-emerald-50"
-          : "border-gray-100 bg-gray-50"
-      }`}
-    >
-      <p className="text-xs font-semibold uppercase tracking-[0.15em] text-gray-500">
-        {label}
-      </p>
-      <p className={`mt-2 text-sm font-bold ${valueClassName}`}>{value}</p>
-    </div>
+            <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-orange-300 md:text-sm">
+                  <BadgeCheck size={14} />
+                  Trusted Taxi Booking in Chhattisgarh
+                </div>
+
+                <h1 className="mt-4 max-w-3xl text-3xl font-black leading-tight sm:text-4xl md:text-5xl lg:text-6xl">
+                  Book Safe & Reliable Taxi
+                  <span className="text-orange-500"> in Minutes</span>
+                </h1>
+
+                <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300 md:text-lg md:leading-8">
+                  Get instant fare estimate for one way, round trip, local ride and airport pickup with quick booking confirmation on WhatsApp.
+                </p>
+
+                <div className="mt-5 grid grid-cols-2 gap-2.5 sm:mt-6 sm:gap-3">
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-[12px] sm:text-sm md:text-base">✓ Transparent Pricing</div>
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-[12px] sm:text-sm md:text-base">✓ Verified Drivers</div>
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-[12px] sm:text-sm md:text-base">✓ Clean Vehicles</div>
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-[12px] sm:text-sm md:text-base">✓ Quick Confirmation</div>
+                </div>
+
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                  <a
+                    href={whatsappUrl}
+                    onClick={openReviewPopup}
+                    className="inline-flex min-h-[48px] items-center justify-center rounded-2xl bg-orange-500 px-5 py-3 text-center text-sm font-bold text-white transition hover:bg-orange-600 sm:min-h-[52px] sm:px-6 sm:py-4"
+                  >
+                    Get Fare on WhatsApp
+                  </a>
+
+                  <a
+                    href="tel:9244137353"
+                    onClick={trackCallConversion}
+                    className="inline-flex min-h-[48px] items-center justify-center rounded-2xl border border-white px-5 py-3 text-center text-sm font-bold text-white sm:min-h-[52px] sm:px-6 sm:py-4"
+                  >
+                    Call Now
+                  </a>
+                </div>
+              </div>
+
+              <div>
+                <div className="rounded-2xl bg-white p-3 shadow-2xl ring-1 ring-black/5 sm:p-4 md:rounded-[30px] md:p-5">
+                  <div className="mb-4 sm:mb-5">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-orange-700">
+                      <CarFront size={14} />
+                      Fare Calculator
+                    </div>
+                    <h2 className="mt-2 text-[clamp(1.1rem,2vw,1.75rem)] font-black leading-tight text-slate-900">
+                      Get Instant Fare Estimate
+                    </h2>
+                    <p className="mt-1.5 text-[13px] sm:text-sm leading-5 sm:leading-6 text-slate-600">
+                      Fill trip details and get a compact ticket-style summary.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {(["oneway", "roundtrip", "local", "airporttransfer"] as BookingType[]).map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        disabled={isFormLocked}
+                        onClick={() => handleBookingTypeChange(type)}
+                        className={`min-h-[44px] rounded-xl border px-2 py-2 text-[11px] sm:text-sm font-bold leading-tight transition ${
+                          bookingType === type
+                            ? "border-orange-500 bg-orange-500 text-white"
+                            : "border-slate-200 bg-white text-slate-700 hover:border-orange-300"
+                        } ${isFormLocked ? "cursor-not-allowed opacity-60" : ""}`}
+                      >
+                        {tripLabelMap[type]}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="mt-4 space-y-3 sm:space-y-4">
+                    {renderLocationField({
+                      label: "Pickup Location",
+                      value: pickup,
+                      setValue: setPickup,
+                      placeholder: "Enter pickup location",
+                      onLoad: onPickupLoad,
+                      onPlaceChanged: onPickupPlaceChanged,
+                      clearLabel: "Clear pickup location",
+                    })}
+
+                    {renderLocationField({
+                      label: "Drop Location",
+                      value: drop,
+                      setValue: setDrop,
+                      placeholder: "Enter drop location",
+                      onLoad: onDropLoad,
+                      onPlaceChanged: onDropPlaceChanged,
+                      clearLabel: "Clear drop location",
+                    })}
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1.5 block text-[12px] font-semibold text-slate-800">
+                          Pickup Date
+                        </label>
+                        <input
+                          type="date"
+                          value={pickupDate}
+                          disabled={isFormLocked}
+                          onChange={(e) => setPickupDate(e.target.value)}
+                          className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-1.5 block text-[12px] font-semibold text-slate-800">
+                          Pickup Time
+                        </label>
+                        <input
+                          type="time"
+                          value={pickupTime}
+                          disabled={isFormLocked}
+                          onChange={(e) => setPickupTime(e.target.value)}
+                          className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                        />
+                      </div>
+                    </div>
+
+                    {bookingType === "roundtrip" && (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <label className="mb-1.5 block text-[12px] font-semibold text-slate-800">
+                            Return Date
+                          </label>
+                          <input
+                            type="date"
+                            value={returnDate}
+                            disabled={isFormLocked}
+                            onChange={(e) => setReturnDate(e.target.value)}
+                            className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-1.5 block text-[12px] font-semibold text-slate-800">
+                            Return Time
+                          </label>
+                          <input
+                            type="time"
+                            value={returnTime}
+                            disabled={isFormLocked}
+                            onChange={(e) => setReturnTime(e.target.value)}
+                            className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {(bookingType === "local" || bookingType === "roundtrip") && (
+                      <div>
+                        <label className="mb-1.5 block text-[12px] font-semibold text-slate-800">
+                          Pricing Mode
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            disabled={isFormLocked}
+                            onClick={() => setPricingMode("running")}
+                            className={`min-h-[42px] rounded-xl border px-3 py-2 text-[12px] sm:text-sm font-bold transition ${
+                              pricingMode === "running"
+                                ? "border-orange-500 bg-orange-500 text-white"
+                                : "border-slate-200 bg-white text-slate-700"
+                            } ${bookingType === "local" ? "opacity-60" : ""}`}
+                          >
+                            Running
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={isFormLocked}
+                            onClick={() => setPricingMode("fixed")}
+                            className={`min-h-[42px] rounded-xl border px-3 py-2 text-[12px] sm:text-sm font-bold transition ${
+                              pricingMode === "fixed"
+                                ? "border-orange-500 bg-orange-500 text-white"
+                                : "border-slate-200 bg-white text-slate-700"
+                            }`}
+                          >
+                            Fixed
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div>
+                        <label className="mb-1.5 block text-[12px] font-semibold text-slate-800">
+                          Vehicle
+                        </label>
+                        <select
+                          value={vehicleType}
+                          disabled={isFormLocked}
+                          onChange={(e) => setVehicleType(e.target.value as VehicleType)}
+                          className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                        >
+                          {vehicles.map((vehicle) => (
+                            <option key={vehicle.value} value={vehicle.value}>
+                              {vehicle.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="mb-1.5 block text-[12px] font-semibold text-slate-800">
+                          Passengers
+                        </label>
+                        <select
+                          value={passengerCount}
+                          disabled={isFormLocked}
+                          onChange={(e) => setPassengerCount(Number(e.target.value))}
+                          className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                        >
+                          {passengerOptions.map((count) => (
+                            <option key={count} value={count}>
+                              {count} Passenger{count > 1 ? "s" : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="mb-1.5 block text-[12px] font-semibold text-slate-800">
+                          Stoppage
+                        </label>
+                        <select
+                          value={stoppage}
+                          disabled={isFormLocked}
+                          onChange={(e) => setStoppage(Number(e.target.value))}
+                          className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                        >
+                          {[0, 1, 2, 3, 4, 5].map((stop) => (
+                            <option key={stop} value={stop}>
+                              {stop} Stop{stop > 1 ? "s" : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-[12px] font-semibold text-slate-800">
+                        Extra Running KM
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={extraKm}
+                        disabled={isFormLocked}
+                        onChange={(e) => setExtraKm(Number(e.target.value) || 0)}
+                        className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-black outline-none focus:border-orange-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                      />
+                    </div>
+
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {!hasCalculated ? (
+                        <button
+                          type="button"
+                          onClick={handleFareCalculation}
+                          disabled={loadingFare}
+                          className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-orange-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                          {loadingFare ? "Calculating..." : "Get Fare Estimate"}
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => setShowFarePopup(true)}
+                            className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-700"
+                          >
+                            View Ticket
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleRecalculate}
+                            className="inline-flex min-h-[48px] items-center justify-center rounded-xl border border-slate-300 px-4 py-3 text-sm font-bold text-slate-800 transition hover:border-orange-300 hover:text-orange-600"
+                          >
+                            Recalculate
+                          </button>
+                        </>
+                      )}
+                    </div>
+
+                    <div className="rounded-xl bg-slate-100 px-3 py-2.5 text-[11px] sm:text-xs leading-5 text-slate-600">
+                      Toll, parking and driver allowance may apply as per trip type. Final fare confirmation is shared on WhatsApp before booking.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-7xl px-4 py-12 md:py-16">
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+              <ShieldCheck className="mb-3 text-orange-500" size={28} />
+              <h3 className="text-lg font-bold text-slate-900">Safe & Verified</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Professional drivers and well-maintained vehicles for business and family travel.
+              </p>
+            </div>
+
+            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+              <Clock3 className="mb-3 text-orange-500" size={28} />
+              <h3 className="text-lg font-bold text-slate-900">Quick Response</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Instant fare estimate and quick booking confirmation over call or WhatsApp.
+              </p>
+            </div>
+
+            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+              <Star className="mb-3 text-orange-500" size={28} />
+              <h3 className="text-lg font-bold text-slate-900">Transparent Pricing</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Clean estimate flow with route, vehicle and travel summary shown in one ticket-style card.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-7xl px-4 py-6 md:py-10">
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-black text-slate-900 md:text-3xl">
+                Choose Your Vehicle
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Select the right cab for solo, family or business travel.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-5">
+            {vehicles.map((vehicle) => (
+              <div
+                key={vehicle.value}
+                className={`overflow-hidden rounded-3xl bg-white shadow-sm ring-1 transition ${
+                  vehicleType === vehicle.value
+                    ? "ring-orange-500"
+                    : "ring-slate-200 hover:ring-orange-300"
+                }`}
+              >
+                <div className="relative h-44 bg-slate-100">
+                  <Image
+                    src={vehicle.image}
+                    alt={vehicle.name}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 20vw"
+                  />
+                </div>
+
+                <div className="p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900">{vehicle.name}</h3>
+                      <p className="text-sm text-slate-500">{vehicle.type}</p>
+                    </div>
+                    <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">
+                      {vehicle.price}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-slate-600">
+                    <div className="rounded-2xl bg-slate-50 p-3">
+                      <div className="font-semibold text-slate-900">{vehicle.seats}</div>
+                      <div>Seats</div>
+                    </div>
+                    <div className="rounded-2xl bg-slate-50 p-3">
+                      <div className="font-semibold text-slate-900">{vehicle.luggage}</div>
+                      <div>Luggage</div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setVehicleType(vehicle.value)}
+                    className={`mt-4 inline-flex w-full items-center justify-center rounded-2xl px-4 py-3 text-sm font-bold transition ${
+                      vehicleType === vehicle.value
+                        ? "bg-orange-500 text-white"
+                        : "border border-slate-300 text-slate-800 hover:border-orange-300 hover:text-orange-600"
+                    }`}
+                  >
+                    {vehicleType === vehicle.value ? "Selected" : "Choose Vehicle"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-7xl px-4 py-10 md:py-14">
+          <div className="mb-6">
+            <h2 className="text-2xl font-black text-slate-900 md:text-3xl">
+              Popular Routes
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Fast booking for frequently travelled routes across Chhattisgarh.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {popularRoutes.map((route) => (
+              <Link
+                key={route.title}
+                href={route.link}
+                className="group rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:ring-orange-300"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">{route.title}</h3>
+                    <p className="mt-1 text-sm text-slate-500">Starting fare {route.fare}</p>
+                  </div>
+                  <ArrowRight className="text-slate-400 transition group-hover:text-orange-500" />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="bg-slate-900 py-14 text-white">
+          <div className="mx-auto max-w-7xl px-4">
+            <div className="mb-8 max-w-2xl">
+              <h2 className="text-2xl font-black md:text-3xl">What Customers Say</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                Trusted by families, business travellers and airport transfer customers.
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {reviews.map((item, index) => (
+                <div
+                  key={`${item.name}-${index}`}
+                  className="rounded-3xl border border-white/10 bg-white/5 p-5"
+                >
+                  <div className="mb-3 flex items-center gap-1 text-orange-400">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} size={16} fill="currentColor" />
+                    ))}
+                  </div>
+                  <p className="text-sm leading-7 text-slate-200">“{item.review}”</p>
+                  <div className="mt-4 text-sm font-bold text-white">{item.name}</div>
+                  <div className="text-xs text-slate-400">{item.city}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-7xl px-4 py-14">
+          <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="rounded-[32px] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
+              <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-orange-700">
+                <Gift size={14} />
+                Why book with us
+              </div>
+
+              <h2 className="mt-4 text-2xl font-black text-slate-900 md:text-3xl">
+                Taxi service designed for quick booking
+              </h2>
+
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                {[
+                  "Instant ticket-style fare estimate",
+                  "WhatsApp confirmation support",
+                  "One way, local and round trip options",
+                  "Business, family and airport travel",
+                ].map((item) => (
+                  <div
+                    key={item}
+                    className="flex items-start gap-3 rounded-2xl bg-slate-50 p-4"
+                  >
+                    <CheckCircle2 className="mt-0.5 text-orange-500" size={18} />
+                    <p className="text-sm font-medium leading-6 text-slate-700">{item}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-[32px] bg-gradient-to-br from-orange-500 to-amber-500 p-6 text-white shadow-xl md:p-8">
+              <h2 className="text-2xl font-black md:text-3xl">Need quick booking help?</h2>
+              <p className="mt-3 text-sm leading-7 text-orange-50">
+                Call now or message on WhatsApp for fast confirmation and vehicle availability.
+              </p>
+
+              <div className="mt-6 space-y-3">
+                <a
+                  href="tel:9244137353"
+                  onClick={trackCallConversion}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-5 py-4 font-bold text-orange-600"
+                >
+                  <Phone size={18} />
+                  Call 9244137353
+                </a>
+
+                <a
+                  href={whatsappUrl}
+                  onClick={openReviewPopup}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/40 px-5 py-4 font-bold text-white"
+                >
+                  <MessageCircle size={18} />
+                  Book on WhatsApp
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-7xl px-4 pb-16">
+          <div className="mb-6">
+            <h2 className="text-2xl font-black text-slate-900 md:text-3xl">FAQs</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Common booking questions from our customers.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {faqs.map((faq) => (
+              <div
+                key={faq.q}
+                className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
+              >
+                <h3 className="text-lg font-bold text-slate-900">{faq.q}</h3>
+                <p className="mt-2 text-sm leading-7 text-slate-600">{faq.a}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      </main>
+
+      {showFarePopup && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/70 p-2 sm:p-4">
+          <div
+            ref={farePopupRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Fare estimate ticket"
+            className="relative flex max-h-[96vh] w-full max-w-4xl flex-col overflow-hidden rounded-[24px] bg-white shadow-2xl"
+          >
+            <button
+              type="button"
+              onClick={closeFarePopup}
+              className="absolute right-3 top-3 z-20 rounded-full bg-slate-100 p-2 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
+              aria-label="Close fare popup"
+            >
+              <X size={16} />
+            </button>
+
+            <div className="bg-slate-950 px-4 py-4 text-white sm:px-5 sm:py-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.16em] text-orange-300">
+                    <Ticket size={14} />
+                    Fare Estimate Ticket
+                  </div>
+                  <h3 className="mt-2 text-[clamp(1.05rem,2vw,1.6rem)] font-black leading-tight">
+                    {tripLabelMap[bookingType]}
+                  </h3>
+                </div>
+
+                <div className="shrink-0 rounded-2xl bg-orange-500 px-3 py-2 text-right sm:px-4 sm:py-3">
+                  <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-orange-100">
+                    Estimated Fare
+                  </div>
+                  <div className="text-lg sm:text-2xl font-black leading-none">
+                    {formatCurrency(finalFare || fare)}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(249,115,22,0.10),transparent_36%)] p-3 sm:p-4 md:p-5">
+              <div className="grid gap-3 md:grid-cols-[1.08fr_0.92fr]">
+                <div className="space-y-3">
+                  <div className="rounded-2xl bg-slate-50 p-3 sm:p-4">
+                    <div className="flex items-start gap-3">
+                      <MapPin className="mt-1 text-orange-500" size={18} />
+                      <div className="min-w-0">
+                        <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                          Route
+                        </p>
+                        <p className="mt-1 break-words text-sm sm:text-[15px] font-semibold leading-6 text-slate-900">
+                          {pickup || "-"}
+                        </p>
+                        <div className="my-2 h-px w-full bg-slate-200" />
+                        <p className="break-words text-sm sm:text-[15px] font-semibold leading-6 text-slate-900">
+                          {drop || "-"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-2xl bg-slate-50 p-3 sm:p-4">
+                      <div className="flex items-center gap-2 text-orange-500">
+                        <CalendarDays size={16} />
+                        <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                          Pickup
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm sm:text-[15px] font-bold text-slate-900">
+                        {formatDisplayDate(pickupDate)}
+                      </p>
+                      <p className="text-[12px] sm:text-sm text-slate-600">
+                        {formatDisplayTime(pickupTime)}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl bg-slate-50 p-3 sm:p-4">
+                      <div className="flex items-center gap-2 text-orange-500">
+                        <Clock4 size={16} />
+                        <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                          Vehicle
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm sm:text-[15px] font-bold text-slate-900">
+                        {selectedVehicle}
+                      </p>
+                      <p className="text-[12px] sm:text-sm text-slate-600">
+                        {selectedVehicleConfig.maxPassengers} passenger capacity
+                      </p>
+                    </div>
+                  </div>
+
+                  {bookingType === "roundtrip" && (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-2xl bg-slate-50 p-3 sm:p-4">
+                        <div className="flex items-center gap-2 text-orange-500">
+                          <CalendarDays size={16} />
+                          <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                            Return
+                          </span>
+                        </div>
+                        <p className="mt-2 text-sm sm:text-[15px] font-bold text-slate-900">
+                          {formatDisplayDate(returnDate)}
+                        </p>
+                        <p className="text-[12px] sm:text-sm text-slate-600">
+                          {formatDisplayTime(returnTime)}
+                        </p>
+                      </div>
+
+                      <div className="rounded-2xl bg-orange-50 p-3 sm:p-4 ring-1 ring-orange-100">
+                        <div className="flex items-center gap-2 text-orange-600">
+                          <Building2 size={16} />
+                          <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.16em] text-orange-700">
+                            Duration
+                          </span>
+                        </div>
+                        <p className="mt-2 text-sm sm:text-[15px] font-black text-slate-900">
+                          {engagedDays} Day(s) / {engagedNights} Night(s)
+                        </p>
+                        <p className="text-[12px] sm:text-sm text-slate-600">
+                          Vehicle booked for full trip duration
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  {selectedVehicleCard && (
+                    <div className="overflow-hidden rounded-2xl bg-slate-50 ring-1 ring-slate-200">
+                      <div className="relative h-32 bg-slate-100 sm:h-36">
+                        <Image
+                          src={selectedVehicleCard.image}
+                          alt={selectedVehicleCard.name}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, 380px"
+                        />
+                      </div>
+                      <div className="p-3 sm:p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-base sm:text-lg font-black text-slate-900">
+                              {selectedVehicleCard.name}
+                            </p>
+                            <p className="text-[12px] sm:text-sm text-slate-500">
+                              {selectedVehicleCard.type}
+                            </p>
+                          </div>
+                          <span className="shrink-0 rounded-full bg-orange-100 px-3 py-1 text-[10px] sm:text-xs font-bold text-orange-700">
+                            {selectedVehicleCard.price}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="rounded-2xl bg-slate-950 p-4 text-white sm:p-5">
+                    <div className="grid gap-2.5 sm:gap-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="flex items-center gap-2 text-[12px] sm:text-sm text-slate-300">
+                          <Route size={15} />
+                          Distance
+                        </span>
+                        <span className="text-[12px] sm:text-sm font-bold">
+                          {totalRunningDistance || mapDistance} KM
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="flex items-center gap-2 text-[12px] sm:text-sm text-slate-300">
+                          <Users size={15} />
+                          Passengers
+                        </span>
+                        <span className="text-[12px] sm:text-sm font-bold">
+                          {passengerCount}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="flex items-center gap-2 text-[12px] sm:text-sm text-slate-300">
+                          <CarTaxiFront size={15} />
+                          Trip
+                        </span>
+                        <span className="text-[12px] sm:text-sm font-bold">
+                          {tripLabelMap[bookingType]}
+                        </span>
+                      </div>
+
+                      <div className="h-px bg-white/10" />
+
+                      <div className="rounded-2xl bg-white/5 p-3 sm:p-4">
+                        <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.16em] text-orange-300">
+                          Included Highlights
+                        </p>
+
+                        <div className="mt-2.5 space-y-2 text-[12px] sm:text-sm text-slate-200">
+                          <div className="flex items-start gap-2">
+                            <CheckCircle2 size={15} className="mt-0.5 text-orange-400" />
+                            <span>Clean vehicle and verified driver</span>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <CheckCircle2 size={15} className="mt-0.5 text-orange-400" />
+                            <span>Quick booking confirmation on WhatsApp</span>
+                          </div>
+                          {bookingType === "roundtrip" && (
+                            <div className="flex items-start gap-2">
+                              <CheckCircle2 size={15} className="mt-0.5 text-orange-400" />
+                              <span>
+                                Vehicle reserved for {engagedDays} day(s) and {engagedNights} night(s)
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+             {fareRemarks.length > 0 && (
+  <div className="mt-3 rounded-2xl bg-slate-50 p-3 sm:p-4">
+    <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+      Fare Notes
+    </p>
+    <ul className="mt-2 space-y-1.5 text-[12px] sm:text-sm leading-5 text-slate-700">
+      {fareRemarks.slice(0, 2).map((note, idx) => (
+        <li key={idx}>• {note}</li>
+      ))}
+    </ul>
+  </div>
+)}
+
+              <div className="mt-3 rounded-2xl bg-emerald-50 p-3 sm:p-4 ring-1 ring-emerald-100">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck className="mt-0.5 text-emerald-600" size={16} />
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">
+                      Final fare confirmation shared before booking
+                    </p>
+                    <p className="mt-1 text-[12px] sm:text-sm leading-5 sm:leading-6 text-slate-600">
+                      This is an estimate ticket. Final booking confirmation and trip support are provided on WhatsApp.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="sticky bottom-0 mt-3 grid gap-2 bg-white/95 pt-2 pb-1 backdrop-blur sm:grid-cols-2">
+                <a
+                  href={whatsappUrl}
+                  onClick={openReviewPopup}
+                  className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-orange-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
+                >
+                  <MessageCircle size={16} />
+                  Book on WhatsApp
+                </a>
+
+                <button
+                  type="button"
+                  onClick={handleRecalculate}
+                  className="inline-flex min-h-[48px] items-center justify-center rounded-2xl border border-slate-300 px-4 py-3 text-sm font-bold text-slate-800 transition hover:border-orange-300 hover:text-orange-600"
+                >
+                  Recalculate Fare
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showReviewPopup && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/70 p-4">
+          <div
+            ref={popupRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Review request"
+            className="relative w-full max-w-md rounded-[28px] bg-white p-6 shadow-2xl"
+          >
+            <button
+              type="button"
+              onClick={closeReviewPopup}
+              className="absolute right-4 top-4 rounded-full bg-slate-100 p-2 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
+              aria-label="Close popup"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-100 text-orange-600">
+              <Star size={26} />
+            </div>
+
+            <h3 className="mt-4 text-2xl font-black text-slate-900">
+              Please rate your experience
+            </h3>
+            <p className="mt-2 text-sm leading-7 text-slate-600">
+              Before continuing to WhatsApp booking, please share a quick Google review. Your support helps us serve more customers.
+            </p>
+
+            <div className="mt-6 grid gap-3">
+              <a
+                href={GOOGLE_REVIEW_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-orange-500 px-6 py-4 text-center font-bold text-white transition hover:bg-orange-600"
+              >
+                Give Google Review
+              </a>
+
+              <button
+                type="button"
+                onClick={continueToWhatsApp}
+                className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border border-slate-300 px-6 py-4 text-center font-bold text-slate-800 transition hover:border-orange-300 hover:text-orange-600"
+              >
+                Continue to WhatsApp
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

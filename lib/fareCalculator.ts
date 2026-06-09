@@ -1,38 +1,48 @@
 export const VEHICLES = {
   sedan: {
-    ratePerKm: 13.5,
-    minimumOnewayFare: 900,
-    localPackage: 1800,
+    label: "Sedan",
+    ratePerKm: 18,
+    perDayCharge: 1200,
+    fixedLocalCharge: 1800,
     dayHalt: 500,
     nightHalt: 600,
+    maxPassengers: 4,
   },
   ertiga: {
-    ratePerKm: 15,
-    minimumOnewayFare: 1100,
-    localPackage: 2200,
+    label: "Ertiga",
+    ratePerKm: 20,
+    perDayCharge: 1500,
+    fixedLocalCharge: 2200,
     dayHalt: 600,
     nightHalt: 700,
+    maxPassengers: 6,
   },
   innova: {
-    ratePerKm: 17,
-    minimumOnewayFare: 1300,
-    localPackage: 2500,
+    label: "Innova",
+    ratePerKm: 22,
+    perDayCharge: 2000,
+    fixedLocalCharge: 2500,
     dayHalt: 800,
     nightHalt: 900,
+    maxPassengers: 7,
   },
   crysta: {
-    ratePerKm: 18.5,
-    minimumOnewayFare: 1500,
-    localPackage: 2800,
+    label: "Innova Crysta",
+    ratePerKm: 24,
+    perDayCharge: 2500,
+    fixedLocalCharge: 2800,
     dayHalt: 900,
     nightHalt: 1000,
+    maxPassengers: 7,
   },
   scorpio: {
-    ratePerKm: 17.25,
-    minimumOnewayFare: 1400,
-    localPackage: 2500,
+    label: "Scorpio",
+    ratePerKm: 23,
+    perDayCharge: 2200,
+    fixedLocalCharge: 2500,
     dayHalt: 800,
     nightHalt: 900,
+    maxPassengers: 7,
   },
 } as const;
 
@@ -44,56 +54,36 @@ export type BookingType =
   | "airporttransfer"
   | "local";
 
+export type PricingMode = "fixed" | "running";
+
 type CalculateFareParams = {
   distance: number;
+  extraKm?: number;
   vehicleType: VehicleType;
   bookingType: BookingType;
-  passengerCount: number;
-  stoppage: number;
+  pricingMode?: PricingMode;
+  passengerCount?: number;
+  stoppage?: number;
   dayHalts?: number;
   nightHalts?: number;
-  pickup?: string;
-  drop?: string;
+  tripDays?: number;
+  fuelPricePerLitre?: number;
 };
 
-type CalculateFareResult = {
-  distance: number;
+export type CalculateFareResult = {
+  mapDistance: number;
+  extraKm: number;
+  totalRunningDistance: number;
   fare: number;
   finalFare: number;
+  baseFare: number;
+  fuelCharge: number;
   stoppageCharge: number;
   passengerCharge: number;
   dayHaltCharge: number;
   nightHaltCharge: number;
   remarks: string[];
 };
-
-const HIGH_DEMAND_ONEWAY_ROUTES = new Set([
-  "raipur-korba",
-  "korba-raipur",
-  "raipur-bilaspur",
-  "bilaspur-raipur",
-  "raipur-raigarh",
-  "raigarh-raipur",
-  "raipur airport-korba",
-  "korba-raipur airport",
-  "raipur airport-bilaspur",
-  "bilaspur-raipur airport",
-  "korba-bilaspur",
-  "bilaspur-korba",
-]);
-
-function normalizeLocation(value: string) {
-  return value.trim().toLowerCase().replace(/\s+/g, " ");
-}
-
-function isHighDemandOnewayRoute(pickup?: string, drop?: string) {
-  const from = normalizeLocation(pickup || "");
-  const to = normalizeLocation(drop || "");
-
-  if (!from || !to) return false;
-
-  return HIGH_DEMAND_ONEWAY_ROUTES.has(`${from}-${to}`);
-}
 
 function getPassengerCharge(passengerCount: number) {
   if (!Number.isFinite(passengerCount) || passengerCount <= 4) return 0;
@@ -104,19 +94,26 @@ function getPassengerCharge(passengerCount: number) {
 
 export function calculateFare({
   distance,
+  extraKm = 0,
   vehicleType,
   bookingType,
-  passengerCount,
-  stoppage,
+  pricingMode = "running",
+  passengerCount = 1,
+  stoppage = 0,
   dayHalts = 0,
   nightHalts = 0,
-  pickup = "",
-  drop = "",
+  tripDays = 1,
+  fuelPricePerLitre = 95,
 }: CalculateFareParams): CalculateFareResult {
   const vehicle = VEHICLES[vehicleType];
 
   const safeDistance =
     Number.isFinite(distance) && distance > 0 ? Math.round(distance) : 0;
+
+  const safeExtraKm =
+    Number.isFinite(extraKm) && extraKm > 0 ? Math.round(extraKm) : 0;
+
+  const totalRunningDistance = safeDistance + safeExtraKm;
 
   const safePassengerCount =
     Number.isFinite(passengerCount) && passengerCount > 0
@@ -134,72 +131,131 @@ export function calculateFare({
   const safeNightHalts =
     Number.isFinite(nightHalts) && nightHalts > 0 ? Math.round(nightHalts) : 0;
 
-  const isHighDemandRoute = isHighDemandOnewayRoute(pickup, drop);
+  const safeTripDays =
+    Number.isFinite(tripDays) && tripDays > 0 ? Math.round(tripDays) : 1;
+
+  const safeFuelPrice =
+    Number.isFinite(fuelPricePerLitre) && fuelPricePerLitre > 0
+      ? fuelPricePerLitre
+      : 95;
 
   let baseFare = 0;
-
-  if (bookingType === "oneway") {
-    if (!isHighDemandRoute) {
-      baseFare = safeDistance * vehicle.ratePerKm * 2.15;
-    } else if (safeDistance <= 80) {
-      baseFare =
-        vehicle.minimumOnewayFare + safeDistance * vehicle.ratePerKm;
-    } else if (safeDistance < 280) {
-      baseFare = safeDistance * vehicle.ratePerKm * 1.55;
-    } else {
-      baseFare = safeDistance * vehicle.ratePerKm * 1.8;
-    }
-  } else if (bookingType === "roundtrip") {
-    baseFare =
-      safeDistance *
-      vehicle.ratePerKm *
-      2 *
-      (safeDistance > 180 ? 1 : 1.15);
-  } else if (bookingType === "airporttransfer") {
-    baseFare = safeDistance * vehicle.ratePerKm * 1.35 + 150;
-  } else if (bookingType === "local") {
-    baseFare = vehicle.localPackage;
-  }
+  let fuelCharge = 0;
+  const remarks: string[] = [];
 
   const passengerCharge = getPassengerCharge(safePassengerCount);
   const stoppageCharge = safeStoppage * 150;
   const dayHaltCharge = safeDayHalts * vehicle.dayHalt;
   const nightHaltCharge = safeNightHalts * vehicle.nightHalt;
 
-  const subtotal =
-    baseFare +
-    passengerCharge +
-    stoppageCharge +
-    dayHaltCharge +
-    nightHaltCharge;
+  if (bookingType === "oneway") {
+    const amount = totalRunningDistance * vehicle.ratePerKm;
+    const multiplier = totalRunningDistance >= 250 ? 1.05 : 1.1;
+    baseFare = amount * multiplier;
 
-  const finalFare = Math.round(subtotal);
+    remarks.push(
+      `One way fare = ${totalRunningDistance} KM × ₹${vehicle.ratePerKm}/KM × ${multiplier}`
+    );
+  } else if (bookingType === "roundtrip") {
+    if (pricingMode === "fixed") {
+      const amount = totalRunningDistance * vehicle.ratePerKm;
+      baseFare = amount * 2.05;
 
-  const remarks = [
-    "Toll Tax Extra",
-    "Parking Charges Extra",
-    `Day Halt ₹${vehicle.dayHalt}/Day (if applicable)`,
-    `Night Halt ₹${vehicle.nightHalt}/Night (if applicable)`,
-    bookingType === "local"
-      ? "Local package max 80 KM only"
-      : "Fare calculated on actual/estimated distance",
-    `Passenger count: ${safePassengerCount}`,
-    `Stoppage charge: ₹150 per stop`,
-    safeStoppage > 0
-      ? `${safeStoppage} stoppage(s) added`
-      : "No stoppage added",
-    safeDayHalts > 0
-      ? `${safeDayHalts} day halt(s) added`
-      : "No day halt added",
-    safeNightHalts > 0
-      ? `${safeNightHalts} night halt(s) added`
-      : "No night halt added",
-  ];
+      remarks.push(
+        `Round trip fixed fare = ${totalRunningDistance} KM × ₹${vehicle.ratePerKm}/KM × 2.05`
+      );
+    } else {
+      fuelCharge = Math.round((totalRunningDistance / 10) * safeFuelPrice);
+
+      const rentCharge = safeTripDays * vehicle.perDayCharge;
+
+      baseFare =
+        rentCharge +
+        fuelCharge +
+        dayHaltCharge +
+        nightHaltCharge;
+
+      remarks.push(
+        `Round trip running = ${safeTripDays} day × ₹${vehicle.perDayCharge} + fuel + halt charges`
+      );
+      remarks.push(
+        `Vehicle rent = ${safeTripDays} × ₹${vehicle.perDayCharge} = ₹${rentCharge}`
+      );
+      remarks.push(
+        `Fuel = ${totalRunningDistance} KM ÷ 10 × ₹${safeFuelPrice}/L = ₹${fuelCharge}`
+      );
+      remarks.push(
+        `Day halt = ${safeDayHalts} × ₹${vehicle.dayHalt} = ₹${dayHaltCharge}`
+      );
+      remarks.push(
+        `Night halt = ${safeNightHalts} × ₹${vehicle.nightHalt} = ₹${nightHaltCharge}`
+      );
+      remarks.push("Toll charges extra");
+      remarks.push("Driver fooding extra");
+    }
+  } else if (bookingType === "local") {
+    if (pricingMode === "fixed") {
+      baseFare = vehicle.fixedLocalCharge;
+
+      remarks.push("Local fixed fare based on 80 KM / 10 Hours");
+      remarks.push("Toll charges extra");
+      remarks.push("Driver fooding extra");
+    } else {
+      fuelCharge = Math.round((totalRunningDistance / 10) * safeFuelPrice);
+      baseFare = vehicle.perDayCharge + fuelCharge;
+
+      remarks.push(`Local running = per day charge ₹${vehicle.perDayCharge} + fuel`);
+      remarks.push(
+        `Fuel = ${totalRunningDistance} KM ÷ 10 × ₹${safeFuelPrice}/L = ₹${fuelCharge}`
+      );
+      remarks.push("Toll charges extra");
+      remarks.push("Driver fooding extra");
+    }
+  } else if (bookingType === "airporttransfer") {
+    const amount = totalRunningDistance * vehicle.ratePerKm;
+    baseFare = amount;
+
+    remarks.push(
+      `Airport transfer fare = ${totalRunningDistance} KM × ₹${vehicle.ratePerKm}/KM`
+    );
+  }
+
+  const finalFare = Math.round(
+    baseFare + passengerCharge + stoppageCharge
+  );
+
+  remarks.push(`Map distance: ${safeDistance} KM`);
+  remarks.push(`Extra running added: ${safeExtraKm} KM`);
+  remarks.push(`Total running distance: ${totalRunningDistance} KM`);
+
+  if (safeStoppage > 0) {
+    remarks.push(`${safeStoppage} stoppage(s) added @ ₹150 each`);
+  } else {
+    remarks.push("No stoppage added");
+  }
+
+  if (safeDayHalts > 0) {
+    remarks.push(`${safeDayHalts} day halt(s) added`);
+  } else {
+    remarks.push("No day halt added");
+  }
+
+  if (safeNightHalts > 0) {
+    remarks.push(`${safeNightHalts} night halt(s) added`);
+  } else {
+    remarks.push("No night halt added");
+  }
+
+  remarks.push(`Passenger count: ${safePassengerCount}`);
 
   return {
-    distance: safeDistance,
+    mapDistance: safeDistance,
+    extraKm: safeExtraKm,
+    totalRunningDistance,
     fare: finalFare,
     finalFare,
+    baseFare: Math.round(baseFare),
+    fuelCharge,
     stoppageCharge,
     passengerCharge,
     dayHaltCharge,
