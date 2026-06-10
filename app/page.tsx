@@ -32,6 +32,7 @@ import {
   Ticket,
   Users,
   Route,
+  MoonStar,
 } from "lucide-react";
 
 declare global {
@@ -49,7 +50,7 @@ const vehicles = [
     name: "Dzire",
     type: "Sedan",
     value: "sedan" as VehicleType,
-    price: "₹18/km onwards",
+    price: "₹13/km onwards",
     seats: "4+1",
     luggage: "2 Bags",
     image:
@@ -59,7 +60,7 @@ const vehicles = [
     name: "Ertiga",
     type: "6+1",
     value: "ertiga" as VehicleType,
-    price: "₹20/km onwards",
+    price: "₹15/km onwards",
     seats: "6+1",
     luggage: "4 Bags",
     image:
@@ -69,7 +70,7 @@ const vehicles = [
     name: "Innova",
     type: "7+1",
     value: "innova" as VehicleType,
-    price: "₹22/km onwards",
+    price: "₹19/km onwards",
     seats: "7+1",
     luggage: "5 Bags",
     image:
@@ -79,7 +80,7 @@ const vehicles = [
     name: "Innova Crysta",
     type: "Premium",
     value: "crysta" as VehicleType,
-    price: "₹24/km onwards",
+    price: "₹20/km onwards",
     seats: "7+1",
     luggage: "5 Bags",
     image:
@@ -89,7 +90,7 @@ const vehicles = [
     name: "Scorpio",
     type: "SUV",
     value: "scorpio" as VehicleType,
-    price: "₹23/km onwards",
+    price: "₹18/km onwards",
     seats: "6+1",
     luggage: "4 Bags",
     image:
@@ -296,22 +297,64 @@ export default function HomePage() {
     local: "Local Ride",
   };
 
+  const isRoundTrip = bookingType === "roundtrip";
+  const isOneWay = bookingType === "oneway";
+
+  const displayDistance = useMemo(() => {
+    if (isRoundTrip) {
+      return totalRunningDistance || mapDistance * 2 || 0;
+    }
+    return mapDistance || 0;
+  }, [isRoundTrip, totalRunningDistance, mapDistance]);
+
+  const displayFare = useMemo(() => {
+    return finalFare || fare || 0;
+  }, [finalFare, fare]);
+
+  const totalDaysDisplay = useMemo(() => {
+    return isRoundTrip ? engagedDays : 0;
+  }, [isRoundTrip, engagedDays]);
+
+  const totalNightsDisplay = useMemo(() => {
+    return isRoundTrip ? engagedNights : 0;
+  }, [isRoundTrip, engagedNights]);
+
+  const fareNoteItems = useMemo(() => {
+    return [
+      `Total limit of your trip is ${displayDistance} kms`,
+      "Toll + Parking + Fooding + driver allownces beered by customer.",
+      "After completion of limited kms, per kms extra charges will be applied.",
+      "If any issue, you may call on the same time to our helpline number",
+    ];
+  }, [displayDistance]);
+
+  const shortFareRemarks = useMemo(() => {
+    return fareRemarks.filter(Boolean).slice(0, 2);
+  }, [fareRemarks]);
+
   const whatsappMessage = useMemo(() => {
     const lines = [
-      "Hello Admin, please confirm my booking request:",
-      `Pickup: ${pickup || "-"}`,
-      `Drop: ${drop || "-"}`,
-      `Pickup Date: ${pickupDate || "-"}`,
-      `Pickup Time: ${pickupTime || "-"}`,
-      bookingType === "roundtrip" ? `Return Date: ${returnDate || "-"}` : "",
-      bookingType === "roundtrip" ? `Return Time: ${returnTime || "-"}` : "",
-      `Trip Type: ${tripLabelMap[bookingType]}`,
-      `Vehicle Type: ${selectedVehicle}`,
-      `Passengers: ${passengerCount}`,
-      bookingType === "roundtrip"
-        ? `Vehicle Booking Duration: ${engagedDays} Day(s), ${engagedNights} Night(s)`
+      "Hello Khatu Rides Travels Co, please confirm my booking request:",
+
+      `Pickup Location : ${pickup || "-"}`,
+      `Drop Location : ${drop || "-"}`,
+
+      `Pickup Date : ${pickupDate || "-"}`,
+      `Pickup Time : ${pickupTime || "-"}`,
+
+      isRoundTrip ? `Return Date : ${returnDate || "-"}` : "",
+      isRoundTrip ? `Return Time : ${returnTime || "-"}` : "",
+
+      `Trip Type : ${tripLabelMap[bookingType]}`,
+      `Vehicle Type : ${selectedVehicle}`,
+
+      `Passengers : ${passengerCount}`,
+      `Distance Limit : ${displayDistance} KM`,
+      
+      isRoundTrip
+        ? `Vehicle Booking Duration : ${totalDaysDisplay} Day(s), ${totalNightsDisplay} Night(s)`
         : "",
-      `Estimated Fare: ${formatCurrency(finalFare || fare)}`,
+      `Estimated Fare : ${formatCurrency(displayFare)}`,
     ];
     return lines.filter(Boolean).join("\n");
   }, [
@@ -324,10 +367,12 @@ export default function HomePage() {
     bookingType,
     selectedVehicle,
     passengerCount,
-    engagedDays,
-    engagedNights,
-    finalFare,
-    fare,
+    displayDistance,
+    isRoundTrip,
+    totalDaysDisplay,
+    totalNightsDisplay,
+    displayFare,
+    tripLabelMap,
   ]);
 
   const whatsappUrl = useMemo(() => {
@@ -465,7 +510,6 @@ export default function HomePage() {
       dayHalts: autoDayHalts,
       nightHalts: autoNightHalts,
       tripDays,
-      fuelPricePerLitre: 95,
     });
 
     setMapDistance(result.mapDistance);
@@ -1217,7 +1261,7 @@ export default function HomePage() {
             <div className="bg-slate-950 px-4 py-4 text-white sm:px-5 sm:py-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.16em] text-orange-300">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-orange-300 sm:text-[11px]">
                     <Ticket size={14} />
                     Fare Estimate Ticket
                   </div>
@@ -1227,11 +1271,11 @@ export default function HomePage() {
                 </div>
 
                 <div className="shrink-0 rounded-2xl bg-orange-500 px-3 py-2 text-right sm:px-4 sm:py-3">
-                  <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-orange-100">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-orange-100 sm:text-[11px]">
                     Estimated Fare
                   </div>
-                  <div className="text-lg sm:text-2xl font-black leading-none">
-                    {formatCurrency(finalFare || fare)}
+                  <div className="text-lg font-black leading-none sm:text-2xl">
+                    {formatCurrency(displayFare)}
                   </div>
                 </div>
               </div>
@@ -1244,14 +1288,14 @@ export default function HomePage() {
                     <div className="flex items-start gap-3">
                       <MapPin className="mt-1 text-orange-500" size={18} />
                       <div className="min-w-0">
-                        <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500 sm:text-xs">
                           Route
                         </p>
-                        <p className="mt-1 break-words text-sm sm:text-[15px] font-semibold leading-6 text-slate-900">
+                        <p className="mt-1 break-words text-sm font-semibold leading-6 text-slate-900 sm:text-[15px]">
                           {pickup || "-"}
                         </p>
                         <div className="my-2 h-px w-full bg-slate-200" />
-                        <p className="break-words text-sm sm:text-[15px] font-semibold leading-6 text-slate-900">
+                        <p className="break-words text-sm font-semibold leading-6 text-slate-900 sm:text-[15px]">
                           {drop || "-"}
                         </p>
                       </div>
@@ -1262,14 +1306,14 @@ export default function HomePage() {
                     <div className="rounded-2xl bg-slate-50 p-3 sm:p-4">
                       <div className="flex items-center gap-2 text-orange-500">
                         <CalendarDays size={16} />
-                        <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                        <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500 sm:text-xs">
                           Pickup
                         </span>
                       </div>
-                      <p className="mt-2 text-sm sm:text-[15px] font-bold text-slate-900">
+                      <p className="mt-2 text-sm font-bold text-slate-900 sm:text-[15px]">
                         {formatDisplayDate(pickupDate)}
                       </p>
-                      <p className="text-[12px] sm:text-sm text-slate-600">
+                      <p className="text-[12px] text-slate-600 sm:text-sm">
                         {formatDisplayTime(pickupTime)}
                       </p>
                     </div>
@@ -1277,47 +1321,47 @@ export default function HomePage() {
                     <div className="rounded-2xl bg-slate-50 p-3 sm:p-4">
                       <div className="flex items-center gap-2 text-orange-500">
                         <Clock4 size={16} />
-                        <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                        <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500 sm:text-xs">
                           Vehicle
                         </span>
                       </div>
-                      <p className="mt-2 text-sm sm:text-[15px] font-bold text-slate-900">
+                      <p className="mt-2 text-sm font-bold text-slate-900 sm:text-[15px]">
                         {selectedVehicle}
                       </p>
-                      <p className="text-[12px] sm:text-sm text-slate-600">
+                      <p className="text-[12px] text-slate-600 sm:text-sm">
                         {selectedVehicleConfig.maxPassengers} passenger capacity
                       </p>
                     </div>
                   </div>
 
-                  {bookingType === "roundtrip" && (
+                  {isRoundTrip && (
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="rounded-2xl bg-slate-50 p-3 sm:p-4">
                         <div className="flex items-center gap-2 text-orange-500">
                           <CalendarDays size={16} />
-                          <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500 sm:text-xs">
                             Return
                           </span>
                         </div>
-                        <p className="mt-2 text-sm sm:text-[15px] font-bold text-slate-900">
+                        <p className="mt-2 text-sm font-bold text-slate-900 sm:text-[15px]">
                           {formatDisplayDate(returnDate)}
                         </p>
-                        <p className="text-[12px] sm:text-sm text-slate-600">
+                        <p className="text-[12px] text-slate-600 sm:text-sm">
                           {formatDisplayTime(returnTime)}
                         </p>
                       </div>
 
-                      <div className="rounded-2xl bg-orange-50 p-3 sm:p-4 ring-1 ring-orange-100">
+                      <div className="rounded-2xl bg-orange-50 p-3 ring-1 ring-orange-100 sm:p-4">
                         <div className="flex items-center gap-2 text-orange-600">
                           <Building2 size={16} />
-                          <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.16em] text-orange-700">
+                          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-orange-700 sm:text-xs">
                             Duration
                           </span>
                         </div>
-                        <p className="mt-2 text-sm sm:text-[15px] font-black text-slate-900">
-                          {engagedDays} Day(s) / {engagedNights} Night(s)
+                        <p className="mt-2 text-sm font-black text-slate-900 sm:text-[15px]">
+                          {totalDaysDisplay} Day(s) / {totalNightsDisplay} Night(s)
                         </p>
-                        <p className="text-[12px] sm:text-sm text-slate-600">
+                        <p className="text-[12px] text-slate-600 sm:text-sm">
                           Vehicle booked for full trip duration
                         </p>
                       </div>
@@ -1340,14 +1384,14 @@ export default function HomePage() {
                       <div className="p-3 sm:p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="truncate text-base sm:text-lg font-black text-slate-900">
+                            <p className="truncate text-base font-black text-slate-900 sm:text-lg">
                               {selectedVehicleCard.name}
                             </p>
-                            <p className="text-[12px] sm:text-sm text-slate-500">
+                            <p className="text-[12px] text-slate-500 sm:text-sm">
                               {selectedVehicleCard.type}
                             </p>
                           </div>
-                          <span className="shrink-0 rounded-full bg-orange-100 px-3 py-1 text-[10px] sm:text-xs font-bold text-orange-700">
+                          <span className="shrink-0 rounded-full bg-orange-100 px-3 py-1 text-[10px] font-bold text-orange-700 sm:text-xs">
                             {selectedVehicleCard.price}
                           </span>
                         </div>
@@ -1358,31 +1402,55 @@ export default function HomePage() {
                   <div className="rounded-2xl bg-slate-950 p-4 text-white sm:p-5">
                     <div className="grid gap-2.5 sm:gap-3">
                       <div className="flex items-center justify-between gap-3">
-                        <span className="flex items-center gap-2 text-[12px] sm:text-sm text-slate-300">
+                        <span className="flex items-center gap-2 text-[12px] text-slate-300 sm:text-sm">
                           <Route size={15} />
-                          Distance
+                          Net Distance
                         </span>
-                        <span className="text-[12px] sm:text-sm font-bold">
-                          {totalRunningDistance || mapDistance} KM
+                        <span className="text-[12px] font-bold sm:text-sm">
+                          {displayDistance} KM
                         </span>
                       </div>
 
+                      {isRoundTrip && (
+                        <>
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="flex items-center gap-2 text-[12px] text-slate-300 sm:text-sm">
+                              <CalendarDays size={15} />
+                              Total Days
+                            </span>
+                            <span className="text-[12px] font-bold sm:text-sm">
+                              {totalDaysDisplay}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="flex items-center gap-2 text-[12px] text-slate-300 sm:text-sm">
+                              <MoonStar size={15} />
+                              Total Nights
+                            </span>
+                            <span className="text-[12px] font-bold sm:text-sm">
+                              {totalNightsDisplay}
+                            </span>
+                          </div>
+                        </>
+                      )}
+
                       <div className="flex items-center justify-between gap-3">
-                        <span className="flex items-center gap-2 text-[12px] sm:text-sm text-slate-300">
+                        <span className="flex items-center gap-2 text-[12px] text-slate-300 sm:text-sm">
                           <Users size={15} />
                           Passengers
                         </span>
-                        <span className="text-[12px] sm:text-sm font-bold">
+                        <span className="text-[12px] font-bold sm:text-sm">
                           {passengerCount}
                         </span>
                       </div>
 
                       <div className="flex items-center justify-between gap-3">
-                        <span className="flex items-center gap-2 text-[12px] sm:text-sm text-slate-300">
+                        <span className="flex items-center gap-2 text-[12px] text-slate-300 sm:text-sm">
                           <CarTaxiFront size={15} />
                           Trip
                         </span>
-                        <span className="text-[12px] sm:text-sm font-bold">
+                        <span className="text-[12px] font-bold sm:text-sm">
                           {tripLabelMap[bookingType]}
                         </span>
                       </div>
@@ -1390,27 +1458,17 @@ export default function HomePage() {
                       <div className="h-px bg-white/10" />
 
                       <div className="rounded-2xl bg-white/5 p-3 sm:p-4">
-                        <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.16em] text-orange-300">
-                          Included Highlights
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-orange-300 sm:text-xs">
+                          Fare Notes
                         </p>
 
-                        <div className="mt-2.5 space-y-2 text-[12px] sm:text-sm text-slate-200">
-                          <div className="flex items-start gap-2">
-                            <CheckCircle2 size={15} className="mt-0.5 text-orange-400" />
-                            <span>Clean vehicle and verified driver</span>
-                          </div>
-                          <div className="flex items-start gap-2">
-                            <CheckCircle2 size={15} className="mt-0.5 text-orange-400" />
-                            <span>Quick booking confirmation on WhatsApp</span>
-                          </div>
-                          {bookingType === "roundtrip" && (
-                            <div className="flex items-start gap-2">
-                              <CheckCircle2 size={15} className="mt-0.5 text-orange-400" />
-                              <span>
-                                Vehicle reserved for {engagedDays} day(s) and {engagedNights} night(s)
-                              </span>
+                        <div className="mt-2.5 space-y-2 text-[12px] text-slate-200 sm:text-sm">
+                          {fareNoteItems.map((note, idx) => (
+                            <div key={idx} className="flex items-start gap-2">
+                              <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-orange-400" />
+                              <span>{note}</span>
                             </div>
-                          )}
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -1418,51 +1476,51 @@ export default function HomePage() {
                 </div>
               </div>
 
-             {fareRemarks.length > 0 && (
-  <div className="mt-3 rounded-2xl bg-slate-50 p-3 sm:p-4">
-    <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-      Fare Notes
-    </p>
-    <ul className="mt-2 space-y-1.5 text-[12px] sm:text-sm leading-5 text-slate-700">
-      {fareRemarks.slice(0, 2).map((note, idx) => (
-        <li key={idx}>• {note}</li>
-      ))}
-    </ul>
-  </div>
-)}
+              {fareRemarks.length > 0 && (
+                <div className="mt-3 rounded-2xl bg-slate-50 p-3 sm:p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500 sm:text-xs">
+                    Calculation Notes
+                  </p>
+                  <ul className="mt-2 space-y-1.5 text-[12px] leading-5 text-slate-700 sm:text-sm">
+                    {fareRemarks.slice(0, 2).map((note, idx) => (
+                      <li key={idx}>• {note}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
-              <div className="mt-3 rounded-2xl bg-emerald-50 p-3 sm:p-4 ring-1 ring-emerald-100">
+              <div className="mt-3 rounded-2xl bg-emerald-50 p-3 ring-1 ring-emerald-100 sm:p-4">
                 <div className="flex items-start gap-3">
                   <ShieldCheck className="mt-0.5 text-emerald-600" size={16} />
                   <div>
                     <p className="text-sm font-bold text-slate-900">
                       Final fare confirmation shared before booking
                     </p>
-                    <p className="mt-1 text-[12px] sm:text-sm leading-5 sm:leading-6 text-slate-600">
+                    <p className="mt-1 text-[12px] leading-5 text-slate-600 sm:text-sm sm:leading-6">
                       This is an estimate ticket. Final booking confirmation and trip support are provided on WhatsApp.
                     </p>
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div className="sticky bottom-0 mt-3 grid gap-2 bg-white/95 pt-2 pb-1 backdrop-blur sm:grid-cols-2">
-                <a
-                  href={whatsappUrl}
-                  onClick={openReviewPopup}
-                  className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-orange-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
-                >
-                  <MessageCircle size={16} />
-                  Book on WhatsApp
-                </a>
+            <div className="sticky bottom-0 mt-3 grid gap-2 bg-white/95 pb-1 pt-2 backdrop-blur sm:grid-cols-2">
+              <a
+                href={whatsappUrl}
+                onClick={openReviewPopup}
+                className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-orange-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
+              >
+                <MessageCircle size={16} />
+                Book on WhatsApp
+              </a>
 
-                <button
-                  type="button"
-                  onClick={handleRecalculate}
-                  className="inline-flex min-h-[48px] items-center justify-center rounded-2xl border border-slate-300 px-4 py-3 text-sm font-bold text-slate-800 transition hover:border-orange-300 hover:text-orange-600"
-                >
-                  Recalculate Fare
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={handleRecalculate}
+                className="inline-flex min-h-[48px] items-center justify-center rounded-2xl border border-slate-300 px-4 py-3 text-sm font-bold text-slate-800 transition hover:border-orange-300 hover:text-orange-600"
+              >
+                Recalculate Fare
+              </button>
             </div>
           </div>
         </div>
