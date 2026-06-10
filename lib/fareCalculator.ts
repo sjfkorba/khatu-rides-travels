@@ -152,12 +152,17 @@ export function calculateFare({
   const remarks: string[] = [];
 
   if (bookingType === "oneway") {
-    const roundTripBase = (oneSideDistance * 2 + safeExtraKm) * vehicle.ratePerKm;
-    baseFare = roundTripBase * 0.52;
+  const roundTripBase = (oneSideDistance * 2 + safeExtraKm) * vehicle.ratePerKm;
 
-    remarks.push(`One way distance: ${oneSideDistance} KM`);
-    remarks.push(`Fare calculated on discounted round-trip base`);
+  if (oneSideDistance >= 190) {
+    baseFare = roundTripBase * 0.60;
+  } else {
+    baseFare = roundTripBase * 0.55;
   }
+
+  remarks.push(`One way distance: ${oneSideDistance} KM`);
+  remarks.push(`Fare calculated on discounted round-trip base`);
+}
 
   if (bookingType === "roundtrip") {
     const distanceFare = (oneSideDistance * 2 + safeExtraKm) * vehicle.ratePerKm;
