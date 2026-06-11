@@ -1,7 +1,8 @@
 export const VEHICLES = {
   sedan: {
     label: "Sedan",
-    ratePerKm: 18,
+    ratePerKm: 13,
+    oneWayRatePerKm: 17,
     perDayCharge: 1200,
     fixedLocalCharge: 2400,
     dayHalt: 500,
@@ -10,7 +11,8 @@ export const VEHICLES = {
   },
   ertiga: {
     label: "Ertiga",
-    ratePerKm: 20,
+    ratePerKm: 17,
+    oneWayRatePerKm: 20,
     perDayCharge: 1500,
     fixedLocalCharge: 3500,
     dayHalt: 600,
@@ -19,7 +21,8 @@ export const VEHICLES = {
   },
   innova: {
     label: "Innova",
-    ratePerKm: 22,
+    ratePerKm: 17,
+    oneWayRatePerKm: 22,
     perDayCharge: 2000,
     fixedLocalCharge: 4500,
     dayHalt: 800,
@@ -28,7 +31,8 @@ export const VEHICLES = {
   },
   crysta: {
     label: "Innova Crysta",
-    ratePerKm: 24,
+    ratePerKm: 19,
+    oneWayRatePerKm: 24,
     perDayCharge: 2500,
     fixedLocalCharge: 4500,
     dayHalt: 900,
@@ -37,7 +41,8 @@ export const VEHICLES = {
   },
   scorpio: {
     label: "Scorpio",
-    ratePerKm: 23,
+    ratePerKm: 17,
+    oneWayRatePerKm: 23,
     perDayCharge: 2200,
     fixedLocalCharge: 3500,
     dayHalt: 800,
@@ -144,37 +149,45 @@ export function calculateFare({
 
   const oneSideDistance = safeDistance;
   const roundTripDistance = safeDistance * 2;
+
   const totalRunningDistance =
-    bookingType === "roundtrip" ? roundTripDistance + safeExtraKm : oneSideDistance + safeExtraKm;
+    bookingType === "roundtrip"
+      ? roundTripDistance + safeExtraKm
+      : oneSideDistance + safeExtraKm;
 
   let baseFare = 0;
   const fuelCharge = 0;
   const remarks: string[] = [];
 
   if (bookingType === "oneway") {
-  const roundTripBase = (oneSideDistance * 2 + safeExtraKm) * vehicle.ratePerKm;
+    const oneWayBase =
+      (oneSideDistance + safeExtraKm) * vehicle.oneWayRatePerKm;
 
-  if (oneSideDistance >= 190) {
-    baseFare = roundTripBase * 0.60;
-  } else {
-    baseFare = roundTripBase * 0.55;
-  }
-
-  remarks.push(`One way distance: ${oneSideDistance} KM`);
-  remarks.push(`Fare calculated on discounted round-trip base`);
-}
-
-  if (bookingType === "roundtrip") {
-    const distanceFare = (oneSideDistance * 2 + safeExtraKm) * vehicle.ratePerKm;
-    const tripDayFare = safeTripDays * vehicle.perDayCharge;
-
-    if (pricingMode === "fixed") {
-      baseFare = distanceFare + tripDayFare + dayHaltCharge + nightHaltCharge;
+    if (oneSideDistance >= 190) {
+      baseFare = oneWayBase * 1.45;
     } else {
-      baseFare = distanceFare + tripDayFare + dayHaltCharge + nightHaltCharge;
+      baseFare = oneWayBase * 1.75;
     }
 
-    remarks.push(`Round trip distance: ${oneSideDistance * 2} KM`);
+    remarks.push(`One way distance: ${oneSideDistance} KM`);
+    remarks.push(`One way rate: ₹${vehicle.oneWayRatePerKm}/KM`);
+    remarks.push(`Fare calculated with one-way rate logic`);
+  }
+
+  if (bookingType === "roundtrip") {
+    const distanceFare =
+      (roundTripDistance + safeExtraKm) * vehicle.ratePerKm;
+
+    const tripDayFare = safeTripDays * vehicle.perDayCharge;
+
+    baseFare =
+      distanceFare +
+      tripDayFare +
+      dayHaltCharge +
+      nightHaltCharge;
+
+    remarks.push(`Round trip distance: ${roundTripDistance} KM`);
+    remarks.push(`Round trip rate: ₹${vehicle.ratePerKm}/KM`);
     remarks.push(`Trip days: ${safeTripDays}`);
   }
 
@@ -183,16 +196,20 @@ export function calculateFare({
       baseFare = vehicle.fixedLocalCharge;
     } else {
       baseFare =
-        vehicle.perDayCharge + dayHaltCharge + nightHaltCharge + safeExtraKm * vehicle.ratePerKm;
+        vehicle.perDayCharge +
+        dayHaltCharge +
+        nightHaltCharge +
+        safeExtraKm * vehicle.ratePerKm;
     }
 
     remarks.push(`Local trip fare applied`);
   }
 
   if (bookingType === "airporttransfer") {
-    baseFare = (oneSideDistance + safeExtraKm) * vehicle.ratePerKm;
+    baseFare = (oneSideDistance + safeExtraKm) * vehicle.oneWayRatePerKm;
 
     remarks.push(`Airport transfer distance: ${oneSideDistance} KM`);
+    remarks.push(`Airport transfer rate: ₹${vehicle.oneWayRatePerKm}/KM`);
   }
 
   const finalFare = Math.round(
