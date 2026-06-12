@@ -246,7 +246,7 @@ export default function HomePage() {
   const [vehicleType, setVehicleType] = useState<VehicleType>("sedan");
   const [bookingType, setBookingType] = useState<BookingType>("oneway");
   const [pricingMode, setPricingMode] = useState<PricingMode>("running");
-  const [extraKm, setExtraKm] = useState(25);
+  const [extraKm, setExtraKm] = useState(0);
 
   const [pickupDate, setPickupDate] = useState("");
   const [pickupTime, setPickupTime] = useState("");
@@ -705,7 +705,7 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0.76),rgba(2,6,23,0.95))]" />
 
           <div className="relative mx-auto max-w-7xl px-4 py-6 md:py-14 lg:py-20">
-            <div className="mb-4 overflow-hidden rounded-2xl border border-orange-200 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 px-3 py-2 text-white shadow-lg md:hidden">
+            <div className="mb-4 overflow-hidden rounded-2xl border border-orange-200 bg-linear-to-r from-orange-500 via-amber-500 to-orange-600 px-3 py-2 text-white shadow-lg md:hidden">
               <div className="whitespace-nowrap text-[11px] font-extrabold tracking-wide animate-[marquee_12s_linear_infinite]">
                 One Way • Round Trip • Local • Airport Transfer • Instant WhatsApp Booking
               </div>
@@ -738,7 +738,7 @@ export default function HomePage() {
                   <a
                     href={whatsappUrl}
                     onClick={openReviewPopup}
-                    className="inline-flex min-h-[48px] items-center justify-center rounded-2xl bg-orange-500 px-5 py-3 text-center text-sm font-bold text-white transition hover:bg-orange-600 sm:min-h-[52px] sm:px-6 sm:py-4"
+                    className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-orange-500 px-5 py-3 text-center text-sm font-bold text-white transition hover:bg-orange-600 sm:min-h-13 sm:px-6 sm:py-4"
                   >
                     Get Fare on WhatsApp
                   </a>
@@ -746,7 +746,7 @@ export default function HomePage() {
                   <a
                     href="tel:9244137353"
                     onClick={trackCallConversion}
-                    className="inline-flex min-h-[48px] items-center justify-center rounded-2xl border border-white px-5 py-3 text-center text-sm font-bold text-white sm:min-h-[52px] sm:px-6 sm:py-4"
+                    className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-white px-5 py-3 text-center text-sm font-bold text-white sm:min-h-13 sm:px-6 sm:py-4"
                   >
                     Call Now
                   </a>
@@ -775,7 +775,7 @@ export default function HomePage() {
                         type="button"
                         disabled={isFormLocked}
                         onClick={() => handleBookingTypeChange(type)}
-                        className={`min-h-[44px] rounded-xl border px-2 py-2 text-[11px] sm:text-sm font-bold leading-tight transition ${
+                        className={`min-h-11 rounded-xl border px-2 py-2 text-[11px] sm:text-sm font-bold leading-tight transition ${
                           bookingType === type
                             ? "border-orange-500 bg-orange-500 text-white"
                             : "border-slate-200 bg-white text-slate-700 hover:border-orange-300"
@@ -875,7 +875,7 @@ export default function HomePage() {
                             type="button"
                             disabled={isFormLocked}
                             onClick={() => setPricingMode("running")}
-                            className={`min-h-[42px] rounded-xl border px-3 py-2 text-[12px] sm:text-sm font-bold transition ${
+                            className={`min-h-10.5 rounded-xl border px-3 py-2 text-[12px] sm:text-sm font-bold transition ${
                               pricingMode === "running"
                                 ? "border-orange-500 bg-orange-500 text-white"
                                 : "border-slate-200 bg-white text-slate-700"
@@ -888,7 +888,7 @@ export default function HomePage() {
                             type="button"
                             disabled={isFormLocked}
                             onClick={() => setPricingMode("fixed")}
-                            className={`min-h-[42px] rounded-xl border px-3 py-2 text-[12px] sm:text-sm font-bold transition ${
+                            className={`min-h-10.5 rounded-xl border px-3 py-2 text-[12px] sm:text-sm font-bold transition ${
                               pricingMode === "fixed"
                                 ? "border-orange-500 bg-orange-500 text-white"
                                 : "border-slate-200 bg-white text-slate-700"
@@ -976,7 +976,7 @@ export default function HomePage() {
                           type="button"
                           onClick={handleFareCalculation}
                           disabled={loadingFare}
-                          className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-orange-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-70"
+                          className="inline-flex min-h-12 items-center justify-center rounded-xl bg-orange-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-70"
                         >
                           {loadingFare ? "Calculating..." : "Get Fare Estimate"}
                         </button>
@@ -985,7 +985,7 @@ export default function HomePage() {
                           <button
                             type="button"
                             onClick={() => setShowFarePopup(true)}
-                            className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-700"
+                            className="inline-flex min-h-12 items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-700"
                           >
                             View Ticket
                           </button>
@@ -993,7 +993,7 @@ export default function HomePage() {
                           <button
                             type="button"
                             onClick={handleRecalculate}
-                            className="inline-flex min-h-[48px] items-center justify-center rounded-xl border border-slate-300 px-4 py-3 text-sm font-bold text-slate-800 transition hover:border-orange-300 hover:text-orange-600"
+                            className="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-300 px-4 py-3 text-sm font-bold text-slate-800 transition hover:border-orange-300 hover:text-orange-600"
                           >
                             Recalculate
                           </button>
@@ -1170,7 +1170,7 @@ export default function HomePage() {
 
         <section className="mx-auto max-w-7xl px-4 py-14">
           <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="rounded-[32px] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
+            <div className="rounded-4xl bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
               <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-orange-700">
                 <Gift size={14} />
                 Why book with us
@@ -1198,7 +1198,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="rounded-[32px] bg-gradient-to-br from-orange-500 to-amber-500 p-6 text-white shadow-xl md:p-8">
+            <div className="rounded-4xl bg-linear-to-br from-orange-500 to-amber-500 p-6 text-white shadow-xl md:p-8">
               <h2 className="text-2xl font-black md:text-3xl">Need quick booking help?</h2>
               <p className="mt-3 text-sm leading-7 text-orange-50">
                 Call now or message on WhatsApp for fast confirmation and vehicle availability.
@@ -1250,13 +1250,13 @@ export default function HomePage() {
       </main>
 
       {showFarePopup && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/70 p-2 sm:p-4">
+        <div className="fixed inset-0 z-80 flex items-center justify-center bg-slate-950/70 p-2 sm:p-4">
           <div
             ref={farePopupRef}
             role="dialog"
             aria-modal="true"
             aria-label="Fare estimate ticket"
-            className="relative flex max-h-[96vh] w-full max-w-4xl flex-col overflow-hidden rounded-[24px] bg-white shadow-2xl"
+            className="relative flex max-h-[96vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
           >
             <button
               type="button"
@@ -1300,11 +1300,11 @@ export default function HomePage() {
                         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500 sm:text-xs">
                           Route
                         </p>
-                        <p className="mt-1 break-words text-sm font-semibold leading-6 text-slate-900 sm:text-[15px]">
+                        <p className="mt-1 wrap-break-word text-sm font-semibold leading-6 text-slate-900 sm:text-[15px]">
                           {pickup || "-"}
                         </p>
                         <div className="my-2 h-px w-full bg-slate-200" />
-                        <p className="break-words text-sm font-semibold leading-6 text-slate-900 sm:text-[15px]">
+                        <p className="wrap-break-word text-sm font-semibold leading-6 text-slate-900 sm:text-[15px]">
                           {drop || "-"}
                         </p>
                       </div>
@@ -1517,7 +1517,7 @@ export default function HomePage() {
               <a
                 href={whatsappUrl}
                 onClick={openReviewPopup}
-                className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-orange-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
               >
                 <MessageCircle size={16} />
                 Book on WhatsApp
@@ -1526,7 +1526,7 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={handleRecalculate}
-                className="inline-flex min-h-[48px] items-center justify-center rounded-2xl border border-slate-300 px-4 py-3 text-sm font-bold text-slate-800 transition hover:border-orange-300 hover:text-orange-600"
+                className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-300 px-4 py-3 text-sm font-bold text-slate-800 transition hover:border-orange-300 hover:text-orange-600"
               >
                 Recalculate Fare
               </button>
@@ -1536,7 +1536,7 @@ export default function HomePage() {
       )}
 
       {showReviewPopup && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/70 p-4">
+        <div className="fixed inset-0 z-90 flex items-center justify-center bg-slate-950/70 p-4">
           <div
             ref={popupRef}
             role="dialog"
@@ -1569,7 +1569,7 @@ export default function HomePage() {
                 href={GOOGLE_REVIEW_LINK}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-orange-500 px-6 py-4 text-center font-bold text-white transition hover:bg-orange-600"
+                className="inline-flex min-h-13 items-center justify-center rounded-2xl bg-orange-500 px-6 py-4 text-center font-bold text-white transition hover:bg-orange-600"
               >
                 Give Google Review
               </a>
@@ -1577,7 +1577,7 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={continueToWhatsApp}
-                className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border border-slate-300 px-6 py-4 text-center font-bold text-slate-800 transition hover:border-orange-300 hover:text-orange-600"
+                className="inline-flex min-h-13 items-center justify-center rounded-2xl border border-slate-300 px-6 py-4 text-center font-bold text-slate-800 transition hover:border-orange-300 hover:text-orange-600"
               >
                 Continue to WhatsApp
               </button>
