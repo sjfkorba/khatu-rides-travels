@@ -164,9 +164,9 @@ export function calculateFare({
       (oneSideDistance + safeExtraKm) * vehicle.oneWayRatePerKm;
 
     if (oneSideDistance >= 190) {
-      baseFare = oneWayBase * 1.45;
+      baseFare = oneWayBase * 1.14;
     } else {
-      baseFare = oneWayBase * 1.75;
+      baseFare = oneWayBase * 1.08;
     }
 
     remarks.push(`One way distance: ${oneSideDistance} KM`);
