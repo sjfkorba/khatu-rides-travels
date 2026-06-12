@@ -50,7 +50,7 @@ const vehicles = [
     name: "Dzire",
     type: "Sedan",
     value: "sedan" as VehicleType,
-    price: "₹13/km onwards",
+    price: "₹11/km onwards",
     seats: "4+1",
     luggage: "2 Bags",
     image:
@@ -60,7 +60,7 @@ const vehicles = [
     name: "Ertiga",
     type: "6+1",
     value: "ertiga" as VehicleType,
-    price: "₹15/km onwards",
+    price: "₹13/km onwards",
     seats: "6+1",
     luggage: "4 Bags",
     image:
@@ -70,7 +70,7 @@ const vehicles = [
     name: "Innova",
     type: "7+1",
     value: "innova" as VehicleType,
-    price: "₹19/km onwards",
+    price: "₹18/km onwards",
     seats: "7+1",
     luggage: "5 Bags",
     image:
@@ -90,7 +90,7 @@ const vehicles = [
     name: "Scorpio",
     type: "SUV",
     value: "scorpio" as VehicleType,
-    price: "₹18/km onwards",
+    price: "₹17/km onwards",
     seats: "6+1",
     luggage: "4 Bags",
     image:
@@ -591,16 +591,25 @@ export default function HomePage() {
   const closeFarePopup = () => setShowFarePopup(false);
 
   const continueToWhatsApp = () => {
-    if (typeof window !== "undefined" && window.gtag) {
-      window.gtag("event", "conversion", {
-        send_to: "AW-18196199181/1OB8CJ0zTbgcEI3uz-RD",
-        value: 1.0,
-        currency: "INR",
-      });
-    }
+  if (typeof window !== "undefined" && window.gtag) {
+    window.gtag("event", "conversion", {
+      send_to: "AW-18196199181/x3CpCMzKx70cEI3uz-RD",
+      value: 1.0,
+      currency: "INR",
+      event_callback: () => {
+        window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+      },
+    });
+
+    setTimeout(() => {
+      window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+    }, 1000);
+  } else {
     window.open(whatsappUrl, "_blank", "noopener,noreferrer");
-    setShowReviewPopup(false);
-  };
+  }
+
+  setShowReviewPopup(false);
+};
 
   const trackCallConversion = () => {
     if (typeof window !== "undefined" && window.gtag) {
