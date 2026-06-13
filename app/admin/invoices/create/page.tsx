@@ -1,28 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
-import {
-  doc,
-  getDoc,
-  deleteDoc,
-} from "firebase/firestore";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import {
-  ArrowLeft,
-  Download,
-  FileText,
-  Loader2,
-  Share2,
-  Trash2,
-  Printer,
-} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, FileText, Loader2, Save } from "lucide-react";
 
-interface Invoice {
-  id: string;
+type InvoiceForm = {
   invoiceNumber: string;
   invoiceDate: string;
   customerName: string;
@@ -34,443 +19,375 @@ interface Invoice {
   vehicleNumber: string;
   vehicleType: string;
   remarks: string;
-  amount: number;
-  createdAt?: any;
-}
+  amount: string;
+};
 
-export default function InvoiceDetailsPage() {
-  const params = useParams();
+const initialForm: InvoiceForm = {
+  invoiceNumber: "",
+  invoiceDate: "",
+  customerName: "",
+  customerMobile: "",
+  pickupLocation: "",
+  dropLocation: "",
+  pickupTime: "",
+  dropTime: "",
+  vehicleNumber: "",
+  vehicleType: "",
+  remarks: "",
+  amount: "",
+};
+
+export default function CreateInvoicePage() {
   const router = useRouter();
-  const invoiceRef = useRef<HTMLDivElement>(null);
 
-  const id = useMemo(() => {
-    const raw = params?.id;
-    return Array.isArray(raw) ? raw[0] : raw;
-  }, [params]);
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState<InvoiceForm>(initialForm);
 
-  const [loading, setLoading] = useState(true);
-  const [pdfLoading, setPdfLoading] = useState(false);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-  const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const today = useMemo(() => {
+    return new Date().toISOString().split("T")[0];
+  }, []);
 
-  async function loadInvoice() {
-    if (!id) return;
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) {
+    const { name, value } = e.target;
+
+    if (name === "customerMobile") {
+      const clean = value.replace(/\D/g, "").slice(0, 10);
+      setForm((prev) => ({ ...prev, [name]: clean }));
+      return;
+    }
+
+    if (name === "amount") {
+      const clean = value.replace(/[^\d.]/g, "");
+      setForm((prev) => ({ ...prev, [name]: clean }));
+      return;
+    }
+
+    setForm((prev) => ({ ...prev, [name]: value }));
+  }
+
+  function generateInvoiceNumber() {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const random = Math.floor(100 + Math.random() * 900);
+    const invoiceNumber = `KRT-${yyyy}${mm}${dd}-${random}`;
+
+    setForm((prev) => ({
+      ...prev,
+      invoiceNumber,
+      invoiceDate: prev.invoiceDate || today,
+    }));
+  }
+
+  function validateForm() {
+    if (!form.invoiceNumber.trim()) {
+      alert("Invoice number is required");
+      return false;
+    }
+
+    if (!form.invoiceDate.trim()) {
+      alert("Invoice date is required");
+      return false;
+    }
+
+    if (!form.customerName.trim()) {
+      alert("Customer name is required");
+      return false;
+    }
+
+    if (!form.customerMobile.trim() || form.customerMobile.length < 10) {
+      alert("Please enter a valid 10-digit mobile number");
+      return false;
+    }
+
+    if (!form.pickupLocation.trim()) {
+      alert("Pick-up location is required");
+      return false;
+    }
+
+    if (!form.dropLocation.trim()) {
+      alert("Drop location is required");
+      return false;
+    }
+
+    if (!form.vehicleType.trim()) {
+      alert("Vehicle type is required");
+      return false;
+    }
+
+    if (!form.amount.trim() || Number(form.amount) <= 0) {
+      alert("Please enter a valid amount");
+      return false;
+    }
+
+    return true;
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!validateForm()) return;
+
+    setLoading(true);
 
     try {
-      setLoading(true);
-      const ref = doc(db, "invoices", id);
-      const snap = await getDoc(ref);
+      const docRef = await addDoc(collection(db, "invoices"), {
+        invoiceNumber: form.invoiceNumber.trim(),
+        invoiceDate: form.invoiceDate,
+        customerName: form.customerName.trim(),
+        customerMobile: form.customerMobile.trim(),
+        pickupLocation: form.pickupLocation.trim(),
+        dropLocation: form.dropLocation.trim(),
+        pickupTime: form.pickupTime.trim(),
+        dropTime: form.dropTime.trim(),
+        vehicleNumber: form.vehicleNumber.trim(),
+        vehicleType: form.vehicleType.trim(),
+        remarks: form.remarks.trim(),
+        amount: Number(form.amount || 0),
+        createdAt: serverTimestamp(),
+      });
 
-      if (!snap.exists()) {
-        alert("Invoice not found");
-        router.push("/admin/invoices");
-        return;
-      }
-
-      setInvoice({
-        id: snap.id,
-        ...snap.data(),
-      } as Invoice);
+      router.push(`/admin/invoices/${docRef.id}`);
     } catch (error) {
       console.error(error);
-      alert("Failed to load invoice");
+      alert("Failed to create invoice");
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => {
-    loadInvoice();
-  }, [id]);
-
-  function formatCurrency(amount?: number) {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    }).format(Number(amount || 0));
-  }
-
-  async function generatePdfBlob() {
-    const element = invoiceRef.current;
-    if (!element || !invoice) return null;
-
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      logging: false,
-    });
-
-    const imgData = canvas.toDataURL("image/png");
-
-    const pdf = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: "a4",
-    });
-
-    const pageWidth = 210;
-    const pageHeight = 297;
-    const margin = 8;
-
-    const usableWidth = pageWidth - margin * 2;
-    const imgWidth = usableWidth;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-    if (imgHeight <= pageHeight - margin * 2) {
-      pdf.addImage(imgData, "PNG", margin, margin, imgWidth, imgHeight);
-    } else {
-      const fittedHeight = pageHeight - margin * 2;
-      pdf.addImage(imgData, "PNG", margin, margin, imgWidth, fittedHeight);
-    }
-
-    return pdf.output("blob");
-  }
-
-  async function handleDownloadPdf() {
-    try {
-      setPdfLoading(true);
-      const blob = await generatePdfBlob();
-      if (!blob || !invoice) return;
-
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${invoice.invoiceNumber || "invoice"}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error(error);
-      alert("Failed to generate PDF");
-    } finally {
-      setPdfLoading(false);
-    }
-  }
-
-  async function handleSharePdf() {
-    try {
-      setPdfLoading(true);
-      const blob = await generatePdfBlob();
-      if (!blob || !invoice) return;
-
-      const file = new File(
-        [blob],
-        `${invoice.invoiceNumber || "invoice"}.pdf`,
-        { type: "application/pdf" }
-      );
-
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          title: invoice.invoiceNumber || "Invoice",
-          text: `Invoice ${invoice.invoiceNumber || ""}`,
-          files: [file],
-        });
-      } else {
-        const url = URL.createObjectURL(blob);
-        window.open(url, "_blank");
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Share not supported on this device");
-    } finally {
-      setPdfLoading(false);
-    }
-  }
-
-  function handlePrint() {
-    window.print();
-  }
-
-  async function handleDelete() {
-    if (!invoice?.id) return;
-
-    const ok = confirm("Delete this invoice permanently?");
-    if (!ok) return;
-
-    try {
-      setDeleteLoading(true);
-      await deleteDoc(doc(db, "invoices", invoice.id));
-      alert("Invoice deleted successfully");
-      router.push("/admin/invoices");
-    } catch (error) {
-      console.error(error);
-      alert("Failed to delete invoice");
-    } finally {
-      setDeleteLoading(false);
-    }
-  }
-
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-slate-100 p-4 md:p-8 flex items-center justify-center">
-        <div className="flex items-center gap-3 text-slate-700 font-semibold">
-          <Loader2 className="animate-spin" size={20} />
-          Loading invoice...
-        </div>
-      </main>
-    );
-  }
-
-  if (!invoice) {
-    return (
-      <main className="min-h-screen bg-slate-100 p-4 md:p-8 flex items-center justify-center">
-        <div className="bg-white rounded-3xl shadow p-8 text-center">
-          <h2 className="text-2xl font-black mb-2">Invoice not found</h2>
-          <p className="text-slate-600 mb-6">
-            This invoice may have been deleted or the link is invalid.
-          </p>
-          <Link
-            href="/admin/invoices"
-            className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-5 py-3 rounded-2xl font-bold"
-          >
-            <ArrowLeft size={18} />
-            Back to Invoices
-          </Link>
-        </div>
-      </main>
-    );
+  function resetForm() {
+    setForm(initialForm);
   }
 
   return (
-    <>
-      <main className="min-h-screen bg-slate-100 p-4 md:p-8 print:bg-white print:p-0">
-        <div className="max-w-6xl mx-auto">
-          <div className="print:hidden flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
+    <main className="min-h-screen bg-slate-100 p-4 md:p-8">
+      <div className="max-w-5xl mx-auto">
+        <div className="mb-6">
+          <Link
+            href="/admin/invoices"
+            className="inline-flex items-center gap-2 text-slate-700 hover:text-slate-900 font-semibold mb-4"
+          >
+            <ArrowLeft size={18} />
+            Back to Invoice Dashboard
+          </Link>
+
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <Link
-                href="/admin/invoices"
-                className="inline-flex items-center gap-2 text-slate-700 hover:text-slate-900 font-semibold mb-3"
-              >
-                <ArrowLeft size={18} />
-                Back to Invoice Dashboard
-              </Link>
               <h1 className="text-3xl md:text-4xl font-black text-slate-900">
-                Invoice Details
+                Create Invoice
               </h1>
-              <p className="text-slate-600 mt-1">
-                View, print, download or share this invoice
+              <p className="text-slate-600 mt-2">
+                Fill the details below to create a new taxi invoice
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={handlePrint}
-                className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-2xl font-bold"
-              >
-                <Printer size={18} />
-                Print
-              </button>
-
-              <button
-                onClick={handleDownloadPdf}
-                disabled={pdfLoading}
-                className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white px-5 py-3 rounded-2xl font-bold"
-              >
-                {pdfLoading ? <Loader2 className="animate-spin" size={18} /> : <Download size={18} />}
-                Download PDF
-              </button>
-
-              <button
-                onClick={handleSharePdf}
-                disabled={pdfLoading}
-                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white px-5 py-3 rounded-2xl font-bold"
-              >
-                <Share2 size={18} />
-                Share
-              </button>
-
-              <button
-                onClick={handleDelete}
-                disabled={deleteLoading}
-                className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white px-5 py-3 rounded-2xl font-bold"
-              >
-                {deleteLoading ? <Loader2 className="animate-spin" size={18} /> : <Trash2 size={18} />}
-                Delete
-              </button>
-            </div>
-          </div>
-
-          <div className="flex justify-center">
-            <div
-              ref={invoiceRef}
-              className="w-full max-w-[900px] bg-white rounded-3xl shadow-xl overflow-hidden print:shadow-none print:rounded-none"
+            <button
+              type="button"
+              onClick={generateInvoiceNumber}
+              className="inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-2xl font-bold"
             >
-              <div className="bg-slate-900 text-white px-6 md:px-10 py-8">
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-                  <div>
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-12 h-12 rounded-2xl bg-orange-500 flex items-center justify-center">
-                        <FileText size={22} />
-                      </div>
-                      <div>
-                        <h2 className="text-2xl md:text-3xl font-black">
-                          Khatu Rides & Travels
-                        </h2>
-                        <p className="text-slate-300 text-sm">
-                          Taxi Booking & Travel Services
-                        </p>
-                      </div>
-                    </div>
-                    <p className="text-slate-300 text-sm">
-                      Professional travel invoice
-                    </p>
-                  </div>
-
-                  <div className="text-left md:text-right">
-                    <p className="text-slate-300 text-sm mb-1">Invoice Number</p>
-                    <h3 className="text-2xl font-black">{invoice.invoiceNumber || "-"}</h3>
-                    <p className="text-slate-300 text-sm mt-3 mb-1">Invoice Date</p>
-                    <p className="font-semibold">{invoice.invoiceDate || "-"}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="px-6 md:px-10 py-8 space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <section className="bg-slate-50 rounded-2xl p-5 border border-slate-200">
-                    <h4 className="text-sm font-bold uppercase tracking-wide text-slate-500 mb-4">
-                      Customer Details
-                    </h4>
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-sm text-slate-500">Customer Name</p>
-                        <p className="text-lg font-bold text-slate-900">
-                          {invoice.customerName || "-"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500">Mobile Number</p>
-                        <p className="font-semibold text-slate-800">
-                          {invoice.customerMobile || "-"}
-                        </p>
-                      </div>
-                    </div>
-                  </section>
-
-                  <section className="bg-slate-50 rounded-2xl p-5 border border-slate-200">
-                    <h4 className="text-sm font-bold uppercase tracking-wide text-slate-500 mb-4">
-                      Travel Details
-                    </h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="col-span-2">
-                        <p className="text-sm text-slate-500">Route</p>
-                        <p className="font-bold text-slate-900">
-                          {invoice.pickupLocation || "-"} → {invoice.dropLocation || "-"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500">Pick-up Time</p>
-                        <p className="font-semibold text-slate-800">
-                          {invoice.pickupTime || "-"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500">Drop Time</p>
-                        <p className="font-semibold text-slate-800">
-                          {invoice.dropTime || "-"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500">Vehicle Number</p>
-                        <p className="font-semibold text-slate-800">
-                          {invoice.vehicleNumber || "-"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500">Vehicle Type</p>
-                        <p className="font-semibold text-slate-800">
-                          {invoice.vehicleType || "-"}
-                        </p>
-                      </div>
-                    </div>
-                  </section>
-                </div>
-
-                <section className="border border-slate-200 rounded-2xl overflow-hidden">
-                  <div className="bg-slate-100 px-5 py-4 border-b border-slate-200">
-                    <h4 className="font-bold text-slate-900">Invoice Summary</h4>
-                  </div>
-
-                  <div className="p-5">
-                    <div className="grid grid-cols-12 gap-4 font-semibold text-slate-500 text-sm border-b pb-3">
-                      <div className="col-span-7">Description</div>
-                      <div className="col-span-2 text-center">Qty</div>
-                      <div className="col-span-3 text-right">Amount</div>
-                    </div>
-
-                    <div className="grid grid-cols-12 gap-4 py-4 items-center border-b">
-                      <div className="col-span-7">
-                        Taxi booking service for customer trip from{" "}
-                        <span className="font-bold">{invoice.pickupLocation || "-"}</span> to{" "}
-                        <span className="font-bold">{invoice.dropLocation || "-"}</span>
-                      </div>
-                      <div className="col-span-2 text-center">1</div>
-                      <div className="col-span-3 text-right font-bold">
-                        {formatCurrency(invoice.amount)}
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end pt-5">
-                      <div className="w-full max-w-sm space-y-3">
-                        <div className="flex justify-between text-slate-700">
-                          <span>Subtotal</span>
-                          <span className="font-semibold">
-                            {formatCurrency(invoice.amount)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-slate-700">
-                          <span>Tax</span>
-                          <span className="font-semibold">₹0</span>
-                        </div>
-                        <div className="flex justify-between text-xl font-black text-slate-900 border-t pt-3">
-                          <span>Total</span>
-                          <span>{formatCurrency(invoice.amount)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-                <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5">
-                    <h4 className="font-bold text-orange-900 mb-2">Remarks</h4>
-                    <p className="text-slate-700 whitespace-pre-line">
-                      {invoice.remarks?.trim() ? invoice.remarks : "No remarks added."}
-                    </p>
-                  </div>
-
-                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5">
-                    <h4 className="font-bold text-slate-900 mb-2">Payment Note</h4>
-                    <p className="text-slate-700">
-                      Thank you for choosing Khatu Rides & Travels. Please keep this
-                      invoice for your records and future support.
-                    </p>
-                  </div>
-                </section>
-              </div>
-
-              <div className="bg-slate-900 text-slate-300 px-6 md:px-10 py-5 text-sm">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                  <p>Khatu Rides & Travels</p>
-                  <p>Generated from admin invoice system</p>
-                </div>
-              </div>
-            </div>
+              <FileText size={18} />
+              Auto Generate Invoice No
+            </button>
           </div>
         </div>
-      </main>
 
-      <style jsx global>{`
-        @media print {
-          body {
-            background: #ffffff !important;
-          }
-          .print\\:hidden {
-            display: none !important;
-          }
-        }
-      `}</style>
-    </>
+        <form onSubmit={handleSubmit} className="bg-white rounded-3xl shadow p-6 md:p-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">
+                Invoice Number
+              </label>
+              <input
+                name="invoiceNumber"
+                placeholder="Enter invoice number"
+                value={form.invoiceNumber}
+                onChange={handleChange}
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-300"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">
+                Invoice Date
+              </label>
+              <input
+                name="invoiceDate"
+                type="date"
+                value={form.invoiceDate}
+                onChange={handleChange}
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-300"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">
+                Customer Name
+              </label>
+              <input
+                name="customerName"
+                placeholder="Enter customer name"
+                value={form.customerName}
+                onChange={handleChange}
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-300"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">
+                Customer Mobile
+              </label>
+              <input
+                name="customerMobile"
+                placeholder="Enter mobile number"
+                value={form.customerMobile}
+                onChange={handleChange}
+                inputMode="numeric"
+                maxLength={10}
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-300"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">
+                Pick-up Location
+              </label>
+              <input
+                name="pickupLocation"
+                placeholder="Enter pick-up location"
+                value={form.pickupLocation}
+                onChange={handleChange}
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-300"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">
+                Drop Location
+              </label>
+              <input
+                name="dropLocation"
+                placeholder="Enter drop location"
+                value={form.dropLocation}
+                onChange={handleChange}
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-300"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">
+                Pick-up Time
+              </label>
+              <input
+                name="pickupTime"
+                type="time"
+                value={form.pickupTime}
+                onChange={handleChange}
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-300"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">
+                Drop Time
+              </label>
+              <input
+                name="dropTime"
+                type="time"
+                value={form.dropTime}
+                onChange={handleChange}
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-300"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">
+                Vehicle Number
+              </label>
+              <input
+                name="vehicleNumber"
+                placeholder="Enter vehicle number"
+                value={form.vehicleNumber}
+                onChange={handleChange}
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-300"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">
+                Vehicle Type
+              </label>
+              <input
+                name="vehicleType"
+                placeholder="Sedan / SUV / Hatchback"
+                value={form.vehicleType}
+                onChange={handleChange}
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-300"
+                required
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-bold text-slate-700 mb-2">
+                Amount
+              </label>
+              <input
+                name="amount"
+                type="text"
+                placeholder="Enter invoice amount"
+                value={form.amount}
+                onChange={handleChange}
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-300"
+                required
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-bold text-slate-700 mb-2">
+                Remarks
+              </label>
+              <textarea
+                name="remarks"
+                placeholder="Enter remarks or trip notes"
+                value={form.remarks}
+                onChange={handleChange}
+                rows={4}
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-300 resize-none"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 pt-8">
+            <button
+              type="submit"
+              disabled={loading}
+              className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white px-6 py-3 rounded-2xl font-bold"
+            >
+              {loading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+              {loading ? "Saving..." : "Save Invoice"}
+            </button>
+
+            <button
+              type="button"
+              onClick={resetForm}
+              disabled={loading}
+              className="inline-flex items-center justify-center gap-2 bg-slate-200 hover:bg-slate-300 disabled:opacity-60 text-slate-900 px-6 py-3 rounded-2xl font-bold"
+            >
+              Reset Form
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
   );
 }
