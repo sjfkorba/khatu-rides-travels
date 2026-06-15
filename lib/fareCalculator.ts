@@ -1,53 +1,39 @@
+// lib/fare.ts
+
 export const VEHICLES = {
   sedan: {
     label: "Sedan",
-    ratePerKm: 13,
-    oneWayRatePerKm: 17,
-    perDayCharge: 1200,
-    fixedLocalCharge: 2400,
-    dayHalt: 500,
-    nightHalt: 600,
-    maxPassengers: 4,
+    nightHalt: 500,
+    localPackage: 1999,
+    oldRatePerKm: 12,
   },
+
   ertiga: {
     label: "Ertiga",
-    ratePerKm: 17,
-    oneWayRatePerKm: 20,
-    perDayCharge: 1500,
-    fixedLocalCharge: 3500,
-    dayHalt: 600,
-    nightHalt: 700,
-    maxPassengers: 6,
+    nightHalt: 600,
+    localPackage: 2499,
+    oldRatePerKm: 14,
   },
+
   innova: {
     label: "Innova",
-    ratePerKm: 17,
-    oneWayRatePerKm: 22,
-    perDayCharge: 2000,
-    fixedLocalCharge: 4500,
-    dayHalt: 800,
-    nightHalt: 900,
-    maxPassengers: 7,
+    nightHalt: 800,
+    localPackage: 3299,
+    oldRatePerKm: 17,
   },
+
   crysta: {
     label: "Innova Crysta",
-    ratePerKm: 19,
-    oneWayRatePerKm: 24,
-    perDayCharge: 2500,
-    fixedLocalCharge: 4500,
-    dayHalt: 900,
-    nightHalt: 1000,
-    maxPassengers: 7,
+    nightHalt: 900,
+    localPackage: 3999,
+    oldRatePerKm: 18,
   },
+
   scorpio: {
     label: "Scorpio",
-    ratePerKm: 17,
-    oneWayRatePerKm: 23,
-    perDayCharge: 2200,
-    fixedLocalCharge: 3500,
-    dayHalt: 800,
-    nightHalt: 900,
-    maxPassengers: 7,
+    nightHalt: 700,
+    localPackage: 2999,
+    oldRatePerKm: 16,
   },
 } as const;
 
@@ -56,181 +42,362 @@ export type VehicleType = keyof typeof VEHICLES;
 export type BookingType =
   | "oneway"
   | "roundtrip"
-  | "airporttransfer"
-  | "local";
+  | "local"
+  | "airporttransfer";
 
-export type PricingMode = "fixed" | "running";
-
-type CalculateFareParams = {
+export type FareFormData = {
+  pickupLocation: string;
+  dropLocation: string;
+  pickupDate: string;
+  pickupTime: string;
   distance: number;
-  extraKm?: number;
   vehicleType: VehicleType;
   bookingType: BookingType;
-  pricingMode?: PricingMode;
-  passengerCount?: number;
-  stoppage?: number;
-  dayHalts?: number;
-  nightHalts?: number;
-  tripDays?: number;
+};
+
+export type CalculateFareParams = {
+  distance: number;
+  vehicleType: VehicleType;
+  bookingType: BookingType;
 };
 
 export type CalculateFareResult = {
-  mapDistance: number;
-  extraKm: number;
-  totalRunningDistance: number;
+  actualDistance: number;
+  extraDistance: number;
+  distance: number;
   fare: number;
+  discount: number;
   finalFare: number;
-  baseFare: number;
-  fuelCharge: number;
-  stoppageCharge: number;
-  passengerCharge: number;
-  dayHaltCharge: number;
-  nightHaltCharge: number;
+  nightHalt: number;
+  discountApplied: boolean;
   remarks: string[];
 };
 
-function getPassengerCharge(
-  passengerCount: number,
-  maxPassengers: number
-): number {
-  if (!Number.isFinite(passengerCount) || passengerCount <= maxPassengers) {
-    return 0;
+const MIN_FARE = {
+  sedan: 1799,
+  ertiga: 2300,
+  innova: 2800,
+  crysta: 3500,
+  scorpio: 3000,
+};
+
+function getOneWayRate(
+  vehicleType: VehicleType,
+  distance: number
+) {
+  switch (vehicleType) {
+    case "sedan":
+      if (distance <= 250) return 16;
+      if (distance <= 400) return 15;
+      if (distance <= 500) return 14;
+      return 13;
+
+    case "ertiga":
+      if (distance <= 250) return 20;
+      if (distance <= 400) return 18;
+      if (distance <= 500) return 17;
+      return 16;
+
+    case "innova":
+      if (distance <= 250) return 22;
+      if (distance <= 400) return 20;
+      if (distance <= 500) return 18;
+      return 17;
+
+    case "crysta":
+      if (distance <= 250) return 25;
+      if (distance <= 400) return 22;
+      if (distance <= 500) return 20;
+      return 19;
+
+    case "scorpio":
+      if (distance <= 250) return 22;
+      if (distance <= 400) return 20;
+      if (distance <= 500) return 18;
+      return 17;
+
+    default:
+      return 15;
   }
-  return 300;
+}
+
+function getRoundTripRate(
+  vehicleType: VehicleType,
+  totalRoundTripDistance: number
+) {
+  switch (vehicleType) {
+    case "sedan":
+      if (totalRoundTripDistance <= 300) return 15;
+      if (totalRoundTripDistance <= 500) return 14;
+      if (totalRoundTripDistance <= 800) return 13;
+      return 12;
+
+    case "ertiga":
+      if (totalRoundTripDistance <= 300) return 17;
+      if (totalRoundTripDistance <= 500) return 16;
+      if (totalRoundTripDistance <= 800) return 15;
+      return 14;
+
+    case "innova":
+      if (totalRoundTripDistance <= 300) return 18;
+      if (totalRoundTripDistance <= 500) return 17;
+      if (totalRoundTripDistance <= 800) return 16;
+      return 15;
+
+    case "crysta":
+      if (totalRoundTripDistance <= 300) return 21;
+      if (totalRoundTripDistance <= 500) return 19;
+      if (totalRoundTripDistance <= 800) return 18;
+      return 17;
+
+    case "scorpio":
+      if (totalRoundTripDistance <= 300) return 18;
+      if (totalRoundTripDistance <= 500) return 17;
+      if (totalRoundTripDistance <= 800) return 16;
+      return 15;
+
+    default:
+      return 15;
+  }
+}
+
+function getAirportFare(vehicleType: VehicleType) {
+  switch (vehicleType) {
+    case "sedan":
+      return 699;
+
+    case "ertiga":
+      return 999;
+
+    case "innova":
+      return 1299;
+
+    case "crysta":
+      return 1699;
+
+    case "scorpio":
+      return 1499;
+
+    default:
+      return 699;
+  }
+}
+
+function psychologicalPrice(value: number) {
+  const rounded = Math.round(value / 100) * 100;
+  return rounded - 1;
+}
+
+export function formatCurrency(amount: number) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+export function getVehicleLabel(vehicleType: VehicleType) {
+  return VEHICLES[vehicleType]?.label ?? vehicleType;
+}
+
+export function getBookingTypeLabel(
+  bookingType: BookingType
+) {
+  switch (bookingType) {
+    case "oneway":
+      return "One Way";
+
+    case "roundtrip":
+      return "Round Trip";
+
+    case "local":
+      return "Local (8Hr / 80Km)";
+
+    case "airporttransfer":
+      return "Airport Transfer";
+
+    default:
+      return bookingType;
+  }
 }
 
 export function calculateFare({
   distance,
-  extraKm = 0,
   vehicleType,
   bookingType,
-  pricingMode = "fixed",
-  passengerCount = 1,
-  stoppage = 0,
-  dayHalts = 0,
-  nightHalts = 0,
-  tripDays = 1,
 }: CalculateFareParams): CalculateFareResult {
   const vehicle = VEHICLES[vehicleType];
 
-  const safeDistance =
-    Number.isFinite(distance) && distance > 0 ? Math.round(distance) : 0;
-
-  const safeExtraKm =
-    Number.isFinite(extraKm) && extraKm > 0 ? Math.round(extraKm) : 0;
-
-  const safePassengerCount =
-    Number.isFinite(passengerCount) && passengerCount > 0
-      ? Math.round(passengerCount)
-      : 1;
-
-  const safeStoppage =
-    Number.isFinite(stoppage) && stoppage > 0
-      ? Math.min(Math.round(stoppage), 5)
+  const oneWayDistance =
+    Number.isFinite(distance) && distance > 0
+      ? Math.round(distance)
       : 0;
 
-  const safeDayHalts =
-    Number.isFinite(dayHalts) && dayHalts > 0 ? Math.round(dayHalts) : 0;
-
-  const safeNightHalts =
-    Number.isFinite(nightHalts) && nightHalts > 0 ? Math.round(nightHalts) : 0;
-
-  const safeTripDays =
-    Number.isFinite(tripDays) && tripDays > 0 ? Math.round(tripDays) : 1;
-
-  const passengerCharge = getPassengerCharge(
-    safePassengerCount,
-    vehicle.maxPassengers
-  );
-
-  const stoppageCharge = safeStoppage * 150;
-  const dayHaltCharge = safeDayHalts * vehicle.dayHalt;
-  const nightHaltCharge = safeNightHalts * vehicle.nightHalt;
-
-  const oneSideDistance = safeDistance;
-  const roundTripDistance = safeDistance * 2;
-
-  const totalRunningDistance =
-    bookingType === "roundtrip"
-      ? roundTripDistance + safeExtraKm
-      : oneSideDistance + safeExtraKm;
-
-  let baseFare = 0;
-  const fuelCharge = 0;
-  const remarks: string[] = [];
+  let fare = 0;
 
   if (bookingType === "oneway") {
-    const oneWayBase =
-      (oneSideDistance + safeExtraKm) * vehicle.oneWayRatePerKm;
 
-    if (oneSideDistance >= 190) {
-      baseFare = oneWayBase * 1.14;
-    } else {
-      baseFare = oneWayBase * 1.08;
-    }
+  // 0 - 500 KM
+  if (oneWayDistance <= 500) {
 
-    remarks.push(`One way distance: ${oneSideDistance} KM`);
-    remarks.push(`One way rate: ₹${vehicle.oneWayRatePerKm}/KM`);
-    remarks.push(`Fare calculated with one-way rate logic`);
+    const rate = getOneWayRate(
+      vehicleType,
+      oneWayDistance
+    );
+
+    fare = oneWayDistance * rate;
+
+    fare = Math.max(
+      fare,
+      MIN_FARE[vehicleType]
+    );
+
+  } else {
+
+    // 500+ KM
+    // Old successful outstation formula
+
+    const oldRate =
+      vehicle.oldRatePerKm;
+
+    const baseFare =
+      oneWayDistance *
+      oldRate *
+      1.75;
+
+    const discount =
+      Math.round(baseFare * 0.18);
+
+    fare =
+      baseFare;
   }
+}
 
   if (bookingType === "roundtrip") {
-    const distanceFare =
-      (roundTripDistance + safeExtraKm) * vehicle.ratePerKm;
+    const totalRTDistance =
+      oneWayDistance * 2;
 
-    const tripDayFare = safeTripDays * vehicle.perDayCharge;
+    const rate = getRoundTripRate(
+      vehicleType,
+      totalRTDistance
+    );
 
-    baseFare =
-      distanceFare +
-      tripDayFare +
-      dayHaltCharge +
-      nightHaltCharge;
+    fare = totalRTDistance * rate;
 
-    remarks.push(`Round trip distance: ${roundTripDistance} KM`);
-    remarks.push(`Round trip rate: ₹${vehicle.ratePerKm}/KM`);
-    remarks.push(`Trip days: ${safeTripDays}`);
+    if (totalRTDistance > 300) {
+      fare += 500;
+    }
+
+    if (totalRTDistance > 500) {
+      fare += 500;
+    }
   }
 
   if (bookingType === "local") {
-    if (pricingMode === "fixed") {
-      baseFare = vehicle.fixedLocalCharge;
-    } else {
-      baseFare =
-        vehicle.perDayCharge +
-        dayHaltCharge +
-        nightHaltCharge +
-        safeExtraKm * vehicle.ratePerKm;
-    }
-
-    remarks.push(`Local trip fare applied`);
+    fare = vehicle.localPackage;
   }
 
   if (bookingType === "airporttransfer") {
-    baseFare = (oneSideDistance + safeExtraKm) * vehicle.oneWayRatePerKm;
-
-    remarks.push(`Airport transfer distance: ${oneSideDistance} KM`);
-    remarks.push(`Airport transfer rate: ₹${vehicle.oneWayRatePerKm}/KM`);
+    fare = getAirportFare(vehicleType);
   }
 
-  const finalFare = Math.round(
-    baseFare + stoppageCharge + passengerCharge
-  );
+  const finalFare =
+    psychologicalPrice(fare);
 
-  remarks.push(`Total running distance: ${totalRunningDistance} KM`);
-  remarks.push(`Final fare: ₹${finalFare}`);
+  const displayDistance =
+    bookingType === "roundtrip"
+      ? oneWayDistance * 2
+      : oneWayDistance;
 
   return {
-    mapDistance: oneSideDistance,
-    extraKm: safeExtraKm,
-    totalRunningDistance,
+    actualDistance: oneWayDistance,
+    extraDistance: 0,
+    distance: displayDistance,
     fare: finalFare,
+    discount: 0,
     finalFare,
-    baseFare: Math.round(baseFare),
-    fuelCharge,
-    stoppageCharge,
-    passengerCharge,
-    dayHaltCharge,
-    nightHaltCharge,
-    remarks,
+    nightHalt: vehicle.nightHalt,
+    discountApplied: false,
+
+    remarks: [
+      "Toll Tax Extra",
+      "Parking Charges Extra",
+      `Night Halt ₹${vehicle.nightHalt}/Night (if applicable)`,
+      "Driver allowance extra if required",
+      "Fare is estimated and may vary based on route & availability",
+      "Final confirmation will be shared on WhatsApp",
+    ],
   };
+}
+
+export function validateFareForm(
+  data: Partial<FareFormData>
+) {
+  const errors: string[] = [];
+
+  if (!data.pickupLocation?.trim())
+    errors.push("Pick-up location is required.");
+
+  if (!data.pickupDate?.trim())
+    errors.push("Pick-up date is required.");
+
+  if (!data.pickupTime?.trim())
+    errors.push("Pick-up time is required.");
+
+  if (!data.vehicleType)
+    errors.push("Vehicle type is required.");
+
+  if (!data.bookingType)
+    errors.push("Ride type is required.");
+
+  if (
+    data.bookingType !== "local" &&
+    !data.dropLocation?.trim()
+  ) {
+    errors.push("Drop location is required.");
+  }
+
+  if (
+    data.bookingType !== "local" &&
+    (!data.distance || data.distance <= 0)
+  ) {
+    errors.push("Valid distance is required.");
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+}
+
+export function buildWhatsAppFareMessage(
+  data: FareFormData,
+  fareResult: CalculateFareResult
+) {
+  const lines = [
+    "🚖 *NEW FARE ESTIMATE REQUEST*",
+    "━━━━━━━━━━━━━━━━━━",
+    `📍 Pick-up      : ${data.pickupLocation}`,
+    `📍 Drop         : ${data.dropLocation}`,
+    `📅 Date         : ${data.pickupDate}`,
+    `⏰ Time         : ${data.pickupTime}`,
+    `🛣️ Distance     : ${fareResult.distance} km`,
+    `🚘 Vehicle      : ${getVehicleLabel(
+      data.vehicleType
+    )}`,
+    `🔁 Ride Type    : ${getBookingTypeLabel(
+      data.bookingType
+    )}`,
+    "━━━━━━━━━━━━━━━━━━",
+    `💰 Estimated Fare : ${formatCurrency(
+      fareResult.finalFare
+    )}`,
+    "━━━━━━━━━━━━━━━━━━",
+    "📝 Notes:",
+    ...fareResult.remarks.map(
+      (item) => `• ${item}`
+    ),
+  ];
+
+  return lines.join("\n");
 }
