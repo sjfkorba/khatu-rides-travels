@@ -889,7 +889,7 @@ export default function HomePage() {
 
                     <div className="rounded-xl bg-slate-100 px-3 py-2.5 text-[11px] sm:text-xs leading-5 text-slate-600">
                       ✓ Instant Fare Estimate, ✓ Verified Drivers, ✓ Quick WhatsApp Confirmation,
-                      ✓ Toll & Parking Extra
+                      ✓ Parking Extra
                     </div>
                   </div>
                 </div>
