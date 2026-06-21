@@ -79,12 +79,25 @@ const MIN_FARE = {
   innova: 2800,
   crysta: 3500,
   scorpio: 3000,
-};
+} as const;
 
-function getOneWayRate(
-  vehicleType: VehicleType,
-  distance: number
-) {
+/**
+ * Sirf yahan se one way fare hike change karo
+ * 15 = 15%
+ * 10 = 10%
+ * 0 = no hike
+ */
+export const ONE_WAY_HIKE_PERCENT = 17.5;
+
+function applyHikePercent(amount: number, hikePercent: number) {
+  if (!Number.isFinite(amount) || amount <= 0) return 0;
+  if (!Number.isFinite(hikePercent) || hikePercent <= 0) {
+    return Math.round(amount);
+  }
+  return Math.round(amount * (1 + hikePercent / 100));
+}
+
+function getOneWayRate(vehicleType: VehicleType, distance: number) {
   switch (vehicleType) {
     case "sedan":
       if (distance <= 250) return 16;
@@ -98,7 +111,6 @@ function getOneWayRate(
       if (distance <= 500) return 17;
       return 16;
 
-    // Innova & Crysta Same Pricing
     case "innova":
     case "crysta":
       if (distance <= 250) return 26;
@@ -117,7 +129,10 @@ function getOneWayRate(
   }
 }
 
-function getRoundTripRate(vehicleType: VehicleType, totalRoundTripDistance: number) {
+function getRoundTripRate(
+  vehicleType: VehicleType,
+  totalRoundTripDistance: number
+) {
   switch (vehicleType) {
     case "sedan":
       if (totalRoundTripDistance <= 300) return 15;
@@ -220,15 +235,18 @@ export function calculateFare({
   if (bookingType === "oneway") {
     if (oneWayDistance <= 250) {
       const rate = getOneWayRate(vehicleType, oneWayDistance);
-      fare = oneWayDistance * rate;
-      fare = Math.max(fare, MIN_FARE[vehicleType]);
+      const baseFare = oneWayDistance * rate;
+      fare = Math.max(baseFare, MIN_FARE[vehicleType]);
+      fare = applyHikePercent(fare, ONE_WAY_HIKE_PERCENT);
     } else if (oneWayDistance <= 600) {
       const baseFare = oneWayDistance * vehicle.oldRatePerKm;
-      fare = baseFare * 1.90;
+      fare = baseFare * 1.9;
+      fare = applyHikePercent(fare, ONE_WAY_HIKE_PERCENT);
       discountApplied = false;
     } else {
       const baseFare = oneWayDistance * vehicle.oldRatePerKm;
       fare = baseFare * 1.75;
+      fare = applyHikePercent(fare, ONE_WAY_HIKE_PERCENT);
       discount = Math.round(baseFare * 0.18);
       discountApplied = false;
     }
@@ -320,4 +338,53 @@ export function buildWhatsAppFareMessage(
   ];
 
   return lines.join("\n");
+}
+
+/**
+ * Vehicle cards ke liye helper
+ * One way = sirf 5S + 7S (Sedan + Ertiga)
+ * Round trip = saari vehicles
+ */
+export type FareOptionCard = {
+  vehicleType: VehicleType;
+  vehicleLabel: string;
+  fare: number;
+  fareText: string;
+  nightHalt: number;
+  remarks: string[];
+};
+
+export function getFareOptionsByBooking(
+  distance: number,
+  bookingType: BookingType,
+  vehicleTypes?: VehicleType[]
+): FareOptionCard[] {
+  let allowedVehicles: VehicleType[];
+
+  if (vehicleTypes && vehicleTypes.length > 0) {
+    allowedVehicles = vehicleTypes;
+  } else if (bookingType === "oneway") {
+    allowedVehicles = ["sedan", "ertiga"];
+  } else if (bookingType === "roundtrip") {
+    allowedVehicles = ["sedan", "ertiga", "innova", "crysta", "scorpio"];
+  } else {
+    allowedVehicles = ["sedan", "ertiga", "innova", "crysta", "scorpio"];
+  }
+
+  return allowedVehicles.map((vehicleType) => {
+    const result = calculateFare({
+      distance,
+      vehicleType,
+      bookingType,
+    });
+
+    return {
+      vehicleType,
+      vehicleLabel: getVehicleLabel(vehicleType),
+      fare: result.finalFare,
+      fareText: formatCurrency(result.finalFare),
+      nightHalt: result.nightHalt,
+      remarks: result.remarks,
+    };
+  });
 }
