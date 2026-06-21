@@ -100,26 +100,26 @@ function applyHikePercent(amount: number, hikePercent: number) {
 function getOneWayRate(vehicleType: VehicleType, distance: number) {
   switch (vehicleType) {
     case "sedan":
-      if (distance <= 250) return 16;
+      if (distance <= 300) return 16;
       if (distance <= 400) return 15;
       if (distance <= 500) return 14;
       return 13;
 
     case "ertiga":
-      if (distance <= 250) return 20;
+      if (distance <= 300) return 20;
       if (distance <= 400) return 18;
       if (distance <= 500) return 17;
       return 16;
 
     case "innova":
     case "crysta":
-      if (distance <= 250) return 26;
+      if (distance <= 300) return 26;
       if (distance <= 400) return 24;
       if (distance <= 500) return 22;
       return 18;
 
     case "scorpio":
-      if (distance <= 250) return 24;
+      if (distance <= 300) return 24;
       if (distance <= 400) return 22;
       if (distance <= 500) return 20;
       return 18;
