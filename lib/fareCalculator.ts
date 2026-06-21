@@ -82,12 +82,10 @@ const MIN_FARE = {
 } as const;
 
 /**
- * Sirf yahan se one way fare hike change karo
- * 15 = 15%
- * 10 = 10%
- * 0 = no hike
+ * Global variable for base hike, but now conditional hikes are handled inside the function.
  */
-export const ONE_WAY_HIKE_PERCENT = 17.5;
+export const ONE_WAY_HIKE_PERCENT_SHORT = 17.5; // For <= 200 km
+export const ONE_WAY_HIKE_PERCENT_LONG = 18;   // For > 200 km
 
 function applyHikePercent(amount: number, hikePercent: number) {
   if (!Number.isFinite(amount) || amount <= 0) return 0;
@@ -233,20 +231,32 @@ export function calculateFare({
   let discountApplied = false;
 
   if (bookingType === "oneway") {
-    if (oneWayDistance <= 250) {
+    // 1. Agar distance 200 km ya usse kam hai -> 17.5% Hike
+    if (oneWayDistance <= 200) {
       const rate = getOneWayRate(vehicleType, oneWayDistance);
       const baseFare = oneWayDistance * rate;
       fare = Math.max(baseFare, MIN_FARE[vehicleType]);
-      fare = applyHikePercent(fare, ONE_WAY_HIKE_PERCENT);
-    } else if (oneWayDistance <= 600) {
+      fare = applyHikePercent(fare, ONE_WAY_HIKE_PERCENT_SHORT); // 17.5% Hike
+    } 
+    // 2. Agar distance 200 km se zyada aur 250 km tak hai -> 6.5% Hike
+    else if (oneWayDistance <= 250) {
+      const rate = getOneWayRate(vehicleType, oneWayDistance);
+      const baseFare = oneWayDistance * rate;
+      fare = Math.max(baseFare, MIN_FARE[vehicleType]);
+      fare = applyHikePercent(fare, ONE_WAY_HIKE_PERCENT_LONG); // 6.5% Hike
+    } 
+    // 3. Agar distance 250 km se zyada aur 600 km tak hai -> 6.5% Hike
+    else if (oneWayDistance <= 600) {
       const baseFare = oneWayDistance * vehicle.oldRatePerKm;
       fare = baseFare * 1.9;
-      fare = applyHikePercent(fare, ONE_WAY_HIKE_PERCENT);
+      fare = applyHikePercent(fare, ONE_WAY_HIKE_PERCENT_LONG); // 6.5% Hike
       discountApplied = false;
-    } else {
+    } 
+    // 4. Agar distance 600 km se zyada hai -> 6.5% Hike + 18% Discount
+    else {
       const baseFare = oneWayDistance * vehicle.oldRatePerKm;
       fare = baseFare * 1.75;
-      fare = applyHikePercent(fare, ONE_WAY_HIKE_PERCENT);
+      fare = applyHikePercent(fare, ONE_WAY_HIKE_PERCENT_LONG); // 6.5% Hike
       discount = Math.round(baseFare * 0.18);
       discountApplied = false;
     }
@@ -340,11 +350,6 @@ export function buildWhatsAppFareMessage(
   return lines.join("\n");
 }
 
-/**
- * Vehicle cards ke liye helper
- * One way = sirf 5S + 7S (Sedan + Ertiga)
- * Round trip = saari vehicles
- */
 export type FareOptionCard = {
   vehicleType: VehicleType;
   vehicleLabel: string;
