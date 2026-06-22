@@ -355,11 +355,12 @@ export function calculateFare({
       bookingType === "roundtrip" && shortRuleApplied
         ? `Short route rule applied: Base fare + up/down KM fare`
         : "Fare calculated as per selected trip type",
-      "Toll Tax Extra",
+      "Toll Tax Extra (Depends on Final Confirmation)",
       "Parking Charges Extra",
       `Night Halt ₹${vehicle.nightHalt}/Night (if applicable)`,
       "Fare is estimated and may vary based on route & availability",
       "Final confirmation will be shared on WhatsApp",
+      "One Way Cab depends on availability of routine booking routes for return booking and fare may be vary at the time of finalized your booking."
     ],
   };
 }
