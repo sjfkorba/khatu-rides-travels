@@ -3,15 +3,25 @@ import { NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+type DistanceRequestBody = {
+  origin?: string;
+  destination?: string;
+  stops?: string[];
+};
+
+function cleanText(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const body = (await req.json()) as DistanceRequestBody;
 
-    const origin = body?.origin?.trim();
-    const destination = body?.destination?.trim();
-
-    console.log("Origin:", origin);
-    console.log("Destination:", destination);
+    const origin = cleanText(body?.origin);
+    const destination = cleanText(body?.destination);
+    const stops = Array.isArray(body?.stops)
+      ? body.stops.map(cleanText).filter(Boolean)
+      : [];
 
     if (!origin || !destination) {
       return NextResponse.json(
@@ -22,14 +32,29 @@ export async function POST(req: Request) {
 
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
-    console.log("API Key Present:", !!apiKey);
-
     if (!apiKey) {
       return NextResponse.json(
         { error: "Google Maps API key is missing" },
         { status: 500 }
       );
     }
+
+    const requestBody = {
+      origin: {
+        address: origin,
+      },
+      destination: {
+        address: destination,
+      },
+      intermediates: stops.map((stop) => ({
+        address: stop,
+      })),
+      travelMode: "DRIVE",
+      routingPreference: "TRAFFIC_UNAWARE",
+      computeAlternativeRoutes: false,
+      languageCode: "en-IN",
+      units: "METRIC",
+    };
 
     const response = await fetch(
       "https://routes.googleapis.com/directions/v2:computeRoutes",
@@ -38,23 +63,15 @@ export async function POST(req: Request) {
         headers: {
           "Content-Type": "application/json",
           "X-Goog-Api-Key": apiKey,
-          "X-Goog-FieldMask": "routes.distanceMeters",
+          "X-Goog-FieldMask":
+            "routes.distanceMeters,routes.duration,routes.legs.distanceMeters,routes.legs.duration,routes.travelAdvisory.tollInfo",
         },
-        body: JSON.stringify({
-          origin: {
-            address: origin,
-          },
-          destination: {
-            address: destination,
-          },
-          travelMode: "DRIVE",
-        }),
+        body: JSON.stringify(requestBody),
+        cache: "no-store",
       }
     );
 
     const data = await response.json();
-
-    console.log("Google Response:", JSON.stringify(data));
 
     if (!response.ok) {
       return NextResponse.json(
@@ -66,15 +83,48 @@ export async function POST(req: Request) {
       );
     }
 
-    const distanceMeters =
-      data?.routes?.[0]?.distanceMeters;
+    const route = data?.routes?.[0];
+
+    if (!route?.distanceMeters) {
+      return NextResponse.json(
+        {
+          error: "No route distance found",
+          fullError: data,
+        },
+        { status: 404 }
+      );
+    }
+
+    const distanceMeters = route.distanceMeters;
+    const distanceKm = Math.round(distanceMeters / 1000);
+
+    const legs =
+      route?.legs?.map(
+        (
+          leg: { distanceMeters?: number; duration?: string },
+          index: number
+        ) => ({
+          legNumber: index + 1,
+          distanceMeters: leg?.distanceMeters ?? 0,
+          distanceKm: Math.round((leg?.distanceMeters ?? 0) / 1000),
+          duration: leg?.duration ?? null,
+        })
+      ) ?? [];
+
+    const hasToll = Boolean(route?.travelAdvisory?.tollInfo);
 
     return NextResponse.json({
+      origin,
+      destination,
+      stops,
       distanceMeters,
-      distanceKm: Math.round(distanceMeters / 1000),
+      distanceKm,
+      duration: route?.duration ?? null,
+      hasToll,
+      legs,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Distance API Error:", error);
 
     return NextResponse.json(
       { error: "Failed to calculate distance" },
