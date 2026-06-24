@@ -1,15 +1,23 @@
+// app/layout.tsx
 import Script from "next/script";
 import type { Metadata } from "next";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import Footer from "@/components/Footer";
+
+// Load professional layout typography to avoid string overlap bugs on short devices
+const sansFont = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-sans",
+});
 
 const siteUrl = "https://khaturidescg.in";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default:
-      "Khatu Rides Travels Co. | Best Taxi Service in Chhattisgarh",
+    default: "Khatu Rides Travels Co. | Best Taxi Service in Chhattisgarh",
     template: "%s | Khatu Rides Travels Co.",
   },
   description:
@@ -119,36 +127,42 @@ export default function RootLayout({
   };
 
   return (
-  <html lang="hi">
-    <body>
+    <html lang="hi" className={`${sansFont.variable} scroll-smooth`}>
+      <body className="antialiased bg-slate-50 text-slate-800 min-h-screen flex flex-col overflow-x-hidden">
+        
+        {/* Google Analytics Tag Scripts */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-FXZZCTGQ4R"
+          strategy="afterInteractive"
+        />
 
-      <Script
-        src="https://www.googletagmanager.com/gtag/js?id=G-FXZZCTGQ4R"
-        strategy="afterInteractive"
-      />
+        <Script id="google-tags" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
 
-      <Script id="google-tags" strategy="afterInteractive">
-        {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
+            gtag('config', 'G-FXZZCTGQ4R');
+            gtag('config', 'AW-18196199181');
+          `}
+        </Script>
 
-          gtag('config', 'G-FXZZCTGQ4R');
-          gtag('config', 'AW-18196199181');
-        `}
-      </Script>
+        {/* Structured Local JSON-LD Schema Matrix */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(businessSchema),
+          }}
+        />
 
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(businessSchema),
-        }}
-      />
+        {/* Central Viewport Grid Component Mount */}
+        <main className="flex-grow w-full flex flex-col">
+          {children}
+        </main>
+        
+        <Footer />
 
-      {children}
-      <Footer />
-
-    </body>
-  </html>
-);
+      </body>
+    </html>
+  );
 }
