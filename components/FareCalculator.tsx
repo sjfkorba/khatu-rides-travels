@@ -165,8 +165,8 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
           nightAllowanceCost = vConfig.nightHalt * tripDays;
         }
 
-        const netPayable = baseResult.finalFare + nightAllowanceCost + dayHaltCost;
-        const netStrike = baseResult.strikeFare + nightAllowanceCost + dayHaltCost;
+        const netPayable = baseResult.finalFare + (bookingType === "roundtrip" ? 0 : nightAllowanceCost);
+        const netStrike = baseResult.strikeFare + (bookingType === "roundtrip" ? 0 : nightAllowanceCost);
 
         return {
           id: `${bookingType}-${vehicleType}`,
@@ -208,53 +208,66 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
   };
 
   return (
-    <div className="space-y-3.5">
+    <div className="w-full bg-white border border-slate-200/80 rounded-3xl p-5 md:p-6 shadow-xl shadow-slate-100/50 space-y-5">
       
-      {/* 👑 RESTORED: One-Way, Round Trip & Local Selection Switcher Tabs 👑 */}
-      <div className="flex justify-center gap-2 mb-4 border-b border-slate-100 pb-2.5">
+      {/* 👑 Selector Switcher Tabs 👑 */}
+      <div className="flex bg-slate-100/80 p-1.5 rounded-2xl gap-1 border border-slate-200/30">
         {(["oneway", "roundtrip", "local"] as const).map((type) => (
           <button
             key={type}
             type="button"
             onClick={() => { setBookingType(type); setStops([]); setNewStop(""); }}
-            className={`px-4 py-2 text-xs font-black rounded-xl border transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs sm:text-sm font-extrabold rounded-xl transition-all duration-300 ${
               bookingType === type 
-                ? "bg-[#c2511b] border-[#c2511b] text-white shadow-md shadow-orange-700/20" 
-                : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                ? "bg-gradient-to-r from-[#c2511b] to-[#dc682a] text-white shadow-md shadow-orange-700/20 scale-[1.02]" 
+                : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
             }`}
           >
-            {type === "oneway" ? "➔ One Way" : type === "roundtrip" ? "📅 Round Trip" : "📍 Local Pack"}
+            <span className="text-base">
+              {type === "oneway" ? "➔" : type === "roundtrip" ? "📅" : "📍"}
+            </span>
+            {type === "oneway" ? "One Way" : type === "roundtrip" ? "Round Trip" : "Local Pack"}
           </button>
         ))}
       </div>
 
-      {/* Input Locations Fields layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="bg-slate-50 rounded-xl border border-slate-200/60 px-3.5 py-2 text-left">
-          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">From Location *</label>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-emerald-500 text-xs">🟢</span>
+      {/* Input Locations Fields Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="group bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-left transition-all duration-200 focus-within:border-[#c2511b] focus-within:bg-white focus-within:shadow-md focus-within:shadow-orange-500/5">
+          <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest transition-colors group-focus-within:text-[#c2511b]">
+            From Location *
+          </label>
+          <div className="flex items-center gap-2.5 mt-2">
+            <div className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </div>
             {isLoaded ? (
               <Autocomplete onLoad={setPickupAutocomplete} onPlaceChanged={() => setPickup(pickupAutocomplete?.getPlace().formatted_address || "")} className="w-full">
-                <input value={pickup} onChange={(e) => setPickup(e.target.value)} placeholder="Pickup city or terminal" className="w-full bg-transparent text-sm font-bold outline-none text-slate-800" />
+                <input value={pickup} onChange={(e) => setPickup(e.target.value)} placeholder="Enter pickup city or terminal" className="w-full bg-transparent text-sm font-bold outline-none text-slate-800 placeholder-slate-400" />
               </Autocomplete>
             ) : (
-              <input value={pickup} onChange={(e) => setPickup(e.target.value)} placeholder="Loading..." className="w-full bg-transparent text-sm font-bold outline-none" />
+              <input value={pickup} onChange={(e) => setPickup(e.target.value)} placeholder="Loading services..." className="w-full bg-transparent text-sm font-bold outline-none" disabled />
             )}
           </div>
         </div>
 
         {bookingType !== "local" && (
-          <div className="bg-slate-50 rounded-xl border border-slate-200/60 px-3.5 py-2 text-left">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">To Destination *</label>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-rose-500 text-xs">🔴</span>
+          <div className="group bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-left transition-all duration-200 focus-within:border-[#c2511b] focus-within:bg-white focus-within:shadow-md focus-within:shadow-orange-500/5">
+            <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest transition-colors group-focus-within:text-[#c2511b]">
+              To Destination *
+            </label>
+            <div className="flex items-center gap-2.5 mt-2">
+              <div className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+              </div>
               {isLoaded ? (
                 <Autocomplete onLoad={setDropAutocomplete} onPlaceChanged={() => setDrop(dropAutocomplete?.getPlace().formatted_address || "")} className="w-full">
-                  <input value={drop} onChange={(e) => setDrop(e.target.value)} placeholder="Drop destination city" className="w-full bg-transparent text-sm font-bold outline-none text-slate-800" />
+                  <input value={drop} onChange={(e) => setDrop(e.target.value)} placeholder="Enter destination city" className="w-full bg-transparent text-sm font-bold outline-none text-slate-800 placeholder-slate-400" />
                 </Autocomplete>
               ) : (
-                <input value={drop} onChange={(e) => setDrop(e.target.value)} placeholder="Loading..." className="w-full bg-transparent text-sm font-bold outline-none" />
+                <input value={drop} onChange={(e) => setDrop(e.target.value)} placeholder="Loading services..." className="w-full bg-transparent text-sm font-bold outline-none" disabled />
               )}
             </div>
           </div>
@@ -263,23 +276,25 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
 
       {/* Dynamic Loops Stoppage Multi-stops Panel */}
       {canAddStop && (
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 space-y-2">
+        <div className="bg-slate-50/50 border border-slate-200 rounded-2xl p-3.5 space-y-3">
           <div className="flex gap-2">
             {isLoaded ? (
               <Autocomplete onLoad={setStopAutocomplete} onPlaceChanged={() => setNewStop(stopAutocomplete?.getPlace().formatted_address || "")} className="flex-1">
-                <input value={newStop} onChange={(e) => setNewStop(e.target.value)} placeholder="Add Route Loop Stop (Raigarh, Puri...)" className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold outline-none" />
+                <input value={newStop} onChange={(e) => setNewStop(e.target.value)} placeholder="Add Route Stop (e.g. Raigarh, Bilaspur...)" className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-semibold outline-none focus:border-slate-400 transition-colors" />
               </Autocomplete>
             ) : (
-              <input value={newStop} onChange={(e) => setNewStop(e.target.value)} placeholder="Loading autocomplete..." className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold outline-none" />
+              <input value={newStop} onChange={(e) => setNewStop(e.target.value)} placeholder="Loading autocomplete..." className="flex-1 bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-semibold outline-none" disabled />
             )}
-            <button type="button" onClick={addStop} className="bg-slate-800 text-white font-black text-xs px-3.5 rounded-lg hover:bg-slate-900 transition-colors">+ Add Stop</button>
+            <button type="button" onClick={addStop} className="bg-slate-900 text-white font-extrabold text-xs px-4 rounded-xl hover:bg-slate-800 transition-colors shadow-sm active:scale-95">
+              + Add
+            </button>
           </div>
           {stops.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto pt-0.5">
+            <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto custom-scrollbar pt-1">
               {stops.map((s, idx) => (
-                <span key={s.id} className="bg-white border text-[10px] font-bold text-slate-700 px-2 py-0.5 rounded shadow-sm flex items-center gap-1">
-                  🛑 Stop {idx + 1}: {s.value.split(",")[0]}
-                  <button type="button" onClick={() => removeStop(s.id)} className="text-rose-500 font-black hover:text-rose-700 ml-0.5">×</button>
+                <span key={s.id} className="bg-white border border-slate-200/80 text-[11px] font-bold text-slate-700 px-2.5 py-1 rounded-lg shadow-sm flex items-center gap-1.5 animate-fadeIn">
+                  <span className="text-orange-600">🛑 Stop {idx + 1}:</span> {s.value.split(",")[0]}
+                  <button type="button" onClick={() => removeStop(s.id)} className="text-slate-400 font-extrabold hover:text-rose-600 ml-1 transition-colors text-xs">×</button>
                 </span>
               ))}
             </div>
@@ -287,32 +302,48 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
         </div>
       )}
 
-      {/* Date & Time parameters grids */}
-      <div className={`grid gap-3 ${bookingType === "roundtrip" ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2"}`}>
-        <div className="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-left">
-          <label className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">Pickup Date</label>
-          <input type="date" value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="w-full bg-transparent text-xs font-bold outline-none mt-0.5" />
+      {/* Date & Time Parameters Grids */}
+      <div className={`grid gap-4 ${bookingType === "roundtrip" ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2"}`}>
+        <div className="bg-slate-50 border border-slate-200/80 rounded-2xl px-3.5 py-2.5 text-left focus-within:border-slate-300 transition-colors">
+          <label className="block text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Pickup Date</label>
+          <input type="date" value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="w-full bg-transparent text-xs font-bold outline-none mt-1 text-slate-800" />
         </div>
-        <div className="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-left">
-          <label className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">Pickup Time</label>
-          <input type="time" value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} className="w-full bg-transparent text-xs font-bold outline-none mt-0.5" />
+        <div className="bg-slate-50 border border-slate-200/80 rounded-2xl px-3.5 py-2.5 text-left focus-within:border-slate-300 transition-colors">
+          <label className="block text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Pickup Time</label>
+          <input type="time" value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} className="w-full bg-transparent text-xs font-bold outline-none mt-1 text-slate-800" />
         </div>
         {bookingType === "roundtrip" && (
           <>
-            <div className="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-left">
-              <label className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">Return Date</label>
-              <input type="date" value={returnDate} onChange={(e) => setReturnDate(e.target.value)} className="w-full bg-transparent text-xs font-bold outline-none mt-0.5" />
+            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl px-3.5 py-2.5 text-left focus-within:border-slate-300 transition-colors">
+              <label className="block text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Return Date</label>
+              <input type="date" value={returnDate} onChange={(e) => setReturnDate(e.target.value)} className="w-full bg-transparent text-xs font-bold outline-none mt-1 text-slate-800" />
             </div>
-            <div className="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-left">
-              <label className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">Return Time</label>
-              <input type="time" value={returnTime} onChange={(e) => setReturnTime(e.target.value)} className="w-full bg-transparent text-xs font-bold outline-none mt-0.5" />
+            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl px-3.5 py-2.5 text-left focus-within:border-slate-300 transition-colors">
+              <label className="block text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Return Time</label>
+              <input type="time" value={returnTime} onChange={(e) => setReturnTime(e.target.value)} className="w-full bg-transparent text-xs font-bold outline-none mt-1 text-slate-800" />
             </div>
           </>
         )}
       </div>
 
-      <button type="button" onClick={handleCheckBestFare} disabled={loading} className="w-full rounded-2xl bg-[#c2511b] hover:bg-[#a54314] text-white py-3.5 text-xs sm:text-sm font-black uppercase tracking-wider shadow-md hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2">
-        {loading ? "Verifying Route Mileage..." : "🔍 Compare Verified Fleet Fares"}
+      {/* Main Submit CTA Button */}
+      <button 
+        type="button" 
+        onClick={handleCheckBestFare} 
+        disabled={loading} 
+        className="w-full rounded-2xl bg-gradient-to-r from-[#c2511b] to-[#e45f1e] hover:from-[#a54314] hover:to-[#c2511b] text-white py-4 text-xs sm:text-sm font-black uppercase tracking-widest shadow-lg shadow-orange-700/10 hover:shadow-xl hover:shadow-orange-700/20 active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-80 disabled:cursor-not-allowed"
+      >
+        {loading ? (
+          <>
+            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Verifying Route Mileage...
+          </>
+        ) : (
+          "🔍 Compare Verified Fleet Fares"
+        )}
       </button>
     </div>
   );
