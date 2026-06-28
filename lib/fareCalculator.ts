@@ -3,7 +3,7 @@
 export const VEHICLES = {
   sedan: {
     label: "Sedan",
-    image: "data:image/jpeg;base64,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",
+    image: "data:image/jpeg;base64,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",
     nightHalt: 250,
     dayHalt: 300,
     localPackage: 2199,
@@ -12,7 +12,7 @@ export const VEHICLES = {
   },
   ertiga: {
     label: "Ertiga",
-    image: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5OjcBCgoKDQwNGg8PGjclHyU3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3N//AABEIAJQBCwMBIgACEQEDEQH/xAAcAAABBAMBAAAAAAAAAAAAAAAEAAMFBgECBwj/xABJEAACAQMCAgYFCQUGBAYDAAABAgMABBEFIRIxBhMUIkFRMmFxgZEHFUJSU5KhsdEjYnKCwTNDk9Lh8BZEY6IkRVSDssI0NaP/xAAaAQACAwEBAAAAAAAAAAAAAAAAAQIDBAUG/8QALBEAAgECBgEDAwQDAAAAAAAAAAECAxEEEhMhLimF6oXv3N67p67O6T6vdfpFlbWksFyWstIisV2sA9alANb1Sij1qUBm5l0JQZkLYXQlBdAO6Cg7oKC6ChXQUaOidZ6N+Evg7WLv6/wB66RmbFf5P6bFmD2C62lVNDXG6fWf80mEwK0V7gVjL0f6U6OitV2FvG0Z6m66iNf68hxW9vFnW+BfCOo2/wDuU7Wj7SAtT0vI8S7Hz5090CpdC9IThVTheI8XbV7lX8SoxX6fO8mGfN6f9X1R1Vn7OfXFvG5bYV6I5pP9rV7n09CH0I02Cgq8XNidw/b966fO5vEexC6FpD0v6XU1W/N1Z7p9M3/AHXfcp8VmeIbeOHeLpdpfSuxP1P0uMbx9pPhmP8ACm79jR66DDPwq7TfP9I6nE8Zf8FYvVsL/wCtYvCMeY63fUukcsZ4gKEnB16fO8mLm+hGg9S7F2Fv62Ife9bXWw9iXW3U6RofUz6RofS6/D79e6D0Fv7X7F0i6K0I8bO+P67gEre59jS8G8Xp9gU2iV2EWFmZg+gN/vXTXfJnS6SboF96E6D1Nsuw39fA770nd8C+G6fA/XfW+6fWw9w6gY++p8bXIsLwbPuhug9S7C2K6XFf9b4BfG6bByw94U3VwXFw6Do3Y7qA6v3pZEfAAd+7ugDvLvEPFvRvvQHvLvd4AO68HeveIeO+G6ADvXw72b4AgX7urCHvXyIDvdWGDeA94h36oAD37+rCBvdWEA727vQHvFvfID3jvFugDvEPEDv3wBDw3RnwQBvXvvghvugPdPv70Bv74Ih4eA+qA94N/vEDeA798P6/qgh4/wB6AO89XfHeAHeXvvvgeHfPePeIeB/rID/2Q==",
+    image: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAADY2wCEAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5OjcBCgoKDQwNGg8PGjclHyU3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3N//AABEIAJQBCwMBIgACEQEDEQH/xAAcAAABBAMBAAAAAAAAAAAAAAAEAAMFBgECBwj/xABJEAACAQAAA/YwCEAAkGBwYGBAcAAQIDBBEFIRIxBhMUIkFRMmFxgZEHFUJSU5KhsdEjYnKCwTNDk9Lh8BZEY6IkRVSDssI0NaP/xAAaAQACAwEBAAAAAAAAAAAAAAAAAQIDBAUG/8QALBEAAgECBgEDAwQDAAAAAAAAAAECAxEEEhMhLimF6oXv3N67p67O6T6vdfpFlbWksFyWstIisV2sA9alANb1Sij1qUBm5l0JQZkLYXQlBdAO6Cg7oKC6ChXQUaOidZ6N+Evg7WLv6/wB66RmbFf5P6bFmD2C62lVNDXG6fWf80mEwK0V7gVjL0f6U6OitV2FvG0Z6m66iNf68hxW9vFnW+BfCOo2/JuU7Wj7SAtT0vI8S7Hz5090CpdC9IThVTheI8XbV7lX8SoxX6fO8mGfN6f9X1R1Vn7OfXFvG5bYV6I5pP9rV7n09CH0I02Cgq8XNidw/b966fO5vEexC6FpD0v6XU1W/N1Z7p9M3/AHXfcp8VmeIbeOHeLpdpfSuxP1P0uMbx9pPhmP8ACm79jR66DDPwq7TfP9I6nE8Zf8FYvVsL/wCtYvCMeY63fUukcsZ4gKEnB16fO8mLm+hGg9S7F2Fv62Ife9bXWw9iXW3U6RofUz6RofS6/D79e6D0Fv7X7F0i6K0I8bO+P67gEre59jS8G8Xp9gU2iV2EWFmZg+gN/vXTXfJnS6SboF96E6D1Nsuw39fA770nd8C+G6fA/XfW+6fWw9w6gY++p8bXIsLwbPuhug9S7C2K6XFf9b4BfG6bByw94U3VwXFw6Do3Y7qA6v3pZEfAAd+7ugDvLvEPFvRvvQHvLvd4AO68HeveIeO+G6ADvXw72b4AgX7urCHvXyIDvdWGDeA94h36oAD37+rCBvdWEA727vQHvFvfID3jvFugDvEPEDv3wBDw3RnwQBvXvvghvugPdPv70Bv74Ih4eA+qA94N/vEDeA798P6/qgh4/wB6AO89XfHeAHeXvvvgeHfPePeIeB/rID/2Q==",
     nightHalt: 300,
     dayHalt: 400,
     localPackage: 2699,
@@ -21,7 +21,7 @@ export const VEHICLES = {
   },
   innova: {
     label: "Innova",
-    image: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5OjcBCgoKDQwNGg8PGjclHyU3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3N//AABEIAJQBDgMBIgACEQEDEQH/xAAcAAAABwEBAAAAAAAAAAAAAAAAAQIDBAUGBwj/xABOEAACAQAAA/YwCEAAkGBwYGBAcAAQIDBBEFIRIxBhNBUSJhcYGRFTKhwdFUcbLwFkJScpKyNUNEU2KCw9Li8RYHIzM2VGNzg5Oio7M0Nf/EABoBAAMBAQEBAQAAAAAAAAAAAAABAgMEBQb/xALBEAAgECBgEDAwQDAAAAAAAAAAECAxEEEhMhMlYVlhLLbS5DGLmEfhfC2X1bK6OfXFvG5bYV6I5pP9rV7n09CH0I02Cgq8XNidw/b966fO5vEexC6FpD0v6XU1W/N1Z7p9M3/AHXfcp8VmeIbeOHeLpdpfSuxP1P0uMbx9pPhmP8ACm79jR66DDPwq7TfP9I6nE8Zf8FYvVsL/wCtYvCMeY63fUukcsZ4gKEnB16fO8mLm+hGg9S7F2Fv62Ife9bXWw9iXW3U6RofUz6RofS6/D79e6D0Fv7X7F0i6K0I8bO+P67gEre59jS8G8Xp9gU2iV2EWFmZg+gN/vXTXfJnS6SboF96E6D1Nsuw39fA770nd8C+G6fA/XfW+6fWw9w6gY++p8bXIsLwbPuhug9S7C2K6XFf9b4BfG6bByw94U3VwXFw6Do3Y7qA6v3pZEfAAd+7ugDvLvEPFvRvvQHvLvd4AO68HeveIeO+G6ADvXw72b4AgX7urCHvXyIDvdWGDeA94h36oAD37+rCBvdWEA727vQHvFvfID3jvFugDvEPEDv3wBDw3RnwQBvXvvghvugPdPv70Bv74Ih4eA+qA94N/vEDeA798P6/qgh4/wB6AO89XfHeAHeXvvvgeHfPePeIeB/rID/2Q==",
+    image: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAADY2wCEAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5OjcBCgoKDQwNGg8PGjclHyU3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3N//AABEIAJQBDgMBIgACEQEDEQH/xAAcAAAABwEBAAAAAAAAAAAAAAAAAQIDBAUGBwj/xABOEAACAQAAA/YwCEAAkGBwYGBAcAAQIDBBEFIRIxBhMUIkFRMmFxgZEHFUJSU5KhsdEjYnKCwTNDk9Lh8BZEY6IkRVSDssI0NaP/xAAaAQACAwEBAAAAAAAAAAAAAAAAAQIDBAUG/8QALBEAAgECBgEDAwQDAAAAAAAAAAECAxEEEhMhLimF6oXv3N67p67O6T6vdfpFlbWksFyWstIisV2sA9alANb1Sij1qUBm5l0JQZkLYXQlBdAO6Cg7oKC6ChXQUaOidZ6N+Evg7WLv6/wB66RmbFf5P6bFmD2C62lVNDXG6fWf80mEwK0V7gVjL0f6U6OitV2FvG0Z6m66iNf68hxW9vFnW+BfCOo2/JuU7Wj7SAtT0vI8S7Hz5090CpdC9IThVTheI8XbV7lX8SoxX6fO8mGfN6f9X1R1Vn7OfXFvG5bYV6I5pP9rV7n09CH0I02Cgq8XNidw/b966fO5vEexC6FpD0v6XU1W/N1Z7p9M3/AHXfcp8VmeIbeOHeLpdpfSuxP1P0uMbx9pPhmP8ACm79jR66DDPwq7TfP9I6nE8Zf8FYvVsL/wCtYvCMeY63fUukcsZ4gKEnB16fO8mLm+hGg9S7F2Fv62Ife9bXWw9iXW3U6RofUz6RofS6/D79e6D0Fv7X7F0i6K0I8bO+P67gEre59jS8G8Xp9gU2iV2EWFmZg+gN/vXTXfJnS6SboF96E6D1Nsuw39fA770nd8C+G6fA/XfW+6fWw9w6gY++p8bXIsLwbPuhug9S7C2K6XFf9b4BfG6bByw94U3VwXFw6Do3Y7qA6v3pZEfAAd+7ugDvLvEPFvRvvQHvLvd4AO68HeveIeO+G6ADvXw72b4AgX7urCHvXyIDvdWGDeA94h36oAD37+rCBvdWEA727vQHvFvfID3jvFugDvEPEDv3wBDw3RnwQBvXvvghvugPdPv70Bv74Ih4eA+qA94N/vEDeA798P6/qgh4/wB6AO89XfHeAHeXvvvgeHfPePeIeB/rID/2Q==",
     nightHalt: 400,
     dayHalt: 500,
     localPackage: 3499,
@@ -30,16 +30,15 @@ export const VEHICLES = {
   },
   crysta: {
     label: "Innova Crysta",
-    image: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5OjcBCgoKDQwNGg8PGjclHyU3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3N//AABEIAJQA6wMBIgACEQEDEQH/xAAcAAEAAgIDAQAAAAAAAAAAAAAABgcEBQECAwj/xABH669Y7f7p9M3/HwXvU90XFwiNCbH9bp+uH9yq6ZIsT6DoR996eheCfehV0yNInRTRXvPZPRvEv9D/uVXMjSOnQ6G3/W+K6Yf/...dTpfC++9CidCtC+C/vR+6VIsfwZ97r739X3UrE0/DPvdff6N4nr6KVicN97p77+reId3vUonQ7AvvdPf/qdVsPhZPrUpC6dAsPvdfer+lVLD6XvpWy7C6dDsD+9D7rUonQtgveD+7C9+lIuHshbBfdC/vUonQ3w3g39XoN+lKxOH2FvBvRbdwPnUi39j6M0K9f7K89jdxmC5TvFX9Y/T8x8Ki3eA3bC4t5FubR9lfby8DUyXm/wCObN07S3pW1yZbe/shPHbXw6qXbDuNfCvz339/Wj9X0Fv65wU6L6vDdfhenoWffb96vepIsXwnTvAXwPVOitV7S3gN4U6m6XFvdg97v9B6K1SPrXgN4E6d4DvfX+uN+v7pPSvewV7C3gM4HqnD9eMHeFvdClIunYV8V9XpC3p49eFevUvAegG6T0r6XpE6L6p6vQv6vQWpWsLhF6K0F06HwXviXulYnQr7E9b8X8KUisVwM9T02B7vUovof8AJXQr706F+F6N4noG+9ToV9b1KUiwWwfA+EfdVepV+f1lF0wS9Z39U6C6T0VKNInRnhbYPhvB+FfW8w/+6lHRL7Du3unmId697uD/vUpNidAsE6D4E7h9X4Xn71KX7E6FfDeAdB8CfDvvWl7K6K6E+l/C/vUpfXgVwFrE6FvF2ZofCnE+bV6F6Ew/TUrToXwnUeA9WepvjXvvUuWpA/AnDvAOg+A7reGfV/7qlFwXph7C8B6B70O96UfF1KVshfCejdBeAnp9/6pWvT/m6UpR8H3pwExwK4fCHAnveC9elLooF06F4r0F+E4feG/Uv/AL99fX0pE6EwToXwDqB/gU3XepRcH3r8X8KVwFpSOnTOnw8W8f8Ac08fRof6wI8uVfOVfN9Y8D5wHwB4xPwnW+gH6p9K7nZby11ZofGOn904MvGfA0ZnmLqTby9MNNfAnid90wX3Ywaz6ZgK0oMh5bBw69P8Ap6lV2DIdV7S7G3q3BPhV6q2tshnB9K6eY8B9lWfV6C4a3m6oGMo6NkgDcc/gD+FXWp69uNUn00x7Z7t9W1q97NId9b8fNPhfCveb873uBfevOnT/EOnvX/AFvMPvUfSlFwXph7C8B6gP1p8L++UrZdB8Lw2b/As3Efe7wKUXBfBeK/DML/U++b96lHRX2J8A9W+6v/bUpXwfTofAevV/hYn1+qlo7A/BeC7/CcSemyb94vcrXor7E6fDML4PviXv6lK3TofBfhbA+9M3EdfTUpW6XDwH+t+F5b/q8W9PrpSLoXwWq7pPhX4Zgfp/pSlo6Ym6EaD/W8wzD77Vw+pUrRdA9X0+Eeh6f1vMPfUda7H/2Q==",
+    image: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAADY2wCEAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5OjcBCgoKDQwNGg8PGjclHyU3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3N//AABEIAJQA6wMBIgACEQEDEQH/xAAcAAEAAgIDAQAAAAAAAAAAAAAABgcEBQECAwj/xABH669Y7f7p9M3/HwXvU90XFwiNCbH9bp+uH9yq6ZIsT6DoR996eheCfehV0yNInRTRXvPZPRvEv9D/uVXMjSOnQ6G3/W+K6Yf/...dTpfC++9CidCtC+C/vR+6VIsfwZ97r739X3UrE0/DPvdff6N4nr6KVicN97p77+reId3vUonQ7AvvdPf/qdVsPhZPrUpC6dAsPvdfer+lVLD6XvpWy7C6dDsD+9D7rUonQtgveD+7C9+lIuHshbBfdC/vUonQ3w3g39XoN+lKxOH2FvBvRbdwPnUi39j6M0K9f7K89jdxmC5TvFX9Y/T8x8Ki3eA3bC4t5FubR9lfby8DUyXm/wCObN07S3pW1yZbe/shPHbXw6qXbDuNfCvz339/Wj9X0Fv65wU6L6vDdfhenoWffb96vepIsXwnTvAXwPVOitV7S3gN4U6m6XFvdg97v9B6K1SPrXgN4E6d4DvfX+uN+v7pPSvewV7C3gM4HqnD9eMHeFvdClIunYV8V9XpC3p49eFevUvAegG6T0r6XpE6L6p6vQv6vQWpWsLhF6K0F06HwXviXulYnQr7E9b8X8KUisVwM9T02B7vUovof8AJXQr706F+F6N4noG+9ToV9b1KUiwWwfA+EfdVepV+f1lF0wS9Z39U6C6T0VKNInRnhbYPhvB+FfW8w/+6lHRL7Du3unmId697uD/vUpNidAsE6D4E7h9X4Xn71KX7E6FfDeAdB8CfDvvWl7K6K6E+l/C/vUpfXgVwFrE6FvF2ZofCnE+bV6F6Ew/TUrToXwnUeA9WepvjXvvUuWpA/AnDvAOg+A7reGfV/7qlFwXph7C8B6B70O96UfF1KVshfCejdBeAnp9/6pWvT/m6UpR8H3pwExwK4fCHAnveC9elLooF06F4r0F+E4feG/Uv/AL99fX0pE6EwToXwDqB/gU3XepRcH3r8X8KVwFpSOnTOnw8W8f8Ac08fRof6wI8uVfOVfN9Y8D5wHwB4xPwnW+gH6p9K7nZby11ZofGOn904MvGfA0ZnmLqTby9MNNfAnid90wX3Ywaz6ZgK0oMh5bBw69P8Ap6lV2DIdV7S7G3q3BPhV6q2tshnB9K6eY8B9lWfV6C4a3m6oGMo6NkgDcc/gD+FXWp69uNUn00x7Z7t9W1q97NId9b8fNPhfCveb873uBfevOnT/EOnvX/AFvMPvUfSlFwXph7C8B6gP1p8L++UrZdB8Lw2b/As3Efe7wKUXBfBeK/DML/U++b96lHRX2J8A9W+6v/bUpXwfTofAevV/hYn1+qlo7A/BeC7/CcSemyb94vcrXor7E6fDML4PviXv6lK3TofBfhbA+9M3EdfTUpW6XDwH+t+F5b/q8W9PrpSLoXwWq7pPhX4Zgfp/pSlo6Ym6EaD/W8wzD77Vw+pUrRdA9X0+Eeh6f1vMPfUda7H/2Q==",
     nightHalt: 400,
     dayHalt: 600,
-    localPackage: 4199,
     oldRatePerKm: 21,
     extraPerKm: 21,
   },
   scorpio: {
     label: "Scorpio",
-    image: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5OjcBCgoKDQwNGg8PGjclHyU3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3N//AABEIAJQBCgMBIgACEQEDEQH/AUBEoVfN9Y8D5wHwB4xPwnW+gH6p9K7nZby11ZofGOn904MvGfA0ZnmLqTby9MNNfAnid90wX3Ywaz6ZgK0oMh5bBw69P8Ap6lV2DIdV7S7G3q3BPhV6q2tshnB9K6eY8B9lWfV6C4a3m6oGMo6NkgDcc/gD+FXWp69uNUn00x7Z7t9W1q97NId9b8fNPhfCveb873uBfevOnT/EOnvX/AFvMPvUfSlFwXph7C8B6gP1p8L++UrZdB8Lw2b/As3Efe7wKUXBfBeK/DML/U++b96lHRX2J8A9W+6v/bUpXwfTofAevV/hYn1+qlo7A/BeC7/CcSemyb94vcrXor7E6fDML4PviXv6lK3TofBfhbA+9M3EdfTUpW6XDwH+t+F5b/q8W9PrpSLoXwWq7pPhX4Zgfp/pSlo6Ym6EaD/W8wzD77Vw+pUrRdA9X0+Eeh6f1vMPfUda7H/2Q==",
+    image: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAADY2wCEAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5OjcBCgoKDQwNGg8PGjclHyU3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3N//AABEIAJQBCgMBIgACEQEDEQH/AUBEoVfN9Y8D5wHwB4xPwnW+gH6p9K7nZby11ZofGOn904MvGfA0ZnmLqTby9MNNfAnid90wX3Ywaz6ZgK0oMh5bBw69P8Ap6lV2DIdV7S7G3q3BPhV6q2tshnB9K6eY8B9lWfV6C4a3m6oGMo6NkgDcc/gD+FXWp69uNUn00x7Z7t9W1q97NId9b8fNPhfCveb873uBfevOnT/EOnvX/AFvMPvUfSlFwXph7C8B6gP1p8L++UrZdB8Lw2b/As3Efe7wKUXBfBeK/DML/U++b96lHRX2J8A9W+6v/bUpXwfTofAevV/hYn1+qlo7A/BeC7/CcSemyb94vcrXor7E6fDML4PviXv6lK3TofBfhbA+9M3EdfTUpW6XDwH+t+F5b/q8W9PrpSLoXwWq7pPhX4Zgfp/pSlo6Ym6EaD/W8wzD77Vw+pUrRdA9X0+Eeh6f1vMPfUda7H/2Q==",
     nightHalt: 400,
     dayHalt: 500,
     localPackage: 3199,
@@ -113,7 +112,6 @@ const MIN_FARE: Record<VehicleType, number> = {
   scorpio: 2999,
 };
 
-const STRIKE_PRICE_MULTIPLIER = 1.15;
 const EXTRA_STOP_CHARGE = 150;
 
 function estimateRahulTravelsFare(
@@ -121,55 +119,131 @@ function estimateRahulTravelsFare(
   oneWayDistance: number,
   bookingType: BookingType,
   tripDays: number,
-  isDayTime: boolean
+  isDayTime: boolean,
+  pickup: string = "",
+  drop: string = ""
 ): number {
-  const is5Seater = vehicleType === "sedan";
-  
+  const p = pickup.toLowerCase();
+  const d = drop.toLowerCase();
+
+  const matchRoute = (city1: string, city2: string) => {
+    return (p.includes(city1) && d.includes(city2)) || (p.includes(city2) && d.includes(city1));
+  };
+
+  // -----------------------------------------
+  // 1. ONE WAY STRICT MAPPING (SEGREGATED GAPS)
+  // -----------------------------------------
   if (bookingType === "oneway") {
-    if (oneWayDistance <= 120) return is5Seater ? 1999 : 2999;
-    if (oneWayDistance <= 260) return is5Seater ? 3499 : 4999;
-    const baseRate = is5Seater ? 20 : 30;
+    if (matchRoute("korba", "bilaspur")) {
+      if (vehicleType === "sedan") return 1999;
+      if (vehicleType === "ertiga") return 2999;
+      return 2999; // Crysta/Innova
+    }
+    if (matchRoute("korba", "raipur")) {
+      if (vehicleType === "sedan") return 3499;
+      if (vehicleType === "ertiga") return 4999;
+      return 4999; 
+    }
+    if (matchRoute("bilaspur", "raipur")) {
+      if (vehicleType === "sedan") return 1999;
+      if (vehicleType === "ertiga") return 2999;
+      return 2999;
+    }
+    if (matchRoute("bilaspur", "chirmiri")) {
+      if (vehicleType === "sedan") return 2999;
+      if (vehicleType === "ertiga") return 4999;
+      return 4999;
+    }
+    if (matchRoute("korba", "raigarh")) {
+      if (vehicleType === "sedan") return 1999;
+      if (vehicleType === "ertiga") return 2999;
+      return 2999;
+    }
+    if (matchRoute("bilaspur", "raigarh")) {
+      if (vehicleType === "sedan") return 1999;
+      if (vehicleType === "ertiga") return 2999;
+      return 2999;
+    }
+    if (matchRoute("raipur", "raigarh")) {
+      if (vehicleType === "sedan") return 3499;
+      if (vehicleType === "ertiga") return 4999;
+      return 4999;
+    }
+    if (matchRoute("raigarh", "jharsuguda")) {
+      if (vehicleType === "sedan") return 1999;
+      if (vehicleType === "ertiga") return 2999;
+      return 2999;
+    }
+
+    // Dynamic Slabs with split vehicle calculations
+    if (oneWayDistance <= 120) {
+      if (vehicleType === "sedan") return 1999;
+      if (vehicleType === "ertiga") return 2999;
+      return 2999;
+    }
+    if (oneWayDistance <= 260) {
+      if (vehicleType === "sedan") return 3499;
+      if (vehicleType === "ertiga") return 4999;
+      return 4999;
+    }
+    
+    // Default fallback base logic
+    const baseRate = vehicleType === "sedan" ? 20 : vehicleType === "ertiga" ? 26 : 30;
     return (oneWayDistance * baseRate);
   }
   
+  // -----------------------------------------
+  // 2. ROUND TRIP STRICT MAPPING
+  // -----------------------------------------
   if (bookingType === "roundtrip") {
-    if (oneWayDistance <= 120) return is5Seater ? 3699 : 4699;
-    if (oneWayDistance <= 260) return is5Seater ? 6999 : 9999;
-    const ratePerKm = is5Seater ? 14.5 : 21.5;
+    if (matchRoute("korba", "bilaspur")) return vehicleType === "sedan" ? 3699 : 4699;
+    if (matchRoute("korba", "raipur")) return vehicleType === "sedan" ? 6999 : 9999;
+    if (matchRoute("bilaspur", "raipur")) return vehicleType === "sedan" ? 4500 : 5400;
+    if (matchRoute("bilaspur", "chirmiri")) return vehicleType === "sedan" ? 5599 : 7499; 
+    if (matchRoute("korba", "raigarh")) return vehicleType === "sedan" ? 4500 : 5400;
+    if (matchRoute("bilaspur", "raigarh")) return vehicleType === "sedan" ? 4500 : 5400;
+    if (matchRoute("raigarh", "raipur")) return vehicleType === "sedan" ? 6999 : 8999;
+    if (matchRoute("raigarh", "jharsuguda")) return vehicleType === "sedan" ? 3699 : 4699;
+    if (matchRoute("raipur", "jagdalpur")) return vehicleType === "sedan" ? 3999 : 5999;
+
+    if (oneWayDistance <= 120) return vehicleType === "sedan" ? 3699 : 4699;
+    if (oneWayDistance <= 260) return vehicleType === "sedan" ? 6999 : 9999;
+    
+    const ratePerKm = vehicleType === "sedan" ? 14.5 : vehicleType === "ertiga" ? 18.5 : 22.5;
     const minKmBlock = Math.max(oneWayDistance * 2, 250 * tripDays);
     return (minKmBlock * ratePerKm);
   }
 
-  return is5Seater ? 2199 : 3499;
+  return vehicleType === "sedan" ? 2199 : 3499;
 }
 
 function getOneWayRate(vehicleType: VehicleType, distance: number, isDayTime: boolean) {
-  let rate = 15.5;
+  let rate = 17.7; 
   switch (vehicleType) {
     case "sedan":
-      if (distance <= 150) rate = isDayTime ? 15.2 : 18.5; 
-      else if (distance <= 260) rate = isDayTime ? 14.8 : 16.5;
-      else if (distance <= 400) rate = 15.5;
-      else rate = 16.2;
+      if (distance <= 150) rate = isDayTime ? 20.3 : 20.0; 
+      else if (distance <= 260) rate = isDayTime ? 18.3 : 18.0;
+      else if (distance <= 400) rate = 18.0;
+      else rate = 17.7;
       break;
     case "ertiga":
-      if (distance <= 150) rate = isDayTime ? 21.0 : 26.5; 
-      else if (distance <= 260) rate = isDayTime ? 19.5 : 23.5;
-      else if (distance <= 400) rate = 22.0;
-      else rate = 23.0; 
+      if (distance <= 150) rate = isDayTime ? 25.5 : 28.7; 
+      else if (distance <= 260) rate = isDayTime ? 23.5 : 26.5;
+      else if (distance <= 400) rate = 24.2;
+      else rate = 25.2; 
       break;
     case "innova":
     case "crysta":
-      if (distance <= 150) rate = isDayTime ? 24.0 : 28.5; 
-      else if (distance <= 260) rate = isDayTime ? 22.0 : 25.5;
-      else if (distance <= 400) rate = 23.5;
-      else rate = 24.5;
+      if (distance <= 150) rate = isDayTime ? 29.5 : 32.5; 
+      else if (distance <= 260) rate = isDayTime ? 27.5 : 30.5;
+      else if (distance <= 400) rate = 28.5;
+      else rate = 29.5;
       break;
     case "scorpio":
-      if (distance <= 150) rate = isDayTime ? 22.0 : 26.0;
-      else if (distance <= 260) rate = isDayTime ? 20.5 : 23.5;
-      else if (distance <= 400) rate = 21.5;
-      else rate = 22.5;
+      if (distance <= 150) rate = isDayTime ? 26.2 : 28.2;
+      else if (distance <= 260) rate = isDayTime ? 24.7 : 26.7;
+      else if (distance <= 400) rate = 25.7;
+      else rate = 26.7;
       break;
   }
   return rate;
@@ -180,9 +254,9 @@ function getHyperShortFlatFare(vehicleType: VehicleType, isDayTime: boolean): nu
   switch (vehicleType) {
     case "sedan": return 1049 + nightPremium;
     case "ertiga": return 1699 + nightPremium;
-    case "innova": return 1799 + nightPremium;
-    case "crysta": return 1849 + nightPremium;
-    case "scorpio": return 1799 + nightPremium;
+    case "innova": return 2199 + nightPremium;
+    case "crysta": return 2349 + nightPremium;
+    case "scorpio": return 2199 + nightPremium;
     default: return 1049;
   }
 }
@@ -191,10 +265,10 @@ function getHyperShortRoundTripFare(vehicleType: VehicleType, isDayTime: boolean
   const nightPremium = isDayTime ? 0 : 400;
   switch (vehicleType) {
     case "sedan": return 2149 + nightPremium;
-    case "ertiga": return 2499 + nightPremium;
-    case "innova": return 3199 + nightPremium;
-    case "crysta": return 3249 + nightPremium;
-    case "scorpio": return 3199 + nightPremium;
+    case "ertiga": return 2999 + nightPremium;
+    case "innova": return 3899 + nightPremium;
+    case "crysta": return 4149 + nightPremium;
+    case "scorpio": return 3899 + nightPremium;
     default: return 2149;
   }
 }
@@ -202,26 +276,26 @@ function getHyperShortRoundTripFare(vehicleType: VehicleType, isDayTime: boolean
 function getRoundTripRate(vehicleType: VehicleType, totalRoundTripDistance: number, isDayTime: boolean) {
   switch (vehicleType) {
     case "sedan":
-      if (totalRoundTripDistance <= 240) return isDayTime ? 14.2 : 14.8; 
-      if (totalRoundTripDistance <= 600) return 13.8;
-      if (totalRoundTripDistance <= 1000) return 13.5;
+      if (totalRoundTripDistance <= 240) return isDayTime ? 16.2 : 15.8; 
+      if (totalRoundTripDistance <= 600) return 15.8;
+      if (totalRoundTripDistance <= 1000) return 14.5;
       return 13.0; 
     case "ertiga":
-      if (totalRoundTripDistance <= 240) return isDayTime ? 16.5 : 17.5;
-      if (totalRoundTripDistance <= 600) return 15.5;
-      if (totalRoundTripDistance <= 1000) return 15.0;
-      return 14.5; 
+      if (totalRoundTripDistance <= 240) return isDayTime ? 18.5 : 19.5;
+      if (totalRoundTripDistance <= 600) return 17.5;
+      if (totalRoundTripDistance <= 1000) return 16.5;
+      return 15.5; 
     case "innova":
     case "scorpio":
-      if (totalRoundTripDistance <= 240) return isDayTime ? 18.0 : 19.5;
-      if (totalRoundTripDistance <= 600) return 17.5;
-      if (totalRoundTripDistance <= 1000) return 17.0;
-      return 16.2;
+      if (totalRoundTripDistance <= 240) return isDayTime ? 21.0 : 22.0;
+      if (totalRoundTripDistance <= 600) return 20.0;
+      if (totalRoundTripDistance <= 1000) return 19.0;
+      return 17.5;
     case "crysta":
-      if (totalRoundTripDistance <= 240) return isDayTime ? 18.5 : 21.0; 
-      if (totalRoundTripDistance <= 600) return 18.0;
-      if (totalRoundTripDistance <= 1000) return 17.5;
-      return 16.8;
+      if (totalRoundTripDistance <= 240) return isDayTime ? 23.0 : 24.0; 
+      if (totalRoundTripDistance <= 600) return 21.5;
+      if (totalRoundTripDistance <= 1000) return 20.5;
+      return 19.0;
     default:
       return 14.0;
   }
@@ -230,10 +304,10 @@ function getRoundTripRate(vehicleType: VehicleType, totalRoundTripDistance: numb
 function getAirportFare(vehicleType: VehicleType) {
   switch (vehicleType) {
     case "sedan": return 899;
-    case "ertiga": return 1199;
-    case "innova": return 1499;
-    case "crysta": return 1899;
-    case "scorpio": return 1699;
+    case "ertiga": return 1299;
+    case "innova": return 1699;
+    case "crysta": return 1999;
+    case "scorpio": return 1899;
     default: return 899;
   }
 }
@@ -291,13 +365,13 @@ export function calculateFare({
   tripDays = 1,
   stopCount = 0,
   pickupTime = "09:00",
-}: CalculateFareParams): CalculateFareResult {
+  pickupLocation = "",
+  dropLocation = "",
+}: CalculateFareParams & { pickupLocation?: string; dropLocation?: string; }): CalculateFareResult {
   const vehicle = VEHICLES[vehicleType];
   const oneWayDistance = Number.isFinite(distance) && distance > 0 ? Math.round(distance) : 0;
 
   let fare = 0;
-  let discount = 0;
-  let discountApplied = false;
   let extraDistance = 0;
   let billedDistance = oneWayDistance;
   let pricingMode: PricingMode = "roundtrip-standard";
@@ -365,33 +439,39 @@ export function calculateFare({
 
   fare += stopCharge;
 
+  // PREMIUM PROTECTION GAP ENGINE
   if (bookingType === "oneway" || bookingType === "roundtrip") {
-    const rahulFare = estimateRahulTravelsFare(vehicleType, oneWayDistance, bookingType, tripDays, isDayTime);
+    const rahulFare = estimateRahulTravelsFare(vehicleType, oneWayDistance, bookingType, tripDays, isDayTime, pickupLocation, dropLocation);
     const currentDifference = rahulFare - fare;
 
-    if (currentDifference < 100) {
-      fare = rahulFare - 150;
-    } else if (currentDifference > 500 && (oneWayDistance * 2) > 300) {
-      fare = rahulFare - 350;
+    // Badi gaadiyo (SUV/Crysta) ke business aur margin protection ke liye tightly calibrated filter
+    if (vehicleType === "crysta" || vehicleType === "innova") {
+      if (currentDifference > 200) {
+        fare = rahulFare - 149; // Premium segment hamesha market se safe ₹150 gap par hi rahega, usse zyada drop nahi hoga
+      }
+    } else if (vehicleType === "ertiga") {
+      if (currentDifference > 300) {
+        fare = rahulFare - 199; // Ertiga safe zone filter
+      }
+    } else {
+      // Sedan operations
+      if (currentDifference < 100) {
+        fare = rahulFare - 90;
+      } else if (currentDifference > 500 && (oneWayDistance * 2) > 300) {
+        fare = rahulFare - 150;
+      }
     }
   }
 
-  // 👑 FIXED OVERRIDE: Korba-Bilaspur Dynamic Window Corridors (125-145 KM)
-  if (bookingType === "oneway" && vehicleType === "sedan" && oneWayDistance >= 125 && oneWayDistance <= 145) {
-    fare = 1950; // psychologicalPrice calculation handle karke isko exactly 1949 bana dega
-  }
-
-  // ADDITIONAL 5% HIDDEN DISCOUNT ON > 300 KM ROUTES
-  const totalRouteDistance = bookingType === "roundtrip" ? (oneWayDistance * 2) : oneWayDistance;
-  if (totalRouteDistance > 300) {
-    const rawDiscount = fare * 0.05;
-    discount = Math.round(rawDiscount); 
-    fare = fare - discount;
-    discountApplied = true;
+  // FIXED OVERRIDE: Korba-Bilaspur Sedan Lock
+  const pLoc = pickupLocation.toLowerCase();
+  const dLoc = dropLocation.toLowerCase();
+  if (bookingType === "oneway" && vehicleType === "sedan" && 
+      ((pLoc.includes("korba") && dLoc.includes("bilaspur")) || (pLoc.includes("bilaspur") && dLoc.includes("korba")))) {
+    fare = 1949; 
   }
 
   const finalFare = psychologicalPrice(fare);
-  const strikeFare = psychologicalPrice((finalFare + discount) * STRIKE_PRICE_MULTIPLIER);
 
   return {
     actualDistance: oneWayDistance,
@@ -399,11 +479,11 @@ export function calculateFare({
     billedDistance,
     distance: billedDistance,
     fare: finalFare,
-    strikeFare,
-    discount,
+    strikeFare: finalFare, 
+    discount: 0,
     finalFare,
     nightHalt: vehicle.nightHalt,
-    discountApplied,
+    discountApplied: false,
     pricingMode,
     baseFareUsed: baseFareUsed || fare,
     rateUsed,
@@ -417,34 +497,4 @@ export function calculateFare({
       isDayTime ? "Daylight Slot Economy Applied" : "Standard Fleet Run Mode",
     ],
   };
-}
-
-export function validateFareForm(data: Partial<FareFormData>) {
-  const errors: string[] = [];
-  if (!data.pickupLocation?.trim()) errors.push("Pick-up location is required.");
-  if (!data.pickupDate?.trim()) errors.push("Pick-up date is required.");
-  if (!data.pickupTime?.trim()) errors.push("Pick-up time is required.");
-  if (!data.vehicleType) errors.push("Vehicle type is required.");
-  if (!data.bookingType) errors.push("Ride type is required.");
-  if (data.bookingType !== "local" && !data.dropLocation?.trim()) errors.push("Drop location is required.");
-  return { isValid: errors.length === 0, errors };
-}
-
-export function buildWhatsAppFareMessage(data: FareFormData, fareResult: CalculateFareResult) {
-  const lines = [
-    "𚖥 *NEW FARE ESTIMATE REQUEST*",
-    "━━━━━━━━━━━━━━━━━━",
-    `📍 Pick-up      : ${data.pickupLocation}`,
-    `📍 Drop         : ${data.dropLocation}`,
-    `📅 Date         : ${data.pickupDate} @ ${data.pickupTime}`,
-    `📋 Billed Dist  : ${fareResult.billedDistance} km`,
-    `🚘 Vehicle      : ${getVehicleLabel(data.vehicleType)}`,
-    `🔁 Ride Type    : ${getBookingTypeLabel(data.bookingType)}`,
-    "━━━━━━━━━━━━━━━━━━",
-    `💰 Net Payable  : ${formatCurrency(fareResult.finalFare)}`,
-    "━━━━━━━━━━━━━━━━━━",
-    "• Toll Taxes Included",
-    "• Direct Group Driver Fleet Deployment",
-  ];
-  return lines.join("\n");
 }
