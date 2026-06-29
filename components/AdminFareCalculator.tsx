@@ -85,51 +85,66 @@ export default function AdminFareCalculator() {
   };
 
   const handleCalculate = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!pickup.trim() || !drop.trim()) {
-      alert("Please enter both Pick-up and Drop locations.");
-      return;
-    }
+  e.preventDefault();
+  if (!pickup.trim() || !drop.trim()) {
+    alert("Please enter both Pick-up and Drop locations.");
+    return;
+  }
 
-    let simulatedDistance = 120; 
-    const pLow = pickup.toLowerCase();
-    const dLow = drop.toLowerCase();
+  const pLow = pickup.toLowerCase();
+  const dLow = drop.toLowerCase();
 
-    if ((pLow.includes("korba") && dLow.includes("bilaspur")) || (pLow.includes("bilaspur") && dLow.includes("korba"))) simulatedDistance = 90;
-    else if ((pLow.includes("bilaspur") && dLow.includes("raipur")) || (pLow.includes("raipur") && dLow.includes("bilaspur"))) simulatedDistance = 115;
-    else if ((pLow.includes("korba") && dLow.includes("raipur")) || (pLow.includes("raipur") && dLow.includes("korba"))) simulatedDistance = 215;
-    else if ((pLow.includes("raipur") && dLow.includes("jagdalpur")) || (pLow.includes("jagdalpur") && dLow.includes("raipur"))) simulatedDistance = 295;
-    else if ((pLow.includes("bilaspur") && dLow.includes("chirmiri")) || (pLow.includes("chirmiri") && dLow.includes("bilaspur"))) simulatedDistance = 175;
-    else if ((pLow.includes("bilaspur") && dLow.includes("sakti")) || (pLow.includes("sakti") && dLow.includes("bilaspur"))) simulatedDistance = 112;
-    else if ((pLow.includes("raipur") && dLow.includes("rajnandgaon")) || (pLow.includes("rajnandgaon") && dLow.includes("raipur"))) simulatedDistance = 72;
+  // Helper lambda function to check two-way route matches
+  const isRoute = (c1: string, c2: string) => 
+    (pLow.includes(c1) && dLow.includes(c2)) || (pLow.includes(c2) && dLow.includes(c1));
 
-    const options = (Object.keys(VEHICLES) as VehicleType[]).map((type) => {
-      const res: CalculateFareResult = calculateFare({
-        distance: simulatedDistance,
-        vehicleType: type,
-        bookingType,
-        pickupLocation: pickup,
-        dropLocation: drop,
-        pickupTime: "09:00", 
-        stopCount: 0
-      });
+  // 👑 CHHATTISGARH HIGHWAY HIGH-TRAFFIC REAL DISTANCE MATRIX (2026 Updated) 👑
+  let simulatedDistance = 150; // Balanced generic fallback state if no route matches
 
-      // 💰 Profit Margin Calculations
-      const profitAmount = res.finalFare - res.b2bPartnerPayout;
-      const profitPercentage = res.finalFare > 0 ? Math.round((profitAmount / res.finalFare) * 100) : 0;
+  if (isRoute("korba", "bilaspur")) simulatedDistance = 90;
+  else if (isRoute("bilaspur", "raipur")) simulatedDistance = 115;
+  else if (isRoute("korba", "raipur")) simulatedDistance = 215; // Via Champa/Nandhaur route
+  else if (isRoute("raipur", "jagdalpur")) simulatedDistance = 295; // NH-30 Core route
+  else if (isRoute("bilaspur", "chirmiri")) simulatedDistance = 185;
+  else if (isRoute("bilaspur", "sakti")) simulatedDistance = 112;
+  else if (isRoute("raipur", "rajnandgaon")) simulatedDistance = 72; // NH-53 Expressway slab
+  
+  // 📍 Core Problem Fix: North Corridor (Surguja Hub) Real Slab Mapping
+  else if (isRoute("korba", "ambikapur")) simulatedDistance = 180; // Passes perfectly into the <= 210km slab!
+  else if (isRoute("raipur", "ambikapur")) simulatedDistance = 340; // Passes into the <= 360km slab
+  else if (isRoute("bilaspur", "ambikapur")) simulatedDistance = 225; // Passes into the <= 260km slab
+  else if (isRoute("raipur", "durg") || isRoute("raipur", "bhilai")) simulatedDistance = 40; // Short Loop slab
+  else if (isRoute("korba", "champa")) simulatedDistance = 45;
+  else if (isRoute("raipur", "mahasamund")) simulatedDistance = 55;
+  else if (isRoute("raipur", "dhamtari")) simulatedDistance = 80;
+  else if (isRoute("raipur", "janjgir")) simulatedDistance = 155;
 
-      return {
-        vehicleLabel: VEHICLES[type].label,
-        limitKms: res.distance,
-        finalFare: res.finalFare,
-        b2bPayout: res.b2bPartnerPayout,
-        profitAmount,
-        profitPercentage
-      };
+  const options = (Object.keys(VEHICLES) as VehicleType[]).map((type) => {
+    const res: CalculateFareResult = calculateFare({
+      distance: simulatedDistance,
+      vehicleType: type,
+      bookingType,
+      pickupLocation: pickup,
+      dropLocation: drop,
+      pickupTime: "09:00", 
+      stopCount: 0
     });
 
-    setResults(options);
-  };
+    const profitAmount = res.finalFare - res.b2bPartnerPayout;
+    const profitPercentage = res.finalFare > 0 ? Math.round((profitAmount / res.finalFare) * 100) : 0;
+
+    return {
+      vehicleLabel: VEHICLES[type].label,
+      limitKms: res.distance, // Yields the correct padded slab distance from fareCalculator.ts
+      finalFare: res.finalFare,
+      b2bPayout: res.b2bPartnerPayout,
+      profitAmount,
+      profitPercentage
+    };
+  });
+
+  setResults(options);
+};
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6 bg-white border border-slate-200 rounded-2xl shadow-sm text-slate-800">
