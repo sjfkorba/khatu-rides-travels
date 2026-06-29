@@ -1,6 +1,7 @@
 "use client";
 
-import { formatCurrency, type BookingType } from "@/lib/fareCalculator";
+
+import { BookingType } from "@/lib/fareCalculator";
 import Image from "next/image";
 
 const ADMINWHATSAPPNUMBER = "919244137353";
@@ -43,6 +44,10 @@ export default function VehicleFareCards({
   returnTime,
   cards,
 }: Props) {
+  function formatCurrency(fare: number) {
+    throw new Error("Function not implemented.");
+  }
+
   return (
     <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
       <div className="mb-5">
