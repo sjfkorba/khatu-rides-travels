@@ -12,8 +12,6 @@ interface FareCalculatorProps {
     bookingType: BookingType;
     pickupDate: string;
     pickupTime: string;
-    customerName: string;
-    customerMobile: string;
   }) => void;
 }
 
@@ -23,8 +21,6 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
   const [bookingType, setBookingType] = useState<BookingType>("oneway");
   const [pickupDate, setPickupDate] = useState("");
   const [pickupTime, setPickupTime] = useState("");
-  const [customerName, setCustomerName] = useState("");
-  const [customerMobile, setCustomerMobile] = useState("");
   const [loading, setLoading] = useState(false);
 
   const [minDate, setMinDate] = useState("");
@@ -38,6 +34,7 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
   const pickupRef = useRef<HTMLDivElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
 
+  // Sync current date time limitations
   useEffect(() => {
     const today = new Date();
     setMinDate(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`);
@@ -71,19 +68,15 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
   const handleCalculate = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!pickup.trim() || !drop.trim() || !pickupDate || !pickupTime || !customerName.trim() || !customerMobile.trim()) {
-      alert("⚠️ Error: All fields are strictly mandatory! No time-pass requests allowed.");
-      return;
-    }
-    if (customerMobile.trim().length < 10) {
-      alert("⚠️ Please enter a verified 10-digit customer mobile number.");
+    if (!pickup.trim() || !drop.trim() || !pickupDate || !pickupTime) {
+      alert("⚠️ Error: All route and time fields are strictly mandatory!");
       return;
     }
 
     const currentDateTime = new Date();
     const selectedDateTime = new Date(`${pickupDate}T${pickupTime}`);
     if (selectedDateTime <= currentDateTime) {
-      alert("⚠️ Timeline Invalid: Past bookings cannot be processed. Please configure future time slot.");
+      alert("⚠️ Timeline Invalid: Past bookings cannot be processed. Please configure a future time slot.");
       return;
     }
 
@@ -123,13 +116,12 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
         fareText: `₹${res.finalFare.toLocaleString("en-IN")}`,
         strikeText: `₹${res.strikeFare.toLocaleString("en-IN")}`,
         billedDistance: res.billedDistance,
-        discountPercent: res.discountPercent,
         durationMinutes: res.durationMinutes
       };
     });
 
     onFareCalculated({
-      fareOptions: options, pickup, drop, bookingType, pickupDate, pickupTime, customerName, customerMobile
+      fareOptions: options, pickup, drop, bookingType, pickupDate, pickupTime
     });
     setLoading(false);
   };
@@ -137,17 +129,7 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
   return (
     <form onSubmit={handleCalculate} className="p-5 text-left space-y-4 bg-white rounded-3xl shadow-sm">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">👤 Customer Name *</label>
-          <input required type="text" placeholder="Enter Full Name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:border-orange-500 focus:outline-none" />
-        </div>
-        <div>
-          <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">📱 Mobile Number *</label>
-          <input required type="tel" maxLength={10} placeholder="10-Digit Mobile No." value={customerMobile} onChange={(e) => setCustomerMobile(e.target.value.replace(/\D/g, ""))} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:border-orange-500 focus:outline-none" />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Live Pickup Input */}
         <div className="relative" ref={pickupRef}>
           <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">📍 Live Pick-Up Location *</label>
           <input required type="text" placeholder="Live Google Search Pickup Point..." value={pickup} onChange={(e) => { setPickup(e.target.value); fetchLiveSuggestions(e.target.value, "pickup"); }} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:border-orange-500 focus:outline-none" />
@@ -160,6 +142,7 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
           )}
         </div>
 
+        {/* Live Drop Input */}
         <div className="relative" ref={dropRef}>
           <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">🏁 Live Drop Location *</label>
           <input required type="text" placeholder="Live Google Search Destination..." value={drop} onChange={(e) => { setDrop(e.target.value); fetchLiveSuggestions(e.target.value, "drop"); }} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:border-orange-500 focus:outline-none" />
@@ -174,6 +157,7 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Trip Type Select */}
         <div>
           <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">🔄 Trip Type *</label>
           <select value={bookingType} onChange={(e) => setBookingType(e.target.value as BookingType)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:border-orange-500 focus:outline-none">
@@ -181,10 +165,14 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
             <option value="roundtrip">Round Trip Runs</option>
           </select>
         </div>
+        
+        {/* Pickup Date */}
         <div>
           <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">📅 Pickup Date *</label>
           <input required type="date" min={minDate} value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:border-orange-500 focus:outline-none" />
         </div>
+        
+        {/* Pickup Time */}
         <div>
           <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">⏱️ Pickup Time *</label>
           <input required type="time" min={pickupDate === minDate ? minTime : undefined} value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:border-orange-500 focus:outline-none" />
