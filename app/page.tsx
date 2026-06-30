@@ -190,7 +190,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* 📑 SECTION 1: INTERCITY ROUTE MATRIX TAB SYSTEM */}
+        {/* CORRIDORS GRID TABS — EXPANDED TO 20+ STRATEGIC ROUTES */}
         <section className="py-16 bg-slate-50/60 border-b border-slate-200/60">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tight">
@@ -207,10 +207,15 @@ export default function HomePage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 text-left">
+              {/* 🏭 CATEGORY 1: FROM KORBA (7 ROUTES) */}
               {activeTab === "korba" && [
                 { to: "Raipur City", dist: "215 KM", price: "3,799", tag: "Capital Corridor" },
                 { to: "Bilaspur High Court", dist: "90 KM", price: "2,399", tag: "Strict Fixed Lock" },
                 { to: "Raipur Airport (RPR)", dist: "230 KM", price: "3,999", tag: "Flight Catch Special" },
+                { to: "Champa Junction", dist: "45 KM", price: "1,099", tag: "Railway Sync Connect" },
+                { to: "Sakti Town", dist: "75 KM", price: "1,899", tag: "Industrial Loop" },
+                { to: "Ambikapur Hub", dist: "165 KM", price: "3,499", tag: "North CG Line" },
+                { to: "Raigarh Industrial", dist: "125 KM", price: "2,799", tag: "Business Run" },
               ].map((r, i) => (
                 <div key={i} className="bg-white border border-slate-200 rounded-[1.5rem] p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
                   <div>
@@ -227,10 +232,15 @@ export default function HomePage() {
                 </div>
               ))}
 
+              {/* ⚖️ CATEGORY 2: FROM BILASPUR (7 ROUTES) */}
               {activeTab === "bilaspur" && [
                 { to: "Raipur City", dist: "115 KM", price: "2,399", tag: "Express Core" },
                 { to: "Korba Industrial", dist: "90 KM", price: "2,399", tag: "Industrial Belt" },
                 { to: "Ambikapur Hub", dist: "180 KM", price: "4,149", tag: "North Region Route" },
+                { to: "Janjgir-Champa", dist: "55 KM", price: "1,499", tag: "District Connect" },
+                { to: "Raigarh Town", dist: "140 KM", price: "2,999", tag: "Coal Corridor East" },
+                { to: "Mungeli Node", dist: "52 KM", price: "1,399", tag: "Regional Line" },
+                { to: "Pendra Road / Gaurela", dist: "110 KM", price: "2,699", tag: "Hill Loop Run" },
               ].map((r, i) => (
                 <div key={i} className="bg-white border border-slate-200 rounded-[1.5rem] p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
                   <div>
@@ -247,10 +257,14 @@ export default function HomePage() {
                 </div>
               ))}
 
+              {/* 🏢 CATEGORY 3: FROM RAIPUR (6 ROUTES) */}
               {activeTab === "raipur" && [
                 { to: "Jagdalpur Bastar", dist: "295 KM", price: "5,799", tag: "Premium Long Route" },
                 { to: "Rajnandgaon Town", dist: "72 KM", price: "1,899", tag: "Dry Point Corridor" },
-                { to: "Korba Power Hub", dist: "3,799", tag: "Return Route Run" },
+                { to: "Korba Power Hub", dist: "215 KM", price: "3,799", tag: "Return Route Run" },
+                { to: "Durg / Bhilai Twin City", dist: "40 KM", price: "1,199", tag: "Education Corridor" },
+                { to: "Dhamtari Node", dist: "80 KM", price: "1,999", tag: "South Highway Sync" },
+                { to: "Mahasamund Corridor", dist: "55 KM", price: "1,499", tag: "Sambalpur Line Border" },
               ].map((r, i) => (
                 <div key={i} className="bg-white border border-slate-200 rounded-[1.5rem] p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
                   <div>
