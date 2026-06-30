@@ -1,3 +1,4 @@
+// app/api/distance/route.ts
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -63,6 +64,7 @@ export async function POST(req: Request) {
         headers: {
           "Content-Type": "application/json",
           "X-Goog-Api-Key": apiKey,
+          // 🎫 Note: FieldMask already contains routes.travelAdvisory.tollInfo
           "X-Goog-FieldMask":
             "routes.distanceMeters,routes.duration,routes.legs.distanceMeters,routes.legs.duration,routes.travelAdvisory.tollInfo",
         },
@@ -113,6 +115,18 @@ export async function POST(req: Request) {
 
     const hasToll = Boolean(route?.travelAdvisory?.tollInfo);
 
+    // 💸 100% Live Google Toll Cost Extractor Engine (INR)
+    let estimatedTollCost = 0;
+    if (hasToll && route?.travelAdvisory?.tollInfo?.estimatedPrice) {
+      const priceList = route.travelAdvisory.tollInfo.estimatedPrice;
+      // Google API multiple currencies de sakta hai, hum INR code dhoondenge
+      const inrPrice = priceList.find((p: any) => p.currencyCode === "INR");
+      if (inrPrice) {
+        // units string formatted number hota hai, use safely integer mein convert karenge
+        estimatedTollCost = Math.round(Number(inrPrice.units || 0));
+      }
+    }
+
     return NextResponse.json({
       origin,
       destination,
@@ -121,6 +135,7 @@ export async function POST(req: Request) {
       distanceKm,
       duration: route?.duration ?? null,
       hasToll,
+      estimatedTollCost, // 💳 Front-end desk ko live rupees value pass ho jayegi
       legs,
     });
   } catch (error) {

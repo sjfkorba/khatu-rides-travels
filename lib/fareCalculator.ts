@@ -28,9 +28,16 @@ export type CalculateFareResult = {
   strikeFare: number;
   finalFare: number;
   discountPercent: number;
-  durationMinutes: number; 
+  durationMinutes: number;
 };
 
+// 👑 HIGH-VOLUME CORE HUBS (Normal Base Rates Apply)
+const HIGH_VOLUME_HUBS = ["korba", "bilaspur", "raigarh", "raipur", "durg", "bhilai"];
+
+// 👑 DRY / LOW-VOLUME NODES (Forced 1.25x Multiplier on One-Way)
+const DRY_LOW_VOLUME_NODES = ["ambikapur", "chirmiri", "pithora", "sheorinarayan", "sakti", "baradwar"];
+
+// Hardcoded target overrides for explicit standard loops
 interface RouteConfig {
   match: (p: string, d: string) => boolean;
   multiplier: number;
@@ -39,7 +46,7 @@ interface RouteConfig {
   displayDistanceOverride?: number;
 }
 
-const ROUTE_RULES: RouteConfig[] = [
+const FIXED_ROUTE_RULES: RouteConfig[] = [
   {
     match: (p, d) => (p.includes("korba") && d.includes("bilaspur")) || (p.includes("bilaspur") && d.includes("korba")),
     multiplier: 1.80, discount: 0.18, displayDistanceOverride: 100,
@@ -54,16 +61,6 @@ const ROUTE_RULES: RouteConfig[] = [
     match: (p, d) => (p.includes("raipur") && d.includes("jagdalpur")) || (p.includes("jagdalpur") && d.includes("raipur")),
     multiplier: 1.25, discount: 0.10, displayDistanceOverride: 330,
     targetPriceOverride: { sedan: 5199, ertiga: 6299, innova: 6999 }
-  },
-  {
-    match: (p, d) => (p.includes("bilaspur") && d.includes("ambikapur")) || (p.includes("ambikapur") && d.includes("bilaspur")),
-    multiplier: 1.25, discount: 0.05, displayDistanceOverride: 250,
-    targetPriceOverride: { sedan: 3899, ertiga: 4699, innova: 5299 }
-  },
-  {
-    match: (p, d) => (p.includes("korba") && d.includes("ambikapur")) || (p.includes("ambikapur") && d.includes("korba")),
-    multiplier: 1.35, discount: 0.08, displayDistanceOverride: 200, // Aapka bataya hua 200kms ka strict buffer loop
-    targetPriceOverride: { sedan: 3699, ertiga: 4499, innova: 4999 }
   },
   {
     match: (p, d) => (p.includes("korba") && d.includes("champa")) || (p.includes("champa") && d.includes("korba")),
@@ -95,32 +92,66 @@ export function calculateFare({
   const dLoc = dropLocation.toLowerCase();
   const ratePerKm = VEHICLES[vehicleType].baseRatePerKm;
   
-  let currentMultiplier = 1.35; // Global long-route protection backup
-  let currentDiscount = 0.06;
+  let currentMultiplier = 1.00; 
+  let currentDiscount = 0.05;
   let finalBilledDistance = baseDistance;
   let absoluteFinalFare = 0;
   let absoluteStrikeFare = 0;
 
-  const matchedRule = ROUTE_RULES.find(rule => rule.match(pLoc, dLoc));
+  // Step 1: Check if route matches explicit static high-volume rules first
+  const matchedFixedRule = FIXED_ROUTE_RULES.find(rule => rule.match(pLoc, dLoc));
 
-  if (matchedRule) {
-    currentMultiplier = matchedRule.multiplier;
-    currentDiscount = matchedRule.discount;
-    if (matchedRule.displayDistanceOverride) {
-      finalBilledDistance = matchedRule.displayDistanceOverride;
+  if (matchedFixedRule) {
+    currentMultiplier = matchedFixedRule.multiplier;
+    currentDiscount = matchedFixedRule.discount;
+    if (matchedFixedRule.displayDistanceOverride) {
+      finalBilledDistance = matchedFixedRule.displayDistanceOverride;
     }
-    if (matchedRule.targetPriceOverride && matchedRule.targetPriceOverride[vehicleType]) {
-      absoluteFinalFare = matchedRule.targetPriceOverride[vehicleType];
+    if (matchedFixedRule.targetPriceOverride && matchedFixedRule.targetPriceOverride[vehicleType]) {
+      absoluteFinalFare = matchedFixedRule.targetPriceOverride[vehicleType];
       const rawStrike = absoluteFinalFare / (1 - currentDiscount);
       absoluteStrikeFare = psychologicalPrice(rawStrike);
     }
   }
 
-  // Pure dynamic logic injection if user enters completely raw node outside standard configurations
+  // Step 2: Algorithmic pricing logic block for dynamic routes
   if (absoluteFinalFare === 0) {
-    const calculatedBase = baseDistance * ratePerKm;
-    if (baseDistance > 400) currentMultiplier = 1.15; // Fair pricing matrix adjustments for high distance routes
+    const isPickupDry = DRY_LOW_VOLUME_NODES.some(node => pLoc.includes(node));
+    const isDropDry = DRY_LOW_VOLUME_NODES.some(node => dLoc.includes(node));
+    
+    // Check if route involves moving out of state lines or missing standard CG tag
+    const isOutsideCG = (!pLoc.includes("chhattisgarh") && !pLoc.includes(", cg")) || 
+                        (!dLoc.includes("chhattisgarh") && !dLoc.includes(", cg"));
 
+    // Strict state boundary validation (Odisha, MP, Maharashtra, etc.)
+    const isInterstate = isOutsideCG && 
+                         ((pLoc.includes("odisha") || dLoc.includes("odisha")) || 
+                          (pLoc.includes("madhya pradesh") || dLoc.includes("madhya pradesh")) || 
+                          (pLoc.includes("maharashtra") || dLoc.includes("maharashtra")) ||
+                          (pLoc.includes("bihar") || dLoc.includes("bihar")) ||
+                          (pLoc.includes("jharkhand") || dLoc.includes("jharkhand")));
+
+    if (bookingType === "oneway") {
+      if (isInterstate) {
+        // 👑 1.55x Multiplier for Interstate routes (e.g. Puri <-> Raipur, Raipur <-> Jharsuguda)
+        currentMultiplier = 1.55;
+        currentDiscount = 0.05; 
+      } else if (isPickupDry || isDropDry || isOutsideCG) {
+        // ⚡ 1.25x Multiplier for dynamic state dry nodes (e.g. Ambikapur, Chirmiri)
+        currentMultiplier = 1.25;
+        currentDiscount = 0.05;
+      } else {
+        // Standard high-volume intra-state hub connections
+        currentMultiplier = 1.10;
+        currentDiscount = 0.08;
+      }
+    } else {
+      // Round-trip default configuration backup overhead
+      currentMultiplier = 1.00;
+      currentDiscount = 0.06;
+    }
+
+    const calculatedBase = baseDistance * ratePerKm;
     const baseWithMultiplier = calculatedBase * currentMultiplier;
     const discountedFare = baseWithMultiplier * (1 - currentDiscount);
     
@@ -128,13 +159,14 @@ export function calculateFare({
     absoluteStrikeFare = psychologicalPrice(baseWithMultiplier);
   }
 
+  // Step 3: Handle Round-Trip final calculation
   if (bookingType === "roundtrip") {
     absoluteFinalFare = absoluteFinalFare * 2;
     absoluteStrikeFare = absoluteStrikeFare * 2;
     finalBilledDistance = finalBilledDistance * 2;
   }
 
-  // Duration Calculator Engine (~50km/hr standard structural translation ratio)
+  // Arrival estimation speed engine sync
   const durationMinutes = Math.round((finalBilledDistance / 50) * 60) + 30;
 
   return {
