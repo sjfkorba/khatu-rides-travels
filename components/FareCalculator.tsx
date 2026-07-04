@@ -1,4 +1,5 @@
 // components/FareCalculator.tsx
+"use50% uicly";
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
@@ -15,10 +16,15 @@ interface FareCalculatorProps {
   }) => void;
 }
 
+type MainServiceType = "outstation" | "local" | "airport";
+
 export default function FareCalculator({ onFareCalculated }: FareCalculatorProps) {
+  // 👑 Savaari-Inspired Service Tabs
+  const [serviceType, setMainServiceType] = useState<MainServiceType>("outstation");
+  const [bookingType, setBookingType] = useState<BookingType>("oneway");
+  
   const [pickup, setPickup] = useState("");
   const [drop, setDrop] = useState("");
-  const [bookingType, setBookingType] = useState<BookingType>("oneway");
   const [pickupDate, setPickupDate] = useState("");
   const [pickupTime, setPickupTime] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,7 +40,6 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
   const pickupRef = useRef<HTMLDivElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
 
-  // Sync current date time limitations
   useEffect(() => {
     const today = new Date();
     setMinDate(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`);
@@ -65,24 +70,31 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const handleLocationSwap = () => {
+    const temp = pickup;
+    setPickup(drop);
+    setDrop(temp);
+  };
+
   const handleCalculate = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!pickup.trim() || !drop.trim() || !pickupDate || !pickupTime) {
-      alert("⚠️ Error: All route and time fields are strictly mandatory!");
+      alert("⚠️ Error: All fields are mandatory!");
       return;
     }
 
     const currentDateTime = new Date();
     const selectedDateTime = new Date(`${pickupDate}T${pickupTime}`);
     if (selectedDateTime <= currentDateTime) {
-      alert("⚠️ Timeline Invalid: Past bookings cannot be processed. Please configure a future time slot.");
+      alert("⚠️ Timeline Invalid: Past bookings cannot be processed.");
       return;
     }
 
     setLoading(true);
     let mappedDistance = 150;
 
+    // 🚀 1. Fetch Dynamic Distance via Google Matrix API
     try {
       const response = await fetch("/api/distance", {
         method: "POST",
@@ -94,11 +106,12 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
         mappedDistance = routeData.distanceKm;
       }
     } catch (err) {
-      console.error(err);
+      console.error("Distance API Error, using default 150KM:", err);
     }
 
+    // 🚀 2. FIXED: Local pricing engine loop configuration (No broken API calls)
     const options = (Object.keys(VEHICLES) as VehicleType[]).map((type) => {
-      const res = calculateFare({
+      const coreCalc = calculateFare({
         distance: mappedDistance,
         vehicleType: type,
         bookingType,
@@ -111,77 +124,124 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
         vehicleType: type,
         vehicleLabel: VEHICLES[type].label,
         vehicleImage: VEHICLES[type].image,
-        finalFare: res.finalFare,
-        strikeFare: res.strikeFare,
-        fareText: `₹${res.finalFare.toLocaleString("en-IN")}`,
-        strikeText: `₹${res.strikeFare.toLocaleString("en-IN")}`,
-        billedDistance: res.billedDistance,
-        durationMinutes: res.durationMinutes
+        finalFare: coreCalc.finalFare,
+        fareText: `₹${coreCalc.finalFare.toLocaleString("en-IN")}`,
+        billedDistance: coreCalc.billedDistance,
+        durationMinutes: coreCalc.durationMinutes
       };
     });
 
+    // 🚀 3. Trigger parent state component to show popup safely
     onFareCalculated({
-      fareOptions: options, pickup, drop, bookingType, pickupDate, pickupTime
+      fareOptions: options,
+      pickup,
+      drop,
+      bookingType,
+      pickupDate,
+      pickupTime
     });
+
     setLoading(false);
   };
 
   return (
-    <form onSubmit={handleCalculate} className="p-5 text-left space-y-4 bg-white rounded-3xl shadow-sm">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Live Pickup Input */}
-        <div className="relative" ref={pickupRef}>
-          <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">📍 Live Pick-Up Location *</label>
-          <input required type="text" placeholder="Live Google Search Pickup Point..." value={pickup} onChange={(e) => { setPickup(e.target.value); fetchLiveSuggestions(e.target.value, "pickup"); }} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:border-orange-500 focus:outline-none" />
-          {showPickupList && pickupSuggestions.length > 0 && (
-            <ul className="absolute left-0 w-full bg-white border border-slate-200 rounded-xl mt-1 shadow-2xl max-h-48 overflow-y-auto z-[999999] divide-y divide-slate-100">
-              {pickupSuggestions.map((item, idx) => (
-                <li key={idx} onClick={() => { setPickup(item); setShowPickupList(false); }} className="px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-orange-50 hover:text-orange-600 cursor-pointer transition-colors">🚗 {item}</li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        {/* Live Drop Input */}
-        <div className="relative" ref={dropRef}>
-          <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">🏁 Live Drop Location *</label>
-          <input required type="text" placeholder="Live Google Search Destination..." value={drop} onChange={(e) => { setDrop(e.target.value); fetchLiveSuggestions(e.target.value, "drop"); }} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:border-orange-500 focus:outline-none" />
-          {showDropList && dropSuggestions.length > 0 && (
-            <ul className="absolute left-0 w-full bg-white border border-slate-200 rounded-xl mt-1 shadow-2xl max-h-48 overflow-y-auto z-[999999] divide-y divide-slate-100">
-              {dropSuggestions.map((item, idx) => (
-                <li key={idx} onClick={() => { setDrop(item); setShowDropList(false); }} className="px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-orange-50 hover:text-orange-600 cursor-pointer transition-colors">🏁 {item}</li>
-              ))}
-            </ul>
-          )}
-        </div>
+    <form onSubmit={handleCalculate} className="w-full bg-white rounded-[2rem] shadow-[0_20px_60px_rgba(0,0,0,0.06)] border border-slate-100 overflow-hidden text-left font-sans">
+      
+      {/* 👑 LAYER 1: SAVAARI-INSPIRED PREMIER CORE SERVICE TABS */}
+      <div className="grid grid-cols-3 bg-slate-900 text-slate-400 text-xs font-black uppercase tracking-wider text-center shrink-0 border-b border-slate-800">
+        {(["outstation", "local", "airport"] as const).map((type) => (
+          <button
+            key={type}
+            type="button"
+            onClick={() => setMainServiceType(type)}
+            className={`py-4 transition-all relative ${serviceType === type ? "bg-white text-slate-950 font-extrabold" : "hover:text-white hover:bg-slate-800/5"}`}
+          >
+            {type}
+            {serviceType === type && (
+              <div className="absolute bottom-0 left-0 w-full h-[3px] bg-orange-600" />
+            )}
+          </button>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Trip Type Select */}
-        <div>
-          <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">🔄 Trip Type *</label>
-          <select value={bookingType} onChange={(e) => setBookingType(e.target.value as BookingType)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:border-orange-500 focus:outline-none">
-            <option value="oneway">One Way Run</option>
-            <option value="roundtrip">Round Trip Runs</option>
-          </select>
-        </div>
+      <div className="p-5 md:p-6 space-y-5">
         
-        {/* Pickup Date */}
-        <div>
-          <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">📅 Pickup Date *</label>
-          <input required type="date" min={minDate} value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:border-orange-500 focus:outline-none" />
+        {/* 👑 LAYER 2: PILLED DIRECTIONAL TOGGLE SWITCH (ONE WAY vs ROUND TRIP) */}
+        <div className="flex bg-slate-100 p-1 rounded-xl w-full sm:w-fit border border-slate-200/50">
+          <button type="button" onClick={() => setBookingType("oneway")} className={`flex-1 sm:flex-none px-6 py-2 text-[11px] font-black rounded-lg uppercase tracking-wider transition-all ${bookingType === "oneway" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>
+            One Way
+          </button>
+          <button type="button" onClick={() => setBookingType("roundtrip")} className={`px-4 py-2 text-[11px] font-black rounded-lg uppercase tracking-wider transition-all ${bookingType === "roundtrip" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500"}`}>
+            Round Trip
+          </button>
         </div>
-        
-        {/* Pickup Time */}
-        <div>
-          <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">⏱️ Pickup Time *</label>
-          <input required type="time" min={pickupDate === minDate ? minTime : undefined} value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:border-orange-500 focus:outline-none" />
-        </div>
-      </div>
 
-      <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-orange-600 to-[#d8551b] text-white text-xs font-black uppercase tracking-widest py-4 rounded-xl shadow-lg transition-all active:scale-[0.99] disabled:opacity-60">
-        {loading ? "🔄 Verification Active..." : "🚀 Calculate Fare Pass"}
-      </button>
+        {/* 👑 LAYER 3: INNER GEOLOCATION INPUT FIELDS MATRIX */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
+          
+          {/* Pickup Node block */}
+          <div className="relative bg-slate-50 border border-slate-200/80 rounded-2xl p-3 focus-within:bg-white focus-within:border-orange-500 transition-all" ref={pickupRef}>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">📍 Live Pick-Up Location</label>
+            <input required type="text" placeholder="Type pickup city or hub location..." value={pickup} onChange={(e) => { setPickup(e.target.value); fetchLiveSuggestions(e.target.value, "pickup"); }} className="w-full bg-transparent text-sm font-bold text-slate-800 focus:outline-none placeholder:text-slate-300" />
+            {showPickupList && pickupSuggestions.length > 0 && (
+              <ul className="absolute left-0 w-full bg-white border border-slate-200 rounded-xl mt-3 shadow-2xl max-h-48 overflow-y-auto z-[999999] divide-y divide-slate-100">
+                {pickupSuggestions.map((item, idx) => (
+                  <li key={idx} onClick={() => { setPickup(item); setShowPickupList(false); }} className="px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-orange-50 hover:text-orange-600 cursor-pointer transition-colors">🚗 {item}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Dynamic Floating Inversion Toggle Button Circle */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 hidden md:block">
+            <button type="button" onClick={handleLocationSwap} className="w-8 h-8 rounded-full bg-white border border-slate-200 shadow-md flex items-center justify-center text-slate-500 hover:text-orange-600 active:scale-95 transition-transform font-black">
+              ⇅
+            </button>
+          </div>
+
+          {/* Drop Node block */}
+          <div className="relative bg-slate-50 border border-slate-200/80 rounded-2xl p-3 focus-within:bg-white focus-within:border-orange-500 transition-all" ref={dropRef}>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">🏁 Live Drop Destination</label>
+            <input required type="text" placeholder="Type drop city or destination..." value={drop} onChange={(e) => { setDrop(e.target.value); fetchLiveSuggestions(e.target.value, "drop"); }} className="w-full bg-transparent text-sm font-bold text-slate-800 focus:outline-none placeholder:text-slate-300" />
+            {showDropList && dropSuggestions.length > 0 && (
+              <ul className="absolute left-0 w-full bg-white border border-slate-200 rounded-xl mt-3 shadow-2xl max-h-48 overflow-y-auto z-[999999] divide-y divide-slate-100">
+                {dropSuggestions.map((item, idx) => (
+                  <li key={idx} onClick={() => { setDrop(item); setShowDropList(false); }} className="px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-orange-50 hover:text-orange-600 cursor-pointer transition-colors">🏁 {item}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        {/* 👑 LAYER 4: TIMELINE SCHEDULING INTERFACES BLOCK */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3 focus-within:bg-white focus-within:border-orange-500 transition-all">
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">📅 Journey Start Date</label>
+            <input required type="date" min={minDate} value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="w-full bg-transparent text-sm font-bold text-slate-800 focus:outline-none cursor-pointer" />
+          </div>
+          <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3 focus-within:bg-white focus-within:border-orange-500 transition-all">
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">⏱️ Pickup Departure Time</label>
+            <input required type="time" min={pickupDate === minDate ? minTime : undefined} value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} className="w-full bg-transparent text-sm font-bold text-slate-800 focus:outline-none cursor-pointer" />
+          </div>
+        </div>
+
+        {/* 👑 LAYER 5: BIG CORE ACTION LAUNCH TRIGGER BUTTON */}
+        <button 
+          type="submit" 
+          disabled={loading} 
+          className="w-full bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:brightness-105 active:scale-[0.99] transition-all text-white text-xs font-black uppercase tracking-widest py-4 rounded-2xl shadow-lg shadow-orange-600/10 flex items-center justify-center gap-2 min-h-[52px]"
+        >
+          {loading ? "🔄 Verification Active..." : "EXPLORE VERIFIED CABS"}
+        </button>
+
+        {/* 👑 LAYER 6: TRUST FOOTER METRICS BADGES */}
+        <div className="grid grid-cols-3 gap-1 pt-2 border-t border-slate-100 text-center text-[10px] font-black text-slate-400 uppercase tracking-wider">
+          <div className="flex items-center justify-center gap-1">🛡️ Verified Drivers</div>
+          <div className="flex items-center justify-center gap-1 border-x border-slate-100">💎 Fixed Pricing</div>
+          <div className="flex items-center justify-center gap-1">⏱️ 24x7 Support</div>
+        </div>
+
+      </div>
     </form>
   );
 }

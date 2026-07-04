@@ -1,5 +1,11 @@
 // lib/fareCalculator.ts
 
+export interface VehicleConfig {
+  label: string;
+  image: string;
+  baseRatePerKm: number;
+}
+
 export const VEHICLES = {
   sedan: {
     label: "Sedan (Dzire/Etios)",
@@ -9,12 +15,12 @@ export const VEHICLES = {
   ertiga: {
     label: "Ertiga (6+1 Seater)",
     image: "https://images.unsplash.com/photo-1619767886558-efdc259cde1a?auto=format&fit=crop&q=80&w=400",
-    baseRatePerKm: 18,
+    baseRatePerKm: 20, // 🎯 2-Rupee Increment Applied (Old: 18)
   },
   innova: {
     label: "Innova (Premium 7 Seater)",
     image: "https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&q=80&w=400",
-    baseRatePerKm: 20,
+    baseRatePerKm: 22, // 🎯 2-Rupee Increment Applied (Old: 20)
   },
 } as const;
 
@@ -31,7 +37,6 @@ export type CalculateFareResult = {
   durationMinutes: number;
 };
 
-const HIGH_VOLUME_HUBS = ["korba", "bilaspur", "raigarh", "raipur", "durg", "bhilai"];
 const DRY_LOW_VOLUME_NODES = ["ambikapur", "chirmiri", "pithora", "sheorinarayan", "sakti", "baradwar"];
 
 interface RouteConfig {
@@ -41,7 +46,6 @@ interface RouteConfig {
   displayDistanceOverride?: number;
 }
 
-// 👑 FIXED: Tariffs directly set to the previous higher amounts since the discount framework is removed
 const FIXED_ROUTE_RULES: RouteConfig[] = [
   {
     match: (p, d) => (p.includes("korba") && d.includes("bilaspur")) || (p.includes("bilaspur") && d.includes("korba")),
@@ -51,7 +55,7 @@ const FIXED_ROUTE_RULES: RouteConfig[] = [
   {
     match: (p, d) => (p.includes("korba") && d.includes("raipur")) || (p.includes("raipur") && d.includes("korba")),
     multiplier: 1.25, displayDistanceOverride: 220,
-    targetPriceOverride: { sedan: 3799, ertiga: 4649, innova: 5299 } // 🎯 Locked to previous high premium rates
+    targetPriceOverride: { sedan: 3799, ertiga: 4999, innova: 5499 }
   },
   {
     match: (p, d) => (p.includes("raipur") && d.includes("jagdalpur")) || (p.includes("jagdalpur") && d.includes("raipur")),
@@ -92,6 +96,7 @@ export function calculateFare({
   let finalBilledDistance = baseDistance;
   let absoluteFinalFare = 0;
   let absoluteStrikeFare = 0;
+  let discountPercent = 0;
 
   const matchedFixedRule = FIXED_ROUTE_RULES.find(rule => rule.match(pLoc, dLoc));
 
@@ -122,7 +127,7 @@ export function calculateFare({
 
     if (bookingType === "oneway") {
       if (isInterstate) {
-        currentMultiplier = 1.55; 
+        currentMultiplier = 1.75; 
       } else if (isPickupDry || isDropDry || isOutsideCG) {
         currentMultiplier = 1.25; 
       } else {
@@ -135,8 +140,12 @@ export function calculateFare({
     const calculatedBase = baseDistance * ratePerKm;
     const baseWithMultiplier = calculatedBase * currentMultiplier;
     
-    absoluteFinalFare = psychologicalPrice(baseWithMultiplier);
+    // 👑 Dynamic Discounts Framework Injector Based on Distance
+    discountPercent = finalBilledDistance <= 150 ? 20 : 10;
+    
     absoluteStrikeFare = psychologicalPrice(baseWithMultiplier * 1.15);
+    const discountedValue = baseWithMultiplier * (1 - discountPercent / 100);
+    absoluteFinalFare = psychologicalPrice(discountedValue);
   }
 
   if (bookingType === "roundtrip") {
@@ -153,7 +162,7 @@ export function calculateFare({
     rateUsed: ratePerKm,
     strikeFare: absoluteStrikeFare,
     finalFare: absoluteFinalFare,
-    discountPercent: 0, 
+    discountPercent, 
     durationMinutes
   };
 }
