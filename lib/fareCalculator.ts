@@ -8,27 +8,21 @@ export interface VehicleConfig {
 }
 
 export const VEHICLES = {
-  wagonr: {
-    label: "WagonR (Hatchback CNG)",
-    image: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&q=80&w=400",
-    baseRatePerKm: 12,
-    longRatePerKm: 12,
-  },
   sedan: {
-    label: "Sedan (Dzire/Etios)",
-    image: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&q=80&w=400",
+    label: "Maruti Suzuki Dzire",
+    image: "/dezire.png",
     baseRatePerKm: 15,
     longRatePerKm: 15,
   },
   ertiga: {
-    label: "Ertiga (6+1 Seater)",
-    image: "https://images.unsplash.com/photo-1619767886558-efdc259cde1a?auto=format&fit=crop&q=80&w=400",
+    label: "Maruti Suzuki Ertiga (MUV)",
+    image: "/ertiga.png",
     baseRatePerKm: 18, 
     longRatePerKm: 20, 
   },
-  innova: {
-    label: "Innova (Premium 7 Seater)",
-    image: "https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&q=80&w=400",
+  crysta: {
+    label: "Toyota Innova Crysta (Premium)",
+    image: "/crysta.png",
     baseRatePerKm: 22, 
     longRatePerKm: 24, 
   },
@@ -36,7 +30,7 @@ export const VEHICLES = {
 
 export type VehicleType = keyof typeof VEHICLES;
 export type BookingType = "oneway" | "roundtrip";
-export type ServiceType = "outstation" | "local" | "airport";
+export type ServiceType = "outstation" | "local";
 
 export type CalculateFareResult = {
   actualDistance: number;
@@ -46,9 +40,8 @@ export type CalculateFareResult = {
   finalFare: number;
   discountPercent: number;
   durationMinutes: number;
+  haltCharges: number;
 };
-
-const DRY_LOW_VOLUME_NODES = ["ambikapur", "chirmiri", "pithora", "sheorinarayan", "sakti", "baradwar"];
 
 export function psychologicalPrice(value: number) {
   const rounded = Math.round(value / 50) * 50;
@@ -60,26 +53,28 @@ export function calculateFare({
   vehicleType,
   bookingType,
   serviceType = "outstation",
-  pickupLocation = "",
-  dropLocation = "",
+  pickupDate = "",
+  pickupTime = "",
+  returnDate = "",
+  returnTime = "",
 }: {
   distance: number;
   vehicleType: VehicleType;
   bookingType: BookingType;
   serviceType?: ServiceType;
-  pickupLocation?: string;
-  dropLocation?: string;
+  pickupDate?: string;
+  pickupTime?: string;
+  returnDate?: string;
+  returnTime?: string;
 }): CalculateFareResult {
   const baseDistance = distance > 0 ? Math.round(distance) : 0;
-  const pLoc = pickupLocation.toLowerCase();
-  const dLoc = dropLocation.toLowerCase();
 
+  // Local Packages Strategy
   if (serviceType === "local") {
     const localPackages = {
-      wagonr: { finalFare: 1499, strikeFare: 1899, rate: 12 },
       sedan: { finalFare: 1899, strikeFare: 2299, rate: 15 },
       ertiga: { finalFare: 2499, strikeFare: 2999, rate: 20 },
-      innova: { finalFare: 3299, strikeFare: 3899, rate: 22 },
+      crysta: { finalFare: 3299, strikeFare: 3899, rate: 22 },
     };
     const pack = localPackages[vehicleType];
     return {
@@ -88,25 +83,13 @@ export function calculateFare({
       rateUsed: pack.rate,
       strikeFare: pack.strikeFare,
       finalFare: pack.finalFare,
-      discountPercent: 15,
-      durationMinutes: 480
+      discountPercent: 25,
+      durationMinutes: 480,
+      haltCharges: 0
     };
   }
 
-  if (serviceType === "airport" && baseDistance < 40) {
-    if (vehicleType === "sedan" || vehicleType === "wagonr") {
-      return {
-        actualDistance: baseDistance,
-        billedDistance: baseDistance,
-        rateUsed: 15,
-        strikeFare: 749,
-        finalFare: 599, 
-        discountPercent: 20,
-        durationMinutes: 45
-      };
-    }
-  }
-
+  // Dynamic showKms buffer expansion setup
   let showKms = baseDistance;
   if (baseDistance <= 100) {
     showKms = baseDistance + 20;
@@ -121,65 +104,48 @@ export function calculateFare({
     ? VEHICLES[vehicleType].longRatePerKm 
     : VEHICLES[vehicleType].baseRatePerKm;
 
-  let currentMultiplier = 1.00; 
-  let absoluteFinalFare = 0;
-  let absoluteStrikeFare = 0;
-  let discountPercent = 0;
+  let currentMultiplier = 1.00;
+  let haltCharges = 0;
 
-  const isPickupDry = DRY_LOW_VOLUME_NODES.some(node => pLoc.includes(node));
-  const isDropDry = DRY_LOW_VOLUME_NODES.some(node => dLoc.includes(node));
-  const isOutsideCG = (!pLoc.includes("chhattisgarh") && !pLoc.includes(", cg")) || 
-                      (!dLoc.includes("chhattisgarh") && !dLoc.includes(", cg"));
-
-  const isInterstate = isOutsideCG && 
-                       ((pLoc.includes("odisha") || dLoc.includes("odisha")) || 
-                        (pLoc.includes("madhya pradesh") || dLoc.includes("madhya pradesh")) || 
-                        (pLoc.includes("maharashtra") || dLoc.includes("maharashtra")) ||
-                        (pLoc.includes("bihar") || dLoc.includes("bihar")) ||
-                        (pLoc.includes("jharkhand") || dLoc.includes("jharkhand")));
-
+  // 👑 NEW MULTIPLIER AND EXTRA NIGHT HALT CALCULATIONS
   if (bookingType === "oneway") {
-    if (isInterstate) {
-      currentMultiplier = 1.75; 
-    } else if (isPickupDry || isDropDry || isOutsideCG) {
-      currentMultiplier = 1.25; 
-    } else {
-      currentMultiplier = baseDistance <= 150 ? 1.85 : 1.65;
+    currentMultiplier = 1.55; // 👑 Flat short/long one-way multiplier
+  } else if (bookingType === "roundtrip") {
+    currentMultiplier = 2.75; // 👑 Flat short/long roundtrip multiplier
+
+    // Dynamic timestamp evaluation engine for Night Halt Charges
+    if (pickupDate && returnDate) {
+      const startDateTime = new Date(`${pickupDate}T${pickupTime || "00:00"}`);
+      const endDateTime = new Date(`${returnDate}T${returnTime || "00:00"}`);
+      
+      const timeDifferenceDiff = endDateTime.getTime() - startDateTime.getTime();
+      const totalDaysStay = Math.ceil(timeDifferenceDiff / (1000 * 60 * 60 * 24));
+      
+      if (totalDaysStay > 0) {
+        // Driver halt allocation loop setup @ ₹300 per night stay
+        haltCharges = totalDaysStay * 300;
+      }
     }
-  } else {
-    currentMultiplier = 1.00;
   }
 
   const calculatedBase = showKms * ratePerKm;
   const baseWithMultiplier = calculatedBase * currentMultiplier;
-  
-  if (baseDistance <= 100) {
-    discountPercent = 20; 
-  } else if (baseDistance <= 150) {
-    discountPercent = 21; 
-  } else {
-    discountPercent = 10; 
-  }
-  
-  absoluteStrikeFare = psychologicalPrice(baseWithMultiplier * 1.15);
-  const discountedValue = baseWithMultiplier * (1 - discountPercent / 100);
-  absoluteFinalFare = psychologicalPrice(discountedValue);
+  const discountPercent = 25; // 👑 Flat 25% Discount updated as requested
 
-  if (bookingType === "roundtrip") {
-    absoluteFinalFare = absoluteFinalFare * 2;
-    absoluteStrikeFare = absoluteStrikeFare * 2;
-    showKms = showKms * 2;
-  }
+  const absoluteStrikeFare = psychologicalPrice(baseWithMultiplier * 1.25) + haltCharges;
+  const discountedValue = baseWithMultiplier * (1 - discountPercent / 100);
+  const absoluteFinalFare = psychologicalPrice(discountedValue) + haltCharges;
 
   const durationMinutes = Math.round((showKms / 50) * 60) + 30;
 
   return {
     actualDistance: baseDistance,
-    billedDistance: showKms,
+    billedDistance: bookingType === "roundtrip" ? showKms * 2 : showKms,
     rateUsed: ratePerKm,
     strikeFare: absoluteStrikeFare,
     finalFare: absoluteFinalFare,
     discountPercent, 
-    durationMinutes
+    durationMinutes,
+    haltCharges
   };
 }

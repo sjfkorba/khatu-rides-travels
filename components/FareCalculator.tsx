@@ -14,6 +14,7 @@ interface FareCalculatorProps {
     pickupDate: string;
     pickupTime: string;
     returnDate?: string;
+    returnTime?: string;
   }) => void;
 }
 
@@ -25,7 +26,11 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
   const [drop, setDrop] = useState("");
   const [pickupDate, setPickupDate] = useState("");
   const [pickupTime, setPickupTime] = useState("");
+  
+  // 👑 RETURN FIELDS SYNCHRONIZATION
   const [returnDate, setReturnDate] = useState("");
+  const [returnTime, setReturnTime] = useState("");
+  
   const [loading, setLoading] = useState(false);
 
   const [minDate, setMinDate] = useState("");
@@ -81,6 +86,11 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
       alert("⚠️ Error: All fields are mandatory!");
       return;
     }
+    if (bookingType === "roundtrip" && (!returnDate || !returnTime)) {
+      alert("⚠️ Error: Return Date and Return Time are compulsory for Round Trip bookings!");
+      return;
+    }
+
     setLoading(true);
     let mappedDistance = serviceType === "local" ? 80 : 150;
 
@@ -100,28 +110,31 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
       }
     }
 
-    const options = (Object.keys(VEHICLES) as VehicleType[]).map((type) => {
-      const res = calculateFare({
-        distance: mappedDistance,
-        vehicleType: type,
-        bookingType,
-        serviceType,
-        pickupLocation: pickup,
-        dropLocation: drop,
-      });
+   const options = (Object.keys(VEHICLES) as VehicleType[]).map((type) => {
+  // 👑 FIXED: Removed pickupLocation & dropLocation to perfectly match backend schema rules
+  const res = calculateFare({
+    distance: mappedDistance,
+    vehicleType: type,
+    bookingType,
+    serviceType,
+    pickupDate,
+    pickupTime,
+    returnDate: bookingType === "roundtrip" ? returnDate : undefined,
+    returnTime: bookingType === "roundtrip" ? returnTime : undefined,
+  });
 
-      return {
-        id: `${bookingType}-${type}`,
-        vehicleType: type,
-        vehicleLabel: VEHICLES[type].label,
-        vehicleImage: VEHICLES[type].image,
-        finalFare: res.finalFare,
-        strikeFare: res.strikeFare,
-        fareText: `₹${res.finalFare.toLocaleString("en-IN")}`,
-        billedDistance: res.billedDistance,
-        durationMinutes: res.durationMinutes
-      };
-    });
+  return {
+    id: `${bookingType}-${type}-${Date.now()}`,
+    vehicleType: type,
+    vehicleLabel: VEHICLES[type].label,
+    vehicleImage: VEHICLES[type].image,
+    finalFare: res.finalFare,
+    strikeFare: res.strikeFare,
+    fareText: `₹${res.finalFare.toLocaleString("en-IN")}`,
+    billedDistance: res.billedDistance,
+    durationMinutes: res.durationMinutes
+  };
+});
 
     onFareCalculated({
       fareOptions: options, 
@@ -131,7 +144,8 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
       serviceType,
       pickupDate, 
       pickupTime,
-      returnDate: bookingType === "roundtrip" ? returnDate : undefined
+      returnDate: bookingType === "roundtrip" ? returnDate : undefined,
+      returnTime: bookingType === "roundtrip" ? returnTime : undefined
     });
     setLoading(false);
   };
@@ -170,17 +184,19 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
         </button>
       </div>
 
-      {/* Main Glass-friendly Form Sheet */}
+      {/* Main Form Sheet Block */}
       <form 
         onSubmit={handleCalculate} 
         className="w-full bg-white/95 backdrop-blur-md rounded-3xl md:rounded-[2.5rem] border-2 border-orange-500 p-5 md:p-8 text-left font-sans -mt-0.5 relative z-20 shadow-[0_20px_50px_rgba(0,0,0,0.1)]"
       >
-        {/* Responsive Field Grid: Mobile Staked, Desktop Rows */}
-        <div className={`grid grid-cols-1 gap-5 items-center w-full ${
-          serviceType === "outstation" && bookingType === "roundtrip" ? "lg:grid-cols-[1fr_auto_1fr_1fr_1fr_1fr]" : serviceType === "local" ? "lg:grid-cols-[2fr_1fr_1fr]" : "lg:grid-cols-[1fr_auto_1fr_1fr_1fr]"
+        {/* 👑 FIXED: Adaptive structural grid dimensions supporting returnTime updates seamlessly */}
+        <div className={`grid grid-cols-1 gap-4 items-center w-full ${
+          serviceType === "outstation" && bookingType === "roundtrip" 
+            ? "lg:grid-cols-[1.2fr_auto_1.2fr_1fr_1fr_1fr_1fr]" 
+            : serviceType === "local" 
+              ? "lg:grid-cols-[2fr_1fr_1fr]" 
+              : "lg:grid-cols-[1.5fr_auto_1.5fr_1fr_1fr]"
         }`}>
-          
-          {/* CRITICAL CHANGE: Har individual input container par light slate borders apply kiye hain, aur active focus hone par glow active hoga */}
           
           {/* FIELD 1: PICKUP */}
           <div className="relative border border-slate-300 rounded-xl px-4 py-2.5 bg-slate-50/50 focus-within:border-orange-500 focus-within:bg-white focus-within:shadow-sm transition-all w-full" ref={pickupRef}>
@@ -240,13 +256,22 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
           {/* FIELD 5: RETURN DATE (ROUND TRIP ONLY) */}
           {serviceType === "outstation" && bookingType === "roundtrip" && (
             <div className="relative border border-slate-300 rounded-xl px-4 py-2.5 bg-slate-50/50 focus-within:border-orange-500 focus-within:bg-white focus-within:shadow-sm transition-all w-full">
-              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Return Date</label>
+              <label className="block text-[10px] font-black text-orange-600 uppercase tracking-wider mb-0.5">Return Date</label>
               <input required type="date" min={pickupDate || minDate} value={returnDate} onChange={(e) => setReturnDate(e.target.value)} className="w-full bg-transparent text-sm font-bold text-slate-800 focus:outline-none cursor-pointer text-left" />
             </div>
           )}
+
+          {/* FIELD 6: 👑 RETURN TIME (ROUND TRIP ONLY) */}
+          {serviceType === "outstation" && bookingType === "roundtrip" && (
+            <div className="relative border border-slate-300 rounded-xl px-4 py-2.5 bg-slate-50/50 focus-within:border-orange-500 focus-within:bg-white focus-within:shadow-sm transition-all w-full">
+              <label className="block text-[10px] font-black text-orange-600 uppercase tracking-wider mb-0.5">Return Time</label>
+              <input required type="time" value={returnTime} onChange={(e) => setReturnTime(e.target.value)} className="w-full bg-transparent text-sm font-bold text-slate-800 focus:outline-none cursor-pointer text-left" />
+            </div>
+          )}
+          
         </div>
 
-        {/* Action button */}
+        {/* Action Button */}
         <div className="mt-8 flex flex-col items-center justify-center">
           <button 
             type="submit" 
@@ -257,21 +282,21 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
           </button>
         </div>
 
-        {/* Bombastic Trust Badges Grid */}
+        {/* Trust Badges Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 pt-6 border-t border-slate-200/60 text-center max-w-3xl mx-auto">
           <div className="flex flex-col items-center p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-orange-200 transition-all shadow-xs">
             <span className="text-3xl md:text-4xl animate-bounce duration-1000">🛡️</span>
-            <span className="text-xs font-black text-slate-950 uppercase tracking-wider mt-2">Verified Drivers</span>
+            <span className="text-xs font-black text-slate-900 uppercase tracking-wider mt-2">Verified Drivers</span>
             <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">100% Background Screened</p>
           </div>
           <div className="flex flex-col items-center p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-orange-200 transition-all shadow-xs">
             <span className="text-3xl md:text-4xl">💎</span>
-            <span className="text-xs font-black text-slate-950 uppercase tracking-wider mt-2">Transparent Fares</span>
+            <span className="text-xs font-black text-slate-900 uppercase tracking-wider mt-2">Transparent Fares</span>
             <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">Fixed Toll Included Logic</p>
           </div>
           <div className="flex flex-col items-center p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-orange-200 transition-all shadow-xs">
             <span className="text-3xl md:text-4xl">⏱️</span>
-            <span className="text-xs font-black text-slate-950 uppercase tracking-wider mt-2">24x7 Support Desk</span>
+            <span className="text-xs font-black text-slate-900 uppercase tracking-wider mt-2">24x7 Support Desk</span>
             <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">Instant Manual Allocations</p>
           </div>
         </div>
