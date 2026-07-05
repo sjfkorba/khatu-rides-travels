@@ -1,9 +1,8 @@
 // components/FareCalculator.tsx
-"use50% uicly";
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { calculateFare, VEHICLES, type VehicleType, type BookingType } from "../lib/fareCalculator";
+import { calculateFare, VEHICLES, type VehicleType, type BookingType, type ServiceType } from "../lib/fareCalculator";
 
 interface FareCalculatorProps {
   onFareCalculated: (data: {
@@ -11,22 +10,22 @@ interface FareCalculatorProps {
     pickup: string;
     drop: string;
     bookingType: BookingType;
+    serviceType: ServiceType;
     pickupDate: string;
     pickupTime: string;
+    returnDate?: string;
   }) => void;
 }
 
-type MainServiceType = "outstation" | "local" | "airport";
-
 export default function FareCalculator({ onFareCalculated }: FareCalculatorProps) {
-  // 👑 Savaari-Inspired Service Tabs
-  const [serviceType, setMainServiceType] = useState<MainServiceType>("outstation");
+  const [serviceType, setMainServiceType] = useState<"outstation" | "local">("outstation");
   const [bookingType, setBookingType] = useState<BookingType>("oneway");
-  
+
   const [pickup, setPickup] = useState("");
   const [drop, setDrop] = useState("");
   const [pickupDate, setPickupDate] = useState("");
   const [pickupTime, setPickupTime] = useState("");
+  const [returnDate, setReturnDate] = useState("");
   const [loading, setLoading] = useState(false);
 
   const [minDate, setMinDate] = useState("");
@@ -71,50 +70,42 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
   }, []);
 
   const handleLocationSwap = () => {
-    const temp = pickup;
+    const temporaryStorage = pickup;
     setPickup(drop);
-    setDrop(temp);
+    setDrop(temporaryStorage);
   };
 
   const handleCalculate = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!pickup.trim() || !drop.trim() || !pickupDate || !pickupTime) {
+    if (!pickup.trim() || (serviceType !== "local" && !drop.trim()) || !pickupDate || !pickupTime) {
       alert("⚠️ Error: All fields are mandatory!");
       return;
     }
-
-    const currentDateTime = new Date();
-    const selectedDateTime = new Date(`${pickupDate}T${pickupTime}`);
-    if (selectedDateTime <= currentDateTime) {
-      alert("⚠️ Timeline Invalid: Past bookings cannot be processed.");
-      return;
-    }
-
     setLoading(true);
-    let mappedDistance = 150;
+    let mappedDistance = serviceType === "local" ? 80 : 150;
 
-    // 🚀 1. Fetch Dynamic Distance via Google Matrix API
-    try {
-      const response = await fetch("/api/distance", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ origin: pickup, destination: drop }),
-      });
-      const routeData = await response.json();
-      if (response.ok && routeData.distanceKm) {
-        mappedDistance = routeData.distanceKm;
+    if (serviceType !== "local") {
+      try {
+        const response = await fetch("/api/distance", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ origin: pickup, destination: drop }),
+        });
+        const routeData = await response.json();
+        if (response.ok && routeData.distanceKm) {
+          mappedDistance = routeData.distanceKm;
+        }
+      } catch (err) {
+        console.error(err);
       }
-    } catch (err) {
-      console.error("Distance API Error, using default 150KM:", err);
     }
 
-    // 🚀 2. FIXED: Local pricing engine loop configuration (No broken API calls)
     const options = (Object.keys(VEHICLES) as VehicleType[]).map((type) => {
-      const coreCalc = calculateFare({
+      const res = calculateFare({
         distance: mappedDistance,
         vehicleType: type,
         bookingType,
+        serviceType,
         pickupLocation: pickup,
         dropLocation: drop,
       });
@@ -124,65 +115,82 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
         vehicleType: type,
         vehicleLabel: VEHICLES[type].label,
         vehicleImage: VEHICLES[type].image,
-        finalFare: coreCalc.finalFare,
-        fareText: `₹${coreCalc.finalFare.toLocaleString("en-IN")}`,
-        billedDistance: coreCalc.billedDistance,
-        durationMinutes: coreCalc.durationMinutes
+        finalFare: res.finalFare,
+        strikeFare: res.strikeFare,
+        fareText: `₹${res.finalFare.toLocaleString("en-IN")}`,
+        billedDistance: res.billedDistance,
+        durationMinutes: res.durationMinutes
       };
     });
 
-    // 🚀 3. Trigger parent state component to show popup safely
     onFareCalculated({
-      fareOptions: options,
-      pickup,
-      drop,
-      bookingType,
-      pickupDate,
-      pickupTime
+      fareOptions: options, 
+      pickup, 
+      drop: serviceType === "local" ? "Local Full Day Run" : drop, 
+      bookingType, 
+      serviceType,
+      pickupDate, 
+      pickupTime,
+      returnDate: bookingType === "roundtrip" ? returnDate : undefined
     });
-
     setLoading(false);
   };
 
   return (
-    <form onSubmit={handleCalculate} className="w-full bg-white rounded-[2rem] shadow-[0_20px_60px_rgba(0,0,0,0.06)] border border-slate-100 overflow-hidden text-left font-sans">
+    <div className="w-full flex flex-col items-center">
       
-      {/* 👑 LAYER 1: SAVAARI-INSPIRED PREMIER CORE SERVICE TABS */}
-      <div className="grid grid-cols-3 bg-slate-900 text-slate-400 text-xs font-black uppercase tracking-wider text-center shrink-0 border-b border-slate-800">
-        {(["outstation", "local", "airport"] as const).map((type) => (
-          <button
-            key={type}
-            type="button"
-            onClick={() => setMainServiceType(type)}
-            className={`py-4 transition-all relative ${serviceType === type ? "bg-white text-slate-950 font-extrabold" : "hover:text-white hover:bg-slate-800/5"}`}
-          >
-            {type}
-            {serviceType === type && (
-              <div className="absolute bottom-0 left-0 w-full h-[3px] bg-orange-600" />
-            )}
-          </button>
-        ))}
+      {/* Tab Switchers Block */}
+      <div className="flex bg-slate-950/95 backdrop-blur border border-slate-800 rounded-t-2xl px-2 py-1.5 shadow-lg z-10">
+        <button
+          type="button"
+          onClick={() => { setMainServiceType("outstation"); setBookingType("oneway"); }}
+          className={`px-5 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${
+            serviceType === "outstation" && bookingType === "oneway" ? "bg-orange-600 text-white shadow-md shadow-orange-600/30" : "text-slate-400 hover:text-white"
+          }`}
+        >
+          One Way
+        </button>
+        <button
+          type="button"
+          onClick={() => { setMainServiceType("outstation"); setBookingType("roundtrip"); }}
+          className={`px-5 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${
+            serviceType === "outstation" && bookingType === "roundtrip" ? "bg-orange-600 text-white shadow-md shadow-orange-600/30" : "text-slate-400 hover:text-white"
+          }`}
+        >
+          Round Trip
+        </button>
+        <button
+          type="button"
+          onClick={() => { setMainServiceType("local"); setBookingType("oneway"); }}
+          className={`px-5 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${
+            serviceType === "local" ? "bg-orange-600 text-white shadow-md shadow-orange-600/30" : "text-slate-400 hover:text-white"
+          }`}
+        >
+          Local Package
+        </button>
       </div>
 
-      <div className="p-5 md:p-6 space-y-5">
-        
-        {/* 👑 LAYER 2: PILLED DIRECTIONAL TOGGLE SWITCH (ONE WAY vs ROUND TRIP) */}
-        <div className="flex bg-slate-100 p-1 rounded-xl w-full sm:w-fit border border-slate-200/50">
-          <button type="button" onClick={() => setBookingType("oneway")} className={`flex-1 sm:flex-none px-6 py-2 text-[11px] font-black rounded-lg uppercase tracking-wider transition-all ${bookingType === "oneway" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>
-            One Way
-          </button>
-          <button type="button" onClick={() => setBookingType("roundtrip")} className={`px-4 py-2 text-[11px] font-black rounded-lg uppercase tracking-wider transition-all ${bookingType === "roundtrip" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500"}`}>
-            Round Trip
-          </button>
-        </div>
-
-        {/* 👑 LAYER 3: INNER GEOLOCATION INPUT FIELDS MATRIX */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
+      {/* Main Glass-friendly Form Sheet */}
+      <form 
+        onSubmit={handleCalculate} 
+        className="w-full bg-white/95 backdrop-blur-md rounded-3xl md:rounded-[2.5rem] border-2 border-orange-500 p-5 md:p-8 text-left font-sans -mt-0.5 relative z-20 shadow-[0_20px_50px_rgba(0,0,0,0.1)]"
+      >
+        {/* Responsive Field Grid: Mobile Staked, Desktop Rows */}
+        <div className={`grid grid-cols-1 gap-5 items-center w-full ${
+          serviceType === "outstation" && bookingType === "roundtrip" ? "lg:grid-cols-[1fr_auto_1fr_1fr_1fr_1fr]" : serviceType === "local" ? "lg:grid-cols-[2fr_1fr_1fr]" : "lg:grid-cols-[1fr_auto_1fr_1fr_1fr]"
+        }`}>
           
-          {/* Pickup Node block */}
-          <div className="relative bg-slate-50 border border-slate-200/80 rounded-2xl p-3 focus-within:bg-white focus-within:border-orange-500 transition-all" ref={pickupRef}>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">📍 Live Pick-Up Location</label>
-            <input required type="text" placeholder="Type pickup city or hub location..." value={pickup} onChange={(e) => { setPickup(e.target.value); fetchLiveSuggestions(e.target.value, "pickup"); }} className="w-full bg-transparent text-sm font-bold text-slate-800 focus:outline-none placeholder:text-slate-300" />
+          {/* CRITICAL CHANGE: Har individual input container par light slate borders apply kiye hain, aur active focus hone par glow active hoga */}
+          
+          {/* FIELD 1: PICKUP */}
+          <div className="relative border border-slate-300 rounded-xl px-4 py-2.5 bg-slate-50/50 focus-within:border-orange-500 focus-within:bg-white focus-within:shadow-sm transition-all w-full" ref={pickupRef}>
+            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">
+              {serviceType === "local" ? "City Location" : "From"}
+            </label>
+            <div className="flex items-center gap-2">
+              <span className="text-orange-500 text-sm">📍</span>
+              <input required type="text" placeholder="Type pickup city..." value={pickup} onChange={(e) => { setPickup(e.target.value); fetchLiveSuggestions(e.target.value, "pickup"); }} className="w-full bg-transparent text-sm font-bold text-slate-800 focus:outline-none placeholder:text-slate-300" />
+            </div>
             {showPickupList && pickupSuggestions.length > 0 && (
               <ul className="absolute left-0 w-full bg-white border border-slate-200 rounded-xl mt-3 shadow-2xl max-h-48 overflow-y-auto z-[999999] divide-y divide-slate-100">
                 {pickupSuggestions.map((item, idx) => (
@@ -192,56 +200,83 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
             )}
           </div>
 
-          {/* Dynamic Floating Inversion Toggle Button Circle */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 hidden md:block">
-            <button type="button" onClick={handleLocationSwap} className="w-8 h-8 rounded-full bg-white border border-slate-200 shadow-md flex items-center justify-center text-slate-500 hover:text-orange-600 active:scale-95 transition-transform font-black">
-              ⇅
-            </button>
+          {/* SWAP ICON */}
+          {serviceType !== "local" && (
+            <div className="flex justify-center items-center h-full hidden lg:flex">
+              <button type="button" onClick={handleLocationSwap} className="w-8 h-8 rounded-full bg-orange-50 border border-orange-200 shadow-sm flex items-center justify-center text-orange-600 hover:bg-orange-600 hover:text-white transition-all font-black">⇄</button>
+            </div>
+          )}
+
+          {/* FIELD 2: DROP */}
+          {serviceType !== "local" && (
+            <div className="relative border border-slate-300 rounded-xl px-4 py-2.5 bg-slate-50/50 focus-within:border-orange-500 focus-within:bg-white focus-within:shadow-sm transition-all w-full" ref={dropRef}>
+              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">To</label>
+              <div className="flex items-center gap-2">
+                <span className="text-orange-500 text-sm">🏁</span>
+                <input required type="text" placeholder="Type drop point..." value={drop} onChange={(e) => { setDrop(e.target.value); fetchLiveSuggestions(e.target.value, "drop"); }} className="w-full bg-transparent text-sm font-bold text-slate-800 focus:outline-none placeholder:text-slate-300" />
+              </div>
+              {showDropList && dropSuggestions.length > 0 && (
+                <ul className="absolute left-0 w-full bg-white border border-slate-200 rounded-xl mt-3 shadow-2xl max-h-48 overflow-y-auto z-[999999] divide-y divide-slate-100">
+                  {dropSuggestions.map((item, idx) => (
+                    <li key={idx} onClick={() => { setDrop(item); setShowDropList(false); }} className="px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-orange-50 hover:text-orange-600 cursor-pointer transition-colors">🏁 {item}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          {/* FIELD 3: PICKUP DATE */}
+          <div className="relative border border-slate-300 rounded-xl px-4 py-2.5 bg-slate-50/50 focus-within:border-orange-500 focus-within:bg-white focus-within:shadow-sm transition-all w-full">
+            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Pick Up Date</label>
+            <input required type="date" min={minDate} value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="w-full bg-transparent text-sm font-bold text-slate-800 focus:outline-none cursor-pointer text-left" />
           </div>
 
-          {/* Drop Node block */}
-          <div className="relative bg-slate-50 border border-slate-200/80 rounded-2xl p-3 focus-within:bg-white focus-within:border-orange-500 transition-all" ref={dropRef}>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">🏁 Live Drop Destination</label>
-            <input required type="text" placeholder="Type drop city or destination..." value={drop} onChange={(e) => { setDrop(e.target.value); fetchLiveSuggestions(e.target.value, "drop"); }} className="w-full bg-transparent text-sm font-bold text-slate-800 focus:outline-none placeholder:text-slate-300" />
-            {showDropList && dropSuggestions.length > 0 && (
-              <ul className="absolute left-0 w-full bg-white border border-slate-200 rounded-xl mt-3 shadow-2xl max-h-48 overflow-y-auto z-[999999] divide-y divide-slate-100">
-                {dropSuggestions.map((item, idx) => (
-                  <li key={idx} onClick={() => { setDrop(item); setShowDropList(false); }} className="px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-orange-50 hover:text-orange-600 cursor-pointer transition-colors">🏁 {item}</li>
-                ))}
-              </ul>
-            )}
+          {/* FIELD 4: PICKUP TIME */}
+          <div className="relative border border-slate-300 rounded-xl px-4 py-2.5 bg-slate-50/50 focus-within:border-orange-500 focus-within:bg-white focus-within:shadow-sm transition-all w-full">
+            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Pick Up Time</label>
+            <input required type="time" min={pickupDate === minDate ? minTime : undefined} value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} className="w-full bg-transparent text-sm font-bold text-slate-800 focus:outline-none cursor-pointer text-left" />
+          </div>
+
+          {/* FIELD 5: RETURN DATE (ROUND TRIP ONLY) */}
+          {serviceType === "outstation" && bookingType === "roundtrip" && (
+            <div className="relative border border-slate-300 rounded-xl px-4 py-2.5 bg-slate-50/50 focus-within:border-orange-500 focus-within:bg-white focus-within:shadow-sm transition-all w-full">
+              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Return Date</label>
+              <input required type="date" min={pickupDate || minDate} value={returnDate} onChange={(e) => setReturnDate(e.target.value)} className="w-full bg-transparent text-sm font-bold text-slate-800 focus:outline-none cursor-pointer text-left" />
+            </div>
+          )}
+        </div>
+
+        {/* Action button */}
+        <div className="mt-8 flex flex-col items-center justify-center">
+          <button 
+            type="submit" 
+            disabled={loading} 
+            className="w-full max-w-md bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:brightness-105 active:scale-[0.99] transition-all text-white text-sm font-black uppercase tracking-widest py-4 px-8 rounded-xl shadow-lg shadow-orange-600/30 flex items-center justify-center gap-2 min-h-[54px]"
+          >
+            {loading ? "🔄 Scanning Fleet Hubs..." : "EXPLORE CABS"}
+          </button>
+        </div>
+
+        {/* Bombastic Trust Badges Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 pt-6 border-t border-slate-200/60 text-center max-w-3xl mx-auto">
+          <div className="flex flex-col items-center p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-orange-200 transition-all shadow-xs">
+            <span className="text-3xl md:text-4xl animate-bounce duration-1000">🛡️</span>
+            <span className="text-xs font-black text-slate-950 uppercase tracking-wider mt-2">Verified Drivers</span>
+            <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">100% Background Screened</p>
+          </div>
+          <div className="flex flex-col items-center p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-orange-200 transition-all shadow-xs">
+            <span className="text-3xl md:text-4xl">💎</span>
+            <span className="text-xs font-black text-slate-950 uppercase tracking-wider mt-2">Transparent Fares</span>
+            <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">Fixed Toll Included Logic</p>
+          </div>
+          <div className="flex flex-col items-center p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-orange-200 transition-all shadow-xs">
+            <span className="text-3xl md:text-4xl">⏱️</span>
+            <span className="text-xs font-black text-slate-950 uppercase tracking-wider mt-2">24x7 Support Desk</span>
+            <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">Instant Manual Allocations</p>
           </div>
         </div>
 
-        {/* 👑 LAYER 4: TIMELINE SCHEDULING INTERFACES BLOCK */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3 focus-within:bg-white focus-within:border-orange-500 transition-all">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">📅 Journey Start Date</label>
-            <input required type="date" min={minDate} value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="w-full bg-transparent text-sm font-bold text-slate-800 focus:outline-none cursor-pointer" />
-          </div>
-          <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3 focus-within:bg-white focus-within:border-orange-500 transition-all">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">⏱️ Pickup Departure Time</label>
-            <input required type="time" min={pickupDate === minDate ? minTime : undefined} value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} className="w-full bg-transparent text-sm font-bold text-slate-800 focus:outline-none cursor-pointer" />
-          </div>
-        </div>
-
-        {/* 👑 LAYER 5: BIG CORE ACTION LAUNCH TRIGGER BUTTON */}
-        <button 
-          type="submit" 
-          disabled={loading} 
-          className="w-full bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:brightness-105 active:scale-[0.99] transition-all text-white text-xs font-black uppercase tracking-widest py-4 rounded-2xl shadow-lg shadow-orange-600/10 flex items-center justify-center gap-2 min-h-[52px]"
-        >
-          {loading ? "🔄 Verification Active..." : "EXPLORE VERIFIED CABS"}
-        </button>
-
-        {/* 👑 LAYER 6: TRUST FOOTER METRICS BADGES */}
-        <div className="grid grid-cols-3 gap-1 pt-2 border-t border-slate-100 text-center text-[10px] font-black text-slate-400 uppercase tracking-wider">
-          <div className="flex items-center justify-center gap-1">🛡️ Verified Drivers</div>
-          <div className="flex items-center justify-center gap-1 border-x border-slate-100">💎 Fixed Pricing</div>
-          <div className="flex items-center justify-center gap-1">⏱️ 24x7 Support</div>
-        </div>
-
-      </div>
-    </form>
+      </form>
+    </div>
   );
 }
