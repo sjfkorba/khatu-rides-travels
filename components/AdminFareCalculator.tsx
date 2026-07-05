@@ -6,7 +6,8 @@ import {
   calculateFare, 
   VEHICLES, 
   type VehicleType, 
-  type BookingType 
+  type BookingType,
+  type ServiceType
 } from "../lib/fareCalculator";
 
 export default function AdminFareCalculator() {
@@ -16,9 +17,10 @@ export default function AdminFareCalculator() {
   const [fuelPrice, setFuelPrice] = useState<number>(100); 
   const [loading, setLoading] = useState(false);
   
-  // ⚡ FIXED: Added missing state definitions to resolve pickupDate ReferenceError
   const [pickupDate, setPickupDate] = useState("");
   const [pickupTime, setPickupTime] = useState("");
+  const [returnDate, setReturnDate] = useState("");
+  const [returnTime, setReturnTime] = useState("");
 
   const [pickupSuggestions, setPickupSuggestions] = useState<string[]>([]);
   const [dropSuggestions, setDropSuggestions] = useState<string[]>([]);
@@ -59,8 +61,12 @@ export default function AdminFareCalculator() {
 
   const handleCalculate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pickup.trim() || !drop.trim()) {
-      alert("Please enter both Pick-up and Drop locations.");
+    if (!pickup.trim() || !drop.trim() || !pickupDate || !pickupTime) {
+      alert("Please enter all required fields including Pickup Date and Time.");
+      return;
+    }
+    if (bookingType === "roundtrip" && (!returnDate || !returnTime)) {
+      alert("Return Date and Return Time are mandatory for Round Trip calculation.");
       return;
     }
 
@@ -89,12 +95,16 @@ export default function AdminFareCalculator() {
     setLiveTollCost(computedTollFromApi);
 
     const options = (Object.keys(VEHICLES) as VehicleType[]).map((type) => {
+      // 👑 FIXED: Removed pickupLocation/dropLocation to strictly align with signature schemas
       const res = calculateFare({
         distance: mappedDistance,
         vehicleType: type,
         bookingType,
-        pickupLocation: pickup,
-        dropLocation: drop,
+        serviceType: "outstation",
+        pickupDate,
+        pickupTime,
+        returnDate: bookingType === "roundtrip" ? returnDate : undefined,
+        returnTime: bookingType === "roundtrip" ? returnTime : undefined,
       });
 
       const isPickupDry = ["chirmiri", "baikunthpur", "manendragarh", "ambikapur", "sakti", "kharsia", "kanker", "jagdalpur"].some(kw => pickup.toLowerCase().includes(kw));
@@ -106,9 +116,9 @@ export default function AdminFareCalculator() {
       
       let vehicleMileage = 24; 
       if (type === "ertiga") vehicleMileage = 15;
-      if (type === "innova") vehicleMileage = 8; 
+      if (type === "crysta") vehicleMileage = 8; 
 
-      const totalFuelExpense = Math.round((mappedDistance / vehicleMileage) * fuelPrice);
+      const totalFuelExpense = Math.round((totalKilometersRun / vehicleMileage) * fuelPrice);
       const totalDriverSalary = mappedDistance <= 150 ? 400 : 800;
       const totalDriverFooding = mappedDistance <= 150 ? 150 : 300;
 
@@ -117,7 +127,8 @@ export default function AdminFareCalculator() {
       
       const totalTollPermitExpense = computedTollFromApi + (isOutsideCG ? 1500 : 0); 
 
-      const totalOwnerExpense = totalFuelExpense + totalDriverSalary + totalDriverFooding + totalTollPermitExpense;
+      // Inject halt charges directly from current calculator metrics pipeline
+      const totalOwnerExpense = totalFuelExpense + totalDriverSalary + totalDriverFooding + totalTollPermitExpense + res.haltCharges;
       const ownerNetProfit = calculatedB2BPayout - totalOwnerExpense;
 
       return {
@@ -133,6 +144,7 @@ export default function AdminFareCalculator() {
         driverSalary: totalDriverSalary,
         driverFooding: totalDriverFooding,
         tollPermit: totalTollPermitExpense,
+        haltCharges: res.haltCharges,
         totalOwnerExpense,
         ownerNetProfit
       };
@@ -185,14 +197,28 @@ export default function AdminFareCalculator() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-1">📅 Pickup Date *</label>
-            <input type="date" value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none" />
+            <label className="block text-xs font-black text-slate-400 tracking-wider mb-1 uppercase">📅 Pickup Date *</label>
+            <input required type="date" value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none" />
           </div>
           <div>
-            <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-1">⏱️ Pickup Time *</label>
-            <input type="time" value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} className="w-full bg-slate-950 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none" />
+            <label className="block text-xs font-black text-slate-400 tracking-wider mb-1 uppercase">⏱️ Pickup Time *</label>
+            <input required type="time" value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none" />
           </div>
         </div>
+
+        {/* Dynamic Return inputs rows rendering exclusively inside round trip settings */}
+        {bookingType === "roundtrip" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-slideDown">
+            <div>
+              <label className="block text-xs font-black text-orange-400 tracking-wider mb-1 uppercase">📅 Return Date *</label>
+              <input required type="date" min={pickupDate} value={returnDate} onChange={(e) => setReturnDate(e.target.value)} className="w-full bg-slate-950 border border-orange-900 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none" />
+            </div>
+            <div>
+              <label className="block text-xs font-black text-orange-400 tracking-wider mb-1 uppercase">⏱️ Return Time *</label>
+              <input required type="time" value={returnTime} onChange={(e) => setReturnTime(e.target.value)} className="w-full bg-slate-950 border border-orange-900 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none" />
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 gap-4 items-end pt-2">
           <div>
@@ -257,7 +283,7 @@ export default function AdminFareCalculator() {
 
                   {/* Hidden Sub-Card Expense Breakdown Sheet */}
                   {isExpanded && (
-                    <div className="bg-slate-900/60 border-t border-slate-800/80 p-4 text-xs font-bold text-slate-400 space-y-2.5 animate-slideDown text-left">
+                    <div className="bg-slate-900/60 border-t border-slate-800/80 p-4 text-xs font-bold text-slate-400 space-y-2.5 text-left">
                       <div className="text-[10px] text-orange-400 font-black uppercase tracking-wider mb-1">⛽ Real Costing Analysis (One-Way Empty Return Accounted)</div>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-950 p-3 rounded-xl border border-slate-800/50">
                         <div>
@@ -273,8 +299,8 @@ export default function AdminFareCalculator() {
                           <span className="text-white font-black">₹{row.driverFooding.toLocaleString("en-IN")}</span>
                         </div>
                         <div>
-                          <span className="text-[9px] block text-slate-500">4. DYNAMIC ROUTE TOLLS</span>
-                          <span className="text-white font-black">₹{row.tollPermit.toLocaleString("en-IN")}</span>
+                          <span className="text-[9px] block text-slate-500">4. TOLLS & HAULT CHARGES</span>
+                          <span className="text-white font-black">₹{(row.tollPermit + row.haltCharges).toLocaleString("en-IN")}</span>
                         </div>
                       </div>
                       <div className="flex justify-between items-center pt-1 text-slate-300">
