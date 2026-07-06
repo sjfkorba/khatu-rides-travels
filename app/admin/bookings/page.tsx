@@ -1,1195 +1,466 @@
+// app/admin/bookings/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Wallet } from "lucide-react";
-import {
-  Plus,
-  Car,
-  MapPin,
-  Phone,
-  Trash2,
-  X,
-  Loader2,
-  LogOut,
-  IndianRupee,
-  MessageCircle,
-  Clock3,
-  AlertTriangle,
-  CheckCircle2,
-  Route,
-} from "lucide-react";
+import React, { useEffect, useState, useMemo } from "react";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { 
+  getFirestore, 
+  collection, 
+  onSnapshot, 
+  query, 
+  orderBy, 
+  Firestore,
+  limit
+} from "firebase/firestore";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
-type BookingStatus =
-  | "pending"
-  | "confirmed"
-  | "on-trip"
-  | "completed"
-  | "cancelled";
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
 
-type Booking = {
+let db: Firestore | null = null;
+try {
+  const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+  db = getFirestore(app);
+} catch (error) {
+  console.error("Firebase admin initialization error:", error);
+}
+
+interface FirestoreBooking {
   id: string;
-  vehicle?: string;
-
-  pickupDate?: string;
-  pickupTime?: string;
-  returnDate?: string;
-  returnTime?: string;
-
-  date?: string;
-  startTime?: string;
-  endTime?: string;
-
+  invoiceId: string;
+  customerName: string;
+  customerPhone: string;
   pickup: string;
   drop: string;
-  customerName: string;
-  phone: string;
   bookingType: string;
-  fare: string;
-  advance: string;
-  status: BookingStatus;
-  notes?: string;
-};
-
-const VEHICLE_NAME = "New Ertiga VXI 2026";
-const OWNER_PHONE = "9244137353";
-const DRIVER_PHONE = "9111025461";
-
-const emptyForm = {
-  pickupDate: "",
-  pickupTime: "",
-  returnDate: "",
-  returnTime: "",
-  pickup: "",
-  drop: "",
-  customerName: "",
-  phone: "",
-  bookingType: "One Way",
-  fare: "",
-  advance: "",
-  status: "confirmed" as BookingStatus,
-  notes: "",
-};
-
-function formatDateIN(date: string) {
-  if (!date) return "";
-  const [y, m, d] = date.split("-");
-  return `${d}-${m}-${y}`;
+  serviceType: string;
+  pickupDate: string;
+  pickupTime: string;
+  returnDate?: string | null;
+  returnTime?: string | null;
+  vehicleLabel: string;
+  amountPaid: number;
+  paymentMode: "50% ADVANCE" | "FULL PAYMENT";
+  razorpayPaymentId: string;
+  status: string;
+  createdAt: any;
+  billedDistance?: number;
 }
 
-function toMinutes(time: string) {
-  if (!time) return 0;
-  const [h, m] = time.split(":").map(Number);
-  return h * 60 + m;
-}
-
-function fromMinutes(total: number) {
-  const h = Math.floor(total / 60).toString().padStart(2, "0");
-  const m = (total % 60).toString().padStart(2, "0");
-  return `${h}:${m}`;
-}
-
-function money(value: string | number) {
-  const n = Number(value || 0);
-  return Number.isFinite(n) ? n : 0;
-}
-
-function getToday() {
-  return new Date().toISOString().split("T")[0];
-}
-
-function addDays(date: string, days: number) {
-  const d = new Date(date + "T00:00:00");
-  d.setDate(d.getDate() + days);
-  return d.toISOString().split("T")[0];
-}
-
-function getNextDays(days: number) {
-  const arr: string[] = [];
-  const today = getToday();
-
-  for (let i = 0; i < days; i++) {
-    arr.push(addDays(today, i));
-  }
-
-  return arr;
-}
-
-function normalizeBooking(b: Booking) {
-  return {
-    pickupDate: b.pickupDate || b.date || "",
-    pickupTime: b.pickupTime || b.startTime || "",
-    returnDate: b.returnDate || b.date || "",
-    returnTime: b.returnTime || b.endTime || "",
-  };
-}
-
-function getBookingRangeMinutes(b: Booking) {
-  const n = normalizeBooking(b);
-  const start = new Date(`${n.pickupDate}T${n.pickupTime || "00:00"}`).getTime();
-  const end = new Date(`${n.returnDate}T${n.returnTime || "23:59"}`).getTime();
-
-  return { start, end };
-}
-
-function bookingTouchesDate(b: Booking, date: string) {
-  const n = normalizeBooking(b);
-  if (!n.pickupDate || !n.returnDate) return false;
-
-  const dayStart = new Date(`${date}T00:00`).getTime();
-  const dayEnd = new Date(`${date}T23:59`).getTime();
-  const { start, end } = getBookingRangeMinutes(b);
-
-  return start <= dayEnd && end >= dayStart;
-}
-
-function getBookingSegmentForDate(b: Booking, date: string) {
-  const n = normalizeBooking(b);
-
-  if (!bookingTouchesDate(b, date)) return null;
-
-  const start =
-    n.pickupDate === date ? toMinutes(n.pickupTime || "00:00") : 0;
-
-  const end =
-    n.returnDate === date ? toMinutes(n.returnTime || "23:59") : 1439;
-
-  return {
-    start,
-    end,
-    startTime: fromMinutes(start),
-    endTime: fromMinutes(end),
-  };
-}
-
-function getBookingsForDate(bookings: Booking[], date: string) {
-  return bookings
-    .filter((b) => b.status !== "cancelled")
-    .filter((b) => bookingTouchesDate(b, date))
-    .sort((a, b) => {
-      const sa = getBookingSegmentForDate(a, date)?.start || 0;
-      const sb = getBookingSegmentForDate(b, date)?.start || 0;
-      return sa - sb;
-    });
-}
-
-function getSlots(dayBookings: Booking[], date: string) {
-  const active = dayBookings
-    .filter((b) => b.status !== "cancelled")
-    .map((b) => getBookingSegmentForDate(b, date))
-    .filter(Boolean) as {
-    start: number;
-    end: number;
-    startTime: string;
-    endTime: string;
-  }[];
-
-  active.sort((a, b) => a.start - b.start);
-
-  const slots: string[] = [];
-  let current = 0;
-
-  active.forEach((seg) => {
-    if (current < seg.start) {
-      slots.push(`${fromMinutes(current)} - ${fromMinutes(seg.start)}`);
-    }
-
-    if (seg.end > current) current = seg.end;
-  });
-
-  if (current < 1439) {
-    slots.push(`${fromMinutes(current)} - 23:59`);
-  }
-
-  return slots;
-}
-
-function getBookedMinutes(dayBookings: Booking[], date: string) {
-  return dayBookings.reduce((sum, b) => {
-    const seg = getBookingSegmentForDate(b, date);
-    if (!seg) return sum;
-    return sum + Math.max(0, seg.end - seg.start);
-  }, 0);
-}
-
-function getDayStatus(dayBookings: Booking[], date: string) {
-  const active = dayBookings.filter((b) => b.status !== "cancelled");
-  const bookedMinutes = getBookedMinutes(active, date);
-  const freeMinutes = 1439 - bookedMinutes;
-
-  if (active.length === 0) {
-    return { label: "Full Day Available", freeHours: "24h" };
-  }
-
-  if (freeMinutes <= 180) {
-    return {
-      label: "Fully Booked",
-      freeHours: `${Math.max(0, Math.round(freeMinutes / 60))}h free`,
-    };
-  }
-
-  if (freeMinutes <= 420) {
-    return {
-      label: "Almost Full",
-      freeHours: `${Math.round(freeMinutes / 60)}h free`,
-    };
-  }
-
-  return {
-    label: "Partially Available",
-    freeHours: `${Math.round(freeMinutes / 60)}h free`,
-  };
-}
-
-function rangesOverlap(a: Booking, b: Booking) {
-  const ar = getBookingRangeMinutes(a);
-  const br = getBookingRangeMinutes(b);
-  return ar.start < br.end && ar.end > br.start;
-}
-
-export default function BookingCalendarPage() {
-  const router = useRouter();
-  const today = getToday();
-
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [selectedDate, setSelectedDate] = useState(today);
-  const [showAdd, setShowAdd] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  const [form, setForm] = useState({
-    ...emptyForm,
-    pickupDate: today,
-    returnDate: today,
-  });
-
-  const loadBookings = async () => {
-    setLoading(true);
-
-    try {
-      const { collection, getDocs } = await import("firebase/firestore");
-      const { db } = await import("@/lib/firebase");
-
-      const snap = await getDocs(collection(db, "bookings"));
-
-      const data = snap.docs.map((d) => ({
-        id: d.id,
-        ...(d.data() as Omit<Booking, "id">),
-      }));
-
-      data.sort((a, b) => {
-        const an = normalizeBooking(a);
-        const bn = normalizeBooking(b);
-
-        if (an.pickupDate === bn.pickupDate) {
-          return an.pickupTime.localeCompare(bn.pickupTime);
-        }
-
-        return an.pickupDate.localeCompare(bn.pickupDate);
-      });
-
-      setBookings(data);
-    } catch (error: any) {
-      console.error("BOOKING LOAD ERROR:", error);
-      alert(error?.code || error?.message || "Bookings load nahi ho payi.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const selectedBookings = useMemo(() => {
-    return getBookingsForDate(bookings, selectedDate);
-  }, [bookings, selectedDate]);
-
-  const freeSlots = useMemo(
-    () => getSlots(selectedBookings, selectedDate),
-    [selectedBookings, selectedDate]
-  );
-
-  const currentFormBooking: Booking = {
-    id: "temp",
-    pickupDate: form.pickupDate,
-    pickupTime: form.pickupTime,
-    returnDate: form.returnDate,
-    returnTime: form.returnTime,
-    pickup: form.pickup,
-    drop: form.drop,
-    customerName: form.customerName,
-    phone: form.phone,
-    bookingType: form.bookingType,
-    fare: form.fare,
-    advance: form.advance,
-    status: form.status,
-    notes: form.notes,
-  };
-
-  const hasConflict = useMemo(() => {
-    if (
-      !form.pickupDate ||
-      !form.pickupTime ||
-      !form.returnDate ||
-      !form.returnTime
-    ) {
-      return false;
-    }
-
-    return bookings.some((b) => {
-      if (b.status === "cancelled") return false;
-      return rangesOverlap(currentFormBooking, b);
-    });
-  }, [
-    bookings,
-    form.pickupDate,
-    form.pickupTime,
-    form.returnDate,
-    form.returnTime,
-  ]);
-
-  const addBooking = async () => {
-    const phone10 = form.phone.replace(/\D/g, "").slice(-10);
-
-    if (
-      !form.pickupDate ||
-      !form.pickupTime ||
-      !form.returnDate ||
-      !form.returnTime ||
-      !form.pickup.trim() ||
-      !form.drop.trim() ||
-      !form.customerName.trim() ||
-      phone10.length !== 10
-    ) {
-      alert(
-        "Pickup date/time, return date/time, pickup, drop, customer name aur valid mobile number required hai."
-      );
-      return;
-    }
-
-    const start = new Date(`${form.pickupDate}T${form.pickupTime}`).getTime();
-    const end = new Date(`${form.returnDate}T${form.returnTime}`).getTime();
-
-    if (start >= end) {
-      alert("Return date/time pickup date/time ke baad hona chahiye.");
-      return;
-    }
-
-    if (hasConflict) {
-      const ok = confirm(
-        "Warning: Is booking duration me already booking hai. Fir bhi booking save karni hai?"
-      );
-      if (!ok) return;
-    }
-
-    setSaving(true);
-
-    try {
-      const { addDoc, collection, serverTimestamp } = await import(
-        "firebase/firestore"
-      );
-      const { db } = await import("@/lib/firebase");
-
-      await addDoc(collection(db, "bookings"), {
-        vehicle: VEHICLE_NAME,
-        pickupDate: form.pickupDate,
-        pickupTime: form.pickupTime,
-        returnDate: form.returnDate,
-        returnTime: form.returnTime,
-
-        // old compatibility
-        date: form.pickupDate,
-        startTime: form.pickupTime,
-        endTime: form.returnTime,
-
-        pickup: form.pickup.trim(),
-        drop: form.drop.trim(),
-        customerName: form.customerName.trim(),
-        phone: phone10,
-        bookingType: form.bookingType,
-        fare: form.fare.trim(),
-        advance: form.advance.trim(),
-        status: form.status,
-        notes: form.notes.trim(),
-        createdAt: serverTimestamp(),
-      });
-
-      setShowAdd(false);
-      setSelectedDate(form.pickupDate);
-      setForm({
-        ...emptyForm,
-        pickupDate: today,
-        returnDate: today,
-      });
-
-      await loadBookings();
-      alert("Booking successfully save ho gayi.");
-    } catch (error: any) {
-      console.error("BOOKING SAVE ERROR:", error);
-      alert(error?.code || error?.message || "Booking save nahi ho payi.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const updateStatus = async (booking: Booking, status: BookingStatus) => {
-    try {
-      const { updateDoc, doc } = await import("firebase/firestore");
-      const { db } = await import("@/lib/firebase");
-
-      await updateDoc(doc(db, "bookings", booking.id), { status });
-      await loadBookings();
-    } catch (error: any) {
-      alert(error?.code || error?.message || "Status update nahi ho paya.");
-    }
-  };
-
-  const deleteBooking = async (booking: Booking) => {
-    if (!confirm("Kya aap is booking ko delete karna chahte hain?")) return;
-
-    try {
-      const { deleteDoc, doc } = await import("firebase/firestore");
-      const { db } = await import("@/lib/firebase");
-
-      await deleteDoc(doc(db, "bookings", booking.id));
-      await loadBookings();
-    } catch (error: any) {
-      alert(error?.code || error?.message || "Booking delete nahi ho payi.");
-    }
-  };
-
-  const logout = async () => {
-    const { signOut } = await import("firebase/auth");
-    const { auth } = await import("@/lib/firebase");
-
-    await signOut(auth);
-    router.push("/admin/login");
-  };
+export default function AdminBookingsDashboard() {
+  const [bookings, setBookings] = useState<FirestoreBooking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL"); 
+  const [dateFilter, setDateFilter] = useState(""); 
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
 
   useEffect(() => {
-    let unsub: undefined | (() => void);
+    if (!db) return;
+    const bookingsCollectionRef = collection(db, "bookings");
+    const orderedQueryStream = query(bookingsCollectionRef, orderBy("createdAt", "desc"), limit(250));
 
-    async function checkAuth() {
-      const { onAuthStateChanged } = await import("firebase/auth");
-      const { auth } = await import("@/lib/firebase");
-
-      unsub = onAuthStateChanged(auth, (user) => {
-        if (!user) router.push("/admin/login");
-        else loadBookings();
+    const unsubscribeStreamRoute = onSnapshot(orderedQueryStream, (snapshot) => {
+      const liveBookingPayload: FirestoreBooking[] = [];
+      snapshot.forEach((doc) => {
+        const incomingData = doc.data();
+        liveBookingPayload.push({
+          id: doc.id,
+          invoiceId: incomingData.invoiceId || `KR-${Math.floor(100000 + Math.random() * 900000)}`,
+          customerName: incomingData.customerName || "Guest Passenger",
+          customerPhone: incomingData.customerPhone || "0000000000",
+          pickup: incomingData.pickup || "",
+          drop: incomingData.drop || "",
+          bookingType: incomingData.bookingType || "oneway",
+          serviceType: incomingData.serviceType || "outstation",
+          pickupDate: incomingData.pickupDate || "",
+          pickupTime: incomingData.pickupTime || "",
+          returnDate: incomingData.returnDate || null,
+          returnTime: incomingData.returnTime || null,
+          vehicleLabel: incomingData.vehicleLabel || "Cab Fleet",
+          amountPaid: Number(incomingData.amountPaid) || 0,
+          paymentMode: incomingData.paymentMode || "FULL PAYMENT",
+          razorpayPaymentId: incomingData.razorpayPaymentId || "RPX-" + Math.random().toString(36).substring(7).toUpperCase(),
+          status: incomingData.status || "CONFIRMED_ONLINE",
+          createdAt: incomingData.createdAt,
+          billedDistance: incomingData.billedDistance || 150,
+        });
       });
-    }
+      setBookings(liveBookingPayload);
+      setLoading(false);
+    }, () => setLoading(false));
 
-    checkAuth();
+    return () => unsubscribeStreamRoute();
+  }, []);
 
-    return () => {
-      if (unsub) unsub();
-    };
-  }, [router]);
+  // 🔍 PIPELINE FILTER ENGINE
+  const filteredBookingsArray = useMemo(() => {
+    return bookings.filter((item) => {
+      const matchSearchText = 
+        item.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.customerPhone.includes(searchTerm) ||
+        item.invoiceId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.pickup.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.drop.toLowerCase().includes(searchTerm.toLowerCase());
 
-  const next15Days = useMemo(() => {
-    return getNextDays(15).map((date) => {
-      const dayBookings = getBookingsForDate(bookings, date);
+      const matchStatusTab = 
+        statusFilter === "ALL" || 
+        (statusFilter === "ADVANCE" && item.paymentMode === "50% ADVANCE") ||
+        (statusFilter === "FULL" && item.paymentMode === "FULL PAYMENT");
 
-      return {
-        date,
-        bookings: dayBookings,
-        slots: getSlots(dayBookings, date),
-        status: getDayStatus(dayBookings, date),
-      };
+      const matchDateSelector = !dateFilter || item.pickupDate === dateFilter;
+      return matchSearchText && matchStatusTab && matchDateSelector;
     });
-  }, [bookings]);
+  }, [bookings, searchTerm, statusFilter, dateFilter]);
 
-  const selectedStatus = getDayStatus(selectedBookings, selectedDate);
-  const todayBookings = getBookingsForDate(bookings, today);
+  // 📊 METRICS METADATA
+  const analyticsCounters = useMemo(() => {
+    let totalRevenuePaid = 0;
+    let totalExpectedCollections = 0;
+    bookings.forEach((item) => {
+      totalRevenuePaid += item.amountPaid;
+      totalExpectedCollections += item.paymentMode === "50% ADVANCE" ? item.amountPaid * 2 : item.amountPaid;
+    });
+    return {
+      grossCollections: totalRevenuePaid,
+      pendingDebt: totalExpectedCollections - totalRevenuePaid,
+      grossTripsCount: filteredBookingsArray.length
+    };
+  }, [bookings, filteredBookingsArray]);
 
-  const selectedRevenue = selectedBookings.reduce(
-    (sum, b) => sum + money(b.fare),
-    0
-  );
+  // 👑 PIXEL-PERFECT FLUTTER STYLE APP NATIVE PDF GENERATOR
+  const generateNativeFlutterLookPDF = (bk: FirestoreBooking) => {
+    setGeneratingId(bk.id);
+    try {
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4"
+      });
 
-  const selectedAdvance = selectedBookings.reduce(
-    (sum, b) => sum + money(b.advance),
-    0
-  );
+      const grossFare = bk.paymentMode === "50% ADVANCE" ? bk.amountPaid * 2 : bk.amountPaid;
+      const balanceDue = bk.paymentMode === "50% ADVANCE" ? bk.amountPaid : 0;
 
-  const selectedBalance = selectedRevenue - selectedAdvance;
+      // Premium Brand Identity Palette (Navy Blue Deep Accent)
+      doc.setFillColor(30, 58, 138); 
+      doc.rect(0, 0, 210, 38, "F");
 
-  const month = today.slice(0, 7);
-  const monthBookings = bookings.filter((b) => {
-    const n = normalizeBooking(b);
-    return n.pickupDate?.startsWith(month);
-  });
+      // Brand Title Text
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(22);
+      doc.text("KHATU RIDES TRAVELS CO.", 15, 16);
 
-  const monthRevenue = monthBookings.reduce(
-    (sum, b) => sum + money(b.fare),
-    0
-  );
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text("PREMIUM TAXI SERVICES & FLEET NETWORK", 15, 22);
+      doc.text("Korba, Chhattisgarh, India | Support: +91 8319376115", 15, 27);
 
-  const availableDays = next15Days.filter((d) => d.bookings.length === 0);
-  const fullDays = next15Days.filter((d) => d.status.label === "Fully Booked");
+      // Invoice Target Metadata Right Side
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text("TRAVEL INVOICE", 150, 15, { align: "left" });
+      doc.setFontSize(10);
+      doc.text(`Invoice No: ${bk.invoiceId}`, 150, 21, { align: "left" });
+      doc.setFont("helvetica", "normal");
+      doc.text(`Date: ${new Date().toLocaleDateString("en-IN")}`, 150, 26, { align: "left" });
+
+      // Client / Vendor Info Section Layout
+      doc.setTextColor(30, 58, 138);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text("SERVICE PROVIDER DETAILS", 15, 50);
+      doc.text("PASSENGER BILLING INFO", 115, 50);
+
+      // Horizontal Border Line
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.5);
+      doc.line(15, 52, 95, 52);
+      doc.line(115, 52, 195, 52);
+
+      // Body Text Labels Info
+      doc.setTextColor(51, 65, 85);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      
+      // Provider Data columns
+      doc.setFont("helvetica", "bold");
+      doc.text("Khatu Rides Travels Co.", 15, 58);
+      doc.setFont("helvetica", "normal");
+      doc.text("Authorized Logistics & Cab Partner", 15, 63);
+      doc.text("Email: bookings@khaturides.com", 15, 68);
+
+      // Customer Details columns
+      doc.setFont("helvetica", "bold");
+      doc.text(bk.customerName, 115, 58);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Phone: +91 ${bk.customerPhone}`, 115, 63);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(16, 185, 129);
+      doc.text("Status: Secured & Confirmed", 115, 68);
+
+      // Journey Manifest Details Header
+      doc.setTextColor(30, 58, 138);
+      doc.setFont("helvetica", "bold");
+      doc.text("JOURNEY ROUTE MANIFEST", 15, 82);
+
+      // Flutter style clean dynamic auto table injections
+      (doc as any).autoTable({
+        startY: 85,
+        theme: "striped",
+        headStyles: { fillColor: [248, 250, 252], textColor: [30, 58, 138], fontStyle: "bold" },
+        head: [["Route (From - To)", "Vehicle Fleet", "Category", "Departure Schedule"]],
+        body: [[
+          `From: ${bk.pickup.split(",")[0]}\nTo: ${bk.drop.split(",")[0]}`,
+          bk.vehicleLabel,
+          bk.bookingType.toUpperCase(),
+          `${bk.pickupDate.split("-").reverse().join("/")}\n${bk.pickupTime}`
+        ]],
+        styles: { fontSize: 9, cellPadding: 4 },
+        columnStyles: { 0: { cellWidth: 50 }, 1: { cellWidth: 40 }, 2: { cellWidth: 30 } }
+      });
+
+      const finalY = (doc as any).lastAutoTable.finalY + 12;
+
+      // Settlement Fare Breakdown section Title
+      doc.setTextColor(30, 58, 138);
+      doc.setFont("helvetica", "bold");
+      doc.text("FINANCIAL SETTLEMENT BREAKDOWN", 15, finalY);
+
+      // Calculation pricing matrix mapping block
+      (doc as any).autoTable({
+        startY: finalY + 3,
+        theme: "grid",
+        headStyles: { fillColor: [30, 58, 138], textColor: [255, 255, 255] },
+        head: [["Fare Description", "Billed Units", "Total Gross Value"]],
+        body: [
+          ["Standard Distance Package (Incl. 25% Flat Discount)", `${bk.billedDistance || 150} KM Base`, `INR ${grossFare.toLocaleString("en-IN")}.00`],
+          ["Total Gross Amount Due", "", `INR ${grossFare.toLocaleString("en-IN")}.00`],
+          ["Online Advance Payment Received", "", `INR ${bk.amountPaid.toLocaleString("en-IN")}.00`],
+          ["Outstanding Balance (Payable to Driver)", "", `INR ${balanceDue.toLocaleString("en-IN")}.00`]
+        ],
+        styles: { fontSize: 9, cellPadding: 4 },
+        columnStyles: { 2: { halign: "right", fontStyle: "bold" } },
+        didParseCell: function(data: any) {
+          if (data.row.index === 3) {
+            data.cell.styles.fillColor = [254, 242, 242];
+            data.cell.styles.textColor = [153, 27, 27];
+            data.cell.styles.fontStyle = "bold";
+          }
+          if (data.row.index === 2) {
+            data.cell.styles.fillColor = [224, 242, 254];
+            data.cell.styles.textColor = [3, 105, 161];
+          }
+        }
+      });
+
+      const termsY = (doc as any).lastAutoTable.finalY + 10;
+
+      // Technical bottom logs declarations
+      doc.setDrawColor(203, 213, 225);
+      doc.setLineWidth(0.3);
+      doc.rect(15, termsY, 180, 22);
+      
+      doc.setTextColor(71, 85, 105);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.text("TERMS & COMMERCIAL RIDE GUIDELINES:", 18, termsY + 5);
+      doc.setFont("helvetica", "normal");
+      doc.text("1. Toll Taxes, State Border Taxes, and Airport Parking charges are payable extra as per actual receipts.", 18, termsY + 10);
+      doc.text(`2. Electronic Transaction Ref token payload verified online securely via Razorpay ID: ${bk.razorpayPaymentId}`, 18, termsY + 15);
+
+      // Core Footer greeting closing string tag
+      doc.setTextColor(148, 163, 184);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text("THANK YOU FOR TRAVELING WITH KHATU RIDES TRAVELS CO!", 105, termsY + 32, { align: "center" });
+
+      // Direct device save trigger loop
+      doc.save(`Invoice_${bk.invoiceId}.pdf`);
+    } catch (err) {
+      console.error(err);
+      alert("Error generating invoice payload matrix.");
+    } finally {
+      setGeneratingId(null);
+    }
+  };
+
+  const convertToIndianDate = (dateString: string) => {
+    if (!dateString) return "--/--/----";
+    const bits = dateString.split("-");
+    if (bits.length !== 3) return dateString;
+    return `${bits[2]}/${bits[1]}/${bits[0]}`;
+  };
+
+  const formatTimeToAMPM = (timeString: string) => {
+    if (!timeString) return "--:-- --";
+    let [hours, minutes] = timeString.split(":").map(Number);
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12 || 12;
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${ampm}`;
+  };
 
   return (
-    <main className="min-h-screen bg-[#f4f5f7] text-slate-950">
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4">
-          <div>
-            <h1 className="text-xl font-black md:text-2xl">
-              Ertiga Booking Manager
-            </h1>
-            <p className="text-xs font-semibold text-slate-500">
-              Multi-day round trip, availability aur revenue dashboard
-            </p>
+    <div className="min-h-screen bg-slate-900 text-slate-100 font-sans p-3 sm:p-6 lg:p-8 select-none">
+      
+      {/* Header Panel */}
+      <header className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-5 mb-6 text-left">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-xl">📊</span>
+            <h1 className="text-lg font-black uppercase tracking-wider text-white">KHATU RIDES COMMAND CONTROL</h1>
           </div>
-
-          <div className="flex gap-2">
-            <button
-  onClick={() => router.push("/admin/payments")}
-  className="flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-3 text-sm font-black text-white shadow-lg"
->
-  <Wallet size={18} />
-  Payments
-</button>
-            <button
-              onClick={() => router.push("/admin/leads")}
-              className="rounded-full bg-slate-100 px-4 py-3 text-sm font-black"
-            >
-              Leads
-            </button>
-
-            <button
-              onClick={logout}
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-950 text-white"
-            >
-              <LogOut size={18} />
-            </button>
-          </div>
+          <p className="text-xs font-bold text-slate-500 uppercase mt-1">Live Fleet Operational Pipeline & Invoice Receipts Tracker</p>
+        </div>
+        <div className="bg-slate-950 px-3 py-1.5 rounded-full border border-slate-800/80 flex items-center gap-2 shrink-0">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+          <span className="text-[10px] font-black tracking-widest text-emerald-400 uppercase">Live Firestore Connected</span>
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl px-4 py-5">
-        <section className="rounded-[30px] bg-slate-950 p-5 text-white shadow-xl">
-          <div className="flex items-start gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/10">
-              <Car size={28} />
-            </div>
-
-            <div className="flex-1">
-              <h2 className="text-2xl font-black">{VEHICLE_NAME}</h2>
-              <p className="mt-1 text-sm text-white/60">
-                Round trip multi-day booking me beech ke din automatically full
-                blocked honge.
-              </p>
-            </div>
-
-            <span className="hidden rounded-full bg-green-500/15 px-4 py-2 text-sm font-black text-green-300 md:block">
-              {selectedStatus.label}
-            </span>
+      <div className="max-w-7xl mx-auto space-y-6">
+        
+        {/* Quick Counters row */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800/80 text-left">
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Total Received</span>
+            <div className="text-xl font-black text-emerald-400 tracking-tight mt-1">₹{analyticsCounters.grossCollections.toLocaleString("en-IN")}</div>
           </div>
-
-          <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
-            <MiniStat title="Today Bookings" value={todayBookings.length} />
-            <MiniStat title="Selected Bookings" value={selectedBookings.length} />
-            <MiniStat title="Selected Revenue" value={`₹${selectedRevenue}`} />
-            <MiniStat title="Month Revenue" value={`₹${monthRevenue}`} />
+          <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800/80 text-left">
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">On-Road Pending</span>
+            <div className="text-xl font-black text-amber-500 tracking-tight mt-1">₹{analyticsCounters.pendingDebt.toLocaleString("en-IN")}</div>
           </div>
-        </section>
+          <div className="bg-gradient-to-r from-orange-600 to-[#d8551b] p-4 rounded-2xl text-left">
+            <span className="text-[10px] font-black text-white/70 uppercase tracking-wider">Filtered Trips</span>
+            <div className="text-xl font-black text-white tracking-tight mt-1">{analyticsCounters.grossTripsCount} Trips</div>
+          </div>
+        </div>
 
-        <section className="mt-5 grid gap-3 md:grid-cols-3">
-          <AlertCard
-            icon={<CheckCircle2 size={20} />}
-            title="Available Days"
-            value={`${availableDays.length} days`}
-            text={
-              availableDays
-                .slice(0, 3)
-                .map((d) => formatDateIN(d.date))
-                .join(", ") || "No full free day"
-            }
-            tone="green"
-          />
-
-          <AlertCard
-            icon={<AlertTriangle size={20} />}
-            title="Full Booked Days"
-            value={`${fullDays.length} days`}
-            text={
-              fullDays
-                .slice(0, 3)
-                .map((d) => formatDateIN(d.date))
-                .join(", ") || "No fully booked day"
-            }
-            tone="red"
-          />
-
-          <AlertCard
-            icon={<IndianRupee size={20} />}
-            title="Selected Balance"
-            value={`₹${selectedBalance}`}
-            text={`Advance received: ₹${selectedAdvance}`}
-            tone="orange"
-          />
-        </section>
-
-        <section className="mt-5 grid gap-4 md:grid-cols-[360px_1fr]">
-          <aside className="space-y-4">
-            <div className="rounded-[30px] bg-white p-5 shadow-sm">
-              <label className="text-sm font-black text-slate-500">
-                Select Date
-              </label>
-
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="mt-3 w-full rounded-2xl border border-slate-200 px-4 py-3 font-bold outline-none focus:border-orange-500"
+        {/* Filters Desk */}
+        <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col gap-4 text-left">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 w-full">
+            <div className="md:col-span-2">
+              <label className="block text-[9px] font-black text-slate-500 uppercase tracking-wider mb-1">Search Keywords</label>
+              <input 
+                type="text" 
+                placeholder="Search Passenger Name, Phone, Invoice ID..." 
+                value={searchTerm}
+                onChange={(e) => setSearchFilter(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs font-bold text-white focus:outline-none focus:border-orange-500 placeholder:text-slate-600 shadow-inner"
               />
-
-              <button
-                onClick={() => {
-                  setForm({
-                    ...emptyForm,
-                    pickupDate: selectedDate,
-                    returnDate: selectedDate,
-                  });
-                  setShowAdd(true);
-                }}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-600 py-4 font-black text-white shadow-lg shadow-orange-200"
-              >
-                <Plus size={18} />
-                Add Booking
-              </button>
             </div>
-
-            <div className="rounded-[30px] bg-white p-5 shadow-sm">
-              <h3 className="flex items-center gap-2 font-black text-slate-900">
-                <Clock3 size={18} />
-                Free Time Slots
-              </h3>
-
-              <p className="mt-1 text-sm font-bold text-slate-500">
-                Date: {formatDateIN(selectedDate)} • {selectedStatus.label} •{" "}
-                {selectedStatus.freeHours}
-              </p>
-
-              <div className="mt-3 space-y-2">
-                {freeSlots.length === 0 ? (
-                  <p className="rounded-2xl bg-red-50 px-3 py-3 text-sm font-bold text-red-700">
-                    Full day booked
-                  </p>
-                ) : (
-                  freeSlots.map((slot) => (
-                    <div
-                      key={slot}
-                      className="rounded-2xl bg-green-50 px-3 py-3 text-sm font-black text-green-700"
-                    >
-                      {slot}
-                    </div>
-                  ))
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-[9px] font-black text-slate-500 uppercase tracking-wider">📅 Filter by Journey Date</label>
+                {dateFilter && (
+                  <button type="button" onClick={() => setDateFilter("")} className="text-[9px] font-black text-red-400 hover:text-red-300 uppercase transition">✕ Clear</button>
                 )}
               </div>
+              <input type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-white focus:outline-none focus:border-orange-500"/>
             </div>
-          </aside>
-
-          <section className="rounded-[30px] bg-white p-5 shadow-sm">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-xl font-black">
-                  Schedule: {formatDateIN(selectedDate)}
-                </h2>
-                <p className="text-sm font-medium text-slate-500">
-                  Multi-day booking selected date par bhi show hogi.
-                </p>
-              </div>
-
-              {loading && <Loader2 className="animate-spin text-orange-600" />}
-            </div>
-
-            {loading ? (
-              <div className="rounded-3xl bg-slate-50 p-8 text-center text-sm font-bold text-slate-500">
-                Loading bookings...
-              </div>
-            ) : selectedBookings.length === 0 ? (
-              <div className="rounded-3xl bg-green-50 p-8 text-center">
-                <h3 className="font-black text-green-700">
-                  Full Day Available
-                </h3>
-                <p className="mt-1 text-sm font-bold text-green-600">
-                  Is date ke liye booking lene ka best chance hai.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {selectedBookings.map((booking) => (
-                  <BookingCard
-                    key={booking.id}
-                    booking={booking}
-                    selectedDate={selectedDate}
-                    updateStatus={updateStatus}
-                    deleteBooking={deleteBooking}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-        </section>
-
-        <section className="mt-5 rounded-[30px] bg-white p-5 shadow-sm">
-          <div className="mb-4">
-            <h2 className="text-xl font-black">Next 15 Days Vehicle Plan</h2>
-            <p className="text-sm font-medium text-slate-500">
-              Multi-day trips ke beech wale dates automatically blocked dikhengi.
-            </p>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-3">
-            {next15Days.map((day) => (
-              <button
-                key={day.date}
-                onClick={() => setSelectedDate(day.date)}
-                className="rounded-3xl border border-slate-100 bg-slate-50 p-4 text-left transition hover:bg-white hover:shadow-md"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="font-black">{formatDateIN(day.date)}</h3>
-                  <StatusPill label={day.status.label} />
+          <div className="flex items-center justify-between border-t border-slate-900 pt-3 flex-wrap gap-3">
+            <div className="text-[10px] font-black text-slate-500 uppercase tracking-wide">
+              Filtered Result Stack: <span className="text-white">{filteredBookingsArray.length} entries</span>
+            </div>
+            <div className="flex bg-slate-900 border border-slate-800 p-1 rounded-xl overflow-x-auto">
+              {[
+                { id: "ALL", label: "All Logs" },
+                { id: "ADVANCE", label: "50% Advance" },
+                { id: "FULL", label: "100% Paid" }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setStatusFilter(tab.id)}
+                  className={`px-4 py-2 text-center text-[10px] font-black uppercase rounded-lg tracking-wider transition whitespace-nowrap ${
+                    statusFilter === tab.id ? "bg-orange-600 text-white shadow-sm" : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Listing Loop */}
+        {loading ? (
+          <div className="py-20 text-center text-xs font-bold text-slate-500 uppercase tracking-widest animate-pulse">🔄 Syncing Live Database...</div>
+        ) : filteredBookingsArray.length === 0 ? (
+          <div className="border border-dashed border-slate-800 rounded-2xl py-14 text-center text-xs font-bold text-slate-500 uppercase">📭 No matching records found.</div>
+        ) : (
+          <div className="space-y-4">
+            {filteredBookingsArray.map((bk) => (
+              <div key={bk.id} className="w-full bg-slate-950 border border-slate-800/80 rounded-2xl overflow-hidden flex flex-col shadow-md">
+                
+                <div className="p-5 flex flex-col md:flex-row items-center justify-between gap-5 text-left">
+                  <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-center sm:text-left w-full sm:w-auto">
+                    <span className="text-3xl shrink-0 p-3 rounded-2xl bg-slate-900 border border-slate-800">
+                      {bk.vehicleLabel.toLowerCase().includes("dzire") ? "🚖" : "🚘"}
+                    </span>
+                    <div>
+                      <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                        <h3 className="text-base font-black text-white">{bk.customerName}</h3>
+                        <span className="bg-slate-900 px-2 py-0.5 rounded text-[9px] font-black text-orange-400 uppercase border border-slate-800 tracking-wider">{bk.invoiceId}</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 mt-2.5 text-[11px] font-bold text-slate-400">
+                        <p>📞 <span className="text-slate-600 font-medium">Contact:</span> <a href={`tel:${bk.customerPhone}`} className="text-indigo-400 underline">{bk.customerPhone}</a></p>
+                        <p>🚖 <span className="text-slate-600 font-medium">Fleet:</span> <span className="text-white">{bk.vehicleLabel}</span></p>
+                        <p>📍 <span className="text-slate-600 font-medium">From:</span> <span className="text-slate-200">{bk.pickup.split(",")[0]}</span></p>
+                        <p>🏁 <span className="text-slate-600 font-medium">To:</span> <span className="text-slate-200">{bk.drop.split(",")[0]}</span></p>
+                        <p>📅 <span className="text-slate-600 font-medium">Schedule:</span> <span className="text-slate-200">{convertToIndianDate(bk.pickupDate)} ({formatTimeToAMPM(bk.pickupTime)})</span></p>
+                        <p>🔄 <span className="text-slate-600 font-medium">Category:</span> <span className="text-orange-400 font-extrabold uppercase">{bk.bookingType}</span></p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center gap-6 w-full sm:w-auto justify-between md:justify-end border-t md:border-none border-slate-900 pt-4 md:pt-0">
+                    <div className="text-center sm:text-left md:text-right min-w-[120px]">
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Transacted</span>
+                      <div className="text-xl font-black text-emerald-400 tracking-tight mt-0.5">₹{bk.amountPaid.toLocaleString("en-IN")}</div>
+                    </div>
+                    <div className="text-center sm:text-right min-w-[140px] w-full sm:w-auto">
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1">Status Flag</span>
+                      <div className={`border rounded-xl p-1.5 text-center font-black text-[10px] uppercase tracking-wide ${
+                        bk.paymentMode === "50% ADVANCE" ? "bg-amber-950/40 border-amber-800 text-amber-400" : "bg-emerald-950/40 border-emerald-800 text-emerald-400"
+                      }`}>
+                        {bk.paymentMode === "50% ADVANCE" ? "💸 50% Advance" : "💎 100% Paid"}
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <p className="mt-2 text-sm font-bold text-slate-500">
-                  {day.bookings.length} bookings • {day.status.freeHours}
-                </p>
+                {/* 📄 NEW BULLETPROOF DIRECT DOWNLOAD TRIGGER BLOCK */}
+                <div className="w-full bg-slate-900/60 border-t border-slate-950 py-3 px-5 flex items-center justify-between gap-3 flex-wrap">
+                  <div className="text-[10px] font-medium text-slate-500">
+                    Razorpay ID: <span className="text-slate-400 font-mono font-bold">{bk.razorpayPaymentId}</span>
+                  </div>
+                  
+                  <button
+                    type="button"
+                    onClick={() => generateNativeFlutterLookPDF(bk)}
+                    disabled={generatingId === bk.id}
+                    className="bg-orange-600 hover:bg-orange-700 disabled:bg-slate-800 disabled:text-slate-500 text-white font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl transition shadow-md flex items-center gap-1.5"
+                  >
+                    {generatingId === bk.id ? "🔄 Building Canvas..." : "📄 Save Travel Invoice"}
+                  </button>
+                </div>
 
-                <p className="mt-2 line-clamp-2 text-xs font-semibold text-slate-400">
-                  Free: {day.slots.join(", ") || "No free slot"}
-                </p>
-              </button>
+              </div>
             ))}
           </div>
-        </section>
-      </div>
+        )}
 
-      {showAdd && (
-        <div className="fixed inset-0 z-[999] flex items-end bg-black/40 px-4 pb-4 md:items-center md:justify-center">
-          <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-[30px] bg-white p-5 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-black">Add Ertiga Booking</h2>
-                <p className="text-sm font-medium text-slate-500">
-                  Pickup se return tak vehicle block rahegi
-                </p>
-              </div>
-
-              <button
-                onClick={() => setShowAdd(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {hasConflict && (
-              <div className="mb-4 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700">
-                Warning: Is booking duration me already booking hai.
-              </div>
-            )}
-
-            <div className="grid gap-3 md:grid-cols-2">
-              <Input
-                label="Pickup Date"
-                type="date"
-                value={form.pickupDate}
-                onChange={(v) => setForm({ ...form, pickupDate: v })}
-              />
-
-              <Input
-                label="Pickup Time"
-                type="time"
-                value={form.pickupTime}
-                onChange={(v) => setForm({ ...form, pickupTime: v })}
-              />
-
-              <Input
-                label="Return Date"
-                type="date"
-                value={form.returnDate}
-                onChange={(v) => setForm({ ...form, returnDate: v })}
-              />
-
-              <Input
-                label="Return Time"
-                type="time"
-                value={form.returnTime}
-                onChange={(v) => setForm({ ...form, returnTime: v })}
-              />
-
-              <Input
-                label="Customer / Partner Name"
-                value={form.customerName}
-                onChange={(v) => setForm({ ...form, customerName: v })}
-              />
-
-              <Input
-                label="Mobile Number"
-                value={form.phone}
-                onChange={(v) => setForm({ ...form, phone: v })}
-              />
-
-              <Input
-                label="Pickup Location"
-                value={form.pickup}
-                onChange={(v) => setForm({ ...form, pickup: v })}
-              />
-
-              <Input
-                label="Drop Location"
-                value={form.drop}
-                onChange={(v) => setForm({ ...form, drop: v })}
-              />
-
-              <div>
-                <label className="text-xs font-black text-slate-400">
-                  Booking Type
-                </label>
-                <select
-                  value={form.bookingType}
-                  onChange={(e) =>
-                    setForm({ ...form, bookingType: e.target.value })
-                  }
-                  className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-3 font-bold outline-none focus:border-orange-500"
-                >
-                  <option>One Way</option>
-                  <option>Round Trip</option>
-                  <option>Airport Pickup-Drop</option>
-                  <option>Outstation</option>
-                  <option>Commercial</option>
-                </select>
-              </div>
-
-              <Input
-                label="Total Fare"
-                value={form.fare}
-                onChange={(v) => setForm({ ...form, fare: v })}
-              />
-
-              <Input
-                label="Advance"
-                value={form.advance}
-                onChange={(v) => setForm({ ...form, advance: v })}
-              />
-
-              <div>
-                <label className="text-xs font-black text-slate-400">
-                  Status
-                </label>
-                <select
-                  value={form.status}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      status: e.target.value as BookingStatus,
-                    })
-                  }
-                  className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-3 font-bold outline-none focus:border-orange-500"
-                >
-                  <option value="pending">Pending</option>
-                  <option value="confirmed">Confirmed</option>
-                  <option value="on-trip">On Trip</option>
-                  <option value="completed">Completed</option>
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="text-xs font-black text-slate-400">
-                  Notes
-                </label>
-                <textarea
-                  value={form.notes}
-                  onChange={(e) =>
-                    setForm({ ...form, notes: e.target.value })
-                  }
-                  className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-3 font-bold outline-none focus:border-orange-500"
-                  placeholder="B2B partner, payment, driver note..."
-                />
-              </div>
-            </div>
-
-            <button
-              onClick={addBooking}
-              disabled={saving}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-600 py-4 font-black text-white disabled:opacity-60"
-            >
-              {saving ? (
-                <Loader2 className="animate-spin" size={18} />
-              ) : (
-                <Plus size={18} />
-              )}
-              {saving ? "Saving..." : "Save Booking"}
-            </button>
-          </div>
-        </div>
-      )}
-    </main>
-  );
-}
-
-function MiniStat({
-  title,
-  value,
-}: {
-  title: string;
-  value: string | number;
-}) {
-  return (
-    <div className="rounded-2xl bg-white/10 p-4">
-      <p className="text-xs font-bold text-white/50">{title}</p>
-      <h3 className="mt-1 text-2xl font-black">{value}</h3>
-    </div>
-  );
-}
-
-function AlertCard({
-  icon,
-  title,
-  value,
-  text,
-  tone,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  value: string;
-  text: string;
-  tone: "green" | "red" | "orange";
-}) {
-  const cls =
-    tone === "green"
-      ? "bg-green-50 text-green-700"
-      : tone === "red"
-      ? "bg-red-50 text-red-700"
-      : "bg-orange-50 text-orange-700";
-
-  return (
-    <div className={`rounded-[26px] p-5 ${cls}`}>
-      <div className="flex items-center gap-2 text-sm font-black">
-        {icon}
-        {title}
-      </div>
-      <h3 className="mt-3 text-2xl font-black">{value}</h3>
-      <p className="mt-1 text-sm font-bold opacity-80">{text}</p>
-    </div>
-  );
-}
-
-function StatusPill({ label }: { label: string }) {
-  const cls =
-    label === "Full Day Available"
-      ? "bg-green-100 text-green-700"
-      : label === "Fully Booked"
-      ? "bg-red-100 text-red-700"
-      : label === "Almost Full"
-      ? "bg-orange-100 text-orange-700"
-      : "bg-blue-100 text-blue-700";
-
-  return (
-    <span className={`rounded-full px-3 py-1 text-[11px] font-black ${cls}`}>
-      {label}
-    </span>
-  );
-}
-
-function Input({
-  label,
-  value,
-  onChange,
-  type = "text",
-}: {
-  label: string;
-  value: string;
-  type?: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div>
-      <label className="text-xs font-black text-slate-400">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-3 font-bold outline-none focus:border-orange-500"
-      />
-    </div>
-  );
-}
-
-function BookingCard({
-  booking,
-  selectedDate,
-  updateStatus,
-  deleteBooking,
-}: {
-  booking: Booking;
-  selectedDate: string;
-  updateStatus: (booking: Booking, status: BookingStatus) => void;
-  deleteBooking: (booking: Booking) => void;
-}) {
-  const n = normalizeBooking(booking);
-  const seg = getBookingSegmentForDate(booking, selectedDate);
-  const phone10 = booking.phone.replace(/\D/g, "").slice(-10);
-  const balance = money(booking.fare) - money(booking.advance);
-
-  const statusClass =
-    booking.status === "confirmed"
-      ? "bg-green-100 text-green-700"
-      : booking.status === "pending"
-      ? "bg-yellow-100 text-yellow-700"
-      : booking.status === "on-trip"
-      ? "bg-purple-100 text-purple-700"
-      : booking.status === "completed"
-      ? "bg-blue-100 text-blue-700"
-      : "bg-red-100 text-red-700";
-
-  const customerMessage = `Namaste ji,
-
-Khatu Rides Travels Co. se bol rahe hain.
-
-Aapki Ertiga booking details:
-Pickup: ${formatDateIN(n.pickupDate)} ${n.pickupTime}
-Return: ${formatDateIN(n.returnDate)} ${n.returnTime}
-Route: ${booking.pickup} to ${booking.drop}
-Booking Type: ${booking.bookingType}
-Fare: ₹${booking.fare || "0"}
-Advance: ₹${booking.advance || "0"}
-Balance: ₹${balance}
-
-Kripya booking details confirm kar dijiye.
-
-Khatu Rides Travels Co.
-Call / WhatsApp: ${OWNER_PHONE}`;
-
-  const driverMessage = `Namaste Driver ji,
-
-Aapko Ertiga booking duty assign ki ja rahi hai.
-
-Booking Details:
-Pickup: ${formatDateIN(n.pickupDate)} ${n.pickupTime}
-Return: ${formatDateIN(n.returnDate)} ${n.returnTime}
-Customer/Partner: ${booking.customerName}
-Customer Mobile: ${booking.phone}
-Pickup Location: ${booking.pickup}
-Drop Location: ${booking.drop}
-Booking Type: ${booking.bookingType}
-Fare: ₹${booking.fare || "0"}
-Advance: ₹${booking.advance || "0"}
-Balance: ₹${balance}
-
-Kripya time par location par pahunch kar customer se contact karein.
-
-Khatu Rides Travels Co.
-Admin: ${OWNER_PHONE}`;
-
-  return (
-    <div className="rounded-[26px] bg-slate-50 p-4 ring-1 ring-slate-100">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="flex flex-wrap gap-2">
-            <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-black text-orange-700">
-              {seg?.startTime} - {seg?.endTime} on {formatDateIN(selectedDate)}
-            </span>
-
-            <span className={`rounded-full px-3 py-1 text-xs font-black ${statusClass}`}>
-              {booking.status}
-            </span>
-          </div>
-
-          <h3 className="mt-3 text-lg font-black">{booking.customerName}</h3>
-
-          <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-slate-600">
-            <Phone size={15} />
-            {booking.phone}
-          </p>
-        </div>
-
-        <button
-          onClick={() => deleteBooking(booking)}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-red-50 text-red-600"
-        >
-          <Trash2 size={16} />
-        </button>
-      </div>
-
-      <div className="mt-4 grid gap-2 text-sm font-bold text-slate-700">
-        <p className="flex items-center gap-2">
-          <Clock3 size={16} className="text-orange-600" />
-          Pickup: {formatDateIN(n.pickupDate)} {n.pickupTime} → Return:{" "}
-          {formatDateIN(n.returnDate)} {n.returnTime}
-        </p>
-
-        <p className="flex items-center gap-2">
-          <MapPin size={16} className="text-orange-600" />
-          {booking.pickup} → {booking.drop}
-        </p>
-
-        <p className="flex items-center gap-2">
-          <Route size={16} className="text-orange-600" />
-          {booking.bookingType}
-        </p>
-
-        <p className="flex items-center gap-2">
-          <IndianRupee size={16} className="text-orange-600" />
-          Fare: ₹{booking.fare || "0"} | Advance: ₹{booking.advance || "0"} |
-          Balance: ₹{balance}
-        </p>
-      </div>
-
-      {booking.notes && (
-        <p className="mt-3 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-500">
-          {booking.notes}
-        </p>
-      )}
-
-      <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-6">
-        <a
-          href={`tel:${booking.phone}`}
-          className="rounded-2xl bg-green-600 px-3 py-3 text-center text-sm font-black text-white"
-        >
-          Call
-        </a>
-
-        <a
-          href={`https://wa.me/91${phone10}?text=${encodeURIComponent(
-            customerMessage
-          )}`}
-          target="_blank"
-          className="flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-3 py-3 text-sm font-black text-white"
-        >
-          <MessageCircle size={16} />
-          Customer
-        </a>
-
-        <a
-          href={`https://wa.me/91${DRIVER_PHONE}?text=${encodeURIComponent(
-            driverMessage
-          )}`}
-          target="_blank"
-          className="flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-3 py-3 text-sm font-black text-white"
-        >
-          Driver
-        </a>
-
-        <button
-          onClick={() => updateStatus(booking, "on-trip")}
-          className="rounded-2xl bg-purple-600 px-3 py-3 text-sm font-black text-white"
-        >
-          On Trip
-        </button>
-
-        <button
-          onClick={() => updateStatus(booking, "completed")}
-          className="rounded-2xl bg-blue-600 px-3 py-3 text-sm font-black text-white"
-        >
-          Complete
-        </button>
-
-        <button
-          onClick={() => updateStatus(booking, "cancelled")}
-          className="rounded-2xl bg-red-600 px-3 py-3 text-sm font-black text-white"
-        >
-          Cancel
-        </button>
       </div>
     </div>
   );

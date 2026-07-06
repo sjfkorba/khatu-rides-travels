@@ -33,7 +33,7 @@ export default function AdminLoginPage() {
       const { auth } = await import("@/lib/firebase");
 
       await signInWithEmailAndPassword(auth, email.trim(), password);
-      router.push("/admin/leads");
+      router.push("/admin/bookings");
     } catch (error: any) {
       console.error("LOGIN ERROR:", error);
       alert(error?.code || error?.message || "Login failed");

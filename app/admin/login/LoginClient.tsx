@@ -14,7 +14,7 @@ export default function AdminLoginPage() {
   const login = async () => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.push("/admin/leads");
+      router.push("/admin/bookings");
     } catch (error) {
       alert("Invalid email or password");
       console.log(error);
