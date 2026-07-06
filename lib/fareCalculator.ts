@@ -68,13 +68,14 @@ export function calculateFare({
   returnTime?: string;
 }): CalculateFareResult {
   const baseDistance = distance > 0 ? Math.round(distance) : 0;
+  const discountPercent = 25; // 👑 Master Flat 25% Discount Setup
 
   // Local Packages Strategy
   if (serviceType === "local") {
     const localPackages = {
-      sedan: { finalFare: 1899, strikeFare: 2299, rate: 15 },
-      ertiga: { finalFare: 2499, strikeFare: 2999, rate: 20 },
-      crysta: { finalFare: 3299, strikeFare: 3899, rate: 22 },
+      sedan: { finalFare: 1899, strikeFare: 2532, rate: 15 },
+      ertiga: { finalFare: 2499, strikeFare: 3332, rate: 20 },
+      crysta: { finalFare: 3299, strikeFare: 4399, rate: 22 },
     };
     const pack = localPackages[vehicleType];
     return {
@@ -83,7 +84,7 @@ export function calculateFare({
       rateUsed: pack.rate,
       strikeFare: pack.strikeFare,
       finalFare: pack.finalFare,
-      discountPercent: 25,
+      discountPercent,
       durationMinutes: 480,
       haltCharges: 0
     };
@@ -107,11 +108,10 @@ export function calculateFare({
   let currentMultiplier = 1.00;
   let haltCharges = 0;
 
-  // 👑 NEW MULTIPLIER AND EXTRA NIGHT HALT CALCULATIONS
   if (bookingType === "oneway") {
-    currentMultiplier = 1.55; // 👑 Flat short/long one-way multiplier
+    currentMultiplier = 1.55; 
   } else if (bookingType === "roundtrip") {
-    currentMultiplier = 2.75; // 👑 Flat short/long roundtrip multiplier
+    currentMultiplier = 2.75; 
 
     // Dynamic timestamp evaluation engine for Night Halt Charges
     if (pickupDate && returnDate) {
@@ -122,7 +122,6 @@ export function calculateFare({
       const totalDaysStay = Math.ceil(timeDifferenceDiff / (1000 * 60 * 60 * 24));
       
       if (totalDaysStay > 0) {
-        // Driver halt allocation loop setup @ ₹300 per night stay
         haltCharges = totalDaysStay * 300;
       }
     }
@@ -130,11 +129,18 @@ export function calculateFare({
 
   const calculatedBase = showKms * ratePerKm;
   const baseWithMultiplier = calculatedBase * currentMultiplier;
-  const discountPercent = 25; // 👑 Flat 25% Discount updated as requested
 
-  const absoluteStrikeFare = psychologicalPrice(baseWithMultiplier * 1.25) + haltCharges;
-  const discountedValue = baseWithMultiplier * (1 - discountPercent / 100);
-  const absoluteFinalFare = psychologicalPrice(discountedValue) + haltCharges;
+  // 👑 RE-ENGINEERED CALCULATION MATRIX: 
+  // Final Fare core calculation engine constant re-tracked
+  const dynamicFinalFareValue = baseWithMultiplier * (1 - discountPercent / 100);
+  const finalFareWithoutHalt = psychologicalPrice(dynamicFinalFareValue);
+  
+  // Backward Trace mathematical equation mapping to ensure perfect 25% alignment on UI screen
+  // Equation: Final Fare / (1 - 0.25) = Actual Fare
+  const computedStrikeFare = Math.round(finalFareWithoutHalt / (1 - discountPercent / 100));
+
+  const absoluteFinalFare = finalFareWithoutHalt + haltCharges;
+  const absoluteStrikeFare = computedStrikeFare + haltCharges;
 
   const durationMinutes = Math.round((showKms / 50) * 60) + 30;
 

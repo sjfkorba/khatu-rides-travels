@@ -46,6 +46,7 @@ type FareOption = {
   fareText: string;
   billedDistance: number;
   durationMinutes: number;
+  allowedKmsLimit?: number; // 👑 Injected for local mapping loops
 };
 
 type PopupData = {
@@ -57,6 +58,7 @@ type PopupData = {
   pickupDate: string;
   pickupTime: string;
   returnDate?: string;
+  returnTime?: string;
 };
 
 type SuccessReceipt = {
@@ -109,7 +111,6 @@ export default function HomePage() {
   const [selectedVehicleType, setSelectedVehicleType] = useState<VehicleType>("sedan");
   const [paymentSplitMode, setPaymentSplitMode] = useState<Record<string, "full" | "half">>({});
 
-  // Direct Booking States
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [showUserForm, setShowUserForm] = useState(false);
@@ -155,6 +156,44 @@ export default function HomePage() {
     return { date: `${dd}/${mm}/${yyyy}`, time: `${String(hrs).padStart(2, "0")}:${mins} ${ampm}` };
   };
 
+  const checkExtraHaltCondition = (): boolean => {
+    if (!popupData || popupData.bookingType !== "roundtrip" || !popupData.returnDate || !popupData.returnTime) {
+      return false;
+    }
+
+    try {
+      const pickupDateTime = new Date(`${popupData.pickupDate}T${popupData.pickupTime}`);
+      const currentOption = popupData.fareOptions.find(o => o.vehicleType === selectedVehicleType) || popupData.fareOptions[0];
+      const transitDurationMinutes = currentOption ? currentOption.durationMinutes : 180;
+      
+      const reachDestinationTime = new Date(pickupDateTime.getTime() + transitDurationMinutes * 60 * 1000);
+      const freeHaltLimitTime = new Date(reachDestinationTime.getTime() + 6 * 60 * 60 * 1000);
+      const customerReturnTime = new Date(`${popupData.returnDate}T${popupData.returnTime}`);
+
+      return customerReturnTime.getTime() > freeHaltLimitTime.getTime();
+    } catch (e) {
+      return false;
+    }
+  };
+
+  // 👑 RE-CALCULATES KILOMETERS CEILING dynamically for visual metadata badges
+  const getDynamicKmsLimitDisplay = (opt: FareOption): number => {
+    if (!popupData || popupData.bookingType !== "roundtrip" || !popupData.returnDate || !popupData.returnTime) {
+      return opt.billedDistance; 
+    }
+    try {
+      const start = new Date(`${popupData.pickupDate}T${popupData.pickupTime}`);
+      const end = new Date(`${popupData.returnDate}T${popupData.returnTime}`);
+      const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+      const days = Math.max(1, Math.ceil(hours / 24));
+      
+      const calculatedLimit = days * 250;
+      return calculatedLimit > opt.billedDistance ? calculatedLimit : opt.billedDistance;
+    } catch (e) {
+      return opt.billedDistance;
+    }
+  };
+
   const checkBookingMode = () => {
     if (!popupData) return { isOnlineAllowed: true, reason: "" };
     const today = new Date();
@@ -165,62 +204,48 @@ export default function HomePage() {
     if (isSameDay && (hours >= 22 || hours < 6)) {
       return {
         isOnlineAllowed: false,
-        reason: "Night slot booking ke liye direct call support active hai. Immediate vehicle allocation ke liye niche call desk choose karein.",
+        reason: "Night slot booking ke liye direct call support active hai. Immediate vehicle allocation ke liye call desk use karein.",
       };
     }
     return { isOnlineAllowed: true, reason: "" };
   };
 
-  const getWhatsappUrl = (option: FareOption) => {
-    const tripLabel = popupData?.serviceType === "local" ? "Local Package" : popupData?.bookingType === "roundtrip" ? "Round Trip" : "One Way";
-    const text = `*New Cab Enquiry - Khatu Rides*%0A%0A` +
-      `Trip Type: ${tripLabel}%0A` +
-      `Vehicle: ${option.vehicleLabel}%0A` +
-      `Pickup: ${popupData?.pickup}%0A` +
-      `Drop: ${popupData?.drop}%0A` +
-      `Date: ${convertToIndianDate(popupData?.pickupDate || "")}%0A` +
-      `Time: ${formatTimeToAMPM(popupData?.pickupTime || "")}%0A` +
-      `Fare Architecture: ${option.fareText}`;
-    return `https://wa.me/919244137353?text=${text}`;
-  };
+  const triggerQuickBooking = (from: string, to: string, routeDistance: number) => {
+    const now = new Date();
+    now.setHours(now.getHours() + 2);
+    const baseDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const baseTime = `${String(now.getHours()).padStart(2, "0")}:00`;
 
- const triggerQuickBooking = (from: string, to: string, routeDistance: number) => {
-  const now = new Date();
-  now.setHours(now.getHours() + 2);
-  const baseDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-  const baseTime = `${String(now.getHours()).padStart(2, "0")}:00`;
+    const vehicleKeys = Object.keys(VEHICLES) as VehicleType[];
 
-  const vehicleKeys = Object.keys(VEHICLES) as VehicleType[];
+    const fareOptions: FareOption[] = vehicleKeys.map((type) => {
+      const result = calculateFare({
+        distance: routeDistance,
+        vehicleType: type,
+        bookingType: "oneway",
+        serviceType: "outstation",
+        pickupDate: baseDate,
+        pickupTime: baseTime,
+      });
 
-  const fareOptions: FareOption[] = vehicleKeys.map((type) => {
-    // 👑 FIXED: Removed pickupLocation & dropLocation, added safe fallback timestamps
-    const result = calculateFare({
-      distance: routeDistance,
-      vehicleType: type,
-      bookingType: "oneway",
-      serviceType: "outstation",
-      pickupDate: baseDate,
-      pickupTime: baseTime,
+      return {
+        id: `quick-${type}`,
+        vehicleType: type,
+        vehicleLabel: VEHICLES[type].label,
+        vehicleImage: VEHICLES[type].image,
+        finalFare: result.finalFare,
+        strikeFare: result.strikeFare,
+        fareText: `₹${result.finalFare.toLocaleString("en-IN")}`,
+        billedDistance: result.billedDistance,
+        durationMinutes: result.durationMinutes,
+      };
     });
 
-    return {
-      id: `quick-${type}`,
-      vehicleType: type,
-      vehicleLabel: VEHICLES[type].label,
-      vehicleImage: VEHICLES[type].image,
-      finalFare: result.finalFare,
-      strikeFare: result.strikeFare,
-      fareText: `₹${result.finalFare.toLocaleString("en-IN")}`,
-      billedDistance: result.billedDistance,
-      durationMinutes: result.durationMinutes,
-    };
-  });
-
-  setPopupData({ fareOptions, pickup: from, drop: to, bookingType: "oneway", serviceType: "outstation", pickupDate: baseDate, pickupTime: baseTime });
-  setSelectedVehicleType("sedan");
-  setShowUserForm(false);
-  setShowPopup(true);
-};
+    setPopupData({ fareOptions, pickup: from, drop: to, bookingType: "oneway", serviceType: "outstation", pickupDate: baseDate, pickupTime: baseTime });
+    setSelectedVehicleType("sedan");
+    setShowUserForm(false);
+    setShowPopup(true);
+  };
 
   const handleOnlinePaymentCheckout = async (option: FareOption) => {
     if (!popupData) return;
@@ -317,15 +342,14 @@ export default function HomePage() {
     }
   };
 
-  // 👑 RESOLVED VARIABLING HOOKS: Made variables cleanly available for the complete file scope
   const selectedOption = popupData?.fareOptions.find((item) => item.vehicleType === selectedVehicleType);
-  const activeDiscountPercentage = selectedOption ? 20 : 20; // Hardcoded 20% system mapping
-  const discountCutAmount = selectedOption ? Math.round(selectedOption.finalFare * (activeDiscountPercentage / 100)) : 0;
   const totalDiscountedPrice = selectedOption ? selectedOption.finalFare : 0;
   const currentSelectedMode = selectedOption && paymentSplitMode[selectedOption.id] ? paymentSplitMode[selectedOption.id] : "full";
   const displayPayNowNumber = currentSelectedMode === "half" ? Math.round(totalDiscountedPrice / 2) : totalDiscountedPrice;
+  
   const reach = calculateReachDateTime(popupData?.pickupDate || "", popupData?.pickupTime || "", selectedOption?.durationMinutes || 0);
   const bookingStatus = popupData ? checkBookingMode() : { isOnlineAllowed: true, reason: "" };
+  const isMultiDayHaltTriggered = checkExtraHaltCondition();
 
   return (
     <>
@@ -333,7 +357,7 @@ export default function HomePage() {
 
       <main className="min-h-screen bg-slate-50 text-slate-900 pb-16 md:pb-0 font-sans">
         
-        {/* Top Header Section */}
+        {/* Navigation Header Block */}
         <header className="w-full bg-orange-600 text-white shadow-md select-none">
           <div className="bg-slate-950 py-1.5 px-4 text-[10px] font-black uppercase tracking-widest flex justify-between sm:px-8 text-orange-400">
             <span>⚡ STATE FLEET NETWORK</span>
@@ -361,7 +385,7 @@ export default function HomePage() {
 
         <ImageCarousel />
 
-        {/* Calculator Segment Layer */}
+        {/* Calculator Frame Wrapper */}
         <section ref={calculatorSectionRef} className="relative z-30 px-4 py-14 sm:py-20 overflow-hidden bg-slate-950">
           <div className="absolute inset-0 w-full h-full scale-105 opacity-40 blur-sm pointer-events-none">
             <img src="/banner6.png" alt="Route Backdrop Map" className="w-full h-full object-cover" />
@@ -381,7 +405,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Popular Routes Section */}
+        {/* Popular Routes */}
         <section className="mt-16 px-4 max-w-7xl mx-auto">
           <div className="text-center sm:text-left mb-6">
             <span className="text-[10px] font-black uppercase tracking-widest text-orange-600">Quick Selection</span>
@@ -403,11 +427,44 @@ export default function HomePage() {
           </div>
 
           <div className="grid gap-4 mt-3 sm:grid-cols-3">
-          ROUTES
+            {ROUTES[activeTab].map((route, index) => {
+              const sampleFare = calculateFare({
+                distance: route.km,
+                vehicleType: "sedan",
+                bookingType: "oneway",
+                serviceType: "outstation",
+                pickupDate: popupData?.pickupDate || new Date().toISOString().split("T")[0],
+                pickupTime: popupData?.pickupTime || "06:00",
+              });
+
+              return (
+                <div key={`${route.from}-${route.to}-${index}`} className="rounded-2xl border border-slate-200 bg-white p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition">
+                  <div>
+                    <span className="inline-block rounded-md bg-orange-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-orange-700">
+                      {route.tag}
+                    </span>
+                    <h3 className="mt-2 text-base font-bold text-slate-900">{route.from.split(",")[0]} to {route.to.split(",")[0]}</h3>
+                    <p className="text-xs text-slate-500 mt-1">Fixed one-way price including state toll guidelines.</p>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <div>
+                      <span className="text-[9px] block text-slate-400 font-bold uppercase tracking-wider">Sedan From</span>
+                      <span className="text-lg font-black text-slate-900">₹{sampleFare.finalFare.toLocaleString("en-IN")}</span>
+                    </div>
+                    <button
+                      onClick={() => triggerQuickBooking(route.from, route.to, route.km)}
+                      className="rounded-xl bg-slate-950 px-4 py-2 text-xs font-bold text-white shadow hover:bg-orange-600 transition"
+                    >
+                      Book Now
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
 
-        {/* Fleet Services Grid */}
+        {/* Fleet Premium Services */}
         <section className="mt-16 bg-white py-12 px-4 border-y border-slate-200">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-8">
@@ -425,28 +482,6 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
-          </div>
-        </section>
-
-        {/* Why Choose Us */}
-        <section className="mt-16 px-4 max-w-7xl mx-auto">
-          <div className="text-center mb-8">
-            <span className="text-[10px] font-black uppercase tracking-widest text-orange-600">Core Value</span>
-            <h2 className="text-2xl font-black text-slate-950 mt-1">Why Choose Khatu Rides</h2>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-4 text-center">
-            {[
-              { title: "Verified Drivers", desc: "Sare drivers background checked aur professionally trained hote hain.", icon: "👮‍♂️" },
-              { title: "Transparent Billing", desc: "No hidden costs. Jo screen par dikhega, wahi final payment hoga.", icon: "💵" },
-              { title: "Clean & Sanitized Cabs", desc: "Har ride se pehle strict clean checks and fresh air guidelines.", icon: "✨" },
-              { title: "24x7 Custom Support", desc: "Emergency manual route calls aur direct night support operational.", icon: "📞" }
-            ].map((item, idx) => (
-              <div key={idx} className="rounded-2xl border border-slate-200 p-5 bg-white shadow-xs">
-                <div className="text-3xl mb-2">{item.icon}</div>
-                <h4 className="text-sm font-bold text-slate-900">{item.title}</h4>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
           </div>
         </section>
 
@@ -498,11 +533,16 @@ export default function HomePage() {
         </div>
       </main>
 
-      {/* Adaptive Layout Popup Drawer Node */}
+      {/* Viewport Adaptive Popup Drawer Node */}
       <AnimatePresence>
         {showPopup && popupData && (
           <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-950/60 p-2 sm:p-4 backdrop-blur-xs overflow-y-auto">
-            <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 30, opacity: 0 }} className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden my-auto flex flex-col max-h-[95vh] text-left">
+            <motion.div 
+              initial={{ y: 30, opacity: 0 }} 
+              animate={{ y: 0, opacity: 1 }} 
+              exit={{ y: 30, opacity: 0 }} 
+              className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden my-auto flex flex-col max-h-[95vh] text-left"
+            >
               
               {/* Summary Header Strip */}
               <div className="bg-slate-100 px-5 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-slate-700">
@@ -528,58 +568,93 @@ export default function HomePage() {
                     {popupData.fareOptions.map((opt) => {
                       if (!["sedan", "ertiga", "crysta"].includes(opt.vehicleType)) return null;
                       
-                      const fallbackStrike = Math.round(opt.finalFare * 1.25);
+                      const fallbackStrike = Math.round(opt.finalFare * 1.33);
                       const displayStrikePrice = opt.strikeFare || fallbackStrike;
 
+                      // 👑 EVALUATES DYNAMIC KM THRESHOLDS FOR LABELS
+                      const dynamicLimitKms = getDynamicKmsLimitDisplay(opt);
+                      
+                      // 👑 MAPPED EXTRA RATES PER KM BASED ON VEHICLE MATRIX
+                      const extraRatePerKm = opt.vehicleType === "sedan" ? 15 : opt.vehicleType === "ertiga" ? 20 : 25;
+
                       return (
-                        <div key={opt.id} className="border border-slate-200 rounded-xl p-4 sm:p-5 flex flex-col md:flex-row items-center justify-between gap-4 bg-white shadow-xs hover:shadow-md transition">
+                        <div key={opt.id} className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-xs hover:shadow-md transition flex flex-col">
                           
-                          {/* Left Details Block */}
-                          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full md:w-auto text-center sm:text-left">
-                            <img src={VEHICLES[opt.vehicleType]?.image} alt={opt.vehicleLabel} className="w-32 h-20 sm:w-36 sm:h-24 object-contain flex-shrink-0 mx-auto sm:mx-0" />
-                            <div className="w-full">
-                              <h4 className="text-lg font-black text-slate-900">{opt.vehicleLabel}</h4>
-                              <p className="text-xs text-slate-400 mt-0.5 font-medium">or equivalent | {opt.vehicleType === "sedan" ? "4" : "6"}+1 Seater AC Cab</p>
-                              <div className="mt-3 flex flex-wrap gap-1.5 justify-center sm:justify-start text-[10px] text-slate-500 font-bold">
-                                <span className="bg-slate-100 border border-slate-200/50 px-2 py-0.5 rounded">👤 Allowance Included</span>
-                                <span className="bg-slate-100 border border-slate-200/50 px-2 py-0.5 rounded">📦 {opt.billedDistance} kms limit</span>
+                          {/* Inner Content Grid Block */}
+                          <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                            
+                            {/* Left Panel Meta Details Segment */}
+                            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full sm:w-auto text-center sm:text-left">
+                              <img src={VEHICLES[opt.vehicleType]?.image} alt={opt.vehicleLabel} className="w-32 h-20 sm:w-36 sm:h-24 object-contain flex-shrink-0 mx-auto sm:mx-0" />
+                              <div>
+                                <h4 className="text-lg font-black text-slate-900">{opt.vehicleLabel}</h4>
+                                <p className="text-xs text-slate-400 mt-0.5 font-medium">or equivalent | {opt.vehicleType === "sedan" ? "4" : "6"}+1 Seater AC Cab</p>
+                                
+                                {/* 👑 FIXED METADATA BADGES: Now shows clear dynamic dynamicLimitKms and Extra Km charge rates */}
+                                <div className="mt-2.5 flex flex-wrap gap-1.5 justify-center sm:justify-start text-[10px] font-bold">
+                                  <span className="bg-slate-100 text-slate-500 border border-slate-200/50 px-2 py-0.5 rounded">👤 Allowance Included</span>
+                                  <span className="bg-orange-50 text-orange-700 border border-orange-200/60 px-2 py-0.5 rounded animate-pulse">
+                                    📦 Kms Limit: {dynamicLimitKms} KM
+                                  </span>
+                                  <span className="bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-2 py-0.5 rounded">
+                                    ⚡ Extra Run: ₹{extraRatePerKm}/KM
+                                  </span>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                          
-                          {/* Right Price Breakdown Block */}
-                          <div className="text-center md:text-right flex flex-col items-center md:items-end justify-center min-w-full md:min-w-[220px] border-t pt-3 md:pt-0 md:border-none border-slate-100 w-full md:w-auto">
-                            <div className="flex items-center gap-1.5 justify-center md:justify-end mb-1">
-                              <span className="text-[11px] font-bold text-slate-400 uppercase">Actual Fare:</span>
-                              <span className="text-sm font-bold text-slate-400 line-through">₹{displayStrikePrice.toLocaleString("en-IN")}</span>
-                              <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">-20% FLAT</span>
+                            
+                            {/* Right Side Price Breakdown */}
+                            <div className="text-center sm:text-right flex flex-col items-center sm:items-end justify-center min-w-full sm:min-w-[200px] border-t pt-3 sm:pt-0 sm:border-none border-slate-100 w-full sm:w-auto">
+                              <div className="flex items-center gap-1.5 justify-center sm:justify-end mb-1">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">Actual Fare:</span>
+                                <span className="text-xs font-bold text-slate-400 line-through">₹{displayStrikePrice.toLocaleString("en-IN")}</span>
+                                <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">-25% FLAT</span>
+                              </div>
+                              
+                              <div className="mb-2 text-center sm:text-right">
+                                <span className="text-[10px] font-black text-orange-600 uppercase block tracking-wider">After Discount Price:</span>
+                                <div className="text-2xl font-black text-slate-950 tracking-tight">₹{opt.finalFare.toLocaleString("en-IN")}</div>
+                              </div>
+                              
+                              <span className="text-[10px] text-slate-400 font-semibold block mb-2">Includes dynamic toll policies</span>
+                              
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedVehicleType(opt.vehicleType);
+                                  setShowUserForm(true);
+                                }}
+                                className="bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-widest py-3 px-6 rounded-xl shadow-md transition-all w-full sm:w-auto min-w-[140px]"
+                              >
+                                Select Car
+                              </button>
                             </div>
-                            
-                            <div className="bg-orange-50 md:bg-transparent px-4 py-2 md:p-0 rounded-xl w-full md:w-auto block border border-orange-100 md:border-none mb-2 md:mb-0">
-                              <span className="text-[11px] md:text-[9px] font-black text-orange-600 uppercase md:block block tracking-wider">After Discount Price:</span>
-                              <div className="text-2xl font-black text-slate-950 tracking-tight">₹{opt.finalFare.toLocaleString("en-IN")}</div>
-                            </div>
-                            
-                            <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">Includes dynamic toll policies</span>
-                            
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedVehicleType(opt.vehicleType);
-                                setShowUserForm(true);
-                              }}
-                              className="mt-3 bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-widest py-3 rounded-xl shadow-md transition-all w-full md:w-auto min-w-[150px]"
-                            >
-                              Select Car
-                            </button>
+
                           </div>
+
+                          {/* DYNAMIC MULTI-DAY NOTICE RIBBON MATRIX */}
+                          {isMultiDayHaltTriggered ? (
+                            <div className="w-full bg-red-600 border-t border-red-700/50 py-2.5 px-4 text-center sm:text-left flex items-center justify-center sm:justify-start gap-1.5 shadow-inner">
+                              <span className="text-xs animate-pulse">⚠️</span>
+                              <p className="text-[10px] sm:text-[11px] font-extrabold text-white uppercase tracking-wide">
+                                MULTI-DAY TRIP DETECTED: <span className="text-yellow-300">2 DAYS & 1 NIGHT CHARGE WILL BE PAID EXTRA BY CUSTOMER</span> AS PER ACTUAL RUN.
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="w-full bg-red-600 border-t border-red-700/50 py-2 px-4 text-center sm:text-left flex items-center justify-center sm:justify-start gap-1.5 shadow-inner">
+                              <span className="text-[10px] sm:text-[11px] text-white">⚠️</span>
+                              <p className="text-[10px] sm:text-[11px] font-extrabold text-white uppercase tracking-wide">
+                                100% PAYABLE AMOUNT ON SCREEN. <span className="text-yellow-300">NO ANY HIDDEN CHARGES</span>
+                              </p>
+                            </div>
+                          )}
 
                         </div>
                       );
                     })}
                   </div>
                 ) : (
-                  /* Secure Passenger Booking input form */
+                  /* Checkout form component section sheets */
                   <div className="max-w-md mx-auto bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-md text-left w-full">
                     <div className="text-center mb-5">
                       <span className="text-[10px] font-black uppercase tracking-wider text-orange-600 bg-orange-50 px-2.5 py-1 rounded">Secure Form</span>
@@ -621,6 +696,14 @@ export default function HomePage() {
                               Full Pay
                             </button>
                           </div>
+                          
+                          {/* Inside form alert matrix */}
+                          {isMultiDayHaltTriggered && (
+                            <div className="mt-3 bg-red-50 border border-red-200 text-red-700 p-2.5 rounded-lg text-[10px] font-bold">
+                              ℹ️ Note: Is booking me Multi-day trip alert lag chuka hai. Extra run allowance status onboarding ke waqt set hoga.
+                            </div>
+                          )}
+
                           <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-200/60">
                             <div>
                               <span className="text-[10px] font-black text-slate-400 block uppercase">Payable Now</span>
@@ -675,9 +758,11 @@ export default function HomePage() {
                     <span>Amount Paid ({successReceipt.paymentMode}):</span> <span>₹{successReceipt.amount.toLocaleString("en-IN")}</span>
                   </div>
                 </div>
-                <button type="button" onClick={() => setSuccessReceipt(null)} className="w-full h-11 bg-slate-950 text-xs font-black uppercase tracking-wider text-white rounded-xl shadow">
-                  Close Panel
-                </button>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setSuccessReceipt(null)} className="w-full h-11 bg-slate-950 text-xs font-black uppercase tracking-wider text-white rounded-xl shadow">
+                    Close Panel
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>
