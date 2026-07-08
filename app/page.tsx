@@ -46,7 +46,8 @@ type FareOption = {
   fareText: string;
   billedDistance: number;
   durationMinutes: number;
-  allowedKmsLimit?: number; // 👑 Injected for local mapping loops
+  allowedKmsLimit?: number; 
+  discountPercent?: number;
 };
 
 type PopupData = {
@@ -176,7 +177,6 @@ export default function HomePage() {
     }
   };
 
-  // 👑 RE-CALCULATES KILOMETERS CEILING dynamically for visual metadata badges
   const getDynamicKmsLimitDisplay = (opt: FareOption): number => {
     if (!popupData || popupData.bookingType !== "roundtrip" || !popupData.returnDate || !popupData.returnTime) {
       return opt.billedDistance; 
@@ -238,6 +238,7 @@ export default function HomePage() {
         fareText: `₹${result.finalFare.toLocaleString("en-IN")}`,
         billedDistance: result.billedDistance,
         durationMinutes: result.durationMinutes,
+        discountPercent: result.discountPercent,
       };
     });
 
@@ -342,6 +343,29 @@ export default function HomePage() {
     }
   };
 
+  const handleWhatsAppManualRedirect = (option: FareOption) => {
+    if (!popupData) return;
+
+    const textPayload = `Hello Khatu Rides Travels Co., 
+
+I would like to instantly book an outstation cab package. The verified route details are listed below:
+
+*ROUTE MANIFEST CARD:*
+• Pickup Location : ${popupData.pickup}
+• Drop Destination: ${popupData.drop}
+• Vehicle Segment : ${option.vehicleLabel}
+• Trip Configuration : ${popupData.bookingType.toUpperCase()}
+• Scheduled Timing: ${convertToIndianDate(popupData.pickupDate)} at ${formatTimeToAMPM(popupData.pickupTime)}
+
+*COMMERCIAL PRICING SHEET:*
+• Actual Net Fare (After Discount): Rs. ${option.finalFare.toLocaleString("en-IN")}.00 (All-Inclusive)
+
+Please register this vehicle booking manually in the control desk panel and assign the driver details shortly. Thank you!`;
+
+    const cleanFormattedUrl = `https://wa.me/919244137353?text=${encodeURIComponent(textPayload)}`;
+    window.open(cleanFormattedUrl, "_blank");
+  };
+
   const selectedOption = popupData?.fareOptions.find((item) => item.vehicleType === selectedVehicleType);
   const totalDiscountedPrice = selectedOption ? selectedOption.finalFare : 0;
   const currentSelectedMode = selectedOption && paymentSplitMode[selectedOption.id] ? paymentSplitMode[selectedOption.id] : "full";
@@ -356,7 +380,6 @@ export default function HomePage() {
       <Script id="razorpay-checkout-js" src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
 
       <main className="min-h-screen bg-slate-50 text-slate-900 pb-16 md:pb-0 font-sans">
-        
         {/* Navigation Header Block */}
         <header className="w-full bg-orange-600 text-white shadow-md select-none">
           <div className="bg-slate-950 py-1.5 px-4 text-[10px] font-black uppercase tracking-widest flex justify-between sm:px-8 text-orange-400">
@@ -385,7 +408,6 @@ export default function HomePage() {
 
         <ImageCarousel />
 
-        {/* Calculator Frame Wrapper */}
         <section ref={calculatorSectionRef} className="relative z-30 px-4 py-14 sm:py-20 overflow-hidden bg-slate-950">
           <div className="absolute inset-0 w-full h-full scale-105 opacity-40 blur-sm pointer-events-none">
             <img src="/banner6.png" alt="Route Backdrop Map" className="w-full h-full object-cover" />
@@ -543,7 +565,6 @@ export default function HomePage() {
               exit={{ y: 30, opacity: 0 }} 
               className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden my-auto flex flex-col max-h-[95vh] text-left"
             >
-              
               {/* Summary Header Strip */}
               <div className="bg-slate-100 px-5 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-slate-700">
                 <div>Route: <span className="text-slate-950 font-black text-sm block sm:inline">{popupData.pickup.split(",")[0]} - {popupData.drop.split(",")[0]}</span></div>
@@ -570,27 +591,21 @@ export default function HomePage() {
                       
                       const fallbackStrike = Math.round(opt.finalFare * 1.33);
                       const displayStrikePrice = opt.strikeFare || fallbackStrike;
-
-                      // 👑 EVALUATES DYNAMIC KM THRESHOLDS FOR LABELS
                       const dynamicLimitKms = getDynamicKmsLimitDisplay(opt);
-                      
-                      // 👑 MAPPED EXTRA RATES PER KM BASED ON VEHICLE MATRIX
                       const extraRatePerKm = opt.vehicleType === "sedan" ? 15 : opt.vehicleType === "ertiga" ? 20 : 25;
+                      
+                      // 👑 FIXED DYNAMIC DISCOUNT DISPLAY: Fetches matching percentage dynamically from the calculation engine payload
+                      const currentDiscountRate = opt.discountPercent || (popupData.bookingType === "oneway" && opt.billedDistance > 500 ? 10 : 25);
 
                       return (
                         <div key={opt.id} className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-xs hover:shadow-md transition flex flex-col">
-                          
-                          {/* Inner Content Grid Block */}
                           <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-                            
-                            {/* Left Panel Meta Details Segment */}
                             <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full sm:w-auto text-center sm:text-left">
                               <img src={VEHICLES[opt.vehicleType]?.image} alt={opt.vehicleLabel} className="w-32 h-20 sm:w-36 sm:h-24 object-contain flex-shrink-0 mx-auto sm:mx-0" />
                               <div>
                                 <h4 className="text-lg font-black text-slate-900">{opt.vehicleLabel}</h4>
                                 <p className="text-xs text-slate-400 mt-0.5 font-medium">or equivalent | {opt.vehicleType === "sedan" ? "4" : "6"}+1 Seater AC Cab</p>
                                 
-                                {/* 👑 FIXED METADATA BADGES: Now shows clear dynamic dynamicLimitKms and Extra Km charge rates */}
                                 <div className="mt-2.5 flex flex-wrap gap-1.5 justify-center sm:justify-start text-[10px] font-bold">
                                   <span className="bg-slate-100 text-slate-500 border border-slate-200/50 px-2 py-0.5 rounded">👤 Allowance Included</span>
                                   <span className="bg-orange-50 text-orange-700 border border-orange-200/60 px-2 py-0.5 rounded animate-pulse">
@@ -608,7 +623,8 @@ export default function HomePage() {
                               <div className="flex items-center gap-1.5 justify-center sm:justify-end mb-1">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase">Actual Fare:</span>
                                 <span className="text-xs font-bold text-slate-400 line-through">₹{displayStrikePrice.toLocaleString("en-IN")}</span>
-                                <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">-25% FLAT</span>
+                                {/* 👑 FIXED BADGE LOGIC: Explicit dynamic string mapping applied */}
+                                <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">-{currentDiscountRate}% DISCOUNT</span>
                               </div>
                               
                               <div className="mb-2 text-center sm:text-right">
@@ -616,23 +632,34 @@ export default function HomePage() {
                                 <div className="text-2xl font-black text-slate-950 tracking-tight">₹{opt.finalFare.toLocaleString("en-IN")}</div>
                               </div>
                               
-                              <span className="text-[10px] text-slate-400 font-semibold block mb-2">Includes dynamic toll policies</span>
+                              <span className="text-[10px] text-slate-400 font-semibold block mb-3">Includes dynamic toll policies</span>
                               
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSelectedVehicleType(opt.vehicleType);
-                                  setShowUserForm(true);
-                                }}
-                                className="bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-widest py-3 px-6 rounded-xl shadow-md transition-all w-full sm:w-auto min-w-[140px]"
-                              >
-                                Select Car
-                              </button>
-                            </div>
+                              {/* 👑 RE-ENGINEERED TRIPLE TRIGGER GRID CARD INJECTIONS */}
+                              <div className="flex flex-col gap-2 w-full sm:w-auto min-w-[200px]">
+                                {/* Button 1: Swapped text to Continue for Online Booking */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedVehicleType(opt.vehicleType);
+                                    setShowUserForm(true);
+                                  }}
+                                  className="bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-widest py-3 px-4 rounded-xl shadow-md transition-all text-center w-full"
+                                >
+                                  Continue for Online Booking
+                                </button>
 
+                                {/* Button 2: Manual Book On WhatsApp added directly inside card layout view */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleWhatsAppManualRedirect(opt)}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-widest py-3 px-4 rounded-xl shadow-sm transition-all text-center w-full flex items-center justify-center gap-1.5"
+                                >
+                                  💬 Book On WhatsApp
+                                </button>
+                              </div>
+                            </div>
                           </div>
 
-                          {/* DYNAMIC MULTI-DAY NOTICE RIBBON MATRIX */}
                           {isMultiDayHaltTriggered ? (
                             <div className="w-full bg-red-600 border-t border-red-700/50 py-2.5 px-4 text-center sm:text-left flex items-center justify-center sm:justify-start gap-1.5 shadow-inner">
                               <span className="text-xs animate-pulse">⚠️</span>
@@ -648,17 +675,15 @@ export default function HomePage() {
                               </p>
                             </div>
                           )}
-
                         </div>
                       );
                     })}
                   </div>
                 ) : (
-                  /* Checkout form component section sheets */
                   <div className="max-w-md mx-auto bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-md text-left w-full">
                     <div className="text-center mb-5">
                       <span className="text-[10px] font-black uppercase tracking-wider text-orange-600 bg-orange-50 px-2.5 py-1 rounded">Secure Form</span>
-                      <h4 className="text-base font-black text-slate-900 mt-2">Enter Details to Trigger Payment</h4>
+                      <h4 className="text-base font-black text-slate-900 mt-2">Enter Details to Complete Booking</h4>
                     </div>
 
                     <div className="space-y-4">
@@ -697,7 +722,6 @@ export default function HomePage() {
                             </button>
                           </div>
                           
-                          {/* Inside form alert matrix */}
                           {isMultiDayHaltTriggered && (
                             <div className="mt-3 bg-red-50 border border-red-200 text-red-700 p-2.5 rounded-lg text-[10px] font-bold">
                               ℹ️ Note: Is booking me Multi-day trip alert lag chuka hai. Extra run allowance status onboarding ke waqt set hoga.
@@ -714,6 +738,7 @@ export default function HomePage() {
                         </div>
                       )}
 
+                      {/* 👑 SCREEN 2 FORM BUTTONS: Only contains single Book Online trigger (WhatsApp button completely removed here) */}
                       <div className="grid grid-cols-2 gap-2 pt-2">
                         <button type="button" onClick={() => setShowUserForm(false)} className="w-full border border-slate-300 bg-slate-100 text-slate-700 font-bold text-xs uppercase py-3.5 rounded-xl transition">
                           ↩ Back
@@ -724,9 +749,10 @@ export default function HomePage() {
                           disabled={paymentLoadingId !== null}
                           className="w-full bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-widest py-3.5 rounded-xl transition shadow-lg shadow-orange-600/20 disabled:opacity-50"
                         >
-                          {paymentLoadingId ? "Syncing..." : "Pay Secure"}
+                          {paymentLoadingId ? "Syncing..." : "Book Online"}
                         </button>
                       </div>
+
                     </div>
                   </div>
                 )}

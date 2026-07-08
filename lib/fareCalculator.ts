@@ -68,7 +68,9 @@ export function calculateFare({
   returnTime?: string;
 }): CalculateFareResult {
   const baseDistance = distance > 0 ? Math.round(distance) : 0;
-  const discountPercent = 25; // Master Flat 25% Discount Setup
+  
+  // 👑 DYNAMIC DISCOUNT ENGINE: 500 KM se zyada hone par 18%, baaki sab me standard flat 25%
+  const discountPercent = baseDistance > 500 ? 10 : 25;
 
   // Local Packages Strategy
   if (serviceType === "local") {
@@ -84,7 +86,7 @@ export function calculateFare({
       rateUsed: pack.rate,
       strikeFare: pack.strikeFare,
       finalFare: pack.finalFare,
-      discountPercent,
+      discountPercent: 25, // Local slots follow standard marketing structure
       durationMinutes: 480,
       haltCharges: 0
     };
@@ -108,7 +110,7 @@ export function calculateFare({
   let currentMultiplier = 1.00;
   let haltCharges = 0;
   
-  // 👑 Purane code ki tarah calculation standard expanded buffer distance (showKms) par hi chalegi
+  // Calculation standard expanded buffer distance (showKms) par hi chalegi
   let calculationDistance = showKms; 
 
   // =========================================================================
@@ -118,12 +120,10 @@ export function calculateFare({
     currentMultiplier = 1.55; 
 
     /* 👑 FIXED CAP ON SHOWKMS:
-       Aapke standard framework ke mutabik calculation showKms par hi ho rahi hai,
-       lekin agar final showKms 150 KM se kam aa raha hai (jaise Bilaspur-Raipur total 146 KM bana),
-       toh fare ko extra bhagne se rokne ke liye hum dynamic multiplier tight kar rahe hain.
+       Calculation showKms par hi ho rahi hai, lekin agar final showKms 150 KM se kam aa raha hai,
+       toh fare ko extra bhagne se rokne ke liye multipliers ko bracket lock kiya hai.
     */
     if (showKms < 150) {
-      // 1.55 multiplier se price upar ja rahi thi, isko 1.25 to 1.28 ke bracket me lane se ₹500-600 exact drop ho jayega
       currentMultiplier = 1.55; 
 
       // Per KM standard base boundaries lock
@@ -152,15 +152,15 @@ export function calculateFare({
     }
   }
 
-  // Final math execution flow based entirely on your target calculation architecture
+  // Final math execution flow based entirely on target calculation architecture
   const calculatedBase = calculationDistance * ratePerKm;
   const baseWithMultiplier = calculatedBase * currentMultiplier;
 
-  // Final Fare core calculation engine constant re-tracked
+  // Final Fare core calculation engine constant re-tracked with dynamic discount
   const dynamicFinalFareValue = baseWithMultiplier * (1 - discountPercent / 100);
   const finalFareWithoutHalt = psychologicalPrice(dynamicFinalFareValue);
   
-  // Backward Trace mathematical equation mapping to ensure perfect 25% alignment on UI screen
+  // Backward Trace mathematical equation mapping to ensure perfect dynamic alignment on UI screen
   const computedStrikeFare = Math.round(finalFareWithoutHalt / (1 - discountPercent / 100));
 
   const absoluteFinalFare = finalFareWithoutHalt + haltCharges;
@@ -174,7 +174,7 @@ export function calculateFare({
     rateUsed: ratePerKm,
     strikeFare: absoluteStrikeFare,
     finalFare: absoluteFinalFare,
-    discountPercent, 
+    discountPercent, // 👑 Pass back dynamically updated percentage object to the state layer
     durationMinutes,
     haltCharges
   };
