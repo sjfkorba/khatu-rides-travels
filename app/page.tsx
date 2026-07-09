@@ -4,6 +4,7 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import Script from "next/script";
 import { AnimatePresence, motion } from "framer-motion";
+import SakhaBot from "@/components/SakhaBot";
 import FareCalculator from "@/components/FareCalculator";
 import ImageCarousel from "@/components/ImageCarousel";
 import {
@@ -794,6 +795,9 @@ Please register this vehicle booking manually in the control desk panel and assi
           </div>
         )}
       </AnimatePresence>
+      {/* Sakha Floating Automated AI Assistant Injector */}
+    <SakhaBot />
     </>
-  );
+  
+);
 }
