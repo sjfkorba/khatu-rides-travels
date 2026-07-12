@@ -1,5 +1,12 @@
 // lib/fareCalculator.ts
 
+/**
+ * =========================================================================
+ * 👑 VEHICLE FLEET CONFIGURATION INTERFACE
+ * =========================================================================
+ * FUNDA: Yeh interface define karta hai ki har gadi ke segment me kya parameters hone chahiye.
+ * ISSE KYA HOGA: System strictly typesafety maintain karega taaki image aur rates galat mapping na hon.
+ */
 export interface VehicleConfig {
   label: string;
   image: string;
@@ -7,26 +14,33 @@ export interface VehicleConfig {
   longRatePerKm: number;
 }
 
-export const VEHICLES = {
+/**
+ * =========================================================================
+ * 👑 GLOBAL FLEET PRICE MATRIX (COMMERCIAL PER-KM RATES)
+ * =========================================================================
+ * FUNDA: Khatu Rides Travels Co. ka official base rate aur long-distance rate sheet hai.
+ * ISSE KYA HOGA: Sedan, Ertiga aur Crysta ki base pricing yahin se multi-ply hoke pure system me travel karegi.
+ */
+export const VEHICLES: Record<string, VehicleConfig> = {
   sedan: {
     label: "Maruti Suzuki Dzire",
     image: "/dezire.png",
     baseRatePerKm: 15,
-    longRatePerKm: 15,
+    longRatePerKm: 12,
   },
   ertiga: {
     label: "Maruti Suzuki Ertiga (MUV)",
     image: "/ertiga.png",
     baseRatePerKm: 18, 
-    longRatePerKm: 20, 
+    longRatePerKm: 13, 
   },
   crysta: {
     label: "Toyota Innova Crysta (Premium)",
     image: "/crysta.png",
     baseRatePerKm: 22, 
-    longRatePerKm: 24, 
+    longRatePerKm: 18, 
   },
-} as const;
+};
 
 export type VehicleType = keyof typeof VEHICLES;
 export type BookingType = "oneway" | "roundtrip";
@@ -41,13 +55,27 @@ export type CalculateFareResult = {
   discountPercent: number;
   durationMinutes: number;
   haltCharges: number;
+  autoCorrectedService: ServiceType;
 };
 
+/**
+ * =========================================================================
+ * 👑 PSYCHOLOGICAL PRICING ALGORITHM (MARKETING TRICK)
+ * =========================================================================
+ * FUNDA: Yeh pricing engine har final calculated amount ko nearest 50 me round karke 1 rupaya kam kar deta hai.
+ * ISSE KYA HOGA: conversion rate maximum milta hai (e.g. ₹3999 instead of ₹4020).
+ */
 export function psychologicalPrice(value: number) {
   const rounded = Math.round(value / 50) * 50;
   return Math.max(rounded - 1, 0);
 }
 
+/**
+ * =========================================================================
+ * 👑 THE MASTER FARE CALCULATOR ENGINE
+ * =========================================================================
+ * FUNDA: Khatu Rides Travels Co. ka core mathematical logic sheet.
+ */
 export function calculateFare({
   distance,
   vehicleType,
@@ -69,102 +97,157 @@ export function calculateFare({
 }): CalculateFareResult {
   const baseDistance = distance > 0 ? Math.round(distance) : 0;
   
-  // 👑 DYNAMIC DISCOUNT ENGINE: 500 KM se zyada hone par 18%, baaki sab me standard flat 25%
-  const discountPercent = baseDistance > 500 ? 10 : 25;
+  /**
+   * =========================================================================
+   * 👑 FUNDA 1: AUTO-SERVICE TYPE CORRECTOR MACHINE
+   * =========================================================================
+   * FUNDA: Distance ke base par service type ko auto-correct karta hai.
+   * ISSE KYA HOGA: Revenue loss bilkul 0% ho jayega agar koi wrong package choose karega.
+   */
+  let finalServiceType = serviceType;
+  if (baseDistance > 80 && serviceType === "local") {
+    finalServiceType = "outstation";
+  } else if (baseDistance <= 40 && baseDistance > 0 && serviceType === "outstation") {
+    finalServiceType = "local";
+  }
 
-  // Local Packages Strategy
-  if (serviceType === "local") {
-    const localPackages = {
-      sedan: { finalFare: 1899, strikeFare: 2532, rate: 15 },
-      ertiga: { finalFare: 2499, strikeFare: 3332, rate: 20 },
-      crysta: { finalFare: 3299, strikeFare: 4399, rate: 22 },
+  // Local Package fallback allocation sheet
+  if (finalServiceType === "local") {
+    const localPackages: Record<string, { finalFare: number; strikeFare: number; rate: number }> = {
+      sedan: { finalFare: 1899, strikeFare: 1899, rate: 15 },
+      ertiga: { finalFare: 2499, strikeFare: 2499, rate: 20 },
+      crysta: { finalFare: 3299, strikeFare: 3299, rate: 22 },
     };
     const pack = localPackages[vehicleType];
     return {
       actualDistance: baseDistance || 80,
       billedDistance: 80,
       rateUsed: pack.rate,
-      strikeFare: pack.strikeFare,
+      strikeFare: pack.finalFare,
       finalFare: pack.finalFare,
-      discountPercent: 25, // Local slots follow standard marketing structure
+      discountPercent: 0,
       durationMinutes: 480,
-      haltCharges: 0
+      haltCharges: 0,
+      autoCorrectedService: "local"
     };
   }
 
-  // Dynamic showKms buffer expansion setup (116 + 30 = 146 KM dynamic block hit)
+  // Short lead check buffer lock bypass (<500 KMs follows absolute true google tracking)
   let showKms = baseDistance;
-  if (baseDistance <= 100) {
-    showKms = baseDistance + 20;
-  } else if (baseDistance <= 250) {
-    showKms = baseDistance + 30;
-  } else {
-    showKms = baseDistance + 50;
+  if (baseDistance > 500) {
+    showKms = baseDistance + 50; 
   }
 
+  /**
+   * =========================================================================
+   * 👑 PER-KM COMMERCIAL TIER SELECTOR & LONG DISTANCE FLUCTUATION RATE TIER
+   * =========================================================================
+   * FUNDA: Route ki depth check karke correct per-kilometer price map ki jati hai.
+   */
   const isLongDistance = baseDistance > 150;
+  const isMegaOutstation = baseDistance > 500;
+  
   let ratePerKm = isLongDistance 
     ? VEHICLES[vehicleType].longRatePerKm 
     : VEHICLES[vehicleType].baseRatePerKm;
 
+  if (isMegaOutstation) {
+    ratePerKm += (vehicleType === "sedan" ? 1 : vehicleType === "ertiga" ? 4 : 5);
+  }
+
   let currentMultiplier = 1.00;
   let haltCharges = 0;
-  
-  // Calculation standard expanded buffer distance (showKms) par hi chalegi
-  let calculationDistance = showKms; 
 
-  // =========================================================================
-  // 👑 ONE WAY PRICING CONTROL BASED ON SHOWKMS (146 KM BRACKET CONTROL)
-  // =========================================================================
+  /**
+   * =========================================================================
+   * 👑 ONE WAY PRICING CONTROL WITH NEW CUSTOM MULTIPLIER TIER SLABS
+   * =========================================================================
+   * FUNDA: Oneway route configuration settings based entirely on base distance ranges.
+   * ISSE KYA HOGA:
+   * - 500 KM se 700 KM ke long range corridors par highly attractive multiplier = 1.15 apply hoga.
+   * - 80 KM se 200 KM ke beech short lead drop runs par premium protection multiplier = 1.85 register hoga.
+   * - Baki sab fallback defaults standard 1.85 multiplier layer ko lock rakhenge.
+   */
   if (bookingType === "oneway") {
-    currentMultiplier = 1.55; 
-
-    /* 👑 FIXED CAP ON SHOWKMS:
-       Calculation showKms par hi ho rahi hai, lekin agar final showKms 150 KM se kam aa raha hai,
-       toh fare ko extra bhagne se rokne ke liye multipliers ko bracket lock kiya hai.
-    */
-    if (showKms < 150) {
-      currentMultiplier = 1.55; 
-
-      // Per KM standard base boundaries lock
-      if (vehicleType === "sedan") ratePerKm = 15;
-      if (vehicleType === "ertiga") ratePerKm = 20; 
-      if (vehicleType === "crysta") ratePerKm = 22;
+    if (baseDistance > 500 && baseDistance < 700) {
+      currentMultiplier = 1.15; 
+    } else if (baseDistance > 90 && baseDistance < 200) {
+      currentMultiplier = 1.25;
+    } else if (baseDistance < 80){
+      currentMultiplier = 1.35;
+    }
+    else {
+      currentMultiplier = 1.85; 
     }
 
-  // =========================================================================
-  // 👑 ROUND TRIP PRICING CONTROL
-  // =========================================================================
-  } else if (bookingType === "roundtrip") {
-    currentMultiplier = 2.80; 
+    // Tier 1 Corridor Filter: Short Lead Corridor (<200 KMs)
+    if (showKms > 80 && showKms < 200) {
+      if (vehicleType === "sedan") ratePerKm = 15;
+      else if (vehicleType === "ertiga") ratePerKm = 17; 
+      else if (vehicleType === "crysta") ratePerKm = 21;
+    }
+    // Tier 2 Corridor Filter: Medium Outstation Loops (200 KM se 490 KM ke beech)
+    else if (showKms < 490) {
+      if (vehicleType === "sedan") ratePerKm = 17.5;
+      else if (vehicleType === "ertiga") ratePerKm = 21.5; 
+      else if (vehicleType === "crysta") ratePerKm = 23.5;
+    }
+    // Tier 3 Corridor Filter: Mega Long Corridor (500 KM se 600 KM ke beech)
+    else if (showKms > 500 && showKms < 600) {
+      if (vehicleType === "sedan") ratePerKm = 10.5;
+      else if (vehicleType === "ertiga") ratePerKm = 14.5; 
+      else if (vehicleType === "crysta") ratePerKm = 20;
+    }
 
-    // Dynamic timestamp evaluation engine for Night Halt Charges
-    if (pickupDate && returnDate) {
-      const startDateTime = new Date(`${pickupDate}T${pickupTime || "00:00"}`);
-      const endDateTime = new Date(`${returnDate}T${returnTime || "00:00"}`);
-      
-      const timeDifferenceDiff = endDateTime.getTime() - startDateTime.getTime();
-      const totalDaysStay = Math.ceil(timeDifferenceDiff / (1000 * 60 * 60 * 24));
-      
-      if (totalDaysStay > 0) {
-        haltCharges = totalDaysStay * 300;
+  /**
+   * =========================================================================
+   * 👑 ROUND TRIP PRICING CONTROL WITH TRIPLE MULTIPLIER SLABS
+   * =========================================================================
+   */
+  } else if (bookingType === "roundtrip") {
+    if (baseDistance > 400 && baseDistance < 600) {
+      currentMultiplier = 2.45; 
+    } else if (baseDistance > 600) {
+      currentMultiplier = 2.10;
+    } else {
+      currentMultiplier = 2.80; 
+    }
+
+    if (pickupDate && returnDate && pickupTime && returnTime) {
+      try {
+        const pickupDateTime = new Date(`${pickupDate}T${pickupTime}`);
+        const returnDateTime = new Date(`${returnDate}T${returnTime}`);
+        
+        const estimatedTransitHours = showKms / 50;
+        const estimatedTransitMs = estimatedTransitHours * 60 * 60 * 1000;
+        
+        const destinationReachDateTime = new Date(pickupDateTime.getTime() + estimatedTransitMs);
+        const freeStayLimitDateTime = new Date(destinationReachDateTime.getTime() + (6 * 60 * 60 * 1000));
+        
+        if (returnDateTime.getTime() > freeStayLimitDateTime.getTime()) {
+          const stayTimeDiffMs = returnDateTime.getTime() - destinationReachDateTime.getTime();
+          const totalStayDays = Math.ceil(stayTimeDiffMs / (1000 * 60 * 60 * 24));
+          
+          if (totalStayDays > 0) {
+            haltCharges = totalStayDays * 350;
+          }
+        }
+      } catch (timelineError) {
+        console.error("Timeline analysis crash:", timelineError);
       }
     }
   }
 
-  // Final math execution flow based entirely on target calculation architecture
-  const calculatedBase = calculationDistance * ratePerKm;
+  /**
+   * =========================================================================
+   * 🧮 FINAL MATHEMATICAL MATRIX COMPLETION
+   * =========================================================================
+   */
+  const calculatedBase = showKms * ratePerKm;
   const baseWithMultiplier = calculatedBase * currentMultiplier;
 
-  // Final Fare core calculation engine constant re-tracked with dynamic discount
-  const dynamicFinalFareValue = baseWithMultiplier * (1 - discountPercent / 100);
-  const finalFareWithoutHalt = psychologicalPrice(dynamicFinalFareValue);
-  
-  // Backward Trace mathematical equation mapping to ensure perfect dynamic alignment on UI screen
-  const computedStrikeFare = Math.round(finalFareWithoutHalt / (1 - discountPercent / 100));
-
+  const finalFareWithoutHalt = psychologicalPrice(baseWithMultiplier);
   const absoluteFinalFare = finalFareWithoutHalt + haltCharges;
-  const absoluteStrikeFare = computedStrikeFare + haltCharges;
 
   const durationMinutes = Math.round((showKms / 50) * 60) + 30;
 
@@ -172,10 +255,11 @@ export function calculateFare({
     actualDistance: baseDistance,
     billedDistance: bookingType === "roundtrip" ? showKms * 2 : showKms,
     rateUsed: ratePerKm,
-    strikeFare: absoluteStrikeFare,
+    strikeFare: absoluteFinalFare,
     finalFare: absoluteFinalFare,
-    discountPercent, // 👑 Pass back dynamically updated percentage object to the state layer
+    discountPercent: 0,
     durationMinutes,
-    haltCharges
+    haltCharges,
+    autoCorrectedService: finalServiceType
   };
 }

@@ -32,7 +32,6 @@ export async function POST(req: Request) {
     }
 
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-
     if (!apiKey) {
       return NextResponse.json(
         { error: "Google Maps API key is missing" },
@@ -41,15 +40,9 @@ export async function POST(req: Request) {
     }
 
     const requestBody = {
-      origin: {
-        address: origin,
-      },
-      destination: {
-        address: destination,
-      },
-      intermediates: stops.map((stop) => ({
-        address: stop,
-      })),
+      origin: { address: origin },
+      destination: { address: destination },
+      intermediates: stops.map((stop) => ({ address: stop })),
       travelMode: "DRIVE",
       routingPreference: "TRAFFIC_UNAWARE",
       computeAlternativeRoutes: false,
@@ -64,9 +57,7 @@ export async function POST(req: Request) {
         headers: {
           "Content-Type": "application/json",
           "X-Goog-Api-Key": apiKey,
-          // 🎫 Note: FieldMask already contains routes.travelAdvisory.tollInfo
-          "X-Goog-FieldMask":
-            "routes.distanceMeters,routes.duration,routes.legs.distanceMeters,routes.legs.duration,routes.travelAdvisory.tollInfo",
+          "X-Goog-FieldMask": "routes.distanceMeters,routes.duration,routes.legs.distanceMeters,routes.legs.duration,routes.travelAdvisory.tollInfo",
         },
         body: JSON.stringify(requestBody),
         cache: "no-store",
@@ -77,52 +68,25 @@ export async function POST(req: Request) {
 
     if (!response.ok) {
       return NextResponse.json(
-        {
-          error: data?.error?.message || "Google API Error",
-          fullError: data,
-        },
+        { error: data?.error?.message || "Google API Error" },
         { status: response.status }
       );
     }
 
     const route = data?.routes?.[0];
-
     if (!route?.distanceMeters) {
-      return NextResponse.json(
-        {
-          error: "No route distance found",
-          fullError: data,
-        },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "No route distance found" }, { status: 404 });
     }
 
     const distanceMeters = route.distanceMeters;
     const distanceKm = Math.round(distanceMeters / 1000);
 
-    const legs =
-      route?.legs?.map(
-        (
-          leg: { distanceMeters?: number; duration?: string },
-          index: number
-        ) => ({
-          legNumber: index + 1,
-          distanceMeters: leg?.distanceMeters ?? 0,
-          distanceKm: Math.round((leg?.distanceMeters ?? 0) / 1000),
-          duration: leg?.duration ?? null,
-        })
-      ) ?? [];
-
     const hasToll = Boolean(route?.travelAdvisory?.tollInfo);
-
-    // 💸 100% Live Google Toll Cost Extractor Engine (INR)
     let estimatedTollCost = 0;
     if (hasToll && route?.travelAdvisory?.tollInfo?.estimatedPrice) {
       const priceList = route.travelAdvisory.tollInfo.estimatedPrice;
-      // Google API multiple currencies de sakta hai, hum INR code dhoondenge
       const inrPrice = priceList.find((p: any) => p.currencyCode === "INR");
       if (inrPrice) {
-        // units string formatted number hota hai, use safely integer mein convert karenge
         estimatedTollCost = Math.round(Number(inrPrice.units || 0));
       }
     }
@@ -130,20 +94,12 @@ export async function POST(req: Request) {
     return NextResponse.json({
       origin,
       destination,
-      stops,
-      distanceMeters,
       distanceKm,
-      duration: route?.duration ?? null,
       hasToll,
-      estimatedTollCost, // 💳 Front-end desk ko live rupees value pass ho jayegi
-      legs,
+      estimatedTollCost,
     });
   } catch (error) {
-    console.error("Distance API Error:", error);
-
-    return NextResponse.json(
-      { error: "Failed to calculate distance" },
-      { status: 500 }
-    );
+    console.error("Distance API Pure Error:", error);
+    return NextResponse.json({ error: "Failed to calculate distance" }, { status: 500 });
   }
 }

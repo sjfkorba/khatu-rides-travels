@@ -1,7 +1,7 @@
 // app/page.tsx
 "use client";
 
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Script from "next/script";
 import { AnimatePresence, motion } from "framer-motion";
 import SakhaBot from "@/components/SakhaBot";
@@ -144,40 +144,6 @@ export default function HomePage() {
     return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${ampm}`;
   };
 
-  const calculateReachDateTime = (dateStr: string, timeStr: string, durationMinutes: number) => {
-    if (!dateStr || !timeStr) return { date: "--/--/----", time: "--:-- --" };
-    const combined = new Date(`${dateStr}T${timeStr}`);
-    combined.setMinutes(combined.getMinutes() + durationMinutes);
-    const dd = String(combined.getDate()).padStart(2, "0");
-    const mm = String(combined.getMonth() + 1).padStart(2, "0");
-    const yyyy = combined.getFullYear();
-    let hrs = combined.getHours();
-    const mins = String(combined.getMinutes()).padStart(2, "0");
-    const ampm = hrs >= 12 ? "PM" : "AM";
-    hrs = hrs % 12 || 12;
-    return { date: `${dd}/${mm}/${yyyy}`, time: `${String(hrs).padStart(2, "0")}:${mins} ${ampm}` };
-  };
-
-  const checkExtraHaltCondition = (): boolean => {
-    if (!popupData || popupData.bookingType !== "roundtrip" || !popupData.returnDate || !popupData.returnTime) {
-      return false;
-    }
-
-    try {
-      const pickupDateTime = new Date(`${popupData.pickupDate}T${popupData.pickupTime}`);
-      const currentOption = popupData.fareOptions.find(o => o.vehicleType === selectedVehicleType) || popupData.fareOptions[0];
-      const transitDurationMinutes = currentOption ? currentOption.durationMinutes : 180;
-      
-      const reachDestinationTime = new Date(pickupDateTime.getTime() + transitDurationMinutes * 60 * 1000);
-      const freeHaltLimitTime = new Date(reachDestinationTime.getTime() + 6 * 60 * 60 * 1000);
-      const customerReturnTime = new Date(`${popupData.returnDate}T${popupData.returnTime}`);
-
-      return customerReturnTime.getTime() > freeHaltLimitTime.getTime();
-    } catch (e) {
-      return false;
-    }
-  };
-
   const getDynamicKmsLimitDisplay = (opt: FareOption): number => {
     if (!popupData || popupData.bookingType !== "roundtrip" || !popupData.returnDate || !popupData.returnTime) {
       return opt.billedDistance; 
@@ -193,22 +159,6 @@ export default function HomePage() {
     } catch (e) {
       return opt.billedDistance;
     }
-  };
-
-  const checkBookingMode = () => {
-    if (!popupData) return { isOnlineAllowed: true, reason: "" };
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    const isSameDay = popupData.pickupDate === todayStr;
-    const [hours] = popupData.pickupTime.split(":").map(Number);
-
-    if (isSameDay && (hours >= 22 || hours < 6)) {
-      return {
-        isOnlineAllowed: false,
-        reason: "Night slot booking ke liye direct call support active hai. Immediate vehicle allocation ke liye call desk use karein.",
-      };
-    }
-    return { isOnlineAllowed: true, reason: "" };
   };
 
   const triggerQuickBooking = (from: string, to: string, routeDistance: number) => {
@@ -235,11 +185,9 @@ export default function HomePage() {
         vehicleLabel: VEHICLES[type].label,
         vehicleImage: VEHICLES[type].image,
         finalFare: result.finalFare,
-        strikeFare: result.strikeFare,
         fareText: `₹${result.finalFare.toLocaleString("en-IN")}`,
         billedDistance: result.billedDistance,
         durationMinutes: result.durationMinutes,
-        discountPercent: result.discountPercent,
       };
     });
 
@@ -258,8 +206,8 @@ export default function HomePage() {
 
     setPaymentLoadingId(option.id);
     const mode = paymentSplitMode[option.id] || "full";
-    const totalDiscounted = option.finalFare; 
-    const processAmount = mode === "half" ? Math.round(totalDiscounted / 2) : totalDiscounted;
+    const totalFareValue = option.finalFare; 
+    const processAmount = mode === "half" ? Math.round(totalFareValue / 2) : totalFareValue;
 
     try {
       const res = await fetch("/api/create-order", {
@@ -349,32 +297,28 @@ export default function HomePage() {
 
     const textPayload = `Hello Khatu Rides Travels Co., 
 
-I would like to instantly book an outstation cab package. The verified route details are listed below:
+I would like to book an outstation cab package shortly. The route manifest parameters are listed below:
 
 *ROUTE MANIFEST CARD:*
-• Pickup Location : ${popupData.pickup}
-• Drop Destination: ${popupData.drop}
+• From : ${popupData.pickup}
+• To: ${popupData.drop}
 • Vehicle Segment : ${option.vehicleLabel}
-• Trip Configuration : ${popupData.bookingType.toUpperCase()}
-• Scheduled Timing: ${convertToIndianDate(popupData.pickupDate)} at ${formatTimeToAMPM(popupData.pickupTime)}
+• Trip Type : ${popupData.bookingType.toUpperCase()}
+• Date & Time: ${convertToIndianDate(popupData.pickupDate)} at ${formatTimeToAMPM(popupData.pickupTime)}
 
-*COMMERCIAL PRICING SHEET:*
-• Actual Net Fare (After Discount): Rs. ${option.finalFare.toLocaleString("en-IN")}.00 (All-Inclusive)
+*PRICING ESTIMATION SHEET:*
+• Total Fare: Rs. ${option.finalFare.toLocaleString("en-IN")}.00 (All-Inclusive)
 
-Please register this vehicle booking manually in the control desk panel and assign the driver details shortly. Thank you!`;
+Please register this vehicle booking manually in the control panel desk. Thank you!`;
 
     const cleanFormattedUrl = `https://wa.me/919244137353?text=${encodeURIComponent(textPayload)}`;
     window.open(cleanFormattedUrl, "_blank");
   };
 
   const selectedOption = popupData?.fareOptions.find((item) => item.vehicleType === selectedVehicleType);
-  const totalDiscountedPrice = selectedOption ? selectedOption.finalFare : 0;
+  const totalPricingBase = selectedOption ? selectedOption.finalFare : 0;
   const currentSelectedMode = selectedOption && paymentSplitMode[selectedOption.id] ? paymentSplitMode[selectedOption.id] : "full";
-  const displayPayNowNumber = currentSelectedMode === "half" ? Math.round(totalDiscountedPrice / 2) : totalDiscountedPrice;
-  
-  const reach = calculateReachDateTime(popupData?.pickupDate || "", popupData?.pickupTime || "", selectedOption?.durationMinutes || 0);
-  const bookingStatus = popupData ? checkBookingMode() : { isOnlineAllowed: true, reason: "" };
-  const isMultiDayHaltTriggered = checkExtraHaltCondition();
+  const displayPayNowNumber = currentSelectedMode === "half" ? Math.round(totalPricingBase / 2) : totalPricingBase;
 
   return (
     <>
@@ -401,9 +345,11 @@ Please register this vehicle booking manually in the control desk panel and assi
                 ✨ Best Taxi Service Provider In Chhattisgarh
               </p>
             </div>
-            <a href="tel:+919244137353" className="rounded-full bg-slate-950 px-4 py-2 text-xs font-black text-white hover:bg-slate-900 transition-all border border-slate-800 shadow">
-              📞 24x7 - 9244137353
-            </a>
+            <div className="flex gap-2">
+              <a href="tel:+919244137353" className="rounded-full bg-slate-950 px-4 py-2 text-xs font-black text-white hover:bg-slate-900 transition-all border border-slate-800 shadow">
+                📞 24x7 - 9244137353
+              </a>
+            </div>
           </div>
         </header>
 
@@ -423,6 +369,7 @@ Please register this vehicle booking manually in the control desk panel and assi
                 setSelectedVehicleType("sedan");
                 setShowPopup(true);
                 setShowUserForm(false);
+                setPaymentSplitMode({});
               }}
             />
           </div>
@@ -577,8 +524,8 @@ Please register this vehicle booking manually in the control desk panel and assi
                 <button type="button" onClick={() => setShowPopup(false)} className="text-slate-400 hover:text-slate-900 font-black text-sm transition-colors">✕ Close</button>
               </div>
 
-              {/* Blue strip */}
-              <div className="bg-blue-600 text-white px-4 py-2.5 text-[10px] sm:text-xs grid grid-cols-3 gap-1 text-center font-black uppercase tracking-wider">
+              {/* Trust Strip */}
+              <div className="bg-slate-900 text-white px-4 py-2.5 text-[10px] sm:text-xs grid grid-cols-3 gap-1 text-center font-black uppercase tracking-wider">
                 <div>₹ Pre-Fixed Pricing</div>
                 <div className="border-x border-white/20">🛡️ Driver Allowance Inc.</div>
                 <div>🎧 24x7 Custom Support</div>
@@ -590,16 +537,17 @@ Please register this vehicle booking manually in the control desk panel and assi
                     {popupData.fareOptions.map((opt) => {
                       if (!["sedan", "ertiga", "crysta"].includes(opt.vehicleType)) return null;
                       
-                      const fallbackStrike = Math.round(opt.finalFare * 1.33);
-                      const displayStrikePrice = opt.strikeFare || fallbackStrike;
                       const dynamicLimitKms = getDynamicKmsLimitDisplay(opt);
-                      const extraRatePerKm = opt.vehicleType === "sedan" ? 15 : opt.vehicleType === "ertiga" ? 20 : 25;
-                      
-                      // 👑 FIXED DYNAMIC DISCOUNT DISPLAY: Fetches matching percentage dynamically from the calculation engine payload
-                      const currentDiscountRate = opt.discountPercent || (popupData.bookingType === "oneway" && opt.billedDistance > 500 ? 10 : 25);
+                      const extraRatePerKm = opt.vehicleType === "sedan" ? 11 : opt.vehicleType === "ertiga" ? 17 : 20.7;
 
                       return (
                         <div key={opt.id} className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-xs hover:shadow-md transition flex flex-col">
+                          
+                          {/* 👑 PREMIUM HIGHLIGHTED STRIP MATRIX INJECTED AT TOP AXIS */}
+                          <div className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black text-[10px] sm:text-xs py-2 px-4 uppercase tracking-wider text-center shadow-xs">
+                            🔥 Make Online Advance Payment and Get Upto 10% Discount On Your Booking Instantly
+                          </div>
+
                           <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
                             <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full sm:w-auto text-center sm:text-left">
                               <img src={VEHICLES[opt.vehicleType]?.image} alt={opt.vehicleLabel} className="w-32 h-20 sm:w-36 sm:h-24 object-contain flex-shrink-0 mx-auto sm:mx-0" />
@@ -609,7 +557,7 @@ Please register this vehicle booking manually in the control desk panel and assi
                                 
                                 <div className="mt-2.5 flex flex-wrap gap-1.5 justify-center sm:justify-start text-[10px] font-bold">
                                   <span className="bg-slate-100 text-slate-500 border border-slate-200/50 px-2 py-0.5 rounded">👤 Allowance Included</span>
-                                  <span className="bg-orange-50 text-orange-700 border border-orange-200/60 px-2 py-0.5 rounded animate-pulse">
+                                  <span className="bg-orange-50 text-orange-700 border border-orange-200/60 px-2 py-0.5 rounded">
                                     📦 Kms Limit: {dynamicLimitKms} KM
                                   </span>
                                   <span className="bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-2 py-0.5 rounded">
@@ -619,63 +567,49 @@ Please register this vehicle booking manually in the control desk panel and assi
                               </div>
                             </div>
                             
-                            {/* Right Side Price Breakdown */}
-                            <div className="text-center sm:text-right flex flex-col items-center sm:items-end justify-center min-w-full sm:min-w-[200px] border-t pt-3 sm:pt-0 sm:border-none border-slate-100 w-full sm:w-auto">
-                              <div className="flex items-center gap-1.5 justify-center sm:justify-end mb-1">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase">Actual Fare:</span>
-                                <span className="text-xs font-bold text-slate-400 line-through">₹{displayStrikePrice.toLocaleString("en-IN")}</span>
-                                {/* 👑 FIXED BADGE LOGIC: Explicit dynamic string mapping applied */}
-                                <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">-{currentDiscountRate}% DISCOUNT</span>
-                              </div>
+                            {/* Right Side Price Details */}
+                            <div className="text-center sm:text-right flex flex-col items-center sm:items-end justify-center min-w-full sm:min-w-[220px] border-t pt-3 sm:pt-0 sm:border-none border-slate-100 w-full sm:w-auto">
                               
                               <div className="mb-2 text-center sm:text-right">
-                                <span className="text-[10px] font-black text-orange-600 uppercase block tracking-wider">After Discount Price:</span>
-                                <div className="text-2xl font-black text-slate-950 tracking-tight">₹{opt.finalFare.toLocaleString("en-IN")}</div>
+                                <span className="text-[10px] font-black text-slate-400 block uppercase tracking-wider">Estimated Total Fare:</span>
+                                <div className="text-3xl font-black text-slate-950 tracking-tight">₹{opt.finalFare.toLocaleString("en-IN")}</div>
                               </div>
                               
                               <span className="text-[10px] text-slate-400 font-semibold block mb-3">Includes dynamic toll policies</span>
                               
-                              {/* 👑 RE-ENGINEERED TRIPLE TRIGGER GRID CARD INJECTIONS */}
+                              {/* 👑 WHATSAPP IS PRIMARY BOOKING HANDLER TRIPPED */}
                               <div className="flex flex-col gap-2 w-full sm:w-auto min-w-[200px]">
-                                {/* Button 1: Swapped text to Continue for Online Booking */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleWhatsAppManualRedirect(opt)}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-widest py-3 px-4 rounded-xl shadow-md transition-all text-center w-full flex items-center justify-center gap-1.5"
+                                >
+                                  💬 Book On WhatsApp
+                                </button>
+
+                                {/* Online Checkout Form Triggers Shifted to Secondary Level */}
                                 <button
                                   type="button"
                                   onClick={() => {
                                     setSelectedVehicleType(opt.vehicleType);
+                                    setPaymentSplitMode((p) => ({ ...p, [opt.id]: "half" })); // default advance split context
                                     setShowUserForm(true);
                                   }}
-                                  className="bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-widest py-3 px-4 rounded-xl shadow-md transition-all text-center w-full"
+                                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold text-xs uppercase tracking-wider py-2.5 px-4 rounded-xl shadow-xs transition-all text-center w-full"
                                 >
-                                  Continue for Online Booking
-                                </button>
-
-                                {/* Button 2: Manual Book On WhatsApp added directly inside card layout view */}
-                                <button
-                                  type="button"
-                                  onClick={() => handleWhatsAppManualRedirect(opt)}
-                                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-widest py-3 px-4 rounded-xl shadow-sm transition-all text-center w-full flex items-center justify-center gap-1.5"
-                                >
-                                  💬 Book On WhatsApp
+                                  Book Online
                                 </button>
                               </div>
+
                             </div>
                           </div>
 
-                          {isMultiDayHaltTriggered ? (
-                            <div className="w-full bg-red-600 border-t border-red-700/50 py-2.5 px-4 text-center sm:text-left flex items-center justify-center sm:justify-start gap-1.5 shadow-inner">
-                              <span className="text-xs animate-pulse">⚠️</span>
-                              <p className="text-[10px] sm:text-[11px] font-extrabold text-white uppercase tracking-wide">
-                                MULTI-DAY TRIP DETECTED: <span className="text-yellow-300">2 DAYS & 1 NIGHT CHARGE WILL BE PAID EXTRA BY CUSTOMER</span> AS PER ACTUAL RUN.
-                              </p>
-                            </div>
-                          ) : (
-                            <div className="w-full bg-red-600 border-t border-red-700/50 py-2 px-4 text-center sm:text-left flex items-center justify-center sm:justify-start gap-1.5 shadow-inner">
-                              <span className="text-[10px] sm:text-[11px] text-white">⚠️</span>
-                              <p className="text-[10px] sm:text-[11px] font-extrabold text-white uppercase tracking-wide">
-                                100% PAYABLE AMOUNT ON SCREEN. <span className="text-yellow-300">NO ANY HIDDEN CHARGES</span>
-                              </p>
-                            </div>
-                          )}
+                          <div className="w-full bg-slate-900 border-t border-slate-800 py-2 px-4 text-center sm:text-left flex items-center justify-center sm:justify-start gap-1.5 shadow-inner">
+                            <span className="text-[10px] sm:text-[11px] text-orange-500">🛡️</span>
+                            <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-300 uppercase tracking-wide">
+                              100% PAYABLE AMOUNT ON SCREEN. <span className="text-orange-400">NO ANY HIDDEN CHARGES</span>
+                            </p>
+                          </div>
                         </div>
                       );
                     })}
@@ -723,12 +657,6 @@ Please register this vehicle booking manually in the control desk panel and assi
                             </button>
                           </div>
                           
-                          {isMultiDayHaltTriggered && (
-                            <div className="mt-3 bg-red-50 border border-red-200 text-red-700 p-2.5 rounded-lg text-[10px] font-bold">
-                              ℹ️ Note: Is booking me Multi-day trip alert lag chuka hai. Extra run allowance status onboarding ke waqt set hoga.
-                            </div>
-                          )}
-
                           <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-200/60">
                             <div>
                               <span className="text-[10px] font-black text-slate-400 block uppercase">Payable Now</span>
@@ -739,7 +667,6 @@ Please register this vehicle booking manually in the control desk panel and assi
                         </div>
                       )}
 
-                      {/* 👑 SCREEN 2 FORM BUTTONS: Only contains single Book Online trigger (WhatsApp button completely removed here) */}
                       <div className="grid grid-cols-2 gap-2 pt-2">
                         <button type="button" onClick={() => setShowUserForm(false)} className="w-full border border-slate-300 bg-slate-100 text-slate-700 font-bold text-xs uppercase py-3.5 rounded-xl transition">
                           ↩ Back
@@ -795,9 +722,9 @@ Please register this vehicle booking manually in the control desk panel and assi
           </div>
         )}
       </AnimatePresence>
+
       {/* Sakha Floating Automated AI Assistant Injector */}
-    <SakhaBot />
+      <SakhaBot />
     </>
-  
-);
+  );
 }
