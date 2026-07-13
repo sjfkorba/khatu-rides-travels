@@ -3,8 +3,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import Script from "next/script";
-import { AnimatePresence, motion } from "framer-motion";
-import SakhaBot from "@/components/SakhaBot";
+import { AnimatePresence, motion } from "framer-motion";;
 import FareCalculator from "@/components/FareCalculator";
 import ImageCarousel from "@/components/ImageCarousel";
 import {
@@ -723,8 +722,7 @@ Please register this vehicle booking manually in the control panel desk. Thank y
         )}
       </AnimatePresence>
 
-      {/* Sakha Floating Automated AI Assistant Injector */}
-      <SakhaBot />
+      
     </>
   );
 }

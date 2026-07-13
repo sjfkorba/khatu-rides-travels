@@ -4,8 +4,6 @@
  * =========================================================================
  * 👑 VEHICLE FLEET CONFIGURATION INTERFACE
  * =========================================================================
- * FUNDA: Yeh interface define karta hai ki har gadi ke segment me kya parameters hone chahiye.
- * ISSE KYA HOGA: System strictly typesafety maintain karega taaki image aur rates galat mapping na hon.
  */
 export interface VehicleConfig {
   label: string;
@@ -19,26 +17,25 @@ export interface VehicleConfig {
  * 👑 GLOBAL FLEET PRICE MATRIX (COMMERCIAL PER-KM RATES)
  * =========================================================================
  * FUNDA: Khatu Rides Travels Co. ka official base rate aur long-distance rate sheet hai.
- * ISSE KYA HOGA: Sedan, Ertiga aur Crysta ki base pricing yahin se multi-ply hoke pure system me travel karegi.
  */
 export const VEHICLES: Record<string, VehicleConfig> = {
   sedan: {
     label: "Maruti Suzuki Dzire",
     image: "/dezire.png",
-    baseRatePerKm: 15,
-    longRatePerKm: 12,
+    baseRatePerKm: 11, 
+    longRatePerKm: 11,
   },
   ertiga: {
     label: "Maruti Suzuki Ertiga (MUV)",
     image: "/ertiga.png",
-    baseRatePerKm: 18, 
+    baseRatePerKm: 13, 
     longRatePerKm: 13, 
   },
   crysta: {
     label: "Toyota Innova Crysta (Premium)",
     image: "/crysta.png",
-    baseRatePerKm: 22, 
-    longRatePerKm: 18, 
+    baseRatePerKm: 20, 
+    longRatePerKm: 20, 
   },
 };
 
@@ -58,13 +55,6 @@ export type CalculateFareResult = {
   autoCorrectedService: ServiceType;
 };
 
-/**
- * =========================================================================
- * 👑 PSYCHOLOGICAL PRICING ALGORITHM (MARKETING TRICK)
- * =========================================================================
- * FUNDA: Yeh pricing engine har final calculated amount ko nearest 50 me round karke 1 rupaya kam kar deta hai.
- * ISSE KYA HOGA: conversion rate maximum milta hai (e.g. ₹3999 instead of ₹4020).
- */
 export function psychologicalPrice(value: number) {
   const rounded = Math.round(value / 50) * 50;
   return Math.max(rounded - 1, 0);
@@ -74,7 +64,6 @@ export function psychologicalPrice(value: number) {
  * =========================================================================
  * 👑 THE MASTER FARE CALCULATOR ENGINE
  * =========================================================================
- * FUNDA: Khatu Rides Travels Co. ka core mathematical logic sheet.
  */
 export function calculateFare({
   distance,
@@ -101,8 +90,6 @@ export function calculateFare({
    * =========================================================================
    * 👑 FUNDA 1: AUTO-SERVICE TYPE CORRECTOR MACHINE
    * =========================================================================
-   * FUNDA: Distance ke base par service type ko auto-correct karta hai.
-   * ISSE KYA HOGA: Revenue loss bilkul 0% ho jayega agar koi wrong package choose karega.
    */
   let finalServiceType = serviceType;
   if (baseDistance > 80 && serviceType === "local") {
@@ -114,9 +101,9 @@ export function calculateFare({
   // Local Package fallback allocation sheet
   if (finalServiceType === "local") {
     const localPackages: Record<string, { finalFare: number; strikeFare: number; rate: number }> = {
-      sedan: { finalFare: 1899, strikeFare: 1899, rate: 15 },
-      ertiga: { finalFare: 2499, strikeFare: 2499, rate: 20 },
-      crysta: { finalFare: 3299, strikeFare: 3299, rate: 22 },
+      sedan: { finalFare: 1899, strikeFare: 1899, rate: 11 },
+      ertiga: { finalFare: 2499, strikeFare: 2499, rate: 13 },
+      crysta: { finalFare: 3299, strikeFare: 3299, rate: 20 },
     };
     const pack = localPackages[vehicleType];
     return {
@@ -132,76 +119,98 @@ export function calculateFare({
     };
   }
 
-  // Short lead check buffer lock bypass (<500 KMs follows absolute true google tracking)
+  // Short lead check buffer lock bypass (>500 KMs follows absolute true tracking)
   let showKms = baseDistance;
   if (baseDistance > 500) {
     showKms = baseDistance + 50; 
   }
 
-  /**
-   * =========================================================================
-   * 👑 PER-KM COMMERCIAL TIER SELECTOR & LONG DISTANCE FLUCTUATION RATE TIER
-   * =========================================================================
-   * FUNDA: Route ki depth check karke correct per-kilometer price map ki jati hai.
-   */
-  const isLongDistance = baseDistance > 150;
-  const isMegaOutstation = baseDistance > 500;
-  
-  let ratePerKm = isLongDistance 
-    ? VEHICLES[vehicleType].longRatePerKm 
-    : VEHICLES[vehicleType].baseRatePerKm;
-
-  if (isMegaOutstation) {
-    ratePerKm += (vehicleType === "sedan" ? 1 : vehicleType === "ertiga" ? 4 : 5);
+  // 👑 RE-ENGINEERED UNCONDITIONAL LOCK: Micro Leads Minimum Floor Protection Block
+  let effectiveCalculationDistance = showKms;
+  if (bookingType === "oneway" && showKms < 80) {
+    effectiveCalculationDistance = 80; // Absolute safety base mapping floor lock to shield operations
   }
 
+  let ratePerKm = VEHICLES[vehicleType].baseRatePerKm;
   let currentMultiplier = 1.00;
   let haltCharges = 0;
 
   /**
    * =========================================================================
-   * 👑 ONE WAY PRICING CONTROL WITH NEW CUSTOM MULTIPLIER TIER SLABS
+   * 👑 ONE WAY PRICING CONTROL WITH COMPREHENSIVE STRATEGIC SLABS
    * =========================================================================
-   * FUNDA: Oneway route configuration settings based entirely on base distance ranges.
-   * ISSE KYA HOGA:
-   * - 500 KM se 700 KM ke long range corridors par highly attractive multiplier = 1.15 apply hoga.
-   * - 80 KM se 200 KM ke beech short lead drop runs par premium protection multiplier = 1.85 register hoga.
-   * - Baki sab fallback defaults standard 1.85 multiplier layer ko lock rakhenge.
    */
   if (bookingType === "oneway") {
-    if (baseDistance > 500 && baseDistance < 700) {
-      currentMultiplier = 1.15; 
-    } else if (baseDistance > 90 && baseDistance < 200) {
-      currentMultiplier = 1.25;
-    } else if (baseDistance < 80){
-      currentMultiplier = 1.35;
+    
+    // 👑 SLAB 0: Micro Leads Protection (<80 KM Floor Shield - Handles Korba-Champa / Raipur-Bhilai)
+    if (showKms < 80) {
+      if (vehicleType === "sedan") {
+        currentMultiplier = 1.70; // 80 * 11 * 1.70 = ₹1496 (Savaari is ₹1523 - ₹2090 range)
+        ratePerKm = 11.00;        
+      } else if (vehicleType === "ertiga") {
+        currentMultiplier = 2.40; // 80 * 13 * 2.40 = ₹2496 (Savaari is ₹2965 - ₹3919 range)
+        ratePerKm = 13.00;        
+      } else if (vehicleType === "crysta") {
+        currentMultiplier = 2.85; // 80 * 20 * 2.85 = ₹4560 (Savaari is ₹5630 - ₹8015 range)
+        ratePerKm = 20.00;        
+      }
     }
+    // 👑 SLAB 1: Short Leads (80 KM - 150 KM Corridor - Handles Korba-Janjgir / Bilaspur)
+    else if (showKms > 80 && showKms <= 150) {
+      if (vehicleType === "sedan") {
+        currentMultiplier = 2.10;
+        ratePerKm = 11.00; 
+      } else if (vehicleType === "ertiga") {
+        currentMultiplier = 2.40;
+        ratePerKm = 13.00; 
+      } else if (vehicleType === "crysta") {
+        currentMultiplier = 2.50;
+        ratePerKm = 20.00; 
+      }
+    }
+    // 👑 SLAB 2: Mid-Corridors (151 KM - 350 KM Corridor - Handles Korba-Raipur)
+    else if (showKms > 150 && showKms <= 350) {
+      if (vehicleType === "sedan") {
+        currentMultiplier = 1.55;
+        ratePerKm = 11.00; 
+      } else if (vehicleType === "ertiga") {
+        currentMultiplier = 1.85;
+        ratePerKm = 13.00; 
+      } else if (vehicleType === "crysta") {
+        currentMultiplier = 1.95;
+        ratePerKm = 20.00; 
+      }
+    }
+    // 👑 SLAB 3: Long Routes (351 KM - 600 KM Corridor)
+    else if (showKms > 350 && showKms <= 600) {
+      if (vehicleType === "sedan") {
+        currentMultiplier = 1.35;
+        ratePerKm = 11.00; 
+      } else if (vehicleType === "ertiga") {
+        currentMultiplier = 1.55;
+        ratePerKm = 13.00; 
+      } else if (vehicleType === "crysta") {
+        currentMultiplier = 1.65;
+        ratePerKm = 20.00; 
+      }
+    }
+    // 👑 SLAB 4: Mega Highways Corridor (>600 KM - Handles Raipur-Ujjain)
     else {
-      currentMultiplier = 1.85; 
-    }
-
-    // Tier 1 Corridor Filter: Short Lead Corridor (<200 KMs)
-    if (showKms > 80 && showKms < 200) {
-      if (vehicleType === "sedan") ratePerKm = 15;
-      else if (vehicleType === "ertiga") ratePerKm = 17; 
-      else if (vehicleType === "crysta") ratePerKm = 21;
-    }
-    // Tier 2 Corridor Filter: Medium Outstation Loops (200 KM se 490 KM ke beech)
-    else if (showKms < 490) {
-      if (vehicleType === "sedan") ratePerKm = 17.5;
-      else if (vehicleType === "ertiga") ratePerKm = 21.5; 
-      else if (vehicleType === "crysta") ratePerKm = 23.5;
-    }
-    // Tier 3 Corridor Filter: Mega Long Corridor (500 KM se 600 KM ke beech)
-    else if (showKms > 500 && showKms < 600) {
-      if (vehicleType === "sedan") ratePerKm = 10.5;
-      else if (vehicleType === "ertiga") ratePerKm = 14.5; 
-      else if (vehicleType === "crysta") ratePerKm = 20;
+      if (vehicleType === "sedan") {
+        currentMultiplier = 1.25;
+        ratePerKm = 11.00; 
+      } else if (vehicleType === "ertiga") {
+        currentMultiplier = 1.35;
+        ratePerKm = 13.00; 
+      } else if (vehicleType === "crysta") {
+        currentMultiplier = 1.45;
+        ratePerKm = 20.00; 
+      }
     }
 
   /**
    * =========================================================================
-   * 👑 ROUND TRIP PRICING CONTROL WITH TRIPLE MULTIPLIER SLABS
+   * 👑 ROUND TRIP PRICING CONTROL WITH MULTI-TIER SLABS
    * =========================================================================
    */
   } else if (bookingType === "roundtrip") {
@@ -243,7 +252,7 @@ export function calculateFare({
    * 🧮 FINAL MATHEMATICAL MATRIX COMPLETION
    * =========================================================================
    */
-  const calculatedBase = showKms * ratePerKm;
+  const calculatedBase = effectiveCalculationDistance * ratePerKm;
   const baseWithMultiplier = calculatedBase * currentMultiplier;
 
   const finalFareWithoutHalt = psychologicalPrice(baseWithMultiplier);
@@ -253,7 +262,7 @@ export function calculateFare({
 
   return {
     actualDistance: baseDistance,
-    billedDistance: bookingType === "roundtrip" ? showKms * 2 : showKms,
+    billedDistance: bookingType === "roundtrip" ? showKms * 2 : effectiveCalculationDistance,
     rateUsed: ratePerKm,
     strikeFare: absoluteFinalFare,
     finalFare: absoluteFinalFare,
