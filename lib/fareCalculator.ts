@@ -161,10 +161,10 @@ export function calculateFare({
         currentMultiplier = 2.10;
         ratePerKm = 11.00; 
       } else if (vehicleType === "ertiga") {
-        currentMultiplier = 2.40;
+        currentMultiplier = 2.10;
         ratePerKm = 13.00; 
       } else if (vehicleType === "crysta") {
-        currentMultiplier = 2.50;
+        currentMultiplier = 1.80;
         ratePerKm = 20.00; 
       }
     }
@@ -177,30 +177,30 @@ export function calculateFare({
         currentMultiplier = 1.85;
         ratePerKm = 13.00; 
       } else if (vehicleType === "crysta") {
-        currentMultiplier = 1.95;
+        currentMultiplier = 1.45;
         ratePerKm = 20.00; 
       }
     }
     // 👑 SLAB 3: Long Routes (351 KM - 600 KM Corridor)
     else if (showKms > 350 && showKms <= 600) {
       if (vehicleType === "sedan") {
-        currentMultiplier = 1.35;
+        currentMultiplier = 1.75;
         ratePerKm = 11.00; 
       } else if (vehicleType === "ertiga") {
-        currentMultiplier = 1.55;
+        currentMultiplier = 2.10;
         ratePerKm = 13.00; 
       } else if (vehicleType === "crysta") {
-        currentMultiplier = 1.65;
+        currentMultiplier = 1.85;
         ratePerKm = 20.00; 
       }
     }
     // 👑 SLAB 4: Mega Highways Corridor (>600 KM - Handles Raipur-Ujjain)
     else {
       if (vehicleType === "sedan") {
-        currentMultiplier = 1.25;
+        currentMultiplier = 1.65;
         ratePerKm = 11.00; 
       } else if (vehicleType === "ertiga") {
-        currentMultiplier = 1.35;
+        currentMultiplier = 1.65;
         ratePerKm = 13.00; 
       } else if (vehicleType === "crysta") {
         currentMultiplier = 1.45;
