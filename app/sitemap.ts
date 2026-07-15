@@ -61,19 +61,49 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
     // Service Pages
     {
-      url: `${siteUrl}/services/taxi-service-in-raipur`,
+      url: `${siteUrl}/services/one-way-taxi-raipur`,
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.9,
     },
     {
-      url: `${siteUrl}/services/taxi-service-in-korba`,
+      url: `${siteUrl}/services/one-way-taxi-korba`,
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.9,
     },
     {
-      url: `${siteUrl}/services/taxi-service-in-bilaspur`,
+      url: `${siteUrl}/services/one-way-taxi-bilaspur`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${siteUrl}/services/one-way-taxi-raigarh`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${siteUrl}/services/one-way-taxi-jharsuguda`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${siteUrl}/services/one-way-taxi-ambikapur`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${siteUrl}/services/one-way-taxi-jagdalpur`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${siteUrl}/services/one-way-taxi-durg-bhilai`,
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.9,

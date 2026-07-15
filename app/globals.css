@@ -141,3 +141,15 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #ea580c;
 }
+
+/* app/globals.css */
+@import "tailwindcss";
+
+@theme {
+  --animate-marquee-slow: marquee 40s linear infinite;
+
+  @keyframes marquee {
+    0% { transform: translateX(0%); }
+    100% { transform: translateX(-50%); }
+  }
+}
