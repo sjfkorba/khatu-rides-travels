@@ -104,14 +104,14 @@ export default function Footer() {
             </h3>
             <ul className="space-y-3 text-slate-400 text-xs font-bold">
               {[
-                { href: "/services/one-way-tax-raipur", label: "Taxi Service in Raipur" },
-                { href: "/services/one-way-tax-korba", label: "Taxi Service in Korba" },
-                { href: "/services/one-way-tax-bilaspur", label: "Taxi Service in Bilaspur" },
-                { href: "/services/one-way-tax-raigarh", label: "One Way Taxi Raigarh" },
-                { href: "/services/one-way-tax-jharsuguda", label: "One Way Taxi Jharsuguda" },
-                { href: "/services/one-way-tax-ambikapur", label: "One Way Taxi Ambikapur" },
-                { href: "/services/one-way-tax-jagdalpur", label: "One Way Taxi Jagdalpur" },
-                { href: "/services/one-way-tax-durg-bhilai", label: "One Way Taxi Durg-Bhilai" }
+                { href: "/services/one-way-taxi-raipur", label: "Taxi Service in Raipur" },
+                { href: "/services/one-way-taxi-korba", label: "Taxi Service in Korba" },
+                { href: "/services/one-way-taxi-bilaspur", label: "Taxi Service in Bilaspur" },
+                { href: "/services/one-way-taxi-raigarh", label: "One Way Taxi Raigarh" },
+                { href: "/services/one-way-taxi-jharsuguda", label: "One Way Taxi Jharsuguda" },
+                { href: "/services/one-way-taxi-ambikapur", label: "One Way Taxi Ambikapur" },
+                { href: "/services/one-way-taxi-jagdalpur", label: "One Way Taxi Jagdalpur" },
+                { href: "/services/one-way-taxi-durg-bhilai", label: "One Way Taxi Durg-Bhilai" }
               ].map((link) => (
                 <li key={link.href} className="flex items-center gap-1 group">
                   <ArrowRight size={10} className="text-slate-700 group-hover:text-orange-500 transition-colors" />
