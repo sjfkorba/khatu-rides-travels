@@ -153,3 +153,9 @@ body {
     100% { transform: translateX(-50%); }
   }
 }
+
+/* Elfsight branding ko hide karne ke liye */
+.eapps-link, 
+.elfsight-app-befc0f26-20b2-4abc-b941-20a499d14601 a {
+    display: none !important;
+}

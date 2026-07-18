@@ -361,6 +361,20 @@ Please schedule this vehicle loop at your early convenience. Thank you!`;
         </div>
       </section>
 
+       {/* Elfsight Widget Integration */}
+      <div className="max-w-6xl mx-auto">
+        <div 
+          className="elfsight-app-befc0f26-20b2-4abc-b941-20a499d14601" 
+          data-elfsight-app-lazy
+        ></div>
+      </div>
+
+      {/* External Script Loading with Next.js Script component */}
+      <Script 
+        src="https://elfsightcdn.com/platform.js" 
+        strategy="lazyOnload" 
+      />
+
       {/* 📊 SERVICES PILLARS */}
       <section className="relative z-10 mx-auto max-w-7xl px-4 py-16">
         <header className="text-center mb-10">

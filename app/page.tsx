@@ -284,25 +284,25 @@ export default function HomePage() {
   const handleWhatsAppManualRedirect = (option: FareOption) => {
     if (!popupData) return;
 
-    const textPayload = `Hello Khatu Rides Travels Co., 
+    const textPayload = `🚗 *New Cab Booking Enquiry - Khatu Rides Travels* 🏁
 
-I would like to book an outstation cab package shortly. The route manifest parameters are listed below:
+Hello! I am interested in booking an outstation trip. Here are my travel details for your review:
 
-*ROUTE MANIFEST CARD:*
-• From : ${popupData.pickup}
-• To: ${popupData.drop}
-• Vehicle Segment : ${option.vehicleLabel}
-• Trip Type : ${popupData.bookingType.toUpperCase()}
-• Date & Time: ${convertToIndianDate(popupData.pickupDate)} at ${formatTimeToAMPM(popupData.pickupTime)}
+📍 *TRAVEL ITINERARY:*
+• *From:* ${popupData.pickup}
+• *To:* ${popupData.drop}
+• *Trip Type:* ${popupData.bookingType.toUpperCase()}
+• *Date & Time:* ${convertToIndianDate(popupData.pickupDate)} | ${formatTimeToAMPM(popupData.pickupTime)}
 
-*PRICING ESTIMATION SHEET:*
-• Total Fare: Rs. ${option.finalFare.toLocaleString("en-IN")}.00 (All-Inclusive)
+🚖 *VEHICLE SELECTION:*
+• *Category:* ${option.vehicleLabel}
+• *Estimated Fare:* Rs. ${option.finalFare.toLocaleString("en-IN")}/- (All-Inclusive)
 
-Please register this vehicle booking manually in the control panel desk. Thank you!`;
+Kindly let me know about the availability and the booking process. I look forward to traveling with Khatu Rides! ✨`;
 
     const cleanFormattedUrl = `https://wa.me/919244137353?text=${encodeURIComponent(textPayload)}`;
     window.open(cleanFormattedUrl, "_blank");
-  };
+};
 
   const selectedOption = popupData?.fareOptions.find((item) => item.vehicleType === selectedVehicleType);
   const totalPricingBase = selectedOption ? selectedOption.finalFare : 0;

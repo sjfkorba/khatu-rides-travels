@@ -483,6 +483,20 @@ Please confirm this taxi booking manually.`;
           </div>
         </section>
 
+         {/* Elfsight Widget Integration */}
+      <div className="max-w-6xl mx-auto">
+        <div 
+          className="elfsight-app-befc0f26-20b2-4abc-b941-20a499d14601" 
+          data-elfsight-app-lazy
+        ></div>
+      </div>
+
+      {/* External Script Loading with Next.js Script component */}
+      <Script 
+        src="https://elfsightcdn.com/platform.js" 
+        strategy="lazyOnload" 
+      />
+
         <section className="py-20 px-4 max-w-7xl mx-auto">
           <h2 className="text-3xl font-black text-white text-center mb-12">Our Premium Fleet</h2>
 
