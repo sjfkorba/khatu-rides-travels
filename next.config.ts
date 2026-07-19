@@ -15,6 +15,19 @@ images: {
       protocol: "https",
       hostname: "stimg.cardekho.com",
     },
+
+     {
+        protocol: "https",
+        hostname: "imgd.aeplcdn.com",
+        port: "",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "upload.wikimedia.org",
+        port: "",
+        pathname: "/**",
+      },
   ],
 },
 };
