@@ -55,6 +55,173 @@ export const routeDatabase: Record<string, RouteData> = {
     ]
   },
 
+  "bilaspur-to-raipur-taxi": {
+    h1: "Bilaspur to Raipur Taxi Service",
+    title: "Bilaspur to Raipur Cab Booking | Flat Rates",
+    desc: "Book reliable Bilaspur to Raipur taxi service with clean cabs, trained drivers, flexible pickup, and transparent pricing for one-way and round-trip travel.",
+    from: "Bilaspur",
+    to: "Raipur",
+    dist: "120 KM",
+    dur: "2.5 Hours",
+    fareNote: "One-way, round trip, local stopovers, and custom travel plans available.",
+    intro: "Trusted intercity cab booking for business trips, family travel, airport transfers, railway station pickup, and personal outstation journeys.",
+    sectionTitle: "Comfortable and reliable Bilaspur to Raipur cab booking",
+    sectionParagraphs: [
+      "Khatu Rides provides dependable Bilaspur to Raipur taxi service for passengers who want a clean vehicle, professional driver support, and a smooth booking experience. This route is frequently booked for official work, family visits, business meetings, airport connections, and medical travel, so our focus stays on punctuality, communication, and practical pricing.",
+      "Whether you need a one-way cab from Bilaspur to Raipur or a round-trip taxi with return on the same day or later, we help you choose the right vehicle according to passenger count, luggage, and comfort preference. Customers can book sedan, MPV, and premium SUV options depending on budget and travel purpose.",
+      "Our booking process is simple. You can check trip details, use the fare calculator, and confirm your cab through phone or WhatsApp support. We keep the process straightforward so that you get clarity on pickup timing and vehicle selection before the journey begins.",
+      "If you are searching for the best Bilaspur to Raipur cab booking service, Khatu Rides is designed for travelers who want local support with an organized booking experience and consistent assistance from inquiry to trip completion."
+    ],
+    faqs: [
+      {
+        q: "What is the taxi fare from Bilaspur to Raipur?",
+        a: "Taxi fare depends on cab category, one-way or round-trip plan, date, and pickup timing. Contact Khatu Rides or use our fare calculator for exact details."
+      },
+      {
+        q: "Is one-way taxi available from Bilaspur to Raipur?",
+        a: "Yes, one-way cab booking is available along with round-trip and custom outstation travel plans."
+      },
+      {
+        q: "Can I book pickup from home, station, or hotel?",
+        a: "Yes, door-to-door pickup and drop can be arranged from any location in Bilaspur and Raipur."
+      }
+    ]
+  },
+
+  
+
+  "chakarbhata-airport-to-korba-taxi": {
+    h1: "Chakarbhata Airport to Korba Taxi Service",
+    title: "Chakarbhata Airport (Bilaspur) to Korba Cab Booking",
+    desc: "Direct taxi booking from Chakarbhata Airport (Bilaspur) to Korba. Punctual airport pickup, clean cars, and fixed pricing with zero waiting stress.",
+    from: "Chakarbhata Airport (Bilaspur)",
+    to: "Korba",
+    dist: "90 KM",
+    dur: "2 Hours",
+    fareNote: "Flight-synchronized airport pickup with direct drop to Korba.",
+    intro: "Prompt and reliable airport taxi transfer service connecting Bilaspur Chakarbhata Airport directly to Korba city and industrial areas.",
+    sectionTitle: "Smooth airport transfers from Chakarbhata to Korba",
+    sectionParagraphs: [
+      "Arriving at Bilasa Devi Kewat Airport (Chakarbhata) and heading straight to Korba? Khatu Rides provides pre-booked airport cabs that wait for you at the terminal, ensuring you do not waste time searching for local transport.",
+      "We track flight timings to manage delays and offer instant driver allocation for a hassle-free transition from flight to highway journey. Perfect for plant executives, power sector personnel, and business travelers visiting Korba.",
+      "Select from clean, air-conditioned Sedans, Ertigas, and Innovas to fit your luggage and party size comfortably for the 2-hour road travel.",
+      "Avoid overpriced instant taxi quotes by locking in your fixed flat rate with Khatu Rides prior to landing."
+    ],
+    faqs: [
+      {
+        q: "How far is Korba from Chakarbhata Airport?",
+        a: "The distance is approximately 90 KM, which takes around 2 hours by cab."
+      },
+      {
+        q: "What happens if my flight to Chakarbhata is delayed?",
+        a: "Our drivers keep track of flight timings and adjust pickup time accordingly without extra hassle."
+      },
+      {
+        q: "Can I get drop-off at NTPC or BALCO townships in Korba?",
+        a: "Yes, we provide door-to-door drops across all residential, industrial, and township areas in Korba."
+      }
+    ]
+  },
+
+  "korba-to-chakarbhata-airport-taxi": {
+    h1: "Korba to Chakarbhata Airport Taxi Service",
+    title: "Korba to Chakarbhata Airport Cab | Timely Airport Transfer",
+    desc: "Book reliable Korba to Chakarbhata Airport (Bilaspur) taxi with on-time doorstep pickup, safe drivers, and fixed rates for peaceful flight catch.",
+    from: "Korba",
+    to: "Chakarbhata Airport (Bilaspur)",
+    dist: "90 KM",
+    dur: "2 Hours",
+    fareNote: "Guaranteed on-time pickup for hassle-free flight departures.",
+    intro: "Dependable airport drop taxi service from Korba to Chakarbhata (Bilaspur) Airport for effortless and punctual flight catch.",
+    sectionTitle: "Punctual Korba to Chakarbhata Airport Cab Transfers",
+    sectionParagraphs: [
+      "Catching a flight from Chakarbhata Airport? Khatu Rides guarantees timely doorstep pickup from Korba so you reach the airport terminal well before check-in closes.",
+      "We prioritize route efficiency and driver punctuality for all airport runs, eliminating anxiety about missed flights or highway traffic delays.",
+      "Our fleet includes well-maintained Sedans and spacious SUVs equipped with clean seating, AC, and plenty of boot space for your luggage.",
+      "Book conveniently via phone call or WhatsApp, receiving instant confirmation and driver tracking details prior to trip departure."
+    ],
+    faqs: [
+      {
+        q: "How much in advance should I book a cab from Korba to Chakarbhata Airport?",
+        a: "We recommend booking at least 4 to 6 hours prior, though advance booking guarantees your preferred car model."
+      },
+      {
+        q: "Do drivers assist with heavy luggage?",
+        a: "Yes, our drivers are courteous and gladly assist with loading and unloading your luggage."
+      },
+      {
+        q: "Is nighttime pickup available from Korba for early morning flights?",
+        a: "Yes, 24/7 pickup is available across all locations in Korba."
+      }
+    ]
+  },
+
+  "bilaspur-to-raipur-airport-taxi": {
+    h1: "Bilaspur to Raipur Airport Taxi Service",
+    title: "Bilaspur to Raipur Airport Cab Booking | Fixed Rates",
+    desc: "Direct taxi from Bilaspur to Swami Vivekananda Airport (Raipur). On-time pickup, clean cabs, and direct terminal drop for a stress-free flight catch.",
+    from: "Bilaspur",
+    to: "Raipur Airport (RPR)",
+    dist: "135 KM",
+    dur: "3 Hours",
+    fareNote: "Direct airport transfers with no hidden toll charges.",
+    intro: "Fast, comfortable, and punctual taxi service connecting Bilaspur directly to Swami Vivekananda Airport, Raipur.",
+    sectionTitle: "Dedicated Bilaspur to Swami Vivekananda Airport Transfer",
+    sectionParagraphs: [
+      "Traveling from Bilaspur to Raipur Airport (Mana) requires a punctual cab service so you never miss a flight. Khatu Rides offers dedicated airport transfer taxis designed specifically for precise timing and comfort.",
+      "We pick you up directly from your residence, hotel, or office in Bilaspur and drop you right at the departures gate at Raipur Airport.",
+      "Whether traveling solo with light bags or in a group with heavy luggage, choose between Swift Dzire, Etios, Ertiga, or Innova for maximum road comfort.",
+      "Enjoy transparent flat-rate pricing with zero surprise additions at the end of your trip."
+    ],
+    faqs: [
+      {
+        q: "What is the travel time from Bilaspur to Raipur Airport by taxi?",
+        a: "It takes around 2.5 to 3 hours to cover the 135 KM route depending on city traffic."
+      },
+      {
+        q: "Will the cab drop me directly at the flight departures gate?",
+        a: "Yes, our cabs provide direct drop-off right at the departure terminal gate of Raipur Airport."
+      },
+      {
+        q: "Can I schedule a middle-of-the-night pickup from Bilaspur?",
+        a: "Yes, we operate 24/7 airport cab services with prior booking."
+      }
+    ]
+  },
+
+  "raipur-airport-to-bilaspur-taxi": {
+    h1: "Raipur Airport to Bilaspur Taxi Service",
+    title: "Raipur Airport to Bilaspur Cab Booking | Terminal Pickup",
+    desc: "Book hassle-free taxi from Raipur Airport (Mana) to Bilaspur. Driver waiting at arrival gate, clean AC cars, and direct drop to your Bilaspur home or hotel.",
+    from: "Raipur Airport (RPR)",
+    to: "Bilaspur",
+    dist: "135 KM",
+    dur: "3 Hours",
+    fareNote: "Terminal pickup with flight tracking support.",
+    intro: "Premium terminal pickup taxi service from Swami Vivekananda Airport Raipur to any location in Bilaspur.",
+    sectionTitle: "Relaxed rides from Raipur Airport to Bilaspur",
+    sectionParagraphs: [
+      "After landing at Swami Vivekananda Airport (Raipur), avoid long queues and local driver haggling by booking a pre-arranged cab with Khatu Rides.",
+      "Our driver arrives at the airport ahead of your landing time and assists you with your luggage right from the arrival exit.",
+      "Enjoy a smooth 3-hour journey to Bilaspur in a clean, air-conditioned vehicle with high-speed highway comfort and relaxed seating.",
+      "Flexible payment options and instant digital invoices make this service ideal for corporate travelers and visiting executives."
+    ],
+    faqs: [
+      {
+        q: "Where will the driver wait for me at Raipur Airport?",
+        a: "The driver will wait near the designated arrival exit gate with your name tag or contact you directly on arrival."
+      },
+      {
+        q: "Is there any extra charge if the flight is delayed?",
+        a: "No, we monitor flight status and adjust pickup timing accordingly without charging extra waiting fees for reasonable flight delays."
+      },
+      {
+        q: "Can I book a cab for multiple stops in Bilaspur?",
+        a: "Yes, multi-stop and custom drop plans can be arranged at the time of booking."
+      }
+    ]
+  },
+//
   "raipur-to-bilaspur-taxi": {
   h1: "Raipur to Bilaspur Taxi Service",
   title: "Raipur to Bilaspur Cab Booking | One Way & Round Trip",

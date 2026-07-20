@@ -117,6 +117,30 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
+      url: `${siteUrl}/routes/chakarbhata-airport-to-korba-taxi`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl}/routes/korba-to-chakarbhata-airport-taxi`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl}/routes/bilaspur-to-raipur-airport-taxi`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl}/routes/raipur-airport-to-bilaspur-taxi`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
       url: `${siteUrl}/routes/korba-to-raipur-taxi`,
       lastModified: now,
       changeFrequency: "weekly",
