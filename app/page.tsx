@@ -617,188 +617,379 @@ Kindly let me know about the availability and the booking process. I look forwar
       </main>
 
       {/* Viewport Adaptive Popup Drawer Node */}
-      <AnimatePresence>
-        {showPopup && popupData && (
-          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-950/60 p-2 sm:p-4 backdrop-blur-xs overflow-y-auto">
-            <motion.div 
-              initial={{ y: 30, opacity: 0 }} 
-              animate={{ y: 0, opacity: 1 }} 
-              exit={{ y: 30, opacity: 0 }} 
-              className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden my-auto flex flex-col max-h-[95vh] text-left"
-            >
-              {/* Summary Header Strip */}
-              <div className="bg-slate-100 px-5 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-slate-700">
-                <div>Route: <span className="text-slate-950 font-black text-sm block sm:inline">{popupData.pickup.split(",")[0]} - {popupData.drop.split(",")[0]}</span></div>
-                <div className="flex gap-4">
-                  <div>Trip: <span className="text-slate-950 font-black uppercase bg-orange-100 px-2 py-0.5 rounded text-[11px] text-orange-700">{popupData.bookingType}</span></div>
-                  <div>Date: <span className="text-slate-950 font-black">{convertToIndianDate(popupData.pickupDate)}</span></div>
-                  <div>Time: <span className="text-slate-950 font-black">{formatTimeToAMPM(popupData.pickupTime)}</span></div>
-                </div>
-                <button type="button" onClick={() => setShowPopup(false)} className="text-slate-400 hover:text-slate-900 font-black text-sm transition-colors">✕ Close</button>
+     <AnimatePresence>
+  {showPopup && popupData && (
+    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-950/70 p-2 sm:p-4 backdrop-blur-sm overflow-y-auto">
+      <motion.div
+        initial={{ y: 30, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 30, opacity: 0 }}
+        className="bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden my-auto flex flex-col max-h-[95vh] text-left relative"
+      >
+        {/* Header */}
+        <div className="bg-white border-b border-slate-200 sticky top-0 z-20">
+          <div className="bg-slate-100 px-4 sm:px-5 py-4 flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-slate-700">
+            <div>
+              Route:
+              <span className="text-slate-950 font-black text-sm block sm:inline sm:ml-1">
+                {popupData.pickup.split(",")[0]} - {popupData.drop.split(",")[0]}
+              </span>
+            </div>
+
+            <div className="flex flex-wrap gap-3 sm:gap-4">
+              <div>
+                Trip:
+                <span className="ml-1 text-slate-950 font-black uppercase bg-orange-100 px-2 py-0.5 rounded text-[11px] text-orange-700">
+                  {popupData.bookingType}
+                </span>
               </div>
-
-              {/* Trust Strip */}
-              <div className="bg-slate-900 text-white px-4 py-2.5 text-[10px] sm:text-xs grid grid-cols-3 gap-1 text-center font-black uppercase tracking-wider">
-                <div>₹ Pre-Fixed Pricing</div>
-                <div className="border-x border-white/20">🛡️ Driver Allowance Inc.</div>
-                <div>🎧 24x7 Custom Support</div>
+              <div>
+                Date:
+                <span className="ml-1 text-slate-950 font-black">
+                  {convertToIndianDate(popupData.pickupDate)}
+                </span>
               </div>
+              <div>
+                Time:
+                <span className="ml-1 text-slate-950 font-black">
+                  {formatTimeToAMPM(popupData.pickupTime)}
+                </span>
+              </div>
+            </div>
 
-              <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4 bg-slate-50/40">
-                {!showUserForm ? (
-                  <div className="flex flex-col gap-4">
-                    {popupData.fareOptions.map((opt) => {
-                      if (!["sedan", "ertiga", "crysta"].includes(opt.vehicleType)) return null;
-                      
-                      const dynamicLimitKms = getDynamicKmsLimitDisplay(opt);
-                      const extraRatePerKm = opt.vehicleType === "sedan" ? 11 : opt.vehicleType === "ertiga" ? 17 : 20.7;
+            <div className="flex items-center gap-2">
+              <a
+                href="tel:+919244137353"
+                className="hidden sm:inline-flex items-center justify-center rounded-xl bg-red-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white shadow-md hover:bg-red-700 transition"
+                aria-label="Call now on 9244137353"
+              >
+                📞 Call Now
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowPopup(false)}
+                className="text-slate-400 hover:text-slate-900 font-black text-sm transition-colors"
+              >
+                ✕ Close
+              </button>
+            </div>
+          </div>
 
-                      return (
-                        <div key={opt.id} className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-xs hover:shadow-md transition flex flex-col">
-                          
-                          <div className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black text-[10px] sm:text-xs py-2 px-4 uppercase tracking-wider text-center shadow-xs">
-                            🔥 Make Online Advance Payment and Get Upto 10% Discount On Your Booking Instantly
-                          </div>
+          {/* Trust + urgency strip */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 text-center">
+            <div className="bg-slate-900 text-white px-3 py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider">
+              ₹ Pre-Fixed Fare
+            </div>
+            <div className="bg-slate-900 text-white px-3 py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider border-l border-white/10">
+              🛡 Driver Allowance Included
+            </div>
+            <div className="bg-slate-900 text-white px-3 py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider border-l border-white/10">
+              🎧 24x7 Support
+            </div>
+            <div className="bg-orange-500 text-white px-3 py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider border-l border-white/10">
+              Seats Fill Fast - Book Early
+            </div>
+          </div>
+        </div>
 
-                          <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-                            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full sm:w-auto text-center sm:text-left">
-                              <img src={VEHICLES[opt.vehicleType]?.image} alt={opt.vehicleLabel} className="w-32 h-20 sm:w-36 sm:h-24 object-contain flex-shrink-0 mx-auto sm:mx-0" />
-                              <div>
-                                <h4 className="text-lg font-black text-slate-900">{opt.vehicleLabel}</h4>
-                                <p className="text-xs text-slate-400 mt-0.5 font-medium">or equivalent | {opt.vehicleType === "sedan" ? "4" : "6"}+1 Seater AC Cab</p>
-                                
-                                <div className="mt-2.5 flex flex-wrap gap-1.5 justify-center sm:justify-start text-[10px] font-bold">
-                                  <span className="bg-slate-100 text-slate-500 border border-slate-200/50 px-2 py-0.5 rounded">👤 Allowance Included</span>
-                                  <span className="bg-orange-50 text-orange-700 border border-orange-200/60 px-2 py-0.5 rounded">
-                                    📦 Kms Limit: {dynamicLimitKms} KM
-                                  </span>
-                                  <span className="bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-2 py-0.5 rounded">
-                                    ⚡ Extra Run: ₹{extraRatePerKm}/KM
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {/* Right Side Price Details */}
-                            <div className="text-center sm:text-right flex flex-col items-center sm:items-end justify-center min-w-full sm:min-w-[220px] border-t pt-3 sm:pt-0 sm:border-none border-slate-100 w-full sm:w-auto">
-                              
-                              <div className="mb-2 text-center sm:text-right">
-                                <span className="text-[10px] font-black text-slate-400 block uppercase tracking-wider">Estimated Total Fare:</span>
-                                <div className="text-3xl font-black text-slate-950 tracking-tight">₹{opt.finalFare.toLocaleString("en-IN")}</div>
-                              </div>
-                              
-                              <span className="text-[10px] text-slate-400 font-semibold block mb-3">Includes dynamic toll policies</span>
-                              
-                              <div className="flex flex-col gap-2 w-full sm:w-auto min-w-[200px]">
-                                <button
-                                  type="button"
-                                  onClick={() => handleWhatsAppManualRedirect(opt)}
-                                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-widest py-3 px-4 rounded-xl shadow-md transition-all text-center w-full flex items-center justify-center gap-1.5"
-                                >
-                                  💬 Book On WhatsApp
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedVehicleType(opt.vehicleType);
-                                    setPaymentSplitMode((p) => ({ ...p, [opt.id]: "half" }));
-                                    setShowUserForm(true);
-                                  }}
-                                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold text-xs uppercase tracking-wider py-2.5 px-4 rounded-xl shadow-xs transition-all text-center w-full"
-                                >
-                                  Book Online
-                                </button>
-                              </div>
-
-                            </div>
-                          </div>
-
-                          <div className="w-full bg-slate-900 border-t border-slate-800 py-2 px-4 text-center sm:text-left flex items-center justify-center sm:justify-start gap-1.5 shadow-inner">
-                            <span className="text-[10px] sm:text-[11px] text-orange-500">🛡️</span>
-                            <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-300 uppercase tracking-wide">
-                              100% PAYABLE AMOUNT ON SCREEN. <span className="text-orange-400">NO ANY HIDDEN CHARGES</span>
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4 bg-slate-50/50 pb-28 sm:pb-6">
+          {!showUserForm ? (
+            <div className="flex flex-col gap-4">
+              {/* Lead capture statement */}
+              <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-2xl p-4 sm:p-5">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-orange-600">
+                      Instant confirmation support
+                    </p>
+                    <h3 className="text-lg sm:text-xl font-black text-slate-900 mt-1">
+                      Choose your cab and confirm in minutes
+                    </h3>
+                    <p className="text-sm text-slate-600 mt-1">
+                      Talk to our team directly for urgent bookings, custom stops, round trips, or last-minute travel help.
+                    </p>
                   </div>
-                ) : (
-                  <div className="max-w-md mx-auto bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-md text-left w-full">
-                    <div className="text-center mb-5">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-orange-600 bg-orange-50 px-2.5 py-1 rounded">Secure Form</span>
-                      <h4 className="text-base font-black text-slate-900 mt-2">Enter Details to Complete Booking</h4>
+
+                  <a
+                    href="tel:+919244137353"
+                    className="inline-flex items-center justify-center rounded-2xl bg-red-600 px-5 py-3 text-sm font-black uppercase tracking-wider text-white shadow-lg shadow-red-600/20 hover:bg-red-700 transition min-h-[48px]"
+                    aria-label="Call now on 9244137353"
+                  >
+                    📞 Call Now: 92441 37353
+                  </a>
+                </div>
+              </div>
+
+              {popupData.fareOptions.map((opt) => {
+                if (!["sedan", "ertiga", "crysta"].includes(opt.vehicleType)) return null;
+
+                const dynamicLimitKms = getDynamicKmsLimitDisplay(opt);
+                const extraRatePerKm =
+                  opt.vehicleType === "sedan" ? 11 : opt.vehicleType === "ertiga" ? 17 : 20.7;
+
+                return (
+                  <div
+                    key={opt.id}
+                    className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-md transition flex flex-col"
+                  >
+                    <div className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black text-[10px] sm:text-xs py-2 px-4 uppercase tracking-wider text-center">
+                      🔥 Pay Advance Online & Get Upto 10% Instant Booking Discount
                     </div>
 
-                    <div className="space-y-4">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-black text-slate-700 uppercase tracking-wider">Customer Full Name</label>
-                        <input 
-                          type="text" 
-                          placeholder="Type customer name..." 
-                          value={customerName} 
-                          onChange={(e) => setCustomerName(e.target.value)} 
-                          className="w-full border border-slate-300 rounded-xl px-4 py-2.5 bg-white text-sm font-bold focus:outline-none focus:border-orange-500 transition shadow-xs"
+                    <div className="p-4 sm:p-5 flex flex-col lg:flex-row items-center justify-between gap-4">
+                      <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full lg:w-auto text-center sm:text-left">
+                        <img
+                          src={VEHICLES[opt.vehicleType]?.image}
+                          alt={opt.vehicleLabel}
+                          className="w-32 h-20 sm:w-36 sm:h-24 object-contain flex-shrink-0 mx-auto sm:mx-0"
                         />
-                      </div>
 
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-black text-slate-700 uppercase tracking-wider">Mobile Number (For Driver SMS)</label>
-                        <input 
-                          type="tel" 
-                          maxLength={10} 
-                          placeholder="Enter 10-digit phone number..." 
-                          value={customerPhone} 
-                          onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, ""))} 
-                          className="w-full border border-slate-300 rounded-xl px-4 py-2.5 bg-white text-sm font-bold focus:outline-none focus:border-orange-500 transition shadow-xs"
-                        />
-                      </div>
+                        <div>
+                          <h4 className="text-lg font-black text-slate-900">
+                            {opt.vehicleLabel}
+                          </h4>
+                          <p className="text-xs text-slate-400 mt-0.5 font-medium">
+                            or equivalent | {opt.vehicleType === "sedan" ? "4" : "6"}+1 Seater AC Cab
+                          </p>
 
-                      {selectedOption && (
-                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mt-2">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Split Booking Matrix</span>
-                          <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-white p-1">
-                            <button type="button" onClick={() => setPaymentSplitMode((p) => ({ ...p, [selectedOption.id]: "half" }))} className={`rounded-lg py-2 text-center text-[11px] font-black uppercase tracking-wide ${currentSelectedMode === "half" ? "bg-orange-600 text-white shadow-xs" : "text-slate-500"}`}>
-                              50% Advance
-                            </button>
-                            <button type="button" onClick={() => setPaymentSplitMode((p) => ({ ...p, [selectedOption.id]: "full" }))} className={`rounded-lg py-2 text-center text-[11px] font-black uppercase tracking-wide ${currentSelectedMode === "full" ? "bg-slate-900 text-white shadow-xs" : "text-slate-500"}`}>
-                              Full Pay
-                            </button>
+                          <div className="mt-2.5 flex flex-wrap gap-1.5 justify-center sm:justify-start text-[10px] font-bold">
+                            <span className="bg-slate-100 text-slate-500 border border-slate-200/50 px-2 py-0.5 rounded">
+                              👤 Allowance Included
+                            </span>
+                            <span className="bg-orange-50 text-orange-700 border border-orange-200/60 px-2 py-0.5 rounded">
+                              📦 Kms Limit: {dynamicLimitKms} KM
+                            </span>
+                            <span className="bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-2 py-0.5 rounded">
+                              ⚡ Extra Run: ₹{extraRatePerKm}/KM
+                            </span>
                           </div>
-                          
-                          <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-200/60">
-                            <div>
-                              <span className="text-[10px] font-black text-slate-400 block uppercase">Payable Now</span>
-                              <span className="text-xl font-black text-slate-900">₹{displayPayNowNumber.toLocaleString("en-IN")}</span>
-                            </div>
-                            <span className="text-[10px] font-bold text-slate-500 bg-white px-2 py-1 rounded border border-slate-200">{selectedOption.vehicleLabel}</span>
+
+                          <div className="mt-3 flex flex-wrap gap-2 justify-center sm:justify-start">
+                            <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-bold text-emerald-700 border border-emerald-200">
+                              Free fare assistance on call
+                            </span>
+                            <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-600 border border-slate-200">
+                              No hidden charges
+                            </span>
                           </div>
                         </div>
-                      )}
-
-                      <div className="grid grid-cols-2 gap-2 pt-2">
-                        <button type="button" onClick={() => setShowUserForm(false)} className="w-full border border-slate-300 bg-slate-100 text-slate-700 font-bold text-xs uppercase py-3.5 rounded-xl transition">
-                          ↩ Back
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => selectedOption && handleOnlinePaymentCheckout(selectedOption)}
-                          disabled={paymentLoadingId !== null}
-                          className="w-full bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-widest py-3.5 rounded-xl transition shadow-lg shadow-orange-600/20 disabled:opacity-50"
-                        >
-                          {paymentLoadingId ? "Syncing..." : "Book Online"}
-                        </button>
                       </div>
 
+                      <div className="text-center lg:text-right flex flex-col items-center lg:items-end justify-center min-w-full lg:min-w-[250px] border-t pt-4 lg:pt-0 lg:border-none border-slate-100 w-full lg:w-auto">
+                        <div className="mb-2 text-center lg:text-right">
+                          <span className="text-[10px] font-black text-slate-400 block uppercase tracking-wider">
+                            Estimated Total Fare
+                          </span>
+                          <div className="text-3xl font-black text-slate-950 tracking-tight">
+                            ₹{opt.finalFare.toLocaleString("en-IN")}
+                          </div>
+                        </div>
+
+                        <span className="text-[10px] text-slate-400 font-semibold block mb-3">
+                          Includes dynamic toll policies
+                        </span>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full min-w-[220px]">
+                          <a
+                            href="tel:+919244137353"
+                            className="bg-red-600 hover:bg-red-700 text-white font-black text-xs uppercase tracking-widest py-3 px-4 rounded-xl shadow-md transition-all text-center w-full flex items-center justify-center gap-1.5 min-h-[48px]"
+                            aria-label="Call now on 9244137353"
+                          >
+                            📞 Call Now
+                          </a>
+
+                          <button
+                            type="button"
+                            onClick={() => handleWhatsAppManualRedirect(opt)}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-widest py-3 px-4 rounded-xl shadow-md transition-all text-center w-full flex items-center justify-center gap-1.5 min-h-[48px]"
+                          >
+                            💬 WhatsApp
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedVehicleType(opt.vehicleType);
+                              setPaymentSplitMode((p) => ({ ...p, [opt.id]: "half" }));
+                              setShowUserForm(true);
+                            }}
+                            className="bg-slate-900 hover:bg-slate-800 text-white font-black text-xs uppercase tracking-widest py-3 px-4 rounded-xl shadow-md transition-all text-center w-full min-h-[48px]"
+                          >
+                            Book Online
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="w-full bg-slate-900 border-t border-slate-800 py-2 px-4 text-center sm:text-left flex flex-wrap items-center justify-center sm:justify-between gap-2 shadow-inner">
+                      <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-300 uppercase tracking-wide">
+                        🛡 100% Payable amount on screen. <span className="text-orange-400">No hidden charges.</span>
+                      </p>
+                      <a
+                        href="tel:+919244137353"
+                        className="text-[10px] sm:text-[11px] font-black uppercase tracking-wide text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-lg transition"
+                        aria-label="Call now on 9244137353"
+                      >
+                        Need help? Call now
+                      </a>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="max-w-md mx-auto bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-md text-left w-full">
+              <div className="text-center mb-5">
+                <span className="text-[10px] font-black uppercase tracking-wider text-orange-600 bg-orange-50 px-2.5 py-1 rounded">
+                  Secure Form
+                </span>
+                <h4 className="text-base font-black text-slate-900 mt-2">
+                  Enter Details to Complete Booking
+                </h4>
+                <p className="text-xs text-slate-500 mt-1">
+                  Facing issue or urgent booking? Call directly for instant assistance.
+                </p>
+              </div>
+
+              <a
+                href="tel:+919244137353"
+                className="mb-4 w-full inline-flex items-center justify-center rounded-xl bg-red-600 px-4 py-3 text-xs font-black uppercase tracking-wider text-white shadow-md hover:bg-red-700 transition min-h-[48px]"
+                aria-label="Call now on 9244137353"
+              >
+                📞 Call Now: 92441 37353
+              </a>
+
+              <div className="space-y-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-black text-slate-700 uppercase tracking-wider">
+                    Customer Full Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Type customer name..."
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    className="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white text-sm font-bold focus:outline-none focus:border-orange-500 transition shadow-sm"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-black text-slate-700 uppercase tracking-wider">
+                    Mobile Number (For Driver SMS)
+                  </label>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={10}
+                    placeholder="Enter 10-digit phone number..."
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, ""))}
+                    className="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white text-sm font-bold focus:outline-none focus:border-orange-500 transition shadow-sm"
+                  />
+                </div>
+
+                {selectedOption && (
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mt-2">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">
+                      Split Booking Matrix
+                    </span>
+
+                    <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-white p-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPaymentSplitMode((p) => ({ ...p, [selectedOption.id]: "half" }))
+                        }
+                        className={`rounded-lg py-2 text-center text-[11px] font-black uppercase tracking-wide ${
+                          currentSelectedMode === "half"
+                            ? "bg-orange-600 text-white shadow-sm"
+                            : "text-slate-500"
+                        }`}
+                      >
+                        50% Advance
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPaymentSplitMode((p) => ({ ...p, [selectedOption.id]: "full" }))
+                        }
+                        className={`rounded-lg py-2 text-center text-[11px] font-black uppercase tracking-wide ${
+                          currentSelectedMode === "full"
+                            ? "bg-slate-900 text-white shadow-sm"
+                            : "text-slate-500"
+                        }`}
+                      >
+                        Full Pay
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-200/60">
+                      <div>
+                        <span className="text-[10px] font-black text-slate-400 block uppercase">
+                          Payable Now
+                        </span>
+                        <span className="text-xl font-black text-slate-900">
+                          ₹{displayPayNowNumber.toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-500 bg-white px-2 py-1 rounded border border-slate-200">
+                        {selectedOption.vehicleLabel}
+                      </span>
                     </div>
                   </div>
                 )}
+
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowUserForm(false)}
+                    className="w-full border border-slate-300 bg-slate-100 text-slate-700 font-bold text-xs uppercase py-3.5 rounded-xl transition"
+                  >
+                    ↩ Back
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => selectedOption && handleOnlinePaymentCheckout(selectedOption)}
+                    disabled={paymentLoadingId !== null}
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-widest py-3.5 rounded-xl transition shadow-lg shadow-orange-600/20 disabled:opacity-50"
+                  >
+                    {paymentLoadingId ? "Syncing..." : "Book Online"}
+                  </button>
+                </div>
               </div>
-            </motion.div>
+            </div>
+          )}
+        </div>
+
+        {/* Sticky mobile CTA */}
+        <div className="sm:hidden sticky bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur px-3 py-3">
+          <div className="grid grid-cols-2 gap-2">
+            <a
+              href="tel:+919244137353"
+              className="inline-flex items-center justify-center rounded-xl bg-red-600 px-4 py-3 text-xs font-black uppercase tracking-wider text-white shadow-md"
+              aria-label="Call now on 9244137353"
+            >
+              📞 Call Now
+            </a>
+            <button
+              type="button"
+              onClick={() => {
+                const firstCab = popupData.fareOptions.find((opt) =>
+                  ["sedan", "ertiga", "crysta"].includes(opt.vehicleType)
+                );
+                if (firstCab) handleWhatsAppManualRedirect(firstCab);
+              }}
+              className="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-xs font-black uppercase tracking-wider text-white shadow-md"
+            >
+              💬 WhatsApp
+            </button>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      </motion.div>
+    </div>
+  )}
+</AnimatePresence>
 
       {/* Success Receipt Modal Summary */}
       <AnimatePresence>
