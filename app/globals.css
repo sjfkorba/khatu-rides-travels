@@ -29,7 +29,7 @@ body {
 }
 
 /* =========================
-   REVIEW CAROUSEL
+   REVIEW CAROUSEL (Updated to Slow 120s & Hover Pause Fix)
 ========================= */
 
 @keyframes reviewMarquee {
@@ -45,25 +45,20 @@ body {
 .review-marquee {
   display: flex;
   width: max-content;
-
-  animation: reviewMarquee 45s linear infinite;
-
+  animation: reviewMarquee 120s linear infinite;
   will-change: transform;
-
   backface-visibility: hidden;
-
   transform: translateZ(0);
 }
 
 .review-marquee:hover {
-  animation-play-state: paused;
+  animation-play-state: paused !important;
 }
 
-/* Mobile slower speed */
-
+/* Mobile speed adjustment */
 @media (max-width: 768px) {
   .review-marquee {
-    animation-duration: 70s;
+    animation-duration: 90s;
   }
 }
 
@@ -97,7 +92,6 @@ body {
   height: 100%;
   z-index: 10;
   pointer-events: none;
-
   background: linear-gradient(
     to right,
     white,
@@ -113,7 +107,6 @@ body {
   height: 100%;
   z-index: 10;
   pointer-events: none;
-
   background: linear-gradient(
     to left,
     white,
@@ -140,22 +133,4 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #ea580c;
-}
-
-/* app/globals.css */
-@import "tailwindcss";
-
-@theme {
-  --animate-marquee-slow: marquee 40s linear infinite;
-
-  @keyframes marquee {
-    0% { transform: translateX(0%); }
-    100% { transform: translateX(-50%); }
-  }
-}
-
-/* Elfsight branding ko hide karne ke liye */
-.eapps-link, 
-.elfsight-app-befc0f26-20b2-4abc-b941-20a499d14601 a {
-    display: none !important;
 }

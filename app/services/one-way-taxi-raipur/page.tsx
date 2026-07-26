@@ -25,6 +25,7 @@ import {
 // Firebase initialization panel
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, collection, addDoc, serverTimestamp, Firestore } from "firebase/firestore";
+import ReviewsCarousel from "@/components/ReviewsCarousel";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -369,12 +370,9 @@ Please register this ride profile in the active grid logs. Thank you!`;
         ></div>
       </div>
 
-      {/* External Script Loading with Next.js Script component */}
-      <Script 
-        src="https://elfsightcdn.com/platform.js" 
-        strategy="lazyOnload" 
-      />
-
+       {/* 👑 5. DYNAMIC REVIEWS SLIDER */}
+              <ReviewsCarousel />
+              
       {/* 📊 SERVICES CORE SEGMENT */}
       <section className="relative z-10 mx-auto max-w-7xl px-4 py-16">
         <header className="text-center mb-10">

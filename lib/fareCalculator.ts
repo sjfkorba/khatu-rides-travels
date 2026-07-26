@@ -158,7 +158,7 @@ export function calculateFare({
     // 👑 SLAB 1: Short Leads (80 KM - 150 KM Corridor - Handles Korba-Janjgir / Bilaspur)
     else if (showKms > 80 && showKms <= 150) {
       if (vehicleType === "sedan") {
-        currentMultiplier = 2.10;
+        currentMultiplier = 1.90;
         ratePerKm = 11.00; 
       } else if (vehicleType === "ertiga") {
         currentMultiplier = 2.10;

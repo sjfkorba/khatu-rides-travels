@@ -22,6 +22,7 @@ import {
   type VehicleType,
   type ServiceType,
 } from "@/lib/fareCalculator";
+import ReviewsCarousel from "./ReviewsCarousel";
 
 type FareOption = {
   id: string;
@@ -383,6 +384,9 @@ Please confirm this taxi booking manually.`;
               />
             </div>
 
+             {/* 👑 5. DYNAMIC REVIEWS SLIDER */}
+                    <ReviewsCarousel />
+
             <div className="max-w-5xl mx-auto mt-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
                 <div className="flex items-center justify-center gap-2 text-orange-400 mb-2">
@@ -491,11 +495,7 @@ Please confirm this taxi booking manually.`;
         ></div>
       </div>
 
-      {/* External Script Loading with Next.js Script component */}
-      <Script 
-        src="https://elfsightcdn.com/platform.js" 
-        strategy="lazyOnload" 
-      />
+      
 
         <section className="py-20 px-4 max-w-7xl mx-auto">
           <h2 className="text-3xl font-black text-white text-center mb-12">Our Premium Fleet</h2>

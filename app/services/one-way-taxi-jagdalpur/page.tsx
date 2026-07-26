@@ -25,6 +25,7 @@ import {
 // Firebase initialization panel
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, collection, addDoc, serverTimestamp, Firestore } from "firebase/firestore";
+import ReviewsCarousel from "@/components/ReviewsCarousel";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -361,19 +362,9 @@ Please schedule this vehicle loop at your early convenience. Thank you!`;
         </div>
       </section>
 
-       {/* Elfsight Widget Integration */}
-      <div className="max-w-6xl mx-auto">
-        <div 
-          className="elfsight-app-befc0f26-20b2-4abc-b941-20a499d14601" 
-          data-elfsight-app-lazy
-        ></div>
-      </div>
-
-      {/* External Script Loading with Next.js Script component */}
-      <Script 
-        src="https://elfsightcdn.com/platform.js" 
-        strategy="lazyOnload" 
-      />
+      
+       {/* 👑 5. DYNAMIC REVIEWS SLIDER */}
+              <ReviewsCarousel />
 
       {/* 📊 SERVICES PILLARS */}
       <section className="relative z-10 mx-auto max-w-7xl px-4 py-16">

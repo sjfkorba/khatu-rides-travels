@@ -26,6 +26,7 @@ import {
 // Firebase initialization panel
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, collection, addDoc, serverTimestamp, Firestore } from "firebase/firestore";
+import ReviewsCarousel from "@/components/ReviewsCarousel";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -445,6 +446,9 @@ Please register this ride profile in the active grid logs. Thank you!`;
           </div>
         </div>
       </section>
+
+       {/* 👑 5. DYNAMIC REVIEWS SLIDER */}
+              <ReviewsCarousel />
 
       {/* 📖 1500+ WORDS DETAILED SEO CONTENT & FAQS */}
       <section className="py-20 px-4 max-w-4xl mx-auto space-y-12">
