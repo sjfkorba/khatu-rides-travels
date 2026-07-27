@@ -16,26 +16,25 @@ export interface VehicleConfig {
  * =========================================================================
  * 👑 GLOBAL FLEET PRICE MATRIX (COMMERCIAL PER-KM RATES)
  * =========================================================================
- * FUNDA: Khatu Rides Travels Co. ka official base rate aur long-distance rate sheet hai.
  */
 export const VEHICLES: Record<string, VehicleConfig> = {
   sedan: {
     label: "Maruti Suzuki Dzire",
     image: "/dezire.png",
     baseRatePerKm: 11, 
-    longRatePerKm: 11,
+    longRatePerKm: 13,
   },
   ertiga: {
     label: "Maruti Suzuki Ertiga (MUV)",
     image: "/ertiga.png",
     baseRatePerKm: 13, 
-    longRatePerKm: 13, 
+    longRatePerKm: 15, 
   },
   crysta: {
     label: "Toyota Innova Crysta (Premium)",
     image: "/crysta.png",
     baseRatePerKm: 20, 
-    longRatePerKm: 20, 
+    longRatePerKm: 17, 
   },
 };
 
@@ -60,6 +59,25 @@ export function psychologicalPrice(value: number) {
   return Math.max(rounded - 1, 0);
 }
 
+// 👑 POPULAR HUBS WHITELIST (Standard Competitive Pricing Corridor)
+const POPULAR_HUBS = [
+  "bilaspur",
+  "raipur",
+  "durg",
+  "korba",
+  "raigarh",
+  "bhilai"
+];
+
+/**
+ * Check if the drop location matches our popular high-density commercial hubs
+ */
+function isPopularHub(dropLocation: string): boolean {
+  if (!dropLocation) return true; // Default true if empty to prevent breakage
+  const lowerDrop = dropLocation.toLowerCase();
+  return POPULAR_HUBS.some(hub => lowerDrop.includes(hub));
+}
+
 /**
  * =========================================================================
  * 👑 THE MASTER FARE CALCULATOR ENGINE
@@ -74,6 +92,7 @@ export function calculateFare({
   pickupTime = "",
   returnDate = "",
   returnTime = "",
+  drop = "",
 }: {
   distance: number;
   vehicleType: VehicleType;
@@ -83,8 +102,9 @@ export function calculateFare({
   pickupTime?: string;
   returnDate?: string;
   returnTime?: string;
+  drop?: string;
 }): CalculateFareResult {
-  const baseDistance = distance > 0 ? Math.round(distance) : 0;
+  let baseDistance = distance > 0 ? Math.round(distance) : 0;
   
   /**
    * =========================================================================
@@ -119,6 +139,15 @@ export function calculateFare({
     };
   }
 
+  /**
+   * =========================================================================
+   * 👑 LONG DISTANCE DISTANCE ADJUSTMENT RULE (+25 KMS IF 150+ KM ONEWAY)
+   * =========================================================================
+   */
+  if (bookingType === "oneway" && baseDistance > 150) {
+    baseDistance += 25; // Adding 25 Kms extra buffer for long distance one-way return overhead
+  }
+
   // Short lead check buffer lock bypass (>500 KMs follows absolute true tracking)
   let showKms = baseDistance;
   if (baseDistance > 500) {
@@ -128,7 +157,7 @@ export function calculateFare({
   // 👑 RE-ENGINEERED UNCONDITIONAL LOCK: Micro Leads Minimum Floor Protection Block
   let effectiveCalculationDistance = showKms;
   if (bookingType === "oneway" && showKms < 80) {
-    effectiveCalculationDistance = 80; // Absolute safety base mapping floor lock to shield operations
+    effectiveCalculationDistance = 80; 
   }
 
   let ratePerKm = VEHICLES[vehicleType].baseRatePerKm;
@@ -142,23 +171,23 @@ export function calculateFare({
    */
   if (bookingType === "oneway") {
     
-    // 👑 SLAB 0: Micro Leads Protection (<80 KM Floor Shield - Handles Korba-Champa / Raipur-Bhilai)
+    // 👑 SLAB 0: Micro Leads Protection (<80 KM Floor Shield)
     if (showKms < 80) {
       if (vehicleType === "sedan") {
-        currentMultiplier = 1.70; // 80 * 11 * 1.70 = ₹1496 (Savaari is ₹1523 - ₹2090 range)
+        currentMultiplier = 1.70;
         ratePerKm = 11.00;        
       } else if (vehicleType === "ertiga") {
-        currentMultiplier = 2.40; // 80 * 13 * 2.40 = ₹2496 (Savaari is ₹2965 - ₹3919 range)
+        currentMultiplier = 2.40;
         ratePerKm = 13.00;        
       } else if (vehicleType === "crysta") {
-        currentMultiplier = 2.85; // 80 * 20 * 2.85 = ₹4560 (Savaari is ₹5630 - ₹8015 range)
+        currentMultiplier = 2.85;
         ratePerKm = 20.00;        
       }
     }
-    // 👑 SLAB 1: Short Leads (80 KM - 150 KM Corridor - Handles Korba-Janjgir / Bilaspur)
+    // 👑 SLAB 1: Short Leads (80 KM - 150 KM Corridor)
     else if (showKms > 80 && showKms <= 150) {
       if (vehicleType === "sedan") {
-        currentMultiplier = 1.90;
+        currentMultiplier = 1.95;
         ratePerKm = 11.00; 
       } else if (vehicleType === "ertiga") {
         currentMultiplier = 2.10;
@@ -168,16 +197,16 @@ export function calculateFare({
         ratePerKm = 20.00; 
       }
     }
-    // 👑 SLAB 2: Mid-Corridors (151 KM - 350 KM Corridor - Handles Korba-Raipur)
+    // 👑 SLAB 2: Mid-Corridors (151 KM - 350 KM Corridor)
     else if (showKms > 150 && showKms <= 350) {
       if (vehicleType === "sedan") {
-        currentMultiplier = 1.55;
+        currentMultiplier = 1.45;
         ratePerKm = 11.00; 
       } else if (vehicleType === "ertiga") {
-        currentMultiplier = 1.85;
+        currentMultiplier = 1.55;
         ratePerKm = 13.00; 
       } else if (vehicleType === "crysta") {
-        currentMultiplier = 1.45;
+        currentMultiplier = 1.25;
         ratePerKm = 20.00; 
       }
     }
@@ -194,7 +223,7 @@ export function calculateFare({
         ratePerKm = 20.00; 
       }
     }
-    // 👑 SLAB 4: Mega Highways Corridor (>600 KM - Handles Raipur-Ujjain)
+    // 👑 SLAB 4: Mega Highways Corridor (>600 KM)
     else {
       if (vehicleType === "sedan") {
         currentMultiplier = 1.65;
@@ -208,18 +237,43 @@ export function calculateFare({
       }
     }
 
+    // 👑 REMOTE / NON-POPULAR HUB SURCHARGE CHECK
+    if (!isPopularHub(drop)) {
+      currentMultiplier *= 1.42; 
+    }
+
   /**
    * =========================================================================
-   * 👑 ROUND TRIP PRICING CONTROL WITH MULTI-TIER SLABS
+   * 👑 ROUND TRIP PRICING CONTROL WITH VEHICLE-SPECIFIC MULTI-TIER SLABS
    * =========================================================================
    */
   } else if (bookingType === "roundtrip") {
-    if (baseDistance > 400 && baseDistance < 600) {
-      currentMultiplier = 2.45; 
-    } else if (baseDistance > 600) {
-      currentMultiplier = 2.10;
-    } else {
-      currentMultiplier = 2.80; 
+    const totalRoundTripKm = baseDistance * 2;
+
+    if (vehicleType === "sedan") {
+      if (totalRoundTripKm > 400 && totalRoundTripKm < 600) {
+        currentMultiplier = 2.45;
+      } else if (totalRoundTripKm >= 600) {
+        currentMultiplier = 2.10;
+      } else {
+        currentMultiplier = 3.40;
+      }
+    } else if (vehicleType === "ertiga") {
+      if (totalRoundTripKm > 400 && totalRoundTripKm < 600) {
+        currentMultiplier = 2.90;
+      } else if (totalRoundTripKm >= 600) {
+        currentMultiplier = 2.55;
+      } else {
+        currentMultiplier = 2.90;
+      }
+    } else if (vehicleType === "crysta") {
+      if (totalRoundTripKm > 400 && totalRoundTripKm < 600) {
+        currentMultiplier = 2.90;
+      } else if (totalRoundTripKm >= 600) {
+        currentMultiplier = 2.55;
+      } else {
+        currentMultiplier = 2.90;
+      }
     }
 
     if (pickupDate && returnDate && pickupTime && returnTime) {

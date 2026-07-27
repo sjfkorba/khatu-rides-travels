@@ -134,3 +134,7 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #ea580c;
 }
+img {
+  border: none;
+  outline: none;
+}
