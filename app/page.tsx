@@ -94,14 +94,11 @@ export default function HomePage() {
   const [showUserForm, setShowUserForm] = useState(false);
   const [expandedInclusionsId, setExpandedInclusionsId] = useState<string | null>(null);
 
-  // 👑 State for Initial Google Rating Discount Popup Modal
   const [showInitialRatingModal, setShowInitialRatingModal] = useState(false);
-
   const calculatorSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     document.documentElement.style.scrollBehavior = "smooth";
-    // Show initial discount popup on first load after 1 second
     const timer = setTimeout(() => {
       setShowInitialRatingModal(true);
     }, 1000);
@@ -312,165 +309,176 @@ Kindly let me know about the availability and the booking process. I look forwar
     <>
       <Script id="razorpay-checkout-js" src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
 
-      <main className="min-h-screen bg-slate-50 text-slate-900 pb-20 md:pb-0 font-sans">
+      <main className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-100 pb-20 md:pb-0 font-sans selection:bg-orange-500 selection:text-white relative overflow-hidden">
         
-        {/* 👑 EXACT MATCH NAVBAR (Matching Home Page UI) */}
-        <header className="w-full bg-white border-b border-slate-200 sticky top-0 z-40 select-none shadow-xs">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6">
+        {/* Background Ambient Glow Effects */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-600/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        {/* 👑 MODERN GLASSMORPHIC NAVBAR */}
+        <header className="w-full bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/80 sticky top-0 z-40 select-none shadow-xl">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
             <div className="flex items-center gap-2">
               <div className="flex flex-col">
-                <span className="text-xl sm:text-2xl font-black tracking-tighter uppercase text-slate-950 leading-none">
-                  Khatu<span className="text-orange-600">Rides</span>
+                <span className="text-2xl sm:text-3xl font-black tracking-tighter uppercase text-white leading-none">
+                  Khatu<span className="text-orange-500">Rides</span>
                 </span>
-                <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.25em] text-slate-500 mt-1">Travels Co.</span>
+                <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.3em] text-orange-400 mt-1">Travels Co.</span>
               </div>
             </div>
 
-            <div className="hidden lg:flex items-center gap-8 text-xs font-bold text-slate-700 uppercase tracking-wider">
-              <a href="#" className="text-orange-600 hover:text-orange-700 transition">Home</a>
-              <a href="#about" className="hover:text-orange-600 transition">About Us</a>
-              <a href="#services" className="hover:text-orange-600 transition">Our Services</a>
-              <a href="#routes-heading" className="hover:text-orange-600 transition">Popular Routes</a>
-              <a href="#offers" className="hover:text-orange-600 transition">Offers</a>
-              <a href="#contact" className="hover:text-orange-600 transition">Contact Us</a>
+            <div className="hidden lg:flex items-center gap-8 text-xs font-bold text-slate-300 uppercase tracking-wider">
+              <a href="#" className="text-orange-500 hover:text-orange-400 transition">Home</a>
+              <a href="#about" className="hover:text-orange-400 transition">About Us</a>
+              <a href="#services" className="hover:text-orange-400 transition">Our Services</a>
+              <a href="#routes-heading" className="hover:text-orange-400 transition">Popular Routes</a>
+              <a href="#offers" className="hover:text-orange-400 transition">Offers</a>
+              <a href="#contact" className="hover:text-orange-400 transition">Contact Us</a>
             </div>
 
             <div className="flex items-center gap-3">
-              <a href="tel:+919244137353" className="hidden sm:flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-xs font-black text-slate-800 hover:bg-slate-50 transition shadow-2xs">
-                <span className="text-emerald-600">📞</span> Call 24x7: <span className="text-orange-600">92441 37353</span>
+              <a href="tel:+919244137353" className="hidden sm:flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900/80 px-4 py-2 text-xs font-black text-slate-200 hover:bg-slate-800 transition shadow-inner">
+                <span className="text-emerald-400">📞</span> Call 24x7: <span className="text-orange-400">92441 37353</span>
               </a>
-              <a href="https://wa.me/919244137353" target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-emerald-500 text-white shadow-md hover:bg-emerald-600 transition">
-                <span className="text-base sm:text-lg">💬</span>
+              <a href="https://wa.me/919244137353" target="_blank" rel="noopener noreferrer" className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 hover:bg-emerald-500 transition scale-100 hover:scale-105">
+                <span className="text-lg">💬</span>
               </a>
-              <button onClick={() => setShowInitialRatingModal(true)} className="rounded-full bg-orange-600 px-4 sm:px-6 py-2 sm:py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-orange-700 transition shadow-md">
+              <button onClick={() => setShowInitialRatingModal(true)} className="rounded-full bg-gradient-to-r from-orange-600 to-amber-500 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:from-orange-500 hover:to-amber-400 transition shadow-lg shadow-orange-600/30">
                 Login / Signup
               </button>
             </div>
           </div>
         </header>
 
-        {/* 👑 TOP FASTEST GROWING TICKER BAR */}
-        <div className="w-full bg-amber-50 border-b border-amber-200/60 py-2 px-4 text-center text-xs font-bold text-amber-900">
+        {/* 👑 TICKER BAR */}
+        <div className="w-full bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 border-b border-orange-500/30 py-2.5 px-4 text-center text-xs font-black text-orange-300 tracking-wide">
           ⚡ Chhattisgarh & Madhya Pradesh ka Fastest Growing Cab Service
         </div>
 
-        {/* 👑 HERO & BOOKING SECTION */}
-        <section className="relative px-4 pt-6 pb-12 sm:py-12 bg-gradient-to-b from-slate-50 to-white overflow-hidden">
-          <div className="max-w-7xl mx-auto">
+        {/* 👑 HERO & BOOKING SECTION (Mobile First: Calculator on Top) */}
+        <section className="relative px-4 pt-8 pb-16 sm:py-16">
+          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
-            {/* Hero Text */}
-            <div className="text-center sm:text-left mb-8 max-w-2xl">
-              <h1 className="text-3xl sm:text-5xl font-black text-slate-950 tracking-tight leading-tight">
+            {/* Hero Text (Appears below on mobile, side on desktop for high impact) */}
+            <div className="lg:col-span-5 text-center lg:text-left space-y-4 order-2 lg:order-1">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-[10px] font-black uppercase tracking-widest">
+                <span>🌟 Premium Intercity Cabs</span>
+              </div>
+              <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-none text-white">
                 Har Safar,<br />
-                <span className="text-orange-600">Khatu Rides</span> Ke Saath.
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500">Khatu Rides</span> Ke Saath.
               </h1>
-              <p className="text-xs sm:text-sm font-bold text-slate-600 mt-2">
-                Outstation • Local • Airport • Round Trip
+              <p className="text-xs sm:text-sm font-bold text-slate-400">
+                Outstation • Local • Airport • Round Trip with absolute safety & transparent pricing.
               </p>
 
-              {/* Trust badges row */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
+              {/* Trust Badges */}
+              <div className="grid grid-cols-2 gap-3 pt-4">
                 {[
                   { icon: "🛡️", title: "Best Price", sub: "Guarantee" },
                   { icon: "👨‍✈️", title: "Verified", sub: "Drivers" },
                   { icon: "🎧", title: "24x7", sub: "Support" },
                   { icon: "⏱️", title: "On-Time", sub: "Pickup" },
                 ].map((tb, idx) => (
-                  <div key={idx} className="flex items-center gap-2.5 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-2xs">
-                    <span className="text-lg">{tb.icon}</span>
+                  <div key={idx} className="flex items-center gap-3 bg-slate-900/60 backdrop-blur-md p-3.5 rounded-2xl border border-slate-800/80 shadow-lg">
+                    <span className="text-xl">{tb.icon}</span>
                     <div>
-                      <div className="text-[11px] font-black text-slate-900 leading-tight">{tb.title}</div>
-                      <div className="text-[9px] font-bold text-slate-500">{tb.sub}</div>
+                      <div className="text-xs font-black text-slate-200 leading-tight">{tb.title}</div>
+                      <div className="text-[10px] font-bold text-slate-400">{tb.sub}</div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* 👑 FARE CALCULATOR CARD EMBEDDED */}
-            <div ref={calculatorSectionRef} className="relative z-20">
-              <FareCalculator
-                onFareCalculated={(data) => {
-                  const updatedData = {
-                    ...data,
-                    fareOptions: data.fareOptions.map((opt) => {
-                      const recalculated = calculateFare({
-                        distance: opt.billedDistance,
-                        vehicleType: opt.vehicleType,
-                        bookingType: data.bookingType,
-                        serviceType: data.serviceType,
-                        pickupDate: data.pickupDate,
-                        pickupTime: data.pickupTime,
-                        returnDate: data.returnDate,
-                        returnTime: data.returnTime,
-                        drop: data.drop,
-                      });
-                      return {
-                        ...opt,
-                        finalFare: recalculated.finalFare,
-                        billedDistance: recalculated.billedDistance,
-                        durationMinutes: recalculated.durationMinutes,
-                      };
-                    }),
-                  };
-                  setPopupData(updatedData);
-                  setSelectedVehicleType("sedan");
-                  setShowPopup(true);
-                  setShowUserForm(false);
-                  setPaymentSplitMode({});
-                }}
-              />
+            {/* 👑 FARE CALCULATOR CARD EMBEDDED (Top on Mobile) */}
+            <div ref={calculatorSectionRef} className="lg:col-span-7 relative z-20 order-1 lg:order-2">
+              <div className="absolute -inset-1 bg-gradient-to-r from-orange-600 to-amber-500 rounded-3xl blur-md opacity-30 animate-pulse" />
+              <div className="relative">
+                <FareCalculator
+                  onFareCalculated={(data) => {
+                    const updatedData = {
+                      ...data,
+                      fareOptions: data.fareOptions.map((opt) => {
+                        const recalculated = calculateFare({
+                          distance: opt.billedDistance,
+                          vehicleType: opt.vehicleType,
+                          bookingType: data.bookingType,
+                          serviceType: data.serviceType,
+                          pickupDate: data.pickupDate,
+                          pickupTime: data.pickupTime,
+                          returnDate: data.returnDate,
+                          returnTime: data.returnTime,
+                          drop: data.drop,
+                        });
+                        return {
+                          ...opt,
+                          finalFare: recalculated.finalFare,
+                          billedDistance: recalculated.billedDistance,
+                          durationMinutes: recalculated.durationMinutes,
+                        };
+                      }),
+                    };
+                    setPopupData(updatedData);
+                    setSelectedVehicleType("sedan");
+                    setShowPopup(true);
+                    setShowUserForm(false);
+                    setPaymentSplitMode({});
+                  }}
+                />
+              </div>
             </div>
 
           </div>
         </section>
 
-        {/* 👑 SPECIAL OFFER BANNER (Matching Home Page UI) */}
+        {/* 👑 SPECIAL OFFER BANNER */}
         <section id="offers" className="px-4 max-w-7xl mx-auto my-12">
-          <div className="rounded-3xl bg-gradient-to-r from-amber-100 via-orange-100 to-amber-50 border border-orange-200 p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-sm">
-            <div className="flex items-center gap-4 text-center sm:text-left">
-              <span className="text-4xl sm:text-6xl">🎁</span>
+          <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-orange-950 via-slate-900 to-amber-950 border border-orange-500/30 p-6 sm:p-10 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-orange-500/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="flex items-center gap-5 text-center sm:text-left relative z-10">
+              <span className="text-5xl sm:text-7xl animate-bounce">🎁</span>
               <div>
-                <span className="bg-orange-600 text-white text-[9px] font-black uppercase px-2.5 py-1 rounded-full tracking-wider">SPECIAL OFFER</span>
-                <h3 className="text-lg sm:text-2xl font-black text-slate-950 mt-1">Book Round Trip & Get UPTO 15% OFF</h3>
-                <p className="text-xs text-slate-600 mt-0.5">Limited Time Offer! Applicable on all outstation corridors across Chhattisgarh.</p>
+                <span className="bg-orange-600 text-white text-[10px] font-black uppercase px-3 py-1 rounded-full tracking-widest shadow-md">SPECIAL OFFER</span>
+                <h3 className="text-xl sm:text-3xl font-black text-white mt-2">Book Round Trip & Get UPTO 15% OFF</h3>
+                <p className="text-xs sm:text-sm text-slate-300 mt-1">Limited Time Offer! Applicable on all outstation corridors across Chhattisgarh & MP.</p>
               </div>
             </div>
-            <button onClick={() => setShowInitialRatingModal(true)} className="rounded-2xl bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-widest px-8 py-3.5 shadow-md transition shrink-0">
-              Book Now
+            <button onClick={() => setShowInitialRatingModal(true)} className="relative z-10 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-xs uppercase tracking-widest px-8 py-4 shadow-xl shadow-orange-600/30 transition shrink-0">
+              Claim Discount Now
             </button>
           </div>
         </section>
 
         {/* 👑 WHY CHOOSE KHATU RIDES */}
-        <section className="px-4 max-w-7xl mx-auto my-16">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight">Why Choose Khatu Rides?</h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">Excellence in intercity travel with absolute safety and transparency.</p>
+        <section className="px-4 max-w-7xl mx-auto my-20">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">Why Choose Khatu Rides?</h2>
+            <p className="text-xs sm:text-sm text-slate-400 mt-2">Excellence in intercity travel with absolute safety and transparent operations.</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               { icon: "🛡️", title: "No Hidden Charges", desc: "100% Transparent Pricing with toll and state taxes included." },
-              { icon: "🚗", title: "Well Maintained Cars", desc: "Sedan, SUV, Innova & more inspected before every journey." },
+              { icon: "🚗", title: "Well Maintained Cars", desc: "Sedan, SUV, Innova & more inspected thoroughly before every journey." },
               { icon: "👨‍✈️", title: "Professional Drivers", desc: "Verified & experienced local drivers for smooth highway rides." },
-              { icon: "🎧", title: "24x7 Customer Support", desc: "Call or WhatsApp anytime for instant trip assistance." },
+              { icon: "🎧", title: "24x7 Customer Support", desc: "Call or WhatsApp anytime for instant trip assistance & tracking." },
             ].map((wc, idx) => (
-              <div key={idx} className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs text-center flex flex-col items-center">
-                <span className="text-3xl mb-3">{wc.icon}</span>
-                <h3 className="text-sm font-black text-slate-900 mb-1">{wc.title}</h3>
-                <p className="text-xs text-slate-500 leading-relaxed">{wc.desc}</p>
+              <div key={idx} className="bg-slate-900/60 backdrop-blur-xl p-8 rounded-3xl border border-slate-800 shadow-xl hover:border-orange-500/50 transition-all duration-300 text-center flex flex-col items-center group">
+                <span className="text-4xl mb-4 group-hover:scale-110 transition duration-300">{wc.icon}</span>
+                <h3 className="text-base font-black text-white mb-2">{wc.title}</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">{wc.desc}</p>
               </div>
             ))}
           </div>
         </section>
 
         {/* 👑 POPULAR ROUTES SECTION */}
-        <section id="routes-heading" className="px-4 max-w-7xl mx-auto my-16" aria-labelledby="routes-heading">
-          <div className="flex items-center justify-between mb-8">
+        <section id="routes-heading" className="px-4 max-w-7xl mx-auto my-20" aria-labelledby="routes-heading">
+          <div className="flex items-center justify-between mb-10">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight">Popular Routes</h2>
-              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">Most frequented intercity highway routes with fixed flat fares.</p>
+              <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">Popular Routes</h2>
+              <p className="text-xs sm:text-sm text-slate-400 mt-1">Most frequented intercity highway routes with fixed flat fares.</p>
             </div>
           </div>
 
@@ -479,30 +487,30 @@ Kindly let me know about the availability and the booking process. I look forwar
               <article
                 key={index}
                 onClick={() => triggerQuickBooking(route.from, route.to, parseInt(route.km))}
-                className="group relative rounded-3xl border border-slate-200/80 bg-white overflow-hidden shadow-2xs hover:shadow-lg hover:border-orange-500 transition-all duration-300 cursor-pointer flex flex-col justify-between"
+                className="group relative rounded-3xl border border-slate-800 bg-slate-900/80 overflow-hidden shadow-xl hover:shadow-2xl hover:border-orange-500 transition-all duration-300 cursor-pointer flex flex-col justify-between"
               >
-                <div className="h-36 w-full overflow-hidden relative">
-                  <img src={route.image} alt={route.from} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 to-transparent" />
-                  <span className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-lg text-[10px] font-black text-slate-900">
-                    {route.km}
+                <div className="h-44 w-full overflow-hidden relative">
+                  <img src={route.image} alt={route.from} className="w-full h-full object-cover group-hover:scale-110 transition duration-500 opacity-80 group-hover:opacity-100" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+                  <span className="absolute bottom-3 left-3 bg-slate-900/90 backdrop-blur-md px-3 py-1 rounded-xl text-[10px] font-black text-orange-400 border border-slate-700">
+                    📍 {route.km}
                   </span>
                 </div>
 
-                <div className="p-5 flex-1 flex flex-col justify-between">
+                <div className="p-6 flex-1 flex flex-col justify-between">
                   <div>
-                    <h3 className="text-base font-black text-slate-950 tracking-tight group-hover:text-orange-600 transition">
+                    <h3 className="text-lg font-black text-white tracking-tight group-hover:text-orange-400 transition">
                       {route.from.split(",")[0]} ⇄ {route.to.split(",")[0]}
                     </h3>
-                    <p className="text-[11px] text-slate-500 mt-1">{route.time} approx travel duration</p>
+                    <p className="text-xs text-slate-400 mt-1">⏱️ {route.time} approx travel duration</p>
                   </div>
 
-                  <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
                     <div>
-                      <span className="text-[9px] text-slate-400 font-bold block uppercase">Starting at</span>
-                      <span className="text-lg font-black text-orange-600">{route.price}</span>
+                      <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Starting at</span>
+                      <span className="text-xl font-black text-orange-400">{route.price}</span>
                     </div>
-                    <span className="rounded-xl bg-slate-950 px-4 py-2 text-[10px] font-black uppercase text-white group-hover:bg-orange-600 transition">
+                    <span className="rounded-xl bg-orange-600 px-4 py-2 text-xs font-black uppercase text-white group-hover:bg-orange-500 transition shadow-md">
                       Book Now
                     </span>
                   </div>
@@ -515,14 +523,14 @@ Kindly let me know about the availability and the booking process. I look forwar
         <ReviewsCarousel />
         <SeoTextBlock />
 
-        {/* 👑 FLUTTER-STYLE FLOATING ACTION BUTTON (FAB) COLUMN */}
+        {/* 👑 FLOATING ACTION BUTTON (FAB) COLUMN */}
         <div className="fixed bottom-6 right-6 z-[999] flex flex-col gap-3 md:hidden pointer-events-auto">
           <a
             href="https://wa.me/919244137353"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Chat on WhatsApp"
-            className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-[0_6px_20px_rgba(16,185,129,0.4)] transition-all duration-300 hover:scale-110 active:scale-95"
+            className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-2xl shadow-emerald-600/50 transition-all duration-300 hover:scale-110 active:scale-95"
           >
             <span className="text-2xl">💬</span>
           </a>
@@ -530,7 +538,7 @@ Kindly let me know about the availability and the booking process. I look forwar
           <a
             href="tel:+919244137353"
             aria-label="Call Desk"
-            className="flex h-14 w-14 items-center justify-center rounded-full bg-orange-600 text-white shadow-[0_6px_20px_rgba(249,115,22,0.4)] transition-all duration-300 hover:scale-110 active:scale-95"
+            className="flex h-14 w-14 items-center justify-center rounded-full bg-orange-600 text-white shadow-2xl shadow-orange-600/50 transition-all duration-300 hover:scale-110 active:scale-95"
           >
             <span className="text-2xl">📞</span>
           </a>
@@ -540,67 +548,64 @@ Kindly let me know about the availability and the booking process. I look forwar
       {/* 👑 INITIAL GOOGLE RATING & INSTANT DISCOUNT POPUP MODAL */}
       <AnimatePresence>
         {showInitialRatingModal && (
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm overflow-y-auto">
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md overflow-y-auto">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden my-auto text-left relative p-6 sm:p-8"
+              className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden my-auto text-left relative p-6 sm:p-8 text-slate-100"
             >
-              {/* Close Button */}
               <button
                 type="button"
                 onClick={() => setShowInitialRatingModal(false)}
-                className="absolute top-5 right-5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full h-9 w-9 flex items-center justify-center transition font-bold"
+                className="absolute top-5 right-5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-full h-9 w-9 flex items-center justify-center transition font-bold"
               >
                 ✕
               </button>
 
               <div className="text-center">
-                <span className="text-xs font-serif italic text-slate-500">Thank You For Choosing</span>
-                <h3 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tighter uppercase mt-0.5">
-                  Khatu <span className="text-orange-600">Rides</span>
+                <span className="text-xs font-serif italic text-slate-400">Thank You For Choosing</span>
+                <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tighter uppercase mt-0.5">
+                  Khatu <span className="text-orange-500">Rides</span>
                 </h3>
-                <div className="w-24 h-0.5 bg-slate-300 mx-auto mt-1 mb-4" />
+                <div className="w-24 h-0.5 bg-slate-800 mx-auto mt-1 mb-4" />
 
-                <span className="text-[10px] font-black uppercase tracking-widest text-orange-600 bg-orange-50 px-3 py-1 rounded-full border border-orange-100">
+                <span className="text-[10px] font-black uppercase tracking-widest text-orange-400 bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20">
                   — LOVE OUR SERVICE? —
                 </span>
                 
-                <h4 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-2">
+                <h4 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-3">
                   Give 5 Star Rating <br />
-                  & Get <span className="text-orange-600">Instant Discount!</span>
+                  & Get <span className="text-orange-400">Instant Discount!</span>
                 </h4>
 
-                {/* Rating Card Box */}
-                <div className="mt-6 bg-slate-50 rounded-2xl p-4 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="mt-6 bg-slate-950/80 rounded-2xl p-4 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="text-left w-full sm:w-1/2">
-                    <div className="text-xs font-black text-slate-900">Khatu Rides Travels Co.</div>
-                    <div className="flex items-center gap-1 text-xs text-amber-500 font-bold mt-0.5">
+                    <div className="text-xs font-black text-white">Khatu Rides Travels Co.</div>
+                    <div className="flex items-center gap-1 text-xs text-amber-400 font-bold mt-0.5">
                       <span>4.8</span>
                       <span>★★★★★</span>
-                      <span className="text-slate-400 font-normal">(1,246)</span>
+                      <span className="text-slate-500 font-normal">(1,246)</span>
                     </div>
-                    <p className="text-[10px] text-slate-500 mt-1">Taxi Service • Korba, Chhattisgarh</p>
+                    <p className="text-[10px] text-slate-400 mt-1">Taxi Service • Korba, Chhattisgarh</p>
                     <a
                       href="https://g.page/r/CbD5nSIGmvz1EBM/review"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-block mt-3 text-[11px] font-black text-blue-600 hover:underline"
+                      className="inline-block mt-3 text-[11px] font-black text-blue-400 hover:underline"
                     >
                       ✏️ Write a review
                     </a>
                   </div>
 
-                  <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-4 rounded-2xl text-center w-full sm:w-1/2 shadow-md">
+                  <div className="bg-gradient-to-r from-orange-600 to-amber-500 text-white p-4 rounded-2xl text-center w-full sm:w-1/2 shadow-lg">
                     <span className="text-[9px] font-black uppercase tracking-wider block">INSTANT DISCOUNT</span>
                     <div className="text-2xl sm:text-3xl font-black tracking-tighter mt-0.5">₹200*</div>
                     <span className="text-[9px] font-bold block opacity-90">ON YOUR BOOKING</span>
                   </div>
                 </div>
 
-                {/* Steps */}
-                <div className="mt-5 space-y-2 text-left text-xs font-bold text-slate-700 bg-amber-50/50 p-4 rounded-2xl border border-amber-100">
+                <div className="mt-5 space-y-2 text-left text-xs font-bold text-slate-300 bg-slate-950/50 p-4 rounded-2xl border border-slate-800">
                   <div className="flex items-center gap-2.5">
                     <span className="h-5 w-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-black">1</span>
                     <span>Give 5 Star Rating on our Google Business Profile</span>
@@ -615,41 +620,15 @@ Kindly let me know about the availability and the booking process. I look forwar
                   </div>
                 </div>
 
-                {/* Trust Footer Bar inside modal */}
-                <div className="grid grid-cols-4 gap-2 mt-5 py-3 border-y border-slate-100 text-center">
-                  <div>
-                    <span className="text-orange-600 text-base">🏷️</span>
-                    <div className="text-[9px] font-black text-slate-700 mt-1">Upto ₹200 Off</div>
-                  </div>
-                  <div>
-                    <span className="text-amber-500 text-base">🛡️</span>
-                    <div className="text-[9px] font-black text-slate-700 mt-1">1000+ Happy</div>
-                  </div>
-                  <div>
-                    <span className="text-blue-600 text-base">🔒</span>
-                    <div className="text-[9px] font-black text-slate-700 mt-1">Safe Travel</div>
-                  </div>
-                  <div>
-                    <span className="text-purple-600 text-base">🎧</span>
-                    <div className="text-[9px] font-black text-slate-700 mt-1">24x7 Support</div>
-                  </div>
-                </div>
-
-                {/* Same Day Booking Note */}
-                <div className="mt-4 bg-amber-50 border border-amber-200 p-2.5 rounded-xl text-center text-[11px] font-bold text-amber-900">
-                  📅 Same Day Booking Only — This offer is applicable on same day booking only.
-                </div>
-
-                {/* WhatsApp CTA Button */}
                 <div className="mt-5">
                   <a
                     href="https://wa.me/919244137353?text=Hello%20Khatu%20Rides!%20I%20have%20rated%205-stars%20on%20Google.%20Here%20is%20my%20screenshot%20for%20the%20₹200%20instant%20discount:%20https://g.page/r/CbD5nSIGmvz1EBM/review"
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setShowInitialRatingModal(false)}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-widest py-4 rounded-2xl shadow-lg flex items-center justify-center gap-2 transition"
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-widest py-4 rounded-2xl shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2 transition"
                   >
-                    <span className="text-lg">💬</span> SEND SCREENSHOT ON WHATSAPP (Get Instant Discount)
+                    <span className="text-lg">💬</span> SEND SCREENSHOT ON WHATSAPP
                   </a>
                 </div>
 
@@ -657,11 +636,11 @@ Kindly let me know about the availability and the booking process. I look forwar
                   <button
                     type="button"
                     onClick={() => setShowInitialRatingModal(false)}
-                    className="text-[11px] font-bold text-slate-400 hover:text-slate-600 underline"
+                    className="text-[11px] font-bold text-slate-500 hover:text-slate-300 underline"
                   >
                     Maybe Later
                   </button>
-                  <p className="text-[9px] text-slate-400 mt-1">*T&C Apply</p>
+                  <p className="text-[9px] text-slate-500 mt-1">*T&C Apply</p>
                 </div>
               </div>
             </motion.div>
@@ -669,20 +648,19 @@ Kindly let me know about the availability and the booking process. I look forwar
         )}
       </AnimatePresence>
 
-      {/* 👑 FLUTTER-STYLE COMPACT MOBILE & DESKTOP FARE RESULTS POPUP MODAL */}
+      {/* 👑 FARE RESULTS POPUP MODAL */}
       <AnimatePresence>
         {showPopup && popupData && (
-          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-950/80 p-0 sm:p-4 backdrop-blur-sm overflow-y-auto">
+          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-950/85 p-0 sm:p-4 backdrop-blur-md overflow-y-auto">
             <motion.div
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 30, opacity: 0 }}
-              className="bg-slate-100 w-full max-w-4xl rounded-none sm:rounded-3xl shadow-2xl overflow-hidden my-auto flex flex-col min-h-screen sm:min-h-0 sm:max-h-[96vh] text-left relative"
+              className="bg-slate-900 border border-slate-800 w-full max-w-4xl rounded-none sm:rounded-3xl shadow-2xl overflow-hidden my-auto flex flex-col min-h-screen sm:min-h-0 sm:max-h-[96vh] text-left relative text-slate-100"
             >
-              {/* TOP DARK HEADER BAR */}
-              <div className="bg-slate-950 text-white px-3 sm:px-6 py-3 flex items-center justify-between sticky top-0 z-30 shadow-md">
+              <div className="bg-slate-950 text-white px-3 sm:px-6 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-md border-b border-slate-800">
                 <div className="flex items-center gap-2 flex-wrap min-w-0">
-                  <span className="bg-orange-500 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded tracking-wider shrink-0 shadow-2xs">
+                  <span className="bg-orange-600 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded tracking-wider shrink-0 shadow-inner">
                     {popupData.bookingType}
                   </span>
                   <h3 className="text-xs sm:text-base font-black tracking-tight text-white truncate flex items-center gap-1.5">
@@ -693,24 +671,14 @@ Kindly let me know about the availability and the booking process. I look forwar
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  <div className="hidden sm:flex items-center gap-2 text-xs font-bold text-slate-300 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800">
-                    <span>📅 {convertToIndianDate(popupData.pickupDate)}</span>
-                    <span className="text-slate-600">|</span>
-                    <span>⏰ {formatTimeToAMPM(popupData.pickupTime)}</span>
-                  </div>
                   <button
                     type="button"
                     onClick={() => setShowPopup(false)}
-                    className="bg-slate-800 hover:bg-slate-700 text-white rounded-full h-7 w-7 flex items-center justify-center transition border border-slate-700 shadow-2xs"
+                    className="bg-slate-800 hover:bg-slate-700 text-white rounded-full h-7 w-7 flex items-center justify-center transition border border-slate-700"
                   >
                     ✕
                   </button>
                 </div>
-              </div>
-
-              {/* MOBILE PICKUP DATE SUB-BAR */}
-              <div className="bg-slate-900 px-3 py-1.5 text-[11px] font-bold text-orange-400 flex items-center justify-between sm:hidden border-t border-slate-800">
-                <span>📅 Pickup: {convertToIndianDate(popupData.pickupDate)} at {formatTimeToAMPM(popupData.pickupTime)}</span>
               </div>
 
               {/* STATS SUMMARY BAR */}
@@ -721,45 +689,25 @@ Kindly let me know about the availability and the booking process. I look forwar
                 const hoursNum = Math.floor(mins / 60);
                 const minsNum = mins % 60;
 
-                let dropDateTimeStr = "Calculated on transit";
-                try {
-                  const pickupDt = new Date(`${popupData.pickupDate}T${popupData.pickupTime}`);
-                  if (!isNaN(pickupDt.getTime())) {
-                    const dropDt = new Date(pickupDt.getTime() + mins * 60 * 1000);
-                    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-                    const dStr = `${dropDt.getDate()} ${months[dropDt.getMonth()]}`;
-                    let h = dropDt.getHours();
-                    const ampm = h >= 12 ? "PM" : "AM";
-                    h = h % 12 || 12;
-                    const mStr = String(dropDt.getMinutes()).padStart(2, "0");
-                    dropDateTimeStr = `${dStr}, ${String(h).padStart(2, "0")}:${mStr} ${ampm}`;
-                  }
-                } catch (e) {}
-
                 return (
-                  <div className="bg-white px-3 sm:px-6 py-2 border-b border-slate-200 flex items-center justify-between text-[11px] sm:text-xs font-bold text-slate-800 shadow-2xs sticky top-[49px] sm:top-[57px] z-20">
-                    <div className="flex items-center gap-2 sm:gap-6 overflow-x-auto scrollbar-none whitespace-nowrap">
-                      <span className="flex items-center gap-1 text-slate-700">
-                        <span className="text-blue-600">📍</span> <strong>{dist} Kms</strong>
+                  <div className="bg-slate-950/60 px-3 sm:px-6 py-2.5 border-b border-slate-800 flex items-center justify-between text-xs font-bold text-slate-300 sticky top-[53px] z-20 backdrop-blur-md">
+                    <div className="flex items-center gap-4 sm:gap-6 overflow-x-auto scrollbar-none whitespace-nowrap">
+                      <span className="flex items-center gap-1.5 text-slate-200">
+                        <span className="text-orange-400">📍</span> <strong>{dist} Kms</strong>
                       </span>
-                      <span className="text-slate-300">|</span>
-                      <span className="flex items-center gap-1 text-slate-700">
-                        <span className="text-blue-600">⏱️</span> <strong>~{hoursNum}h {minsNum}m</strong>
-                      </span>
-                      <span className="text-slate-300">|</span>
-                      <span className="flex items-center gap-1 text-slate-700">
-                        <span className="text-blue-600">🏁</span> Est. Drop: <strong>{dropDateTimeStr}</strong>
+                      <span className="text-slate-700">|</span>
+                      <span className="flex items-center gap-1.5 text-slate-200">
+                        <span className="text-orange-400">⏱️</span> <strong>~{hoursNum}h {minsNum}m</strong>
                       </span>
                     </div>
-                    <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-black text-[10px] shrink-0 ml-2 hidden sm:inline-block">
+                    <span className="text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 font-black text-[10px] shrink-0 ml-2">
                       ✓ All-Inclusive
                     </span>
                   </div>
                 );
               })()}
 
-              {/* FLUTTER-STYLE COMPACT CARDS CONTAINER */}
-              <div className="p-2.5 sm:p-6 overflow-y-auto flex-1 space-y-3 bg-slate-100 pb-24 sm:pb-6">
+              <div className="p-3 sm:p-6 overflow-y-auto flex-1 space-y-4 bg-slate-950/40 pb-24 sm:pb-6">
                 {!showUserForm ? (
                   <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full">
                     {popupData.fareOptions.map((opt) => {
@@ -771,87 +719,62 @@ Kindly let me know about the availability and the booking process. I look forwar
                       const isExpanded = expandedInclusionsId === opt.id;
                       const strikePrice = Math.round(opt.finalFare * 1.15);
 
-                      const fullVehicleTitle = opt.vehicleType === "sedan" 
-                        ? "DZIRE, ETIOS" 
-                        : opt.vehicleType === "ertiga" 
-                        ? "ERTIGA, XYLO" 
-                        : "INNOVA CRYSTA";
+                      const fullVehicleTitle = opt.vehicleType === "sedan" ? "DZIRE, ETIOS" : opt.vehicleType === "ertiga" ? "ERTIGA, XYLO" : "INNOVA CRYSTA";
 
                       return (
                         <div
                           key={opt.id}
                           onClick={() => setSelectedVehicleType(opt.vehicleType)}
-                          className={`rounded-2xl sm:rounded-3xl border-2 transition-all duration-200 bg-white p-3 sm:p-5 cursor-pointer relative shadow-2xs ${
-                            isSelected ? "border-orange-500 ring-2 ring-orange-500/15 bg-orange-50/5" : "border-slate-200 hover:border-slate-300"
+                          className={`rounded-2xl sm:rounded-3xl border-2 transition-all duration-200 bg-slate-900 p-4 sm:p-6 cursor-pointer relative shadow-xl ${
+                            isSelected ? "border-orange-500 ring-4 ring-orange-500/20 bg-orange-500/5" : "border-slate-800 hover:border-slate-700"
                           }`}
                         >
-                          {/* BEST PRICE BADGE */}
                           {opt.vehicleType === "sedan" && (
-                            <div className="absolute -top-2.5 left-4 sm:left-6 bg-orange-500 text-white text-[9px] font-black uppercase px-2.5 py-0.5 rounded-full tracking-wider shadow-2xs">
+                            <div className="absolute -top-2.5 left-6 bg-orange-600 text-white text-[9px] font-black uppercase px-3 py-0.5 rounded-full tracking-wider shadow-md">
                               BEST PRICE
                             </div>
                           )}
 
-                          {/* COMPACT FLUTTER ROW: CAR IMAGE LEFT, TITLE/SPECS CENTER, PRICING RIGHT */}
-                          <div className="flex items-center justify-between gap-2.5 pt-0.5">
-                            
-                            {/* Left: Compact Car Image */}
-                            <div className="bg-slate-50 rounded-xl border border-slate-100 w-28 h-18 sm:w-36 sm:h-22 overflow-hidden flex items-center justify-center shrink-0 shadow-2xs">
-                              <img
-                                src={VEHICLES[opt.vehicleType]?.image}
-                                alt={opt.vehicleLabel}
-                                className="w-full h-full object-cover"
-                              />
+                          <div className="flex items-center justify-between gap-3 pt-1">
+                            <div className="bg-slate-950 rounded-2xl border border-slate-800 w-28 h-20 sm:w-36 sm:h-24 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
+                              <img src={VEHICLES[opt.vehicleType]?.image} alt={opt.vehicleLabel} className="w-full h-full object-cover" />
                             </div>
 
-                            {/* Middle: Title & Compact Specs */}
-                            <div className="flex-1 min-w-0 px-1">
-                              <h4 className="text-xs sm:text-base font-black text-slate-900 tracking-tight uppercase truncate">
-                                {fullVehicleTitle}
-                              </h4>
-
-                              <div className="mt-1 space-y-0.5 text-[10px] sm:text-xs text-slate-600 font-bold">
-                                <div className="flex items-center gap-1 text-slate-700">
+                            <div className="flex-1 min-w-0 px-2">
+                              <h4 className="text-sm sm:text-base font-black text-white tracking-tight uppercase truncate">{fullVehicleTitle}</h4>
+                              <div className="mt-1.5 space-y-1 text-xs text-slate-300 font-bold">
+                                <div className="flex items-center gap-1.5 text-slate-300">
                                   <span>📍</span>
-                                  <span>{dynamicLimitKms} Kms Included</span>
+                                  <span>{dynamicLimitKms} Kms Actual Distance</span>
                                 </div>
-                                <div className="flex items-center gap-1 text-slate-600 truncate">
+                                <div className="flex items-center gap-1.5 text-slate-400 truncate">
                                   <span>⚡</span>
                                   <span className="truncate">Extra @ ₹{extraRatePerKm}/Km after limit</span>
                                 </div>
                               </div>
                             </div>
 
-                            {/* Right: Compact Pricing Stack */}
                             <div className="text-right shrink-0">
-                              <div className="text-[11px] sm:text-sm font-bold text-red-600 line-through">
-                                Rs. {strikePrice.toLocaleString("en-IN")}/-
-                              </div>
-                              <div className="bg-[#0284c7] text-white text-xs sm:text-lg font-black px-3 py-1 rounded-full shadow-2xs inline-block tracking-tight mt-0.5">
+                              <div className="text-xs sm:text-sm font-bold text-red-400 line-through">Rs. {strikePrice.toLocaleString("en-IN")}/-</div>
+                              <div className="bg-gradient-to-r from-orange-600 to-amber-500 text-white text-sm sm:text-xl font-black px-4 py-1.5 rounded-2xl shadow-lg inline-block tracking-tight mt-1">
                                 Rs. {opt.finalFare.toLocaleString("en-IN")}
                               </div>
                             </div>
-
                           </div>
 
-                          {/* COMPACT ACTION BUTTONS ROW */}
-                          <div className="mt-3 pt-2.5 border-t border-slate-100 grid grid-cols-3 gap-1.5 sm:gap-2">
+                          <div className="mt-4 pt-3 border-t border-slate-800 grid grid-cols-3 gap-2">
                             <a
                               href="tel:+919244137353"
                               onClick={(e) => e.stopPropagation()}
-                              className="bg-[#581c87] hover:bg-[#4c1d95] text-white font-black text-[10px] sm:text-xs uppercase py-2.5 px-1 rounded-xl shadow-2xs transition text-center flex items-center justify-center gap-1 min-h-[36px]"
-                              aria-label="Call now"
+                              className="bg-purple-950 hover:bg-purple-900 border border-purple-800 text-purple-200 font-black text-xs uppercase py-3 rounded-xl shadow-md transition text-center flex items-center justify-center gap-1"
                             >
                               📞 <span className="hidden sm:inline">CALL</span> NOW
                             </a>
 
                             <button
                               type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleWhatsAppManualRedirect(opt);
-                              }}
-                              className="bg-[#22c55e] hover:bg-[#16a34a] text-white font-black text-[10px] sm:text-xs uppercase py-2.5 px-1 rounded-xl shadow-2xs transition text-center flex items-center justify-center gap-1 min-h-[36px]"
+                              onClick={(e) => { e.stopPropagation(); handleWhatsAppManualRedirect(opt); }}
+                              className="bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-200 font-black text-xs uppercase py-3 rounded-xl shadow-md transition text-center flex items-center justify-center gap-1"
                             >
                               💬 <span className="hidden sm:inline">WHATSAPP</span>
                             </button>
@@ -864,32 +787,25 @@ Kindly let me know about the availability and the booking process. I look forwar
                                 setPaymentSplitMode((p) => ({ ...p, [opt.id]: "half" }));
                                 setShowUserForm(true);
                               }}
-                              className="bg-orange-600 hover:bg-orange-700 text-white font-black text-[10px] sm:text-xs uppercase py-2.5 px-1 rounded-xl shadow-2xs transition text-center min-h-[36px]"
+                              className="bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-xs uppercase py-3 rounded-xl shadow-lg shadow-orange-600/30 transition text-center"
                             >
                               🚀 BOOK
                             </button>
                           </div>
 
-                          {/* COMPACT INCLUSIONS TOGGLE BAR */}
-                          <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                            <span className="text-slate-600 font-medium text-[10px] sm:text-xs">
-                              ✓ Toll, State Tax & Driver Allowance Included
-                            </span>
+                          <div className="mt-3 pt-2.5 border-t border-slate-800/60 flex items-center justify-between text-xs">
+                            <span className="text-slate-400 font-medium">✓ Toll, State Tax & Driver Allowance Included</span>
                             <button
                               type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setExpandedInclusionsId(isExpanded ? null : opt.id);
-                              }}
-                              className="font-bold text-orange-600 hover:text-orange-700 text-[10px] sm:text-xs shrink-0"
+                              onClick={(e) => { e.stopPropagation(); setExpandedInclusionsId(isExpanded ? null : opt.id); }}
+                              className="font-bold text-orange-400 hover:text-orange-300"
                             >
                               {isExpanded ? "Hide ▲" : "Inclusions ▼"}
                             </button>
                           </div>
 
-                          {/* EXPANDABLE DETAILS BOX */}
                           {isExpanded && (
-                            <div className="mt-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1 text-[11px] text-slate-700 animate-fadeIn">
+                            <div className="mt-2.5 p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5 text-xs text-slate-300">
                               <div>✔ <strong>{dynamicLimitKms} Km included:</strong> ₹{extraRatePerKm}/km beyond limit.</div>
                               <div>✔ <strong>Toll & State Tax:</strong> Fully covered in fare.</div>
                               <div>✔ <strong>Driver Allowance:</strong> Included.</div>
@@ -899,63 +815,28 @@ Kindly let me know about the availability and the booking process. I look forwar
                         </div>
                       );
                     })}
-
-                    {/* 👑 TRANSPARENT PRICING & TRUST BADGES SECTION */}
-                    <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 p-3.5 sm:p-5 shadow-2xs space-y-3 mt-1">
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                        <div className="flex items-center gap-2.5">
-                          <span className="text-blue-600 text-xl">🛡️</span>
-                          <div>
-                            <h5 className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-tight">100% Transparent Pricing</h5>
-                            <p className="text-[10px] sm:text-xs text-slate-500">No Hidden Charges • Safe & Secure • Verified Drivers</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="text-center pt-0.5">
-                        <h5 className="text-[11px] font-black uppercase text-slate-800 tracking-wider mb-2.5">Why Book With Khatu Rides?</h5>
-                        <div className="grid grid-cols-4 gap-2 text-center">
-                          <div className="flex flex-col items-center p-1.5 rounded-xl bg-slate-50 border border-slate-100">
-                            <span className="text-orange-500 text-base">🏷️</span>
-                            <span className="text-[9px] font-bold text-slate-700 mt-1">No Hidden</span>
-                          </div>
-                          <div className="flex flex-col items-center p-1.5 rounded-xl bg-slate-50 border border-slate-100">
-                            <span className="text-emerald-600 text-base">👨‍✈️</span>
-                            <span className="text-[9px] font-bold text-slate-700 mt-1">Verified</span>
-                          </div>
-                          <div className="flex flex-col items-center p-1.5 rounded-xl bg-slate-50 border border-slate-100">
-                            <span className="text-purple-600 text-base">🎧</span>
-                            <span className="text-[9px] font-bold text-slate-700 mt-1">24x7 Support</span>
-                          </div>
-                          <div className="flex flex-col items-center p-1.5 rounded-xl bg-slate-50 border border-slate-100">
-                            <span className="text-sky-600 text-base">🚗</span>
-                            <span className="text-[9px] font-bold text-slate-700 mt-1">Clean Cars</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 ) : (
-                  <div className="max-w-xl mx-auto bg-white border border-slate-200 rounded-3xl p-6 shadow-md text-left w-full my-auto">
-                    <div className="text-center mb-5">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-orange-600 bg-orange-50 px-2.5 py-1 rounded">Secure Form</span>
-                      <h4 className="text-lg font-black text-slate-900 mt-2">Enter Details to Complete Booking</h4>
+                  <div className="max-w-xl mx-auto bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl text-left w-full my-auto text-slate-100">
+                    <div className="text-center mb-6">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-orange-400 bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20">Secure Booking Form</span>
+                      <h4 className="text-xl font-black text-white mt-3">Enter Details to Complete Booking</h4>
                     </div>
 
                     <div className="space-y-4">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-black text-slate-700 uppercase tracking-wider">Customer Full Name</label>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-black text-slate-300 uppercase tracking-wider">Customer Full Name</label>
                         <input
                           type="text"
                           placeholder="Type customer name..."
                           value={customerName}
                           onChange={(e) => setCustomerName(e.target.value)}
-                          className="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white text-sm font-bold focus:outline-none focus:border-orange-500 transition shadow-2xs"
+                          className="w-full border border-slate-800 rounded-2xl px-4 py-3.5 bg-slate-950 text-sm font-bold text-white focus:outline-none focus:border-orange-500 transition shadow-inner"
                         />
                       </div>
 
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-black text-slate-700 uppercase tracking-wider">Mobile Number (For Driver SMS)</label>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-black text-slate-300 uppercase tracking-wider">Mobile Number (For Driver SMS)</label>
                         <input
                           type="tel"
                           inputMode="numeric"
@@ -963,45 +844,45 @@ Kindly let me know about the availability and the booking process. I look forwar
                           placeholder="Enter 10-digit phone number..."
                           value={customerPhone}
                           onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, ""))}
-                          className="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white text-sm font-bold focus:outline-none focus:border-orange-500 transition shadow-2xs"
+                          className="w-full border border-slate-800 rounded-2xl px-4 py-3.5 bg-slate-950 text-sm font-bold text-white focus:outline-none focus:border-orange-500 transition shadow-inner"
                         />
                       </div>
 
                       {selectedOption && (
-                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mt-2">
+                        <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 mt-2">
                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Split Booking Matrix</span>
-                          <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-white p-1">
+                          <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-800 bg-slate-900 p-1">
                             <button
                               type="button"
                               onClick={() => setPaymentSplitMode((p) => ({ ...p, [selectedOption.id]: "half" }))}
-                              className={`rounded-lg py-2 text-center text-[11px] font-black uppercase tracking-wide ${currentSelectedMode === "half" ? "bg-orange-600 text-white shadow-sm" : "text-slate-500"}`}
+                              className={`rounded-lg py-2 text-center text-xs font-black uppercase tracking-wide transition ${currentSelectedMode === "half" ? "bg-orange-600 text-white shadow-md" : "text-slate-400"}`}
                             >
                               50% Advance
                             </button>
                             <button
                               type="button"
                               onClick={() => setPaymentSplitMode((p) => ({ ...p, [selectedOption.id]: "full" }))}
-                              className={`rounded-lg py-2 text-center text-[11px] font-black uppercase tracking-wide ${currentSelectedMode === "full" ? "bg-slate-900 text-white shadow-sm" : "text-slate-500"}`}
+                              className={`rounded-lg py-2 text-center text-xs font-black uppercase tracking-wide transition ${currentSelectedMode === "full" ? "bg-slate-800 text-white shadow-md" : "text-slate-400"}`}
                             >
                               Full Pay
                             </button>
                           </div>
 
-                          <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-200/60">
+                          <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-800">
                             <div>
                               <span className="text-[10px] font-black text-slate-400 block uppercase">Payable Now</span>
-                              <span className="text-xl font-black text-slate-900">₹{displayPayNowNumber.toLocaleString("en-IN")}</span>
+                              <span className="text-2xl font-black text-white">₹{displayPayNowNumber.toLocaleString("en-IN")}</span>
                             </div>
-                            <span className="text-[10px] font-bold text-slate-500 bg-white px-2 py-1 rounded border border-slate-200">{selectedOption.vehicleLabel}</span>
+                            <span className="text-xs font-bold text-orange-400 bg-slate-900 px-3 py-1 rounded-xl border border-slate-800">{selectedOption.vehicleLabel}</span>
                           </div>
                         </div>
                       )}
 
-                      <div className="grid grid-cols-2 gap-2 pt-2">
+                      <div className="grid grid-cols-2 gap-3 pt-3">
                         <button
                           type="button"
                           onClick={() => setShowUserForm(false)}
-                          className="w-full border border-slate-300 bg-slate-100 text-slate-700 font-bold text-xs uppercase py-3.5 rounded-xl transition"
+                          className="w-full border border-slate-800 bg-slate-950 text-slate-300 font-bold text-xs uppercase py-4 rounded-2xl transition hover:bg-slate-800"
                         >
                           ↩ Back
                         </button>
@@ -1009,7 +890,7 @@ Kindly let me know about the availability and the booking process. I look forwar
                           type="button"
                           onClick={() => selectedOption && handleOnlinePaymentCheckout(selectedOption)}
                           disabled={paymentLoadingId !== null}
-                          className="w-full bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-widest py-3.5 rounded-xl transition shadow-lg shadow-orange-600/20 disabled:opacity-50"
+                          className="w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-xs uppercase tracking-widest py-4 rounded-2xl transition shadow-xl shadow-orange-600/30 disabled:opacity-50"
                         >
                           {paymentLoadingId ? "Syncing..." : "Proceed to Pay"}
                         </button>
@@ -1023,29 +904,29 @@ Kindly let me know about the availability and the booking process. I look forwar
         )}
       </AnimatePresence>
 
-      {/* SUCCESS RECEIPT MODAL */}
+      {/* 👑 SUCCESS RECEIPT MODAL */}
       <AnimatePresence>
         {successReceipt && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/70 p-3 backdrop-blur-xs">
-            <motion.div initial={{ y: 20 }} animate={{ y: 0 }} className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
-              <div className="bg-emerald-50 px-5 py-5 text-center border-b border-emerald-100">
-                <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100 text-xl text-emerald-700">✓</div>
-                <h3 className="text-lg font-black text-slate-950">Allocation Confirmed</h3>
-                <p className="text-xs text-slate-500 mt-1">Your route details have been securely recorded in Firebase.</p>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/85 p-3 backdrop-blur-md">
+            <motion.div initial={{ y: 20 }} animate={{ y: 0 }} className="w-full max-w-md overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl text-slate-100">
+              <div className="bg-emerald-950/60 px-6 py-6 text-center border-b border-emerald-900/50">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 text-2xl text-emerald-400 border border-emerald-500/30">✓</div>
+                <h3 className="text-xl font-black text-white">Allocation Confirmed</h3>
+                <p className="text-xs text-slate-400 mt-1">Your route details have been securely recorded in Firebase (`bookings` collection).</p>
               </div>
-              <div className="p-5 space-y-4 text-left">
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs space-y-2 text-slate-700">
-                  <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Invoice Summary</div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-900">Invoice ID:</span> <span>{successReceipt.invoiceId}</span></div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-900">Vehicle:</span> <span>{successReceipt.vehicle}</span></div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-900">Pickup:</span> <span className="truncate max-w-[180px]">{successReceipt.pickup}</span></div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-900">Drop Point:</span> <span className="truncate max-w-[180px]">{successReceipt.drop}</span></div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-900">Timeline:</span> <span>{successReceipt.date} at {successReceipt.time}</span></div>
-                  <div className="flex justify-between pt-2 border-t border-slate-200 font-black text-slate-950 text-sm">
-                    <span>Amount Paid ({successReceipt.paymentMode}):</span> <span>₹{successReceipt.amount.toLocaleString("en-IN")}</span>
+              <div className="p-6 space-y-4 text-left">
+                <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4 text-xs space-y-2.5 text-slate-300">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-2">Invoice Summary</div>
+                  <div className="flex justify-between"><span className="font-bold text-slate-400">Invoice ID:</span> <span className="text-white font-mono">{successReceipt.invoiceId}</span></div>
+                  <div className="flex justify-between"><span className="font-bold text-slate-400">Vehicle:</span> <span className="text-white">{successReceipt.vehicle}</span></div>
+                  <div className="flex justify-between"><span className="font-bold text-slate-400">Pickup:</span> <span className="truncate max-w-[180px] text-white">{successReceipt.pickup}</span></div>
+                  <div className="flex justify-between"><span className="font-bold text-slate-400">Drop Point:</span> <span className="truncate max-w-[180px] text-white">{successReceipt.drop}</span></div>
+                  <div className="flex justify-between"><span className="font-bold text-slate-400">Timeline:</span> <span className="text-white">{successReceipt.date} at {successReceipt.time}</span></div>
+                  <div className="flex justify-between pt-3 border-t border-slate-800 font-black text-white text-sm">
+                    <span>Amount Paid ({successReceipt.paymentMode}):</span> <span className="text-orange-400">₹{successReceipt.amount.toLocaleString("en-IN")}</span>
                   </div>
                 </div>
-                <button type="button" onClick={() => setSuccessReceipt(null)} className="w-full h-11 bg-slate-950 text-xs font-black uppercase tracking-wider text-white rounded-xl shadow">
+                <button type="button" onClick={() => setSuccessReceipt(null)} className="w-full h-12 bg-slate-800 hover:bg-slate-700 text-xs font-black uppercase tracking-wider text-white rounded-2xl shadow-lg transition">
                   Close Panel
                 </button>
               </div>

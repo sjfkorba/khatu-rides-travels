@@ -145,10 +145,10 @@ export function calculateFare({
         customBaseFareValue = 1800;
       }
     }
-    else if (showKms >= 80 && showKms <= 150) {
+    else if (showKms >= 80 && showKms <= 100) {
       if (vehicleType === "sedan") {
-        currentMultiplier = 1.95;
-        ratePerKm = 11.00; 
+        currentMultiplier = 2.10;
+        ratePerKm = 12.00; 
       } else if (vehicleType === "ertiga") {
         currentMultiplier = 2.10;
         ratePerKm = 13.00; 
@@ -157,39 +157,63 @@ export function calculateFare({
         ratePerKm = 20.00; 
       }
     }
-    else if (showKms > 150 && showKms <= 300) {
+    else if (showKms >= 100 && showKms <= 150) {
       if (vehicleType === "sedan") {
-        currentMultiplier = 1.35;
+        currentMultiplier = 1.95;
         ratePerKm = 11.00; 
       } else if (vehicleType === "ertiga") {
+        currentMultiplier = 1.90;
+        ratePerKm = 13.00; 
+      } else if (vehicleType === "crysta") {
         currentMultiplier = 1.50;
+        ratePerKm = 20.00; 
+      }
+    }
+    else if (showKms >= 150 && showKms <= 260) {
+      if (vehicleType === "sedan") {
+        currentMultiplier = 1.30;
+        ratePerKm = 11.00; 
+      } else if (vehicleType === "ertiga") {
+        currentMultiplier = 1.45;
         ratePerKm = 13.00; 
       } else if (vehicleType === "crysta") {
         currentMultiplier = 1.15;
+        ratePerKm = 20.00; 
+      }
+    }
+    else if (showKms > 260 && showKms <= 350) {
+      if (vehicleType === "sedan") {
+        currentMultiplier = 1.25;
+        ratePerKm = 11.00; 
+      } else if (vehicleType === "ertiga") {
+        currentMultiplier = 1.30;
+        ratePerKm = 13.00; 
+      } else if (vehicleType === "crysta") {
+        currentMultiplier = 1.25;
         ratePerKm = 20.00; 
       }
     }
     else if (showKms > 300 && showKms <= 600) {
       if (vehicleType === "sedan") {
-        currentMultiplier = 0.95;
+        currentMultiplier = 1.65;
         ratePerKm = 11.00; 
       } else if (vehicleType === "ertiga") {
-        currentMultiplier = 1.15;
+        currentMultiplier = 1.95;
         ratePerKm = 13.00; 
       } else if (vehicleType === "crysta") {
-        currentMultiplier = 1;
+        currentMultiplier = 1.85;
         ratePerKm = 20.00; 
       }
     }
     else {
       if (vehicleType === "sedan") {
-        currentMultiplier = 1.65;
+        currentMultiplier = 1.05;
         ratePerKm = 11.00; 
       } else if (vehicleType === "ertiga") {
-        currentMultiplier = 1.65;
+        currentMultiplier = 1.20;
         ratePerKm = 13.00; 
       } else if (vehicleType === "crysta") {
-        currentMultiplier = 1.45;
+        currentMultiplier = 1.05;
         ratePerKm = 20.00; 
       }
     }

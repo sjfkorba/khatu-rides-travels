@@ -85,7 +85,7 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
     }
 
     setLoading(true);
-    let mappedDistance = serviceType === "local" ? 80 : 45; // Default short-lead safe fallback if distance API fails
+    let mappedDistance = serviceType === "local" ? 80 : 45;
 
     if (serviceType !== "local") {
       try {
@@ -133,10 +133,6 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
       };
     });
 
-    if (computedServiceType !== serviceType) {
-      alert(`📢 Note: System has optimized your category selection to "${computedServiceType.toUpperCase()}" based on verified dynamic routing distance coordinates.`);
-    }
-
     onFareCalculated({
       fareOptions: options, 
       pickup, 
@@ -153,17 +149,17 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
 
   return (
     <div className="w-full flex flex-col items-center">
-      <div className="w-full bg-white rounded-3xl shadow-[0_12px_40px_rgba(0,0,0,0.06)] border border-slate-200/80 p-4 sm:p-7 text-left font-sans relative z-20">
+      <div className="w-full bg-slate-900/90 backdrop-blur-2xl rounded-3xl shadow-2xl border border-slate-800 p-5 sm:p-8 text-left font-sans relative z-20 text-slate-100">
         
-        {/* TOP FLUTTER-STYLE SLEEK TABS */}
-        <div className="flex overflow-x-auto gap-2 border-b border-slate-100 pb-4 mb-5 scrollbar-none">
+        {/* TOP TABS */}
+        <div className="flex overflow-x-auto gap-2.5 border-b border-slate-800 pb-4 mb-6 scrollbar-none">
           <button 
             type="button" 
             onClick={() => { setMainServiceType("outstation"); setBookingType("oneway"); }} 
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap shadow-2xs ${
+            className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap shadow-md ${
               serviceType === "outstation" && bookingType === "oneway" 
-                ? "bg-slate-950 text-white shadow-md scale-[1.02]" 
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                ? "bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-orange-600/30 scale-[1.02]" 
+                : "bg-slate-950 text-slate-400 hover:bg-slate-800 hover:text-white border border-slate-800"
             }`}
           >
             <span>🚀</span> One Way
@@ -172,10 +168,10 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
           <button 
             type="button" 
             onClick={() => { setMainServiceType("outstation"); setBookingType("roundtrip"); }} 
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap shadow-2xs ${
+            className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap shadow-md ${
               serviceType === "outstation" && bookingType === "roundtrip" 
-                ? "bg-slate-950 text-white shadow-md scale-[1.02]" 
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                ? "bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-orange-600/30 scale-[1.02]" 
+                : "bg-slate-950 text-slate-400 hover:bg-slate-800 hover:text-white border border-slate-800"
             }`}
           >
             <span>🔄</span> Round Trip
@@ -184,10 +180,10 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
           <button 
             type="button" 
             onClick={() => { setMainServiceType("local"); setBookingType("oneway"); }} 
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap shadow-2xs ${
+            className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap shadow-md ${
               serviceType === "local" 
-                ? "bg-slate-950 text-white shadow-md scale-[1.02]" 
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                ? "bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-orange-600/30 scale-[1.02]" 
+                : "bg-slate-950 text-slate-400 hover:bg-slate-800 hover:text-white border border-slate-800"
             }`}
           >
             <span>🏙️</span> Local Package
@@ -196,35 +192,36 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
           <button 
             type="button" 
             onClick={() => { setMainServiceType("outstation"); setBookingType("oneway"); }} 
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200 shadow-2xs"
+            className="flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap bg-slate-950 text-slate-400 hover:bg-slate-800 hover:text-white border border-slate-800"
           >
             <span>✈️</span> Airport Transfer
           </button>
         </div>
 
         <form onSubmit={handleCalculate}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-5">
+          {/* 👑 PERFECTLY ALIGNED DESKTOP 3-COLUMN / MOBILE 1-COLUMN GRID */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             
             {/* FROM / PICKUP LOCATION */}
-            <div className="relative border border-slate-200 rounded-2xl p-3 bg-slate-50/70 hover:border-slate-300 focus-within:border-orange-500 transition-all w-full shadow-2xs" ref={pickupRef}>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">
+            <div className="relative border border-slate-800 rounded-2xl p-4 bg-slate-950/80 hover:border-slate-700 focus-within:border-orange-500 transition-all w-full shadow-inner" ref={pickupRef}>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
                 {serviceType === "local" ? "City Location" : "From (Pick-up Location)"}
               </label>
-              <div className="flex items-center gap-2">
-                <span className="text-emerald-600 text-sm">📍</span>
+              <div className="flex items-center gap-2.5">
+                <span className="text-emerald-400 text-sm">📍</span>
                 <input 
                   required 
                   type="text" 
                   placeholder="Enter pickup location..." 
                   value={pickup} 
                   onChange={(e) => { setPickup(e.target.value); fetchLiveSuggestions(e.target.value, "pickup"); }} 
-                  className="w-full bg-transparent text-xs font-bold text-slate-900 focus:outline-none placeholder:text-slate-400" 
+                  className="w-full bg-transparent text-xs font-bold text-white focus:outline-none placeholder:text-slate-600" 
                 />
               </div>
               {showPickupList && pickupSuggestions.length > 0 && (
-                <ul className="absolute left-0 w-full bg-white border border-slate-200 rounded-xl mt-3 shadow-2xl max-h-48 overflow-y-auto z-[999999] divide-y divide-slate-100">
+                <ul className="absolute left-0 w-full bg-slate-900 border border-slate-800 rounded-2xl mt-3 shadow-2xl max-h-48 overflow-y-auto z-[999999] divide-y divide-slate-800">
                   {pickupSuggestions.map((item, idx) => (
-                    <li key={idx} onClick={() => { setPickup(item); setShowPickupList(false); }} className="px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-orange-50 cursor-pointer">{item}</li>
+                    <li key={idx} onClick={() => { setPickup(item); setShowPickupList(false); }} className="px-4 py-3 text-xs font-bold text-slate-300 hover:bg-orange-600/20 hover:text-orange-400 cursor-pointer">{item}</li>
                   ))}
                 </ul>
               )}
@@ -232,99 +229,97 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
 
             {/* TO / DROP LOCATION */}
             {serviceType !== "local" ? (
-              <div className="relative border border-slate-200 rounded-2xl p-3 bg-slate-50/70 hover:border-slate-300 focus-within:border-orange-500 transition-all w-full shadow-2xs" ref={dropRef}>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">To (Drop Location)</label>
-                <div className="flex items-center gap-2">
-                  <span className="text-red-500 text-sm">📍</span>
+              <div className="relative border border-slate-800 rounded-2xl p-4 bg-slate-950/80 hover:border-slate-700 focus-within:border-orange-500 transition-all w-full shadow-inner" ref={dropRef}>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">To (Drop Location)</label>
+                <div className="flex items-center gap-2.5">
+                  <span className="text-red-400 text-sm">📍</span>
                   <input 
                     required 
                     type="text" 
                     placeholder="Enter drop location..." 
                     value={drop} 
                     onChange={(e) => { setDrop(e.target.value); fetchLiveSuggestions(e.target.value, "drop"); }} 
-                    className="w-full bg-transparent text-xs font-bold text-slate-900 focus:outline-none placeholder:text-slate-400" 
+                    className="w-full bg-transparent text-xs font-bold text-white focus:outline-none placeholder:text-slate-600" 
                   />
                 </div>
                 {showDropList && dropSuggestions.length > 0 && (
-                  <ul className="absolute left-0 w-full bg-white border border-slate-200 rounded-xl mt-3 shadow-2xl max-h-48 overflow-y-auto z-[999999] divide-y divide-slate-100">
+                  <ul className="absolute left-0 w-full bg-slate-900 border border-slate-800 rounded-2xl mt-3 shadow-2xl max-h-48 overflow-y-auto z-[999999] divide-y divide-slate-800">
                     {dropSuggestions.map((item, idx) => (
-                      <li key={idx} onClick={() => { setDrop(item); setShowDropList(false); }} className="px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-orange-50 cursor-pointer">{item}</li>
+                      <li key={idx} onClick={() => { setDrop(item); setShowDropList(false); }} className="px-4 py-3 text-xs font-bold text-slate-300 hover:bg-orange-600/20 hover:text-orange-400 cursor-pointer">{item}</li>
                     ))}
                   </ul>
                 )}
               </div>
             ) : (
-              <div className="border border-slate-200 rounded-2xl p-3 bg-slate-50/70 w-full flex flex-col justify-center shadow-2xs">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Package Duration</span>
-                <span className="text-xs font-bold text-slate-800 mt-1">8 Hours / 80 Kms Included</span>
+              <div className="border border-slate-800 rounded-2xl p-4 bg-slate-950/80 w-full flex flex-col justify-center shadow-inner">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Package Duration</span>
+                <span className="text-xs font-bold text-white mt-1">8 Hours / 80 Kms Included</span>
               </div>
             )}
 
             {/* PICK-UP DATE */}
-            <div className="border border-slate-200 rounded-2xl p-3 bg-slate-50/70 hover:border-slate-300 focus-within:border-orange-500 transition-all w-full shadow-2xs">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Pick-up Date</label>
-              <div className="flex items-center gap-2">
-                <span className="text-slate-600 text-sm">📅</span>
+            <div className="border border-slate-800 rounded-2xl p-4 bg-slate-950/80 hover:border-slate-700 focus-within:border-orange-500 transition-all w-full shadow-inner">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pick-up Date</label>
+              <div className="flex items-center gap-2.5">
+                <span className="text-slate-400 text-sm">📅</span>
                 <input 
                   required 
                   type="date" 
                   min={minDate} 
                   value={pickupDate} 
                   onChange={(e) => setPickupDate(e.target.value)} 
-                  className="w-full bg-transparent text-xs font-bold text-slate-900 focus:outline-none cursor-pointer" 
+                  className="w-full bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer" 
                 />
               </div>
             </div>
 
             {/* PICK-UP TIME */}
-            <div className="border border-slate-200 rounded-2xl p-3 bg-slate-50/70 hover:border-slate-300 focus-within:border-orange-500 transition-all w-full shadow-2xs">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Pick-up Time</label>
-              <div className="flex items-center gap-2">
-                <span className="text-slate-600 text-sm">⏰</span>
+            <div className="border border-slate-800 rounded-2xl p-4 bg-slate-950/80 hover:border-slate-700 focus-within:border-orange-500 transition-all w-full shadow-inner">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pick-up Time</label>
+              <div className="flex items-center gap-2.5">
+                <span className="text-slate-400 text-sm">⏰</span>
                 <input 
                   required 
                   type="time" 
                   value={pickupTime} 
                   onChange={(e) => setPickupTime(e.target.value)} 
-                  className="w-full bg-transparent text-xs font-bold text-slate-900 focus:outline-none cursor-pointer" 
+                  className="w-full bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer" 
                 />
               </div>
             </div>
 
             {/* PASSENGERS DROPDOWN */}
-            <div className="border border-slate-200 rounded-2xl p-3 bg-slate-50/70 hover:border-slate-300 focus-within:border-orange-500 transition-all w-full shadow-2xs">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Passengers</label>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 w-full">
-                  <span className="text-slate-600 text-sm">👤</span>
-                  <select 
-                    value={passengers} 
-                    onChange={(e) => setPassengers(e.target.value)}
-                    className="bg-transparent text-xs font-bold text-slate-900 focus:outline-none cursor-pointer w-full"
-                  >
-                    <option value="1 Passenger">1 Passenger</option>
-                    <option value="2 Passengers">2 Passengers</option>
-                    <option value="3-4 Passengers">3-4 Passengers</option>
-                    <option value="5-7 Passengers">5-7 Passengers (SUV/MUV)</option>
-                  </select>
-                </div>
+            <div className="border border-slate-800 rounded-2xl p-4 bg-slate-950/80 hover:border-slate-700 focus-within:border-orange-500 transition-all w-full shadow-inner">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Passengers</label>
+              <div className="flex items-center gap-2.5">
+                <span className="text-slate-400 text-sm">👤</span>
+                <select 
+                  value={passengers} 
+                  onChange={(e) => setPassengers(e.target.value)}
+                  className="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer w-full"
+                >
+                  <option value="1 Passenger" className="bg-slate-900">1 Passenger</option>
+                  <option value="2 Passengers" className="bg-slate-900">2 Passengers</option>
+                  <option value="3-4 Passengers" className="bg-slate-900">3-4 Passengers</option>
+                  <option value="5-7 Passengers" className="bg-slate-900">5-7 Passengers (SUV/MUV)</option>
+                </select>
               </div>
             </div>
 
             {/* VEHICLE PREFERENCE */}
-            <div className="border border-slate-200 rounded-2xl p-3 bg-slate-50/70 hover:border-slate-300 focus-within:border-orange-500 transition-all w-full shadow-2xs">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Vehicle Preference (Optional)</label>
-              <div className="flex items-center gap-2">
-                <span className="text-slate-600 text-sm">🚗</span>
+            <div className="border border-slate-800 rounded-2xl p-4 bg-slate-950/80 hover:border-slate-700 focus-within:border-orange-500 transition-all w-full shadow-inner">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Vehicle Preference</label>
+              <div className="flex items-center gap-2.5">
+                <span className="text-slate-400 text-sm">🚗</span>
                 <select 
                   value={vehiclePreference} 
                   onChange={(e) => setVehiclePreference(e.target.value)}
-                  className="bg-transparent text-xs font-bold text-slate-900 focus:outline-none cursor-pointer w-full"
+                  className="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer w-full"
                 >
-                  <option value="Any">Any (Best Available)</option>
-                  <option value="Sedan">Sedan (Dzire / Etios)</option>
-                  <option value="SUV / MUV">SUV / MUV (Ertiga / Xylo)</option>
-                  <option value="Luxury SUV">Luxury SUV (Innova Crysta)</option>
+                  <option value="Any" className="bg-slate-900">Any (Best Available)</option>
+                  <option value="Sedan" className="bg-slate-900">Sedan (Dzire / Etios)</option>
+                  <option value="SUV / MUV" className="bg-slate-900">SUV / MUV (Ertiga / Xylo)</option>
+                  <option value="Luxury SUV" className="bg-slate-900">Luxury SUV (Innova Crysta)</option>
                 </select>
               </div>
             </div>
@@ -332,13 +327,13 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
             {/* RETURN DATE & TIME FOR ROUNDTRIP */}
             {serviceType === "outstation" && bookingType === "roundtrip" && (
               <>
-                <div className="border border-orange-200 rounded-2xl p-3 bg-orange-50/50 hover:border-orange-300 transition-all w-full shadow-2xs">
-                  <label className="block text-[10px] font-black text-orange-600 uppercase tracking-wider mb-1">Return Date</label>
-                  <input required type="date" min={pickupDate || minDate} value={returnDate} onChange={(e) => setReturnDate(e.target.value)} className="w-full bg-transparent text-xs font-bold text-slate-900 focus:outline-none cursor-pointer" />
+                <div className="border border-orange-500/50 rounded-2xl p-4 bg-orange-950/20 hover:border-orange-400 transition-all w-full shadow-inner">
+                  <label className="block text-[10px] font-black text-orange-400 uppercase tracking-widest mb-1">Return Date</label>
+                  <input required type="date" min={pickupDate || minDate} value={returnDate} onChange={(e) => setReturnDate(e.target.value)} className="w-full bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer" />
                 </div>
-                <div className="border border-orange-200 rounded-2xl p-3 bg-orange-50/50 hover:border-orange-300 transition-all w-full shadow-2xs">
-                  <label className="block text-[10px] font-black text-orange-600 uppercase tracking-wider mb-1">Return Time</label>
-                  <input required type="time" value={returnTime} onChange={(e) => setReturnTime(e.target.value)} className="w-full bg-transparent text-xs font-bold text-slate-900 focus:outline-none cursor-pointer" />
+                <div className="border border-orange-500/50 rounded-2xl p-4 bg-orange-950/20 hover:border-orange-400 transition-all w-full shadow-inner">
+                  <label className="block text-[10px] font-black text-orange-400 uppercase tracking-widest mb-1">Return Time</label>
+                  <input required type="time" value={returnTime} onChange={(e) => setReturnTime(e.target.value)} className="w-full bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer" />
                 </div>
               </>
             )}
@@ -346,11 +341,11 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
           </div>
 
           {/* SEARCH BUTTON */}
-          <div className="mt-4">
+          <div className="mt-6">
             <button 
               type="submit" 
               disabled={loading} 
-              className="w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-700 hover:to-amber-600 text-white text-xs font-black uppercase tracking-widest py-4 rounded-2xl shadow-lg flex items-center justify-center gap-2 transition-all active:scale-[0.99] min-h-[52px]"
+              className="w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white text-xs font-black uppercase tracking-widest py-4 rounded-2xl shadow-xl shadow-orange-600/30 flex items-center justify-center gap-2 transition-all active:scale-[0.99] min-h-[56px]"
             >
               {loading ? "🔄 Scanning Fleet Hubs..." : "Search Cabs"}
               <span className="text-sm">→</span>
@@ -359,21 +354,21 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
         </form>
 
         {/* BOTTOM TRUST FEATURES BAR */}
-        <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-center">
-          <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-600">
-            <span className="text-blue-600">🛡️</span> No Hidden Charges
+        <div className="mt-6 pt-5 border-t border-slate-800 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-center">
+          <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-400">
+            <span className="text-emerald-400">🛡️</span> No Hidden Charges
           </div>
-          <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-600">
-            <span className="text-blue-600">🔒</span> Secure & Safe Travel
+          <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-400">
+            <span className="text-blue-400">🔒</span> Secure & Safe Travel
           </div>
-          <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-600 col-span-2 sm:col-span-1">
-            <span className="text-blue-600">✓</span> 100% Transparent
+          <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-400 col-span-2 sm:col-span-1">
+            <span className="text-orange-400">✓</span> 100% Transparent
           </div>
-          <div className="hidden lg:flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-600">
-            <span className="text-blue-600">👨‍✈️</span> Verified Drivers
+          <div className="hidden lg:flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-400">
+            <span className="text-purple-400">👨‍✈️</span> Verified Drivers
           </div>
-          <div className="hidden lg:flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-600">
-            <span className="text-blue-600">⭐</span> 24x7 Support
+          <div className="hidden lg:flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-400">
+            <span className="text-amber-400">⭐</span> 24x7 Support
           </div>
         </div>
 
