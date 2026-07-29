@@ -1,10 +1,5 @@
 // lib/fareCalculator.ts
 
-/**
- * =========================================================================
- * 👑 VEHICLE FLEET CONFIGURATION INTERFACE
- * =========================================================================
- */
 export interface VehicleConfig {
   label: string;
   image: string;
@@ -12,11 +7,6 @@ export interface VehicleConfig {
   longRatePerKm: number;
 }
 
-/**
- * =========================================================================
- * 👑 GLOBAL FLEET PRICE MATRIX (COMMERCIAL PER-KM RATES)
- * =========================================================================
- */
 export const VEHICLES: Record<string, VehicleConfig> = {
   sedan: {
     label: "Maruti Suzuki Dzire",
@@ -59,7 +49,6 @@ export function psychologicalPrice(value: number) {
   return Math.max(rounded - 1, 0);
 }
 
-// 👑 POPULAR HUBS WHITELIST (Standard Competitive Pricing Corridor)
 const POPULAR_HUBS = [
   "bilaspur",
   "raipur",
@@ -69,20 +58,12 @@ const POPULAR_HUBS = [
   "bhilai"
 ];
 
-/**
- * Check if the drop location matches our popular high-density commercial hubs
- */
 function isPopularHub(dropLocation: string): boolean {
-  if (!dropLocation) return true; // Default true if empty to prevent breakage
+  if (!dropLocation) return true;
   const lowerDrop = dropLocation.toLowerCase();
   return POPULAR_HUBS.some(hub => lowerDrop.includes(hub));
 }
 
-/**
- * =========================================================================
- * 👑 THE MASTER FARE CALCULATOR ENGINE
- * =========================================================================
- */
 export function calculateFare({
   distance,
   vehicleType,
@@ -106,19 +87,11 @@ export function calculateFare({
 }): CalculateFareResult {
   let baseDistance = distance > 0 ? Math.round(distance) : 0;
   
-  /**
-   * =========================================================================
-   * 👑 FUNDA 1: AUTO-SERVICE TYPE CORRECTOR MACHINE
-   * =========================================================================
-   */
   let finalServiceType = serviceType;
   if (baseDistance > 80 && serviceType === "local") {
     finalServiceType = "outstation";
-  } else if (baseDistance <= 40 && baseDistance > 0 && serviceType === "outstation") {
-    finalServiceType = "local";
   }
 
-  // Local Package fallback allocation sheet
   if (finalServiceType === "local") {
     const localPackages: Record<string, { finalFare: number; strikeFare: number; rate: number }> = {
       sedan: { finalFare: 1899, strikeFare: 1899, rate: 11 },
@@ -139,53 +112,40 @@ export function calculateFare({
     };
   }
 
-  /**
-   * =========================================================================
-   * 👑 LONG DISTANCE DISTANCE ADJUSTMENT RULE (+25 KMS IF 150+ KM ONEWAY)
-   * =========================================================================
-   */
   if (bookingType === "oneway" && baseDistance > 150) {
-    baseDistance += 25; // Adding 25 Kms extra buffer for long distance one-way return overhead
+    baseDistance += 25; 
   }
 
-  // Short lead check buffer lock bypass (>500 KMs follows absolute true tracking)
   let showKms = baseDistance;
   if (baseDistance > 500) {
     showKms = baseDistance + 50; 
   }
 
-  // 👑 RE-ENGINEERED UNCONDITIONAL LOCK: Micro Leads Minimum Floor Protection Block
   let effectiveCalculationDistance = showKms;
   if (bookingType === "oneway" && showKms < 80) {
-    effectiveCalculationDistance = 80; 
+    effectiveCalculationDistance = 80; // Pricing calculation ke liye floor
   }
 
   let ratePerKm = VEHICLES[vehicleType].baseRatePerKm;
   let currentMultiplier = 1.00;
   let haltCharges = 0;
+  let useCustomMicroBase = false;
+  let customBaseFareValue = 0;
 
-  /**
-   * =========================================================================
-   * 👑 ONE WAY PRICING CONTROL WITH COMPREHENSIVE STRATEGIC SLABS
-   * =========================================================================
-   */
   if (bookingType === "oneway") {
-    
-    // 👑 SLAB 0: Micro Leads Protection (<80 KM Floor Shield)
     if (showKms < 80) {
+      useCustomMicroBase = true;
+      ratePerKm = 10.00; 
+
       if (vehicleType === "sedan") {
-        currentMultiplier = 1.70;
-        ratePerKm = 11.00;        
+        customBaseFareValue = 1100;
       } else if (vehicleType === "ertiga") {
-        currentMultiplier = 2.40;
-        ratePerKm = 13.00;        
+        customBaseFareValue = 1400;
       } else if (vehicleType === "crysta") {
-        currentMultiplier = 2.85;
-        ratePerKm = 20.00;        
+        customBaseFareValue = 1800;
       }
     }
-    // 👑 SLAB 1: Short Leads (80 KM - 150 KM Corridor)
-    else if (showKms > 80 && showKms <= 150) {
+    else if (showKms >= 80 && showKms <= 150) {
       if (vehicleType === "sedan") {
         currentMultiplier = 1.95;
         ratePerKm = 11.00; 
@@ -197,33 +157,30 @@ export function calculateFare({
         ratePerKm = 20.00; 
       }
     }
-    // 👑 SLAB 2: Mid-Corridors (151 KM - 350 KM Corridor)
-    else if (showKms > 150 && showKms <= 350) {
+    else if (showKms > 150 && showKms <= 300) {
       if (vehicleType === "sedan") {
-        currentMultiplier = 1.45;
+        currentMultiplier = 1.35;
         ratePerKm = 11.00; 
       } else if (vehicleType === "ertiga") {
-        currentMultiplier = 1.55;
+        currentMultiplier = 1.50;
         ratePerKm = 13.00; 
       } else if (vehicleType === "crysta") {
-        currentMultiplier = 1.25;
+        currentMultiplier = 1.15;
         ratePerKm = 20.00; 
       }
     }
-    // 👑 SLAB 3: Long Routes (351 KM - 600 KM Corridor)
-    else if (showKms > 350 && showKms <= 600) {
+    else if (showKms > 300 && showKms <= 600) {
       if (vehicleType === "sedan") {
-        currentMultiplier = 1.75;
+        currentMultiplier = 0.95;
         ratePerKm = 11.00; 
       } else if (vehicleType === "ertiga") {
-        currentMultiplier = 2.10;
+        currentMultiplier = 1.15;
         ratePerKm = 13.00; 
       } else if (vehicleType === "crysta") {
-        currentMultiplier = 1.85;
+        currentMultiplier = 1;
         ratePerKm = 20.00; 
       }
     }
-    // 👑 SLAB 4: Mega Highways Corridor (>600 KM)
     else {
       if (vehicleType === "sedan") {
         currentMultiplier = 1.65;
@@ -237,16 +194,10 @@ export function calculateFare({
       }
     }
 
-    // 👑 REMOTE / NON-POPULAR HUB SURCHARGE CHECK
     if (!isPopularHub(drop)) {
       currentMultiplier *= 1.42; 
     }
 
-  /**
-   * =========================================================================
-   * 👑 ROUND TRIP PRICING CONTROL WITH VEHICLE-SPECIFIC MULTI-TIER SLABS
-   * =========================================================================
-   */
   } else if (bookingType === "roundtrip") {
     const totalRoundTripKm = baseDistance * 2;
 
@@ -301,22 +252,27 @@ export function calculateFare({
     }
   }
 
-  /**
-   * =========================================================================
-   * 🧮 FINAL MATHEMATICAL MATRIX COMPLETION
-   * =========================================================================
-   */
-  const calculatedBase = effectiveCalculationDistance * ratePerKm;
-  const baseWithMultiplier = calculatedBase * currentMultiplier;
+  let baseWithMultiplier = 0;
+
+  if (useCustomMicroBase) {
+    const rawMicroTotal = customBaseFareValue + (showKms * ratePerKm);
+    baseWithMultiplier = rawMicroTotal * currentMultiplier;
+  } else {
+    const calculatedBase = effectiveCalculationDistance * ratePerKm;
+    baseWithMultiplier = calculatedBase * currentMultiplier;
+  }
 
   const finalFareWithoutHalt = psychologicalPrice(baseWithMultiplier);
   const absoluteFinalFare = finalFareWithoutHalt + haltCharges;
 
   const durationMinutes = Math.round((showKms / 50) * 60) + 30;
 
+  // Pop-up me actual/true distance show karne ke liye billedDistance me showKms return kar rahe hain
+  const finalBilledDisplayDistance = bookingType === "roundtrip" ? showKms * 2 : showKms;
+
   return {
     actualDistance: baseDistance,
-    billedDistance: bookingType === "roundtrip" ? showKms * 2 : effectiveCalculationDistance,
+    billedDistance: finalBilledDisplayDistance,
     rateUsed: ratePerKm,
     strikeFare: absoluteFinalFare,
     finalFare: absoluteFinalFare,

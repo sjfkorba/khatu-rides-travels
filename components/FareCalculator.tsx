@@ -28,6 +28,8 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
   const [pickupTime, setPickupTime] = useState("");
   const [returnDate, setReturnDate] = useState("");
   const [returnTime, setReturnTime] = useState("");
+  const [passengers, setPassengers] = useState("1 Passenger");
+  const [vehiclePreference, setVehiclePreference] = useState("Any");
   
   const [loading, setLoading] = useState(false);
   const [minDate, setMinDate] = useState("");
@@ -83,7 +85,7 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
     }
 
     setLoading(true);
-    let mappedDistance = serviceType === "local" ? 80 : 150;
+    let mappedDistance = serviceType === "local" ? 80 : 45; // Default short-lead safe fallback if distance API fails
 
     if (serviceType !== "local") {
       try {
@@ -101,7 +103,6 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
       }
     }
 
-    // Capture autoCorrection mapping state response parameters directly from core execution engine
     let computedServiceType: ServiceType = serviceType;
 
     const options = (Object.keys(VEHICLES) as VehicleType[]).map((type) => {
@@ -114,9 +115,10 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
         pickupTime,
         returnDate: bookingType === "roundtrip" ? returnDate : undefined,
         returnTime: bookingType === "roundtrip" ? returnTime : undefined,
+        drop: drop,
       });
 
-      computedServiceType = res.autoCorrectedService; // Overwriting category state react mapping parameters dynamically
+      computedServiceType = res.autoCorrectedService;
 
       return {
         id: `${bookingType}-${type}-${Date.now()}`,
@@ -131,7 +133,6 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
       };
     });
 
-    // Notify user if system over-rides fraud category attempts
     if (computedServiceType !== serviceType) {
       alert(`📢 Note: System has optimized your category selection to "${computedServiceType.toUpperCase()}" based on verified dynamic routing distance coordinates.`);
     }
@@ -152,77 +153,231 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
 
   return (
     <div className="w-full flex flex-col items-center">
-      <div className="flex bg-slate-950/95 backdrop-blur border border-slate-800 rounded-t-2xl px-2 py-1.5 shadow-lg z-10">
-        <button type="button" onClick={() => { setMainServiceType("outstation"); setBookingType("oneway"); }} className={`px-5 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${serviceType === "outstation" && bookingType === "oneway" ? "bg-orange-600 text-white shadow-md shadow-orange-600/30" : "text-slate-400 hover:text-white"}`}>One Way</button>
-        <button type="button" onClick={() => { setMainServiceType("outstation"); setBookingType("roundtrip"); }} className={`px-5 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${serviceType === "outstation" && bookingType === "roundtrip" ? "bg-orange-600 text-white shadow-md shadow-orange-600/30" : "text-slate-400 hover:text-white"}`}>Round Trip</button>
-        <button type="button" onClick={() => { setMainServiceType("local"); setBookingType("oneway"); }} className={`px-5 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${serviceType === "local" ? "bg-orange-600 text-white shadow-md shadow-orange-600/30" : "text-slate-400 hover:text-white"}`}>Local Package</button>
-      </div>
-
-      <form onSubmit={handleCalculate} className="w-full bg-white/95 backdrop-blur-md rounded-3xl md:rounded-[2.5rem] border-2 border-orange-500 p-5 md:p-8 text-left font-sans -mt-0.5 relative z-20 shadow-lg">
-        <div className={`grid grid-cols-1 gap-4 items-center w-full ${serviceType === "outstation" && bookingType === "roundtrip" ? "lg:grid-cols-[1.2fr_1.2fr_1fr_1fr_1fr_1fr]" : serviceType === "local" ? "lg:grid-cols-[2fr_1fr_1fr]" : "lg:grid-cols-[1.5fr_1.5fr_1fr_1fr]"}`}>
+      <div className="w-full bg-white rounded-3xl shadow-[0_12px_40px_rgba(0,0,0,0.06)] border border-slate-200/80 p-4 sm:p-7 text-left font-sans relative z-20">
+        
+        {/* TOP FLUTTER-STYLE SLEEK TABS */}
+        <div className="flex overflow-x-auto gap-2 border-b border-slate-100 pb-4 mb-5 scrollbar-none">
+          <button 
+            type="button" 
+            onClick={() => { setMainServiceType("outstation"); setBookingType("oneway"); }} 
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap shadow-2xs ${
+              serviceType === "outstation" && bookingType === "oneway" 
+                ? "bg-slate-950 text-white shadow-md scale-[1.02]" 
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            <span>🚀</span> One Way
+          </button>
           
-          <div className="relative border border-slate-300 rounded-xl px-4 py-2.5 bg-slate-50/50 focus-within:border-orange-500 transition-all w-full" ref={pickupRef}>
-            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">{serviceType === "local" ? "City Location" : "From"}</label>
-            <div className="flex items-center gap-2">
-              <span className="text-orange-500 text-sm">📍</span>
-              <input required type="text" placeholder="Type pickup city..." value={pickup} onChange={(e) => { setPickup(e.target.value); fetchLiveSuggestions(e.target.value, "pickup"); }} className="w-full bg-transparent text-sm font-bold text-slate-800 focus:outline-none" />
-            </div>
-            {showPickupList && pickupSuggestions.length > 0 && (
-              <ul className="absolute left-0 w-full bg-white border border-slate-200 rounded-xl mt-3 shadow-2xl max-h-48 overflow-y-auto z-[999999] divide-y divide-slate-100">
-                {pickupSuggestions.map((item, idx) => (
-                  <li key={idx} onClick={() => { setPickup(item); setShowPickupList(false); }} className="px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-orange-50 cursor-pointer">{item}</li>
-                ))}
-              </ul>
-            )}
-          </div>
+          <button 
+            type="button" 
+            onClick={() => { setMainServiceType("outstation"); setBookingType("roundtrip"); }} 
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap shadow-2xs ${
+              serviceType === "outstation" && bookingType === "roundtrip" 
+                ? "bg-slate-950 text-white shadow-md scale-[1.02]" 
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            <span>🔄</span> Round Trip
+          </button>
 
-          {serviceType !== "local" && (
-            <div className="relative border border-slate-300 rounded-xl px-4 py-2.5 bg-slate-50/50 focus-within:border-orange-500 transition-all w-full" ref={dropRef}>
-              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">To</label>
+          <button 
+            type="button" 
+            onClick={() => { setMainServiceType("local"); setBookingType("oneway"); }} 
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap shadow-2xs ${
+              serviceType === "local" 
+                ? "bg-slate-950 text-white shadow-md scale-[1.02]" 
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            <span>🏙️</span> Local Package
+          </button>
+
+          <button 
+            type="button" 
+            onClick={() => { setMainServiceType("outstation"); setBookingType("oneway"); }} 
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200 shadow-2xs"
+          >
+            <span>✈️</span> Airport Transfer
+          </button>
+        </div>
+
+        <form onSubmit={handleCalculate}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-5">
+            
+            {/* FROM / PICKUP LOCATION */}
+            <div className="relative border border-slate-200 rounded-2xl p-3 bg-slate-50/70 hover:border-slate-300 focus-within:border-orange-500 transition-all w-full shadow-2xs" ref={pickupRef}>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">
+                {serviceType === "local" ? "City Location" : "From (Pick-up Location)"}
+              </label>
               <div className="flex items-center gap-2">
-                <span className="text-orange-500 text-sm">🏁</span>
-                <input required type="text" placeholder="Type drop point..." value={drop} onChange={(e) => { setDrop(e.target.value); fetchLiveSuggestions(e.target.value, "drop"); }} className="w-full bg-transparent text-sm font-bold text-slate-800 focus:outline-none" />
+                <span className="text-emerald-600 text-sm">📍</span>
+                <input 
+                  required 
+                  type="text" 
+                  placeholder="Enter pickup location..." 
+                  value={pickup} 
+                  onChange={(e) => { setPickup(e.target.value); fetchLiveSuggestions(e.target.value, "pickup"); }} 
+                  className="w-full bg-transparent text-xs font-bold text-slate-900 focus:outline-none placeholder:text-slate-400" 
+                />
               </div>
-              {showDropList && dropSuggestions.length > 0 && (
+              {showPickupList && pickupSuggestions.length > 0 && (
                 <ul className="absolute left-0 w-full bg-white border border-slate-200 rounded-xl mt-3 shadow-2xl max-h-48 overflow-y-auto z-[999999] divide-y divide-slate-100">
-                  {dropSuggestions.map((item, idx) => (
-                    <li key={idx} onClick={() => { setDrop(item); setShowDropList(false); }} className="px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-orange-50 cursor-pointer">{item}</li>
+                  {pickupSuggestions.map((item, idx) => (
+                    <li key={idx} onClick={() => { setPickup(item); setShowPickupList(false); }} className="px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-orange-50 cursor-pointer">{item}</li>
                   ))}
                 </ul>
               )}
             </div>
-          )}
 
-          <div className="relative border border-slate-300 rounded-xl px-4 py-2.5 bg-slate-50/50 focus-within:border-orange-500 transition-all w-full">
-            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Pick Up Date</label>
-            <input required type="date" min={minDate} value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="w-full bg-transparent text-sm font-bold text-slate-800 focus:outline-none cursor-pointer" />
+            {/* TO / DROP LOCATION */}
+            {serviceType !== "local" ? (
+              <div className="relative border border-slate-200 rounded-2xl p-3 bg-slate-50/70 hover:border-slate-300 focus-within:border-orange-500 transition-all w-full shadow-2xs" ref={dropRef}>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">To (Drop Location)</label>
+                <div className="flex items-center gap-2">
+                  <span className="text-red-500 text-sm">📍</span>
+                  <input 
+                    required 
+                    type="text" 
+                    placeholder="Enter drop location..." 
+                    value={drop} 
+                    onChange={(e) => { setDrop(e.target.value); fetchLiveSuggestions(e.target.value, "drop"); }} 
+                    className="w-full bg-transparent text-xs font-bold text-slate-900 focus:outline-none placeholder:text-slate-400" 
+                  />
+                </div>
+                {showDropList && dropSuggestions.length > 0 && (
+                  <ul className="absolute left-0 w-full bg-white border border-slate-200 rounded-xl mt-3 shadow-2xl max-h-48 overflow-y-auto z-[999999] divide-y divide-slate-100">
+                    {dropSuggestions.map((item, idx) => (
+                      <li key={idx} onClick={() => { setDrop(item); setShowDropList(false); }} className="px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-orange-50 cursor-pointer">{item}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ) : (
+              <div className="border border-slate-200 rounded-2xl p-3 bg-slate-50/70 w-full flex flex-col justify-center shadow-2xs">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Package Duration</span>
+                <span className="text-xs font-bold text-slate-800 mt-1">8 Hours / 80 Kms Included</span>
+              </div>
+            )}
+
+            {/* PICK-UP DATE */}
+            <div className="border border-slate-200 rounded-2xl p-3 bg-slate-50/70 hover:border-slate-300 focus-within:border-orange-500 transition-all w-full shadow-2xs">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Pick-up Date</label>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-600 text-sm">📅</span>
+                <input 
+                  required 
+                  type="date" 
+                  min={minDate} 
+                  value={pickupDate} 
+                  onChange={(e) => setPickupDate(e.target.value)} 
+                  className="w-full bg-transparent text-xs font-bold text-slate-900 focus:outline-none cursor-pointer" 
+                />
+              </div>
+            </div>
+
+            {/* PICK-UP TIME */}
+            <div className="border border-slate-200 rounded-2xl p-3 bg-slate-50/70 hover:border-slate-300 focus-within:border-orange-500 transition-all w-full shadow-2xs">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Pick-up Time</label>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-600 text-sm">⏰</span>
+                <input 
+                  required 
+                  type="time" 
+                  value={pickupTime} 
+                  onChange={(e) => setPickupTime(e.target.value)} 
+                  className="w-full bg-transparent text-xs font-bold text-slate-900 focus:outline-none cursor-pointer" 
+                />
+              </div>
+            </div>
+
+            {/* PASSENGERS DROPDOWN */}
+            <div className="border border-slate-200 rounded-2xl p-3 bg-slate-50/70 hover:border-slate-300 focus-within:border-orange-500 transition-all w-full shadow-2xs">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Passengers</label>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 w-full">
+                  <span className="text-slate-600 text-sm">👤</span>
+                  <select 
+                    value={passengers} 
+                    onChange={(e) => setPassengers(e.target.value)}
+                    className="bg-transparent text-xs font-bold text-slate-900 focus:outline-none cursor-pointer w-full"
+                  >
+                    <option value="1 Passenger">1 Passenger</option>
+                    <option value="2 Passengers">2 Passengers</option>
+                    <option value="3-4 Passengers">3-4 Passengers</option>
+                    <option value="5-7 Passengers">5-7 Passengers (SUV/MUV)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* VEHICLE PREFERENCE */}
+            <div className="border border-slate-200 rounded-2xl p-3 bg-slate-50/70 hover:border-slate-300 focus-within:border-orange-500 transition-all w-full shadow-2xs">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Vehicle Preference (Optional)</label>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-600 text-sm">🚗</span>
+                <select 
+                  value={vehiclePreference} 
+                  onChange={(e) => setVehiclePreference(e.target.value)}
+                  className="bg-transparent text-xs font-bold text-slate-900 focus:outline-none cursor-pointer w-full"
+                >
+                  <option value="Any">Any (Best Available)</option>
+                  <option value="Sedan">Sedan (Dzire / Etios)</option>
+                  <option value="SUV / MUV">SUV / MUV (Ertiga / Xylo)</option>
+                  <option value="Luxury SUV">Luxury SUV (Innova Crysta)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* RETURN DATE & TIME FOR ROUNDTRIP */}
+            {serviceType === "outstation" && bookingType === "roundtrip" && (
+              <>
+                <div className="border border-orange-200 rounded-2xl p-3 bg-orange-50/50 hover:border-orange-300 transition-all w-full shadow-2xs">
+                  <label className="block text-[10px] font-black text-orange-600 uppercase tracking-wider mb-1">Return Date</label>
+                  <input required type="date" min={pickupDate || minDate} value={returnDate} onChange={(e) => setReturnDate(e.target.value)} className="w-full bg-transparent text-xs font-bold text-slate-900 focus:outline-none cursor-pointer" />
+                </div>
+                <div className="border border-orange-200 rounded-2xl p-3 bg-orange-50/50 hover:border-orange-300 transition-all w-full shadow-2xs">
+                  <label className="block text-[10px] font-black text-orange-600 uppercase tracking-wider mb-1">Return Time</label>
+                  <input required type="time" value={returnTime} onChange={(e) => setReturnTime(e.target.value)} className="w-full bg-transparent text-xs font-bold text-slate-900 focus:outline-none cursor-pointer" />
+                </div>
+              </>
+            )}
+
           </div>
 
-          <div className="relative border border-slate-300 rounded-xl px-4 py-2.5 bg-slate-50/50 focus-within:border-orange-500 transition-all w-full">
-            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Pick Up Time</label>
-            <input required type="time" value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} className="w-full bg-transparent text-sm font-bold text-slate-800 focus:outline-none cursor-pointer" />
+          {/* SEARCH BUTTON */}
+          <div className="mt-4">
+            <button 
+              type="submit" 
+              disabled={loading} 
+              className="w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-700 hover:to-amber-600 text-white text-xs font-black uppercase tracking-widest py-4 rounded-2xl shadow-lg flex items-center justify-center gap-2 transition-all active:scale-[0.99] min-h-[52px]"
+            >
+              {loading ? "🔄 Scanning Fleet Hubs..." : "Search Cabs"}
+              <span className="text-sm">→</span>
+            </button>
           </div>
+        </form>
 
-          {serviceType === "outstation" && bookingType === "roundtrip" && (
-            <>
-              <div className="relative border border-slate-300 rounded-xl px-4 py-2.5 bg-slate-50/50 focus-within:border-orange-500 transition-all w-full">
-                <label className="block text-[10px] font-black text-orange-600 uppercase tracking-wider mb-0.5">Return Date</label>
-                <input required type="date" min={pickupDate || minDate} value={returnDate} onChange={(e) => setReturnDate(e.target.value)} className="w-full bg-transparent text-sm font-bold text-slate-800 focus:outline-none cursor-pointer" />
-              </div>
-              <div className="relative border border-slate-300 rounded-xl px-4 py-2.5 bg-slate-50/50 focus-within:border-orange-500 transition-all w-full">
-                <label className="block text-[10px] font-black text-orange-600 uppercase tracking-wider mb-0.5">Return Time</label>
-                <input required type="time" value={returnTime} onChange={(e) => setReturnTime(e.target.value)} className="w-full bg-transparent text-sm font-bold text-slate-800 focus:outline-none cursor-pointer" />
-              </div>
-            </>
-          )}
+        {/* BOTTOM TRUST FEATURES BAR */}
+        <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-center">
+          <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-600">
+            <span className="text-blue-600">🛡️</span> No Hidden Charges
+          </div>
+          <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-600">
+            <span className="text-blue-600">🔒</span> Secure & Safe Travel
+          </div>
+          <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-600 col-span-2 sm:col-span-1">
+            <span className="text-blue-600">✓</span> 100% Transparent
+          </div>
+          <div className="hidden lg:flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-600">
+            <span className="text-blue-600">👨‍✈️</span> Verified Drivers
+          </div>
+          <div className="hidden lg:flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-600">
+            <span className="text-blue-600">⭐</span> 24x7 Support
+          </div>
         </div>
 
-        <div className="mt-8 flex flex-col items-center justify-center">
-          <button type="submit" disabled={loading} className="w-full max-w-md bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 text-white text-sm font-black uppercase tracking-widest py-4 px-8 rounded-xl shadow-lg flex items-center justify-center gap-2 min-h-[54px]">
-            {loading ? "🔄 Scanning Fleet Hubs..." : "EXPLORE CABS"}
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   );
 }
