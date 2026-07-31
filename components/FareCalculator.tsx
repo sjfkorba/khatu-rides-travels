@@ -151,12 +151,12 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
     <div className="w-full flex flex-col items-center">
       <div className="w-full bg-slate-900/90 backdrop-blur-2xl rounded-3xl shadow-2xl border border-slate-800 p-5 sm:p-8 text-left font-sans relative z-20 text-slate-100">
         
-        {/* TOP TABS */}
-        <div className="flex overflow-x-auto gap-2.5 border-b border-slate-800 pb-4 mb-6 scrollbar-none">
+        {/* 👑 3 CLEAN MAIN TABS: ONE WAY, ROUND TRIP, LOCAL */}
+        <div className="grid grid-cols-3 gap-2.5 border-b border-slate-800 pb-4 mb-6">
           <button 
             type="button" 
             onClick={() => { setMainServiceType("outstation"); setBookingType("oneway"); }} 
-            className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap shadow-md ${
+            className={`flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-md ${
               serviceType === "outstation" && bookingType === "oneway" 
                 ? "bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-orange-600/30 scale-[1.02]" 
                 : "bg-slate-950 text-slate-400 hover:bg-slate-800 hover:text-white border border-slate-800"
@@ -168,7 +168,7 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
           <button 
             type="button" 
             onClick={() => { setMainServiceType("outstation"); setBookingType("roundtrip"); }} 
-            className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap shadow-md ${
+            className={`flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-md ${
               serviceType === "outstation" && bookingType === "roundtrip" 
                 ? "bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-orange-600/30 scale-[1.02]" 
                 : "bg-slate-950 text-slate-400 hover:bg-slate-800 hover:text-white border border-slate-800"
@@ -180,26 +180,17 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
           <button 
             type="button" 
             onClick={() => { setMainServiceType("local"); setBookingType("oneway"); }} 
-            className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap shadow-md ${
+            className={`flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-md ${
               serviceType === "local" 
                 ? "bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-orange-600/30 scale-[1.02]" 
                 : "bg-slate-950 text-slate-400 hover:bg-slate-800 hover:text-white border border-slate-800"
             }`}
           >
-            <span>🏙️</span> Local Package
-          </button>
-
-          <button 
-            type="button" 
-            onClick={() => { setMainServiceType("outstation"); setBookingType("oneway"); }} 
-            className="flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap bg-slate-950 text-slate-400 hover:bg-slate-800 hover:text-white border border-slate-800"
-          >
-            <span>✈️</span> Airport Transfer
+            <span>🏙️</span> Local
           </button>
         </div>
 
         <form onSubmit={handleCalculate}>
-          {/* 👑 PERFECTLY ALIGNED DESKTOP 3-COLUMN / MOBILE 1-COLUMN GRID */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             
             {/* FROM / PICKUP LOCATION */}
@@ -352,25 +343,6 @@ export default function FareCalculator({ onFareCalculated }: FareCalculatorProps
             </button>
           </div>
         </form>
-
-        {/* BOTTOM TRUST FEATURES BAR */}
-        <div className="mt-6 pt-5 border-t border-slate-800 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-center">
-          <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-400">
-            <span className="text-emerald-400">🛡️</span> No Hidden Charges
-          </div>
-          <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-400">
-            <span className="text-blue-400">🔒</span> Secure & Safe Travel
-          </div>
-          <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-400 col-span-2 sm:col-span-1">
-            <span className="text-orange-400">✓</span> 100% Transparent
-          </div>
-          <div className="hidden lg:flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-400">
-            <span className="text-purple-400">👨‍✈️</span> Verified Drivers
-          </div>
-          <div className="hidden lg:flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-400">
-            <span className="text-amber-400">⭐</span> 24x7 Support
-          </div>
-        </div>
 
       </div>
     </div>

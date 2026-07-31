@@ -129,22 +129,6 @@ export default function HomePage() {
     return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${ampm}`;
   };
 
-  const getDynamicKmsLimitDisplay = (opt: FareOption): number => {
-    if (!popupData || popupData.bookingType !== "roundtrip" || !popupData.returnDate || !popupData.returnTime) {
-      return opt.billedDistance; 
-    }
-    try {
-      const start = new Date(`${popupData.pickupDate}T${popupData.pickupTime}`);
-      const end = new Date(`${popupData.returnDate}T${popupData.returnTime}`);
-      const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-      const days = Math.max(1, Math.ceil(hours / 24));
-      const calculatedLimit = days * 250;
-      return calculatedLimit > opt.billedDistance ? calculatedLimit : opt.billedDistance;
-    } catch (e) {
-      return opt.billedDistance;
-    }
-  };
-
   const triggerQuickBooking = (from: string, to: string, routeDistance: number) => {
     const now = new Date();
     now.setHours(now.getHours() + 2);
@@ -359,7 +343,7 @@ Kindly let me know about the availability and the booking process. I look forwar
         <section className="relative px-4 pt-8 pb-16 sm:py-16">
           <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
-            {/* Hero Text (Appears below on mobile, side on desktop for high impact) */}
+            {/* Hero Text */}
             <div className="lg:col-span-5 text-center lg:text-left space-y-4 order-2 lg:order-1">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-[10px] font-black uppercase tracking-widest">
                 <span>🌟 Premium Intercity Cabs</span>
@@ -391,7 +375,7 @@ Kindly let me know about the availability and the booking process. I look forwar
               </div>
             </div>
 
-            {/* 👑 FARE CALCULATOR CARD EMBEDDED (Top on Mobile) */}
+            {/* 👑 FARE CALCULATOR CARD EMBEDDED */}
             <div ref={calculatorSectionRef} className="lg:col-span-7 relative z-20 order-1 lg:order-2">
               <div className="absolute -inset-1 bg-gradient-to-r from-orange-600 to-amber-500 rounded-3xl blur-md opacity-30 animate-pulse" />
               <div className="relative">
@@ -713,13 +697,22 @@ Kindly let me know about the availability and the booking process. I look forwar
                     {popupData.fareOptions.map((opt) => {
                       if (!["sedan", "ertiga", "crysta"].includes(opt.vehicleType)) return null;
 
-                      const dynamicLimitKms = getDynamicKmsLimitDisplay(opt);
-                      const extraRatePerKm = opt.vehicleType === "sedan" ? 13 : opt.vehicleType === "ertiga" ? 17 : 20.7;
                       const isSelected = selectedVehicleType === opt.vehicleType;
                       const isExpanded = expandedInclusionsId === opt.id;
                       const strikePrice = Math.round(opt.finalFare * 1.15);
 
                       const fullVehicleTitle = opt.vehicleType === "sedan" ? "DZIRE, ETIOS" : opt.vehicleType === "ertiga" ? "ERTIGA, XYLO" : "INNOVA CRYSTA";
+
+                      // 👑 Dynamic Package Subtext matching your exact requirements
+                      const isLocalOrShortTrip = popupData.serviceType === "local" || (popupData.bookingType === "roundtrip" && opt.billedDistance < 80);
+                      
+                      const packageSubText = isLocalOrShortTrip
+                        ? (opt.vehicleType === "sedan" 
+                            ? "1200 fixed for 8Hrs & 80Kms + 11 Per Kms + Toll (if required)" 
+                            : opt.vehicleType === "ertiga" 
+                            ? "1500 fixed for 8Hrs & 80Kms + 12 Per Kms + Toll (if required)" 
+                            : "2200 fixed for 8Hrs & 80Kms + 14 Per Kms + Toll (if required)")
+                        : `Extra @ ₹${opt.vehicleType === "sedan" ? 13 : opt.vehicleType === "ertiga" ? 17 : 20.7}/Km after limit`;
 
                       return (
                         <div
@@ -745,16 +738,17 @@ Kindly let me know about the availability and the booking process. I look forwar
                               <div className="mt-1.5 space-y-1 text-xs text-slate-300 font-bold">
                                 <div className="flex items-center gap-1.5 text-slate-300">
                                   <span>📍</span>
-                                  <span>{dynamicLimitKms} Kms Actual Distance</span>
+                                  <span>{isLocalOrShortTrip ? "80 Kms Package Limit" : `${opt.billedDistance} Kms Actual Distance`}</span>
                                 </div>
-                                <div className="flex items-center gap-1.5 text-slate-400 truncate">
+                                <div className="flex items-center gap-1.5 text-orange-400 font-bold truncate">
                                   <span>⚡</span>
-                                  <span className="truncate">Extra @ ₹{extraRatePerKm}/Km after limit</span>
+                                  <span className="truncate">{packageSubText}</span>
                                 </div>
                               </div>
                             </div>
 
                             <div className="text-right shrink-0">
+                              <div className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">Estimated Fare</div>
                               <div className="text-xs sm:text-sm font-bold text-red-400 line-through">Rs. {strikePrice.toLocaleString("en-IN")}/-</div>
                               <div className="bg-gradient-to-r from-orange-600 to-amber-500 text-white text-sm sm:text-xl font-black px-4 py-1.5 rounded-2xl shadow-lg inline-block tracking-tight mt-1">
                                 Rs. {opt.finalFare.toLocaleString("en-IN")}
@@ -806,7 +800,7 @@ Kindly let me know about the availability and the booking process. I look forwar
 
                           {isExpanded && (
                             <div className="mt-2.5 p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5 text-xs text-slate-300">
-                              <div>✔ <strong>{dynamicLimitKms} Km included:</strong> ₹{extraRatePerKm}/km beyond limit.</div>
+                              <div>✔ <strong>Package Details:</strong> {packageSubText}</div>
                               <div>✔ <strong>Toll & State Tax:</strong> Fully covered in fare.</div>
                               <div>✔ <strong>Driver Allowance:</strong> Included.</div>
                               <div>✔ <strong>Waiting Time:</strong> Upto 45 mins free at pickup.</div>
@@ -898,37 +892,6 @@ Kindly let me know about the availability and the booking process. I look forwar
                     </div>
                   </div>
                 )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* 👑 SUCCESS RECEIPT MODAL */}
-      <AnimatePresence>
-        {successReceipt && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/85 p-3 backdrop-blur-md">
-            <motion.div initial={{ y: 20 }} animate={{ y: 0 }} className="w-full max-w-md overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl text-slate-100">
-              <div className="bg-emerald-950/60 px-6 py-6 text-center border-b border-emerald-900/50">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 text-2xl text-emerald-400 border border-emerald-500/30">✓</div>
-                <h3 className="text-xl font-black text-white">Allocation Confirmed</h3>
-                <p className="text-xs text-slate-400 mt-1">Your route details have been securely recorded in Firebase (`bookings` collection).</p>
-              </div>
-              <div className="p-6 space-y-4 text-left">
-                <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4 text-xs space-y-2.5 text-slate-300">
-                  <div className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-2">Invoice Summary</div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-400">Invoice ID:</span> <span className="text-white font-mono">{successReceipt.invoiceId}</span></div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-400">Vehicle:</span> <span className="text-white">{successReceipt.vehicle}</span></div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-400">Pickup:</span> <span className="truncate max-w-[180px] text-white">{successReceipt.pickup}</span></div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-400">Drop Point:</span> <span className="truncate max-w-[180px] text-white">{successReceipt.drop}</span></div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-400">Timeline:</span> <span className="text-white">{successReceipt.date} at {successReceipt.time}</span></div>
-                  <div className="flex justify-between pt-3 border-t border-slate-800 font-black text-white text-sm">
-                    <span>Amount Paid ({successReceipt.paymentMode}):</span> <span className="text-orange-400">₹{successReceipt.amount.toLocaleString("en-IN")}</span>
-                  </div>
-                </div>
-                <button type="button" onClick={() => setSuccessReceipt(null)} className="w-full h-12 bg-slate-800 hover:bg-slate-700 text-xs font-black uppercase tracking-wider text-white rounded-2xl shadow-lg transition">
-                  Close Panel
-                </button>
               </div>
             </motion.div>
           </div>
