@@ -75,10 +75,10 @@ type SuccessReceipt = {
 };
 
 const ROUTES = [
-  { from: "Raipur, Chhattisgarh", to: "Korba, Chhattisgarh", price: "₹3299", time: "~4h 30m", km: "250 KM", image: "/banner6.png" },
-  { from: "Korba, Chhattisgarh", to: "Bilaspur, Chhattisgarh", price: "₹1899", time: "~2h 30m", km: "130 KM", image: "/banner6.png" },
-  { from: "Bilaspur, Chhattisgarh", to: "Raipur, Chhattisgarh", price: "₹3299", time: "~4h 30m", km: "250 KM", image: "/banner6.png" },
-  { from: "Raipur, Chhattisgarh", to: "Bhopal, Madhya Pradesh", price: "₹3499", time: "~7h 00m", km: "450 KM", image: "/banner6.png" },
+  { from: "Raipur, Chhattisgarh", to: "Korba, Chhattisgarh", price: "₹3499", time: "~4h 30m", km: "250 KM", image: "/banner6.png" },
+  { from: "Korba, Chhattisgarh", to: "Bilaspur, Chhattisgarh", price: "₹2399", time: "~2h 30m", km: "130 KM", image: "/banner6.png" },
+  { from: "Bilaspur, Chhattisgarh", to: "Raipur, Chhattisgarh", price: "₹2499", time: "~4h 30m", km: "250 KM", image: "/banner6.png" },
+  { from: "Raipur, Chhattisgarh", to: "Bhopal, Madhya Pradesh", price: "₹9249", time: "~7h 00m", km: "450 KM", image: "/banner6.png" },
 ];
 
 export default function HomePage() {
@@ -299,36 +299,40 @@ Kindly let me know about the availability and the booking process. I look forwar
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-600/15 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        {/* 👑 MODERN GLASSMORPHIC NAVBAR */}
-        <header className="w-full bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/80 sticky top-0 z-40 select-none shadow-xl">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
-            <div className="flex items-center gap-2">
+        {/* 👑 FIXED MODERN GLASSMORPHIC NAVBAR (Properly Spaced & Aligned) */}
+        <header className="w-full bg-slate-950/90 backdrop-blur-xl border-b border-slate-800/80 sticky top-0 z-40 select-none shadow-xl">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6">
+            
+            {/* Logo Section */}
+            <div className="flex items-center gap-2 shrink-0">
               <div className="flex flex-col">
-                <span className="text-2xl sm:text-3xl font-black tracking-tighter uppercase text-white leading-none">
+                <span className="text-xl sm:text-2xl font-black tracking-tighter uppercase text-white leading-none">
                   Khatu<span className="text-orange-500">Rides</span>
                 </span>
-                <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.3em] text-orange-400 mt-1">Travels Co.</span>
+                <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-orange-400 mt-1">Travels Co.</span>
               </div>
             </div>
 
-            <div className="hidden lg:flex items-center gap-8 text-xs font-bold text-slate-300 uppercase tracking-wider">
+            {/* Desktop Navigation Links (Proper Gap & Spacing) */}
+            <nav className="hidden xl:flex items-center gap-6 text-[11px] font-extrabold text-slate-300 uppercase tracking-widest">
               <a href="#" className="text-orange-500 hover:text-orange-400 transition">Home</a>
-              <a href="#about" className="hover:text-orange-400 transition">About Us</a>
+              <a href="about-us" className="hover:text-orange-400 transition">About Us</a>
               <a href="#services" className="hover:text-orange-400 transition">Our Services</a>
               <a href="#routes-heading" className="hover:text-orange-400 transition">Popular Routes</a>
               <a href="#offers" className="hover:text-orange-400 transition">Offers</a>
-              <a href="#contact" className="hover:text-orange-400 transition">Contact Us</a>
-            </div>
+              <a href="contact-us" className="hover:text-orange-400 transition">Contact Us</a>
+            </nav>
 
-            <div className="flex items-center gap-3">
-              <a href="tel:+919244137353" className="hidden sm:flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900/80 px-4 py-2 text-xs font-black text-slate-200 hover:bg-slate-800 transition shadow-inner">
-                <span className="text-emerald-400">📞</span> Call 24x7: <span className="text-orange-400">92441 37353</span>
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2.5 shrink-0">
+              <a href="tel:+919244137353" className="hidden md:flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900/90 px-3.5 py-2 text-[11px] font-black text-slate-200 hover:bg-slate-800 transition shadow-inner">
+                <span className="text-emerald-400 text-xs">📞</span> Call: <span className="text-orange-400">92441 37353</span>
               </a>
-              <a href="https://wa.me/919244137353" target="_blank" rel="noopener noreferrer" className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 hover:bg-emerald-500 transition scale-100 hover:scale-105">
-                <span className="text-lg">💬</span>
+              <a href="https://wa.me/919244137353" target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-white shadow-md hover:bg-emerald-500 transition">
+                <span className="text-base">💬</span>
               </a>
-              <button onClick={() => setShowInitialRatingModal(true)} className="rounded-full bg-gradient-to-r from-orange-600 to-amber-500 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:from-orange-500 hover:to-amber-400 transition shadow-lg shadow-orange-600/30">
-                Login / Signup
+              <button onClick={() => setShowInitialRatingModal(true)} className="rounded-full bg-gradient-to-r from-orange-600 to-amber-500 px-4 py-2 text-[11px] font-black uppercase tracking-wider text-white hover:from-orange-500 hover:to-amber-400 transition shadow-lg shadow-orange-600/30">
+                Login
               </button>
             </div>
           </div>
@@ -339,7 +343,7 @@ Kindly let me know about the availability and the booking process. I look forwar
           ⚡ Chhattisgarh & Madhya Pradesh ka Fastest Growing Cab Service
         </div>
 
-        {/* 👑 HERO & BOOKING SECTION (Mobile First: Calculator on Top) */}
+        {/* 👑 HERO & BOOKING SECTION */}
         <section className="relative px-4 pt-8 pb-16 sm:py-16">
           <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
@@ -703,7 +707,7 @@ Kindly let me know about the availability and the booking process. I look forwar
 
                       const fullVehicleTitle = opt.vehicleType === "sedan" ? "DZIRE, ETIOS" : opt.vehicleType === "ertiga" ? "ERTIGA, XYLO" : "INNOVA CRYSTA";
 
-                      // 👑 Dynamic Package Subtext matching your exact requirements
+                      // 👑 Exact Package Subtext requested by user
                       const isLocalOrShortTrip = popupData.serviceType === "local" || (popupData.bookingType === "roundtrip" && opt.billedDistance < 80);
                       
                       const packageSubText = isLocalOrShortTrip
@@ -892,6 +896,37 @@ Kindly let me know about the availability and the booking process. I look forwar
                     </div>
                   </div>
                 )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 👑 SUCCESS RECEIPT MODAL */}
+      <AnimatePresence>
+        {successReceipt && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/85 p-3 backdrop-blur-md">
+            <motion.div initial={{ y: 20 }} animate={{ y: 0 }} className="w-full max-w-md overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl text-slate-100">
+              <div className="bg-emerald-950/60 px-6 py-6 text-center border-b border-emerald-900/50">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 text-2xl text-emerald-400 border border-emerald-500/30">✓</div>
+                <h3 className="text-xl font-black text-white">Allocation Confirmed</h3>
+                <p className="text-xs text-slate-400 mt-1">Your route details have been securely recorded in Firebase (`bookings` collection).</p>
+              </div>
+              <div className="p-6 space-y-4 text-left">
+                <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4 text-xs space-y-2.5 text-slate-300">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-2">Invoice Summary</div>
+                  <div className="flex justify-between"><span className="font-bold text-slate-400">Invoice ID:</span> <span className="text-white font-mono">{successReceipt.invoiceId}</span></div>
+                  <div className="flex justify-between"><span className="font-bold text-slate-400">Vehicle:</span> <span className="text-white">{successReceipt.vehicle}</span></div>
+                  <div className="flex justify-between"><span className="font-bold text-slate-400">Pickup:</span> <span className="truncate max-w-[180px] text-white">{successReceipt.pickup}</span></div>
+                  <div className="flex justify-between"><span className="font-bold text-slate-400">Drop Point:</span> <span className="truncate max-w-[180px] text-white">{successReceipt.drop}</span></div>
+                  <div className="flex justify-between"><span className="font-bold text-slate-400">Timeline:</span> <span className="text-white">{successReceipt.date} at {successReceipt.time}</span></div>
+                  <div className="flex justify-between pt-3 border-t border-slate-800 font-black text-white text-sm">
+                    <span>Amount Paid ({successReceipt.paymentMode}):</span> <span className="text-orange-400">₹{successReceipt.amount.toLocaleString("en-IN")}</span>
+                  </div>
+                </div>
+                <button type="button" onClick={() => setSuccessReceipt(null)} className="w-full h-12 bg-slate-800 hover:bg-slate-700 text-xs font-black uppercase tracking-wider text-white rounded-2xl shadow-lg transition">
+                  Close Panel
+                </button>
               </div>
             </motion.div>
           </div>

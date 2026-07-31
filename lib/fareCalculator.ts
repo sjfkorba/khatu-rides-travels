@@ -17,13 +17,13 @@ export const VEHICLES: Record<string, VehicleConfig> = {
   ertiga: {
     label: "Maruti Suzuki Ertiga (MUV)",
     image: "/ertiga.png",
-    baseRatePerKm: 12, 
+    baseRatePerKm: 13, 
     longRatePerKm: 15, 
   },
   crysta: {
     label: "Toyota Innova Crysta (Premium)",
     image: "/crysta.png",
-    baseRatePerKm: 14, 
+    baseRatePerKm: 20, 
     longRatePerKm: 17, 
   },
 };
@@ -55,9 +55,7 @@ const POPULAR_HUBS = [
   "durg",
   "korba",
   "raigarh",
-  "bhilai",
-  "rewa",
-  "jharsuguda"
+  "bhilai"
 ];
 
 function isPopularHub(dropLocation: string): boolean {
@@ -87,44 +85,19 @@ export function calculateFare({
   returnTime?: string;
   drop?: string;
 }): CalculateFareResult {
-  let baseDistance = distance > 0 ? Math.round(distance) : 0;
+  let oneWayDistance = distance > 0 ? Math.round(distance) : 0;
   
   let finalServiceType = serviceType;
-  if (baseDistance > 80 && serviceType === "local") {
+  if (oneWayDistance > 80 && serviceType === "local") {
     finalServiceType = "outstation";
   }
 
-  // 👑 LOCAL FULL DAY RUN PACKAGE (8 Hrs & 80 Kms Fixed)
-  if (finalServiceType === "local") {
-    const localPackages: Record<string, { baseFare: number; rate: number }> = {
-      sedan: { baseFare: 1200, rate: 11 },
-      ertiga: { baseFare: 1500, rate: 12 },
-      crysta: { baseFare: 2200, rate: 14 },
-    };
-    const pack = localPackages[vehicleType];
-    // Formula: Base Fixed + (80 Kms * Rate) + Toll buffer (~100)
-    const rawTotal = pack.baseFare + (80 * pack.rate) + 100;
-    const finalFareValue = psychologicalPrice(rawTotal);
-
-    return {
-      actualDistance: 80,
-      billedDistance: 80,
-      rateUsed: pack.rate,
-      strikeFare: finalFareValue,
-      finalFare: finalFareValue,
-      discountPercent: 0,
-      durationMinutes: 480, // 8 Hours
-      haltCharges: 0,
-      autoCorrectedService: "local"
-    };
-  }
-
-  // 👑 SHORT ROUND TRIP PACKAGE (< 80 Kms)
-  let workingDistance = baseDistance;
+  let workingDistance = oneWayDistance;
   if (bookingType === "roundtrip") {
-    workingDistance = baseDistance * 2;
+    workingDistance = oneWayDistance * 2;
   }
 
+  // 👑 Short Round Trip Package Rule (< 80 Kms Total Distance)
   if (bookingType === "roundtrip" && workingDistance < 80) {
     const shortRoundTripPackages: Record<string, { baseFare: number; rate: number }> = {
       sedan: { baseFare: 1200, rate: 11 },
@@ -142,6 +115,29 @@ export function calculateFare({
       rateUsed: pack.rate,
       strikeFare: calculatedFareValue,
       finalFare: calculatedFareValue,
+      discountPercent: 0,
+      durationMinutes: 480,
+      haltCharges: 0,
+      autoCorrectedService: "local"
+    };
+  }
+
+  if (finalServiceType === "local") {
+    const localPackages: Record<string, { baseFare: number; rate: number }> = {
+      sedan: { baseFare: 1200, rate: 11 },
+      ertiga: { baseFare: 1500, rate: 12 },
+      crysta: { baseFare: 2200, rate: 14 },
+    };
+    const pack = localPackages[vehicleType];
+    const rawTotal = pack.baseFare + (80 * pack.rate) + 100;
+    const finalFareValue = psychologicalPrice(rawTotal);
+
+    return {
+      actualDistance: 80,
+      billedDistance: 80,
+      rateUsed: pack.rate,
+      strikeFare: finalFareValue,
+      finalFare: finalFareValue,
       discountPercent: 0,
       durationMinutes: 480,
       haltCharges: 0,
@@ -196,7 +192,7 @@ export function calculateFare({
     }
     else if (showKms >= 100 && showKms <= 150) {
       if (vehicleType === "sedan") {
-        currentMultiplier = 1.55;
+        currentMultiplier = 1.95;
         ratePerKm = 11.00; 
       } else if (vehicleType === "ertiga") {
         currentMultiplier = 1.90;
@@ -226,23 +222,22 @@ export function calculateFare({
         currentMultiplier = 1.30;
         ratePerKm = 13.00; 
       } else if (vehicleType === "crysta") {
-        currentMultiplier = 1.05;
+        currentMultiplier = 1.25;
         ratePerKm = 20.00; 
       }
     }
-    else if (showKms > 350 && showKms <= 600) {
+    else if (showKms > 300 && showKms <= 600) {
       if (vehicleType === "sedan") {
-        currentMultiplier = 1.50;
+        currentMultiplier = 1.35;
         ratePerKm = 11.00; 
       } else if (vehicleType === "ertiga") {
-        currentMultiplier = 1.75;
+        currentMultiplier = 1.55;
         ratePerKm = 13.00; 
       } else if (vehicleType === "crysta") {
-        currentMultiplier = 1.45;
+        currentMultiplier = 1.40;
         ratePerKm = 20.00; 
       }
     }
-   
     else {
       if (vehicleType === "sedan") {
         currentMultiplier = 1.05;
@@ -256,8 +251,13 @@ export function calculateFare({
       }
     }
 
+    // 👑 Non-Popular Hub Distance-based Surge Logic
     if (!isPopularHub(drop)) {
-      currentMultiplier *= 1.42; 
+      if (showKms <= 300) {
+        currentMultiplier *= 1.45; 
+      } else {
+        currentMultiplier *= 1.02; 
+      }
     }
 
   } else if (bookingType === "roundtrip") {
@@ -286,6 +286,15 @@ export function calculateFare({
         currentMultiplier = 2.55;
       } else {
         currentMultiplier = 2.90;
+      }
+    }
+
+    // Roundtrip non-popular hub check agar zaroorat ho
+    if (!isPopularHub(drop)) {
+      if (totalRoundTripKm <= 300) {
+        currentMultiplier *= 1.45;
+      } else {
+        currentMultiplier *= 1.10;
       }
     }
 
