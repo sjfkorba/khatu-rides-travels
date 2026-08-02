@@ -280,7 +280,7 @@ export function calculateFare({
     }
     else if (showKms >= 100 && showKms <= 150) {
       if (vehicleType === "sedan") {
-        currentMultiplier = 1.95;
+        currentMultiplier = 1.74;
         ratePerKm = 11.00; 
       } else if (vehicleType === "ertiga") {
         currentMultiplier = 1.90;
