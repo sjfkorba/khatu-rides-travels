@@ -63,7 +63,6 @@ const POPULAR_HUBS = [
   "ambikapur"
 ];
 
-// 👑 Full One-Way Available Service Cities / Hubs List
 const AVAILABLE_ONEWAY_CITIES = [
   "raipur",
   "bilaspur",
@@ -175,7 +174,6 @@ export function calculateFare({
     finalServiceType = "outstation";
   }
 
-  // 👑 Bi-directional One-Way Availability Check
   let oneWayAvailable = true;
   if (bookingType === "oneway" && serviceType !== "local") {
     oneWayAvailable = isOneWayServiceAvailable(pickup, drop);
@@ -435,15 +433,21 @@ export function calculateFare({
   const absoluteFinalFare = finalFareWithoutHalt + haltCharges;
 
   const durationMinutes = Math.round((showKms / 50) * 60) + 30;
-
   const finalBilledDisplayDistance = showKms;
+  const calculatedStrikeFare = Math.round(absoluteFinalFare * 1.15);
+
+  // 👑 Ambikapur Special Override: Force finalFare to mirror strikeFare / higher fixed display price when drop is Ambikapur
+  let displayedFinalFare = absoluteFinalFare;
+  if (drop && drop.toLowerCase().includes("ambikapur")) {
+    displayedFinalFare = calculatedStrikeFare;
+  }
 
   return {
     actualDistance: workingDistance,
     billedDistance: finalBilledDisplayDistance,
     rateUsed: ratePerKm,
-    strikeFare: absoluteFinalFare,
-    finalFare: absoluteFinalFare,
+    strikeFare: calculatedStrikeFare,
+    finalFare: displayedFinalFare,
     discountPercent: 0,
     durationMinutes,
     haltCharges,
