@@ -194,13 +194,21 @@ export function calculateFare({
     const pack = shortRoundTripPackages[vehicleType];
     const rawTotal = pack.baseFare + (workingDistance * pack.rate) + 100;
     const calculatedFareValue = psychologicalPrice(rawTotal);
+    const calculatedStrikeFare = Math.round(calculatedFareValue * 1.15);
+
+    let displayedFinalFare = calculatedFareValue;
+    const isPickupAmbikapur = pickup && pickup.toLowerCase().includes("ambikapur");
+    const isDropAmbikapur = drop && drop.toLowerCase().includes("ambikapur");
+    if (isPickupAmbikapur || isDropAmbikapur) {
+      displayedFinalFare = calculatedStrikeFare;
+    }
 
     return {
       actualDistance: workingDistance,
       billedDistance: workingDistance,
       rateUsed: pack.rate,
-      strikeFare: calculatedFareValue,
-      finalFare: calculatedFareValue,
+      strikeFare: calculatedStrikeFare,
+      finalFare: displayedFinalFare,
       discountPercent: 0,
       durationMinutes: 480,
       haltCharges: 0,
@@ -218,13 +226,21 @@ export function calculateFare({
     const pack = localPackages[vehicleType];
     const rawTotal = pack.baseFare + (80 * pack.rate) + 100;
     const finalFareValue = psychologicalPrice(rawTotal);
+    const calculatedStrikeFare = Math.round(finalFareValue * 1.15);
+
+    let displayedFinalFare = finalFareValue;
+    const isPickupAmbikapur = pickup && pickup.toLowerCase().includes("ambikapur");
+    const isDropAmbikapur = drop && drop.toLowerCase().includes("ambikapur");
+    if (isPickupAmbikapur || isDropAmbikapur) {
+      displayedFinalFare = calculatedStrikeFare;
+    }
 
     return {
       actualDistance: 80,
       billedDistance: 80,
       rateUsed: pack.rate,
-      strikeFare: finalFareValue,
-      finalFare: finalFareValue,
+      strikeFare: calculatedStrikeFare,
+      finalFare: displayedFinalFare,
       discountPercent: 0,
       durationMinutes: 480,
       haltCharges: 0,
@@ -252,6 +268,20 @@ export function calculateFare({
   let haltCharges = 0;
   let useCustomMicroBase = false;
   let customBaseFareValue = 0;
+
+  // 👑 Custom Route Multiplier Logic for Ambikapur
+  const lowerPickup = pickup ? pickup.toLowerCase() : "";
+  const lowerDrop = drop ? drop.toLowerCase() : "";
+  let routeCustomMultiplier = 1.00;
+  
+  if (lowerDrop.includes("ambikapur") && showKms <200) {
+    routeCustomMultiplier = 1.25; // Drop is Ambikapur
+  } else if (lowerDrop.includes("ambikapur") && showKms > 200) {
+    routeCustomMultiplier = 1.05; // drop is Ambikapur
+  }
+  else if (lowerPickup.includes("ambikapur")) {
+    routeCustomMultiplier = 1.05; // Pickup is Ambikapur
+  }
 
   if (bookingType === "oneway") {
     if (showKms >= 39 && showKms < 70) {
@@ -423,10 +453,10 @@ export function calculateFare({
 
   if (useCustomMicroBase) {
     const rawMicroTotal = customBaseFareValue + (showKms * ratePerKm);
-    baseWithMultiplier = rawMicroTotal * currentMultiplier;
+    baseWithMultiplier = rawMicroTotal * currentMultiplier * routeCustomMultiplier;
   } else {
     const calculatedBase = effectiveCalculationDistance * ratePerKm;
-    baseWithMultiplier = calculatedBase * currentMultiplier;
+    baseWithMultiplier = calculatedBase * currentMultiplier * routeCustomMultiplier;
   }
 
   const finalFareWithoutHalt = psychologicalPrice(baseWithMultiplier);
@@ -436,9 +466,11 @@ export function calculateFare({
   const finalBilledDisplayDistance = showKms;
   const calculatedStrikeFare = Math.round(absoluteFinalFare * 1.15);
 
-  // 👑 Ambikapur Special Override: Force finalFare to mirror strikeFare / higher fixed display price when drop is Ambikapur
   let displayedFinalFare = absoluteFinalFare;
-  if (drop && drop.toLowerCase().includes("ambikapur")) {
+  const isPickupAmbikapur = pickup && pickup.toLowerCase().includes("ambikapur");
+  const isDropAmbikapur = drop && drop.toLowerCase().includes("ambikapur");
+
+  if (isPickupAmbikapur || isDropAmbikapur) {
     displayedFinalFare = calculatedStrikeFare;
   }
 
