@@ -61,6 +61,8 @@ type PopupData = {
   pickupTime: string;
   returnDate?: string;
   returnTime?: string;
+  isOneWayAvailable?: boolean;
+  baseDistance?: number;
 };
 
 type SuccessReceipt = {
@@ -75,10 +77,10 @@ type SuccessReceipt = {
 };
 
 const ROUTES = [
-  { from: "Raipur, Chhattisgarh", to: "Korba, Chhattisgarh", price: "₹3499", time: "~4h 30m", km: "250 KM", image: "/banner6.png" },
-  { from: "Korba, Chhattisgarh", to: "Bilaspur, Chhattisgarh", price: "₹2399", time: "~2h 30m", km: "130 KM", image: "/banner6.png" },
-  { from: "Bilaspur, Chhattisgarh", to: "Raipur, Chhattisgarh", price: "₹2499", time: "~4h 30m", km: "250 KM", image: "/banner6.png" },
-  { from: "Raipur, Chhattisgarh", to: "Bhopal, Madhya Pradesh", price: "₹9249", time: "~7h 00m", km: "450 KM", image: "/banner6.png" },
+  { from: "Raipur, Chhattisgarh", to: "Korba, Chhattisgarh", price: "₹3299", time: "~4h 30m", km: "250 KM", image: "/banner6.png" },
+  { from: "Korba, Chhattisgarh", to: "Bilaspur, Chhattisgarh", price: "₹1899", time: "~2h 30m", km: "130 KM", image: "/banner6.png" },
+  { from: "Bilaspur, Chhattisgarh", to: "Raipur, Chhattisgarh", price: "₹3299", time: "~4h 30m", km: "250 KM", image: "/banner6.png" },
+  { from: "Raipur, Chhattisgarh", to: "Bhopal, Madhya Pradesh", price: "₹3499", time: "~7h 00m", km: "450 KM", image: "/banner6.png" },
 ];
 
 export default function HomePage() {
@@ -136,6 +138,7 @@ export default function HomePage() {
     const baseTime = `${String(now.getHours()).padStart(2, "0")}:00`;
 
     const vehicleKeys = Object.keys(VEHICLES) as VehicleType[];
+    let oneWayAvailableCheck = true;
 
     const fareOptions: FareOption[] = vehicleKeys.map((type) => {
       const result = calculateFare({
@@ -146,7 +149,10 @@ export default function HomePage() {
         pickupDate: baseDate,
         pickupTime: baseTime,
         drop: to,
+        pickup: from,
       });
+
+      oneWayAvailableCheck = result.isOneWayAvailable;
 
       return {
         id: `quick-${type}`,
@@ -160,10 +166,48 @@ export default function HomePage() {
       };
     });
 
-    setPopupData({ fareOptions, pickup: from, drop: to, bookingType: "oneway", serviceType: "outstation", pickupDate: baseDate, pickupTime: baseTime });
+    setPopupData({ fareOptions, pickup: from, drop: to, bookingType: "oneway", serviceType: "outstation", pickupDate: baseDate, pickupTime: baseTime, isOneWayAvailable: oneWayAvailableCheck, baseDistance: routeDistance });
     setSelectedVehicleType("sedan");
     setShowUserForm(false);
     setShowPopup(true);
+  };
+
+  const handleConvertToRoundTrip = () => {
+    if (!popupData) return;
+    const vehicleKeys = Object.keys(VEHICLES) as VehicleType[];
+    const routeBaseDist = popupData.baseDistance || 150;
+
+    const fareOptions: FareOption[] = vehicleKeys.map((type) => {
+      const result = calculateFare({
+        distance: routeBaseDist,
+        vehicleType: type,
+        bookingType: "roundtrip",
+        serviceType: popupData.serviceType,
+        pickupDate: popupData.pickupDate,
+        pickupTime: popupData.pickupTime,
+        drop: popupData.drop,
+        pickup: popupData.pickup,
+      });
+
+      return {
+        id: `rt-${type}-${Date.now()}`,
+        vehicleType: type,
+        vehicleLabel: VEHICLES[type].label,
+        vehicleImage: VEHICLES[type].image,
+        finalFare: result.finalFare,
+        strikeFare: result.strikeFare,
+        fareText: `₹${result.finalFare.toLocaleString("en-IN")}`,
+        billedDistance: result.billedDistance,
+        durationMinutes: result.durationMinutes,
+      };
+    });
+
+    setPopupData({
+      ...popupData,
+      bookingType: "roundtrip",
+      fareOptions,
+      isOneWayAvailable: true
+    });
   };
 
   const handleOnlinePaymentCheckout = async (option: FareOption) => {
@@ -299,11 +343,10 @@ Kindly let me know about the availability and the booking process. I look forwar
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-600/15 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        {/* 👑 FIXED MODERN GLASSMORPHIC NAVBAR (Properly Spaced & Aligned) */}
+        {/* 👑 FIXED MODERN GLASSMORPHIC NAVBAR */}
         <header className="w-full bg-slate-950/90 backdrop-blur-xl border-b border-slate-800/80 sticky top-0 z-40 select-none shadow-xl">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6">
             
-            {/* Logo Section */}
             <div className="flex items-center gap-2 shrink-0">
               <div className="flex flex-col">
                 <span className="text-xl sm:text-2xl font-black tracking-tighter uppercase text-white leading-none">
@@ -313,17 +356,15 @@ Kindly let me know about the availability and the booking process. I look forwar
               </div>
             </div>
 
-            {/* Desktop Navigation Links (Proper Gap & Spacing) */}
             <nav className="hidden xl:flex items-center gap-6 text-[11px] font-extrabold text-slate-300 uppercase tracking-widest">
               <a href="#" className="text-orange-500 hover:text-orange-400 transition">Home</a>
-              <a href="about-us" className="hover:text-orange-400 transition">About Us</a>
+              <a href="#about" className="hover:text-orange-400 transition">About Us</a>
               <a href="#services" className="hover:text-orange-400 transition">Our Services</a>
               <a href="#routes-heading" className="hover:text-orange-400 transition">Popular Routes</a>
               <a href="#offers" className="hover:text-orange-400 transition">Offers</a>
-              <a href="contact-us" className="hover:text-orange-400 transition">Contact Us</a>
+              <a href="#contact" className="hover:text-orange-400 transition">Contact Us</a>
             </nav>
 
-            {/* Action Buttons */}
             <div className="flex items-center gap-2.5 shrink-0">
               <a href="tel:+919244137353" className="hidden md:flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900/90 px-3.5 py-2 text-[11px] font-black text-slate-200 hover:bg-slate-800 transition shadow-inner">
                 <span className="text-emerald-400 text-xs">📞</span> Call: <span className="text-orange-400">92441 37353</span>
@@ -347,7 +388,6 @@ Kindly let me know about the availability and the booking process. I look forwar
         <section className="relative px-4 pt-8 pb-16 sm:py-16">
           <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
-            {/* Hero Text */}
             <div className="lg:col-span-5 text-center lg:text-left space-y-4 order-2 lg:order-1">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-[10px] font-black uppercase tracking-widest">
                 <span>🌟 Premium Intercity Cabs</span>
@@ -360,7 +400,6 @@ Kindly let me know about the availability and the booking process. I look forwar
                 Outstation • Local • Airport • Round Trip with absolute safety & transparent pricing.
               </p>
 
-              {/* Trust Badges */}
               <div className="grid grid-cols-2 gap-3 pt-4">
                 {[
                   { icon: "🛡️", title: "Best Price", sub: "Guarantee" },
@@ -379,17 +418,23 @@ Kindly let me know about the availability and the booking process. I look forwar
               </div>
             </div>
 
-            {/* 👑 FARE CALCULATOR CARD EMBEDDED */}
             <div ref={calculatorSectionRef} className="lg:col-span-7 relative z-20 order-1 lg:order-2">
               <div className="absolute -inset-1 bg-gradient-to-r from-orange-600 to-amber-500 rounded-3xl blur-md opacity-30 animate-pulse" />
               <div className="relative">
                 <FareCalculator
                   onFareCalculated={(data) => {
+                    let oneWayAvail = true;
+                    let baseSingleRouteDist = 150;
+
                     const updatedData = {
                       ...data,
                       fareOptions: data.fareOptions.map((opt) => {
+                        const rawDist = opt.billedDistance;
+                        const baseSingleDist = data.bookingType === "roundtrip" ? Math.round(rawDist / 2) : rawDist;
+                        baseSingleRouteDist = baseSingleDist;
+
                         const recalculated = calculateFare({
-                          distance: opt.billedDistance,
+                          distance: baseSingleDist,
                           vehicleType: opt.vehicleType,
                           bookingType: data.bookingType,
                           serviceType: data.serviceType,
@@ -398,7 +443,9 @@ Kindly let me know about the availability and the booking process. I look forwar
                           returnDate: data.returnDate,
                           returnTime: data.returnTime,
                           drop: data.drop,
+                          pickup: data.pickup,
                         });
+                        oneWayAvail = recalculated.isOneWayAvailable;
                         return {
                           ...opt,
                           finalFare: recalculated.finalFare,
@@ -406,6 +453,8 @@ Kindly let me know about the availability and the booking process. I look forwar
                           durationMinutes: recalculated.durationMinutes,
                         };
                       }),
+                      isOneWayAvailable: oneWayAvail,
+                      baseDistance: baseSingleRouteDist
                     };
                     setPopupData(updatedData);
                     setSelectedVehicleType("sedan");
@@ -511,7 +560,6 @@ Kindly let me know about the availability and the booking process. I look forwar
         <ReviewsCarousel />
         <SeoTextBlock />
 
-        {/* 👑 FLOATING ACTION BUTTON (FAB) COLUMN */}
         <div className="fixed bottom-6 right-6 z-[999] flex flex-col gap-3 md:hidden pointer-events-auto">
           <a
             href="https://wa.me/919244137353"
@@ -533,7 +581,7 @@ Kindly let me know about the availability and the booking process. I look forwar
         </div>
       </main>
 
-      {/* 👑 INITIAL GOOGLE RATING & INSTANT DISCOUNT POPUP MODAL */}
+      {/* 👑 INITIAL GOOGLE RATING MODAL */}
       <AnimatePresence>
         {showInitialRatingModal && (
           <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md overflow-y-auto">
@@ -669,234 +717,265 @@ Kindly let me know about the availability and the booking process. I look forwar
                 </div>
               </div>
 
-              {/* STATS SUMMARY BAR */}
-              {(() => {
-                const firstOpt = popupData.fareOptions[0];
-                const dist = firstOpt?.billedDistance || 0;
-                const mins = firstOpt?.durationMinutes || 120;
-                const hoursNum = Math.floor(mins / 60);
-                const minsNum = mins % 60;
-
-                return (
-                  <div className="bg-slate-950/60 px-3 sm:px-6 py-2.5 border-b border-slate-800 flex items-center justify-between text-xs font-bold text-slate-300 sticky top-[53px] z-20 backdrop-blur-md">
-                    <div className="flex items-center gap-4 sm:gap-6 overflow-x-auto scrollbar-none whitespace-nowrap">
-                      <span className="flex items-center gap-1.5 text-slate-200">
-                        <span className="text-orange-400">📍</span> <strong>{dist} Kms</strong>
-                      </span>
-                      <span className="text-slate-700">|</span>
-                      <span className="flex items-center gap-1.5 text-slate-200">
-                        <span className="text-orange-400">⏱️</span> <strong>~{hoursNum}h {minsNum}m</strong>
-                      </span>
-                    </div>
-                    <span className="text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 font-black text-[10px] shrink-0 ml-2">
-                      ✓ All-Inclusive
-                    </span>
+              {/* 👑 EXACT MATCH WARNING BANNER */}
+              {popupData.bookingType === "oneway" && popupData.isOneWayAvailable === false ? (
+                <div className="p-8 text-center space-y-6 my-auto">
+                  <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-orange-500/20 text-orange-400 text-4xl mb-2 border border-orange-500/30">
+                    ⚠️
                   </div>
-                );
-              })()}
+                  <h3 className="text-2xl font-black text-white tracking-tight">
+                    Currently One Way Taxi Service Not Available For Your Selected Route
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto leading-relaxed">
+                    Will you want to book cab with round trip fare for a safe, luxury, and reliable taxi experience?
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
+                    <button
+                      type="button"
+                      onClick={handleConvertToRoundTrip}
+                      className="bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-xs uppercase tracking-widest px-8 py-4 rounded-2xl shadow-xl shadow-orange-600/30 transition"
+                    >
+                      🔄 Book With Round Trip Fare
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowPopup(false)}
+                      className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs uppercase px-6 py-4 rounded-2xl transition"
+                    >
+                      Close Window
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {(() => {
+                    const firstOpt = popupData.fareOptions[0];
+                    const dist = firstOpt?.billedDistance || 0;
+                    const mins = firstOpt?.durationMinutes || 120;
+                    const hoursNum = Math.floor(mins / 60);
+                    const minsNum = mins % 60;
 
-              <div className="p-3 sm:p-6 overflow-y-auto flex-1 space-y-4 bg-slate-950/40 pb-24 sm:pb-6">
-                {!showUserForm ? (
-                  <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full">
-                    {popupData.fareOptions.map((opt) => {
-                      if (!["sedan", "ertiga", "crysta"].includes(opt.vehicleType)) return null;
+                    return (
+                      <div className="bg-slate-950/60 px-3 sm:px-6 py-2.5 border-b border-slate-800 flex items-center justify-between text-xs font-bold text-slate-300 sticky top-[53px] z-20 backdrop-blur-md">
+                        <div className="flex items-center gap-4 sm:gap-6 overflow-x-auto scrollbar-none whitespace-nowrap">
+                          <span className="flex items-center gap-1.5 text-slate-200">
+                            <span className="text-orange-400">📍</span> <strong>{dist} Kms</strong>
+                          </span>
+                          <span className="text-slate-700">|</span>
+                          <span className="flex items-center gap-1.5 text-slate-200">
+                            <span className="text-orange-400">⏱️</span> <strong>~{hoursNum}h {minsNum}m</strong>
+                          </span>
+                        </div>
+                        <span className="text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 font-black text-[10px] shrink-0 ml-2">
+                          ✓ All-Inclusive
+                        </span>
+                      </div>
+                    );
+                  })()}
 
-                      const isSelected = selectedVehicleType === opt.vehicleType;
-                      const isExpanded = expandedInclusionsId === opt.id;
-                      const strikePrice = Math.round(opt.finalFare * 1.15);
+                  <div className="p-3 sm:p-6 overflow-y-auto flex-1 space-y-4 bg-slate-950/40 pb-24 sm:pb-6">
+                    {!showUserForm ? (
+                      <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full">
+                        {popupData.fareOptions.map((opt) => {
+                          if (!["sedan", "ertiga", "crysta"].includes(opt.vehicleType)) return null;
 
-                      const fullVehicleTitle = opt.vehicleType === "sedan" ? "DZIRE, ETIOS" : opt.vehicleType === "ertiga" ? "ERTIGA, XYLO" : "INNOVA CRYSTA";
+                          const isSelected = selectedVehicleType === opt.vehicleType;
+                          const isExpanded = expandedInclusionsId === opt.id;
+                          const strikePrice = Math.round(opt.finalFare * 1.15);
 
-                      // 👑 Exact Package Subtext requested by user
-                      const isLocalOrShortTrip = popupData.serviceType === "local" || (popupData.bookingType === "roundtrip" && opt.billedDistance < 80);
-                      
-                      const packageSubText = isLocalOrShortTrip
-                        ? (opt.vehicleType === "sedan" 
-                            ? "1200 fixed for 8Hrs & 80Kms + 11 Per Kms + Toll (if required)" 
-                            : opt.vehicleType === "ertiga" 
-                            ? "1500 fixed for 8Hrs & 80Kms + 12 Per Kms + Toll (if required)" 
-                            : "2200 fixed for 8Hrs & 80Kms + 14 Per Kms + Toll (if required)")
-                        : `Extra @ ₹${opt.vehicleType === "sedan" ? 13 : opt.vehicleType === "ertiga" ? 17 : 20.7}/Km after limit`;
+                          const fullVehicleTitle = opt.vehicleType === "sedan" ? "DZIRE, ETIOS" : opt.vehicleType === "ertiga" ? "ERTIGA, XYLO" : "INNOVA CRYSTA";
 
-                      return (
-                        <div
-                          key={opt.id}
-                          onClick={() => setSelectedVehicleType(opt.vehicleType)}
-                          className={`rounded-2xl sm:rounded-3xl border-2 transition-all duration-200 bg-slate-900 p-4 sm:p-6 cursor-pointer relative shadow-xl ${
-                            isSelected ? "border-orange-500 ring-4 ring-orange-500/20 bg-orange-500/5" : "border-slate-800 hover:border-slate-700"
-                          }`}
-                        >
-                          {opt.vehicleType === "sedan" && (
-                            <div className="absolute -top-2.5 left-6 bg-orange-600 text-white text-[9px] font-black uppercase px-3 py-0.5 rounded-full tracking-wider shadow-md">
-                              BEST PRICE
+                          const isLocalOrShortTrip = popupData.serviceType === "local" || (popupData.bookingType === "roundtrip" && opt.billedDistance < 80);
+                          
+                          const packageSubText = isLocalOrShortTrip
+                            ? (opt.vehicleType === "sedan" 
+                                ? "1200 fixed for 8Hrs & 80Kms + 11 Per Kms + Toll (if required)" 
+                                : opt.vehicleType === "ertiga" 
+                                ? "1500 fixed for 8Hrs & 80Kms + 12 Per Kms + Toll (if required)" 
+                                : "2200 fixed for 8Hrs & 80Kms + 14 Per Kms + Toll (if required)")
+                            : `Extra @ ₹${opt.vehicleType === "sedan" ? 13 : opt.vehicleType === "ertiga" ? 17 : 20.7}/Km after limit`;
+
+                          return (
+                            <div
+                              key={opt.id}
+                              onClick={() => setSelectedVehicleType(opt.vehicleType)}
+                              className={`rounded-2xl sm:rounded-3xl border-2 transition-all duration-200 bg-slate-900 p-4 sm:p-6 cursor-pointer relative shadow-xl ${
+                                isSelected ? "border-orange-500 ring-4 ring-orange-500/20 bg-orange-500/5" : "border-slate-800 hover:border-slate-700"
+                              }`}
+                            >
+                              {opt.vehicleType === "sedan" && (
+                                <div className="absolute -top-2.5 left-6 bg-orange-600 text-white text-[9px] font-black uppercase px-3 py-0.5 rounded-full tracking-wider shadow-md">
+                                  BEST PRICE
+                                </div>
+                              )}
+
+                              <div className="flex items-center justify-between gap-3 pt-1">
+                                <div className="bg-slate-950 rounded-2xl border border-slate-800 w-28 h-20 sm:w-36 sm:h-24 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
+                                  <img src={VEHICLES[opt.vehicleType]?.image} alt={opt.vehicleLabel} className="w-full h-full object-cover" />
+                                </div>
+
+                                <div className="flex-1 min-w-0 px-2">
+                                  <h4 className="text-sm sm:text-base font-black text-white tracking-tight uppercase truncate">{fullVehicleTitle}</h4>
+                                  <div className="mt-1.5 space-y-1 text-xs text-slate-300 font-bold">
+                                    <div className="flex items-center gap-1.5 text-slate-300">
+                                      <span>📍</span>
+                                      <span>{isLocalOrShortTrip ? "80 Kms Package Limit" : `${opt.billedDistance} Kms Actual Distance`}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-orange-400 font-bold truncate">
+                                      <span>⚡</span>
+                                      <span className="truncate">{packageSubText}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="text-right shrink-0">
+                                  <div className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">Estimated Fare</div>
+                                  <div className="text-xs sm:text-sm font-bold text-red-400 line-through">Rs. {strikePrice.toLocaleString("en-IN")}/-</div>
+                                  <div className="bg-gradient-to-r from-orange-600 to-amber-500 text-white text-sm sm:text-xl font-black px-4 py-1.5 rounded-2xl shadow-lg inline-block tracking-tight mt-1">
+                                    Rs. {opt.finalFare.toLocaleString("en-IN")}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="mt-4 pt-3 border-t border-slate-800 grid grid-cols-3 gap-2">
+                                <a
+                                  href="tel:+919244137353"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="bg-purple-950 hover:bg-purple-900 border border-purple-800 text-purple-200 font-black text-xs uppercase py-3 rounded-xl shadow-md transition text-center flex items-center justify-center gap-1"
+                                >
+                                  📞 <span className="hidden sm:inline">CALL</span> NOW
+                                </a>
+
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); handleWhatsAppManualRedirect(opt); }}
+                                  className="bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-200 font-black text-xs uppercase py-3 rounded-xl shadow-md transition text-center flex items-center justify-center gap-1"
+                                >
+                                  💬 <span className="hidden sm:inline">WHATSAPP</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedVehicleType(opt.vehicleType);
+                                    setPaymentSplitMode((p) => ({ ...p, [opt.id]: "half" }));
+                                    setShowUserForm(true);
+                                  }}
+                                  className="bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-xs uppercase py-3 rounded-xl shadow-lg shadow-orange-600/30 transition text-center"
+                                >
+                                  🚀 BOOK
+                                </button>
+                              </div>
+
+                              <div className="mt-3 pt-2.5 border-t border-slate-800/60 flex items-center justify-between text-xs">
+                                <span className="text-slate-400 font-medium">✓ Toll, State Tax & Driver Allowance Included</span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); setExpandedInclusionsId(isExpanded ? null : opt.id); }}
+                                  className="font-bold text-orange-400 hover:text-orange-300"
+                                >
+                                  {isExpanded ? "Hide ▲" : "Inclusions ▼"}
+                                </button>
+                              </div>
+
+                              {isExpanded && (
+                                <div className="mt-2.5 p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5 text-xs text-slate-300">
+                                  <div>✔ <strong>Package Details:</strong> {packageSubText}</div>
+                                  <div>✔ <strong>Toll & State Tax:</strong> Fully covered in fare.</div>
+                                  <div>✔ <strong>Driver Allowance:</strong> Included.</div>
+                                  <div>✔ <strong>Waiting Time:</strong> Upto 45 mins free at pickup.</div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="max-w-xl mx-auto bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl text-left w-full my-auto text-slate-100">
+                        <div className="text-center mb-6">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-orange-400 bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20">Secure Booking Form</span>
+                          <h4 className="text-xl font-black text-white mt-3">Enter Details to Complete Booking</h4>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-black text-slate-300 uppercase tracking-wider">Customer Full Name</label>
+                            <input
+                              type="text"
+                              placeholder="Type customer name..."
+                              value={customerName}
+                              onChange={(e) => setCustomerName(e.target.value)}
+                              className="w-full border border-slate-800 rounded-2xl px-4 py-3.5 bg-slate-950 text-sm font-bold text-white focus:outline-none focus:border-orange-500 transition shadow-inner"
+                            />
+                          </div>
+
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-black text-slate-300 uppercase tracking-wider">Mobile Number (For Driver SMS)</label>
+                            <input
+                              type="tel"
+                              inputMode="numeric"
+                              maxLength={10}
+                              placeholder="Enter 10-digit phone number..."
+                              value={customerPhone}
+                              onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, ""))}
+                              className="w-full border border-slate-800 rounded-2xl px-4 py-3.5 bg-slate-950 text-sm font-bold text-white focus:outline-none focus:border-orange-500 transition shadow-inner"
+                            />
+                          </div>
+
+                          {selectedOption && (
+                            <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 mt-2">
+                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Split Booking Matrix</span>
+                              <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-800 bg-slate-900 p-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setPaymentSplitMode((p) => ({ ...p, [selectedOption.id]: "half" }))}
+                                  className={`rounded-lg py-2 text-center text-xs font-black uppercase tracking-wide transition ${currentSelectedMode === "half" ? "bg-orange-600 text-white shadow-md" : "text-slate-400"}`}
+                                >
+                                  50% Advance
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setPaymentSplitMode((p) => ({ ...p, [selectedOption.id]: "full" }))}
+                                  className={`rounded-lg py-2 text-center text-xs font-black uppercase tracking-wide transition ${currentSelectedMode === "full" ? "bg-slate-800 text-white shadow-md" : "text-slate-400"}`}
+                                >
+                                  Full Pay
+                                </button>
+                              </div>
+
+                              <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-800">
+                                <div>
+                                  <span className="text-[10px] font-black text-slate-400 block uppercase">Payable Now</span>
+                                  <span className="text-2xl font-black text-white">₹{displayPayNowNumber.toLocaleString("en-IN")}</span>
+                                </div>
+                                <span className="text-xs font-bold text-orange-400 bg-slate-900 px-3 py-1 rounded-xl border border-slate-800">{selectedOption.vehicleLabel}</span>
+                              </div>
                             </div>
                           )}
 
-                          <div className="flex items-center justify-between gap-3 pt-1">
-                            <div className="bg-slate-950 rounded-2xl border border-slate-800 w-28 h-20 sm:w-36 sm:h-24 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
-                              <img src={VEHICLES[opt.vehicleType]?.image} alt={opt.vehicleLabel} className="w-full h-full object-cover" />
-                            </div>
-
-                            <div className="flex-1 min-w-0 px-2">
-                              <h4 className="text-sm sm:text-base font-black text-white tracking-tight uppercase truncate">{fullVehicleTitle}</h4>
-                              <div className="mt-1.5 space-y-1 text-xs text-slate-300 font-bold">
-                                <div className="flex items-center gap-1.5 text-slate-300">
-                                  <span>📍</span>
-                                  <span>{isLocalOrShortTrip ? "80 Kms Package Limit" : `${opt.billedDistance} Kms Actual Distance`}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 text-orange-400 font-bold truncate">
-                                  <span>⚡</span>
-                                  <span className="truncate">{packageSubText}</span>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="text-right shrink-0">
-                              <div className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">Estimated Fare</div>
-                              <div className="text-xs sm:text-sm font-bold text-red-400 line-through">Rs. {strikePrice.toLocaleString("en-IN")}/-</div>
-                              <div className="bg-gradient-to-r from-orange-600 to-amber-500 text-white text-sm sm:text-xl font-black px-4 py-1.5 rounded-2xl shadow-lg inline-block tracking-tight mt-1">
-                                Rs. {opt.finalFare.toLocaleString("en-IN")}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="mt-4 pt-3 border-t border-slate-800 grid grid-cols-3 gap-2">
-                            <a
-                              href="tel:+919244137353"
-                              onClick={(e) => e.stopPropagation()}
-                              className="bg-purple-950 hover:bg-purple-900 border border-purple-800 text-purple-200 font-black text-xs uppercase py-3 rounded-xl shadow-md transition text-center flex items-center justify-center gap-1"
-                            >
-                              📞 <span className="hidden sm:inline">CALL</span> NOW
-                            </a>
-
+                          <div className="grid grid-cols-2 gap-3 pt-3">
                             <button
                               type="button"
-                              onClick={(e) => { e.stopPropagation(); handleWhatsAppManualRedirect(opt); }}
-                              className="bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-200 font-black text-xs uppercase py-3 rounded-xl shadow-md transition text-center flex items-center justify-center gap-1"
+                              onClick={() => setShowUserForm(false)}
+                              className="w-full border border-slate-800 bg-slate-950 text-slate-300 font-bold text-xs uppercase py-4 rounded-2xl transition hover:bg-slate-800"
                             >
-                              💬 <span className="hidden sm:inline">WHATSAPP</span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedVehicleType(opt.vehicleType);
-                                setPaymentSplitMode((p) => ({ ...p, [opt.id]: "half" }));
-                                setShowUserForm(true);
-                              }}
-                              className="bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-xs uppercase py-3 rounded-xl shadow-lg shadow-orange-600/30 transition text-center"
-                            >
-                              🚀 BOOK
-                            </button>
-                          </div>
-
-                          <div className="mt-3 pt-2.5 border-t border-slate-800/60 flex items-center justify-between text-xs">
-                            <span className="text-slate-400 font-medium">✓ Toll, State Tax & Driver Allowance Included</span>
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); setExpandedInclusionsId(isExpanded ? null : opt.id); }}
-                              className="font-bold text-orange-400 hover:text-orange-300"
-                            >
-                              {isExpanded ? "Hide ▲" : "Inclusions ▼"}
-                            </button>
-                          </div>
-
-                          {isExpanded && (
-                            <div className="mt-2.5 p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5 text-xs text-slate-300">
-                              <div>✔ <strong>Package Details:</strong> {packageSubText}</div>
-                              <div>✔ <strong>Toll & State Tax:</strong> Fully covered in fare.</div>
-                              <div>✔ <strong>Driver Allowance:</strong> Included.</div>
-                              <div>✔ <strong>Waiting Time:</strong> Upto 45 mins free at pickup.</div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="max-w-xl mx-auto bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl text-left w-full my-auto text-slate-100">
-                    <div className="text-center mb-6">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-orange-400 bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20">Secure Booking Form</span>
-                      <h4 className="text-xl font-black text-white mt-3">Enter Details to Complete Booking</h4>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-black text-slate-300 uppercase tracking-wider">Customer Full Name</label>
-                        <input
-                          type="text"
-                          placeholder="Type customer name..."
-                          value={customerName}
-                          onChange={(e) => setCustomerName(e.target.value)}
-                          className="w-full border border-slate-800 rounded-2xl px-4 py-3.5 bg-slate-950 text-sm font-bold text-white focus:outline-none focus:border-orange-500 transition shadow-inner"
-                        />
-                      </div>
-
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-black text-slate-300 uppercase tracking-wider">Mobile Number (For Driver SMS)</label>
-                        <input
-                          type="tel"
-                          inputMode="numeric"
-                          maxLength={10}
-                          placeholder="Enter 10-digit phone number..."
-                          value={customerPhone}
-                          onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, ""))}
-                          className="w-full border border-slate-800 rounded-2xl px-4 py-3.5 bg-slate-950 text-sm font-bold text-white focus:outline-none focus:border-orange-500 transition shadow-inner"
-                        />
-                      </div>
-
-                      {selectedOption && (
-                        <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 mt-2">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Split Booking Matrix</span>
-                          <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-800 bg-slate-900 p-1">
-                            <button
-                              type="button"
-                              onClick={() => setPaymentSplitMode((p) => ({ ...p, [selectedOption.id]: "half" }))}
-                              className={`rounded-lg py-2 text-center text-xs font-black uppercase tracking-wide transition ${currentSelectedMode === "half" ? "bg-orange-600 text-white shadow-md" : "text-slate-400"}`}
-                            >
-                              50% Advance
+                              ↩ Back
                             </button>
                             <button
                               type="button"
-                              onClick={() => setPaymentSplitMode((p) => ({ ...p, [selectedOption.id]: "full" }))}
-                              className={`rounded-lg py-2 text-center text-xs font-black uppercase tracking-wide transition ${currentSelectedMode === "full" ? "bg-slate-800 text-white shadow-md" : "text-slate-400"}`}
+                              onClick={() => selectedOption && handleOnlinePaymentCheckout(selectedOption)}
+                              disabled={paymentLoadingId !== null}
+                              className="w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-xs uppercase tracking-widest py-4 rounded-2xl transition shadow-xl shadow-orange-600/30 disabled:opacity-50"
                             >
-                              Full Pay
+                              {paymentLoadingId ? "Syncing..." : "Proceed to Pay"}
                             </button>
-                          </div>
-
-                          <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-800">
-                            <div>
-                              <span className="text-[10px] font-black text-slate-400 block uppercase">Payable Now</span>
-                              <span className="text-2xl font-black text-white">₹{displayPayNowNumber.toLocaleString("en-IN")}</span>
-                            </div>
-                            <span className="text-xs font-bold text-orange-400 bg-slate-900 px-3 py-1 rounded-xl border border-slate-800">{selectedOption.vehicleLabel}</span>
                           </div>
                         </div>
-                      )}
-
-                      <div className="grid grid-cols-2 gap-3 pt-3">
-                        <button
-                          type="button"
-                          onClick={() => setShowUserForm(false)}
-                          className="w-full border border-slate-800 bg-slate-950 text-slate-300 font-bold text-xs uppercase py-4 rounded-2xl transition hover:bg-slate-800"
-                        >
-                          ↩ Back
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => selectedOption && handleOnlinePaymentCheckout(selectedOption)}
-                          disabled={paymentLoadingId !== null}
-                          className="w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-xs uppercase tracking-widest py-4 rounded-2xl transition shadow-xl shadow-orange-600/30 disabled:opacity-50"
-                        >
-                          {paymentLoadingId ? "Syncing..." : "Proceed to Pay"}
-                        </button>
                       </div>
-                    </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </>
+              )}
             </motion.div>
           </div>
         )}

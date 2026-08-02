@@ -42,6 +42,7 @@ export type CalculateFareResult = {
   durationMinutes: number;
   haltCharges: number;
   autoCorrectedService: ServiceType;
+  isOneWayAvailable: boolean;
 };
 
 export function psychologicalPrice(value: number) {
@@ -55,13 +56,93 @@ const POPULAR_HUBS = [
   "durg",
   "korba",
   "raigarh",
-  "bhilai"
+  "bhilai",
+  "jharsuguda",
+  "jagdalpur",
+  "sambalpur",
+  "ambikapur"
+];
+
+// 👑 Full One-Way Available Service Cities / Hubs List
+const AVAILABLE_ONEWAY_CITIES = [
+  "raipur",
+  "bilaspur",
+  "korba",
+  "raigarh",
+  "durg",
+  "bhilai",
+  "rajnandgaon",
+  "jagdalpur",
+  "ambikapur",
+  "dhamtari",
+  "mahasamund",
+  "kawardha",
+  "janjgir",
+  "champa",
+  "balod",
+  "bemetara",
+  "kanker",
+  "kondagaon",
+  "dantewada",
+  "sukma",
+  "bijapur",
+  "narayanpur",
+  "gariaband",
+  "baloda bazar",
+  "mungeli",
+  "surajpur",
+  "balrampur",
+  "jashpur",
+  "gaurela",
+  "pendra",
+  "marwahi",
+  "gevra",
+  "dipka",
+  "kusmunda",
+  "katghora",
+  "chirmiri",
+  "manendragarh",
+  "baikunthpur",
+  "pathalgaon",
+  "tilda",
+  "simga",
+  "arang",
+  "kurud",
+  "pithora",
+  "saraipali",
+  "basna",
+  "dongargarh",
+  "khairagarh",
+  "sakti",
+  "akaltara",
+  "naila",
+  "pali",
+  "bharatpur",
+  "lakhanpur",
+  "wadrafnagar",
+  "bhopal",
+  "indore",
+  "jabalpur",
+  "nagpur",
+  "jharsuguda",
+  "sambalpur",
+  "rourkela"
 ];
 
 function isPopularHub(dropLocation: string): boolean {
   if (!dropLocation) return true;
   const lowerDrop = dropLocation.toLowerCase();
   return POPULAR_HUBS.some(hub => lowerDrop.includes(hub));
+}
+
+function isOneWayServiceAvailable(pickupLocation: string, dropLocation: string): boolean {
+  const lowerPickup = pickupLocation ? pickupLocation.toLowerCase() : "";
+  const lowerDrop = dropLocation ? dropLocation.toLowerCase() : "";
+
+  const isPickupValid = AVAILABLE_ONEWAY_CITIES.some(city => lowerPickup.includes(city));
+  const isDropValid = AVAILABLE_ONEWAY_CITIES.some(city => lowerDrop.includes(city));
+
+  return isPickupValid || isDropValid;
 }
 
 export function calculateFare({
@@ -74,6 +155,7 @@ export function calculateFare({
   returnDate = "",
   returnTime = "",
   drop = "",
+  pickup = "",
 }: {
   distance: number;
   vehicleType: VehicleType;
@@ -84,20 +166,26 @@ export function calculateFare({
   returnDate?: string;
   returnTime?: string;
   drop?: string;
+  pickup?: string;
 }): CalculateFareResult {
-  let oneWayDistance = distance > 0 ? Math.round(distance) : 0;
+  let inputDistance = distance > 0 ? Math.round(distance) : 0;
   
   let finalServiceType = serviceType;
-  if (oneWayDistance > 80 && serviceType === "local") {
+  if (inputDistance > 80 && serviceType === "local") {
     finalServiceType = "outstation";
   }
 
-  let workingDistance = oneWayDistance;
-  if (bookingType === "roundtrip") {
-    workingDistance = oneWayDistance * 2;
+  // 👑 Bi-directional One-Way Availability Check
+  let oneWayAvailable = true;
+  if (bookingType === "oneway" && serviceType !== "local") {
+    oneWayAvailable = isOneWayServiceAvailable(pickup, drop);
   }
 
-  // 👑 Short Round Trip Package Rule (< 80 Kms Total Distance)
+  let workingDistance = inputDistance;
+  if (bookingType === "roundtrip") {
+    workingDistance = inputDistance * 2;
+  }
+
   if (bookingType === "roundtrip" && workingDistance < 80) {
     const shortRoundTripPackages: Record<string, { baseFare: number; rate: number }> = {
       sedan: { baseFare: 1200, rate: 11 },
@@ -118,7 +206,8 @@ export function calculateFare({
       discountPercent: 0,
       durationMinutes: 480,
       haltCharges: 0,
-      autoCorrectedService: "local"
+      autoCorrectedService: "local",
+      isOneWayAvailable: true
     };
   }
 
@@ -141,12 +230,13 @@ export function calculateFare({
       discountPercent: 0,
       durationMinutes: 480,
       haltCharges: 0,
-      autoCorrectedService: "local"
+      autoCorrectedService: "local",
+      isOneWayAvailable: true
     };
   }
 
   if (bookingType === "oneway" && workingDistance > 150) {
-    workingDistance += 25; 
+    workingDistance += 5; 
   }
 
   let showKms = workingDistance;
@@ -251,12 +341,11 @@ export function calculateFare({
       }
     }
 
-    // 👑 Non-Popular Hub Distance-based Surge Logic
     if (!isPopularHub(drop)) {
       if (showKms <= 300) {
         currentMultiplier *= 1.45; 
       } else {
-        currentMultiplier *= 1.02; 
+        currentMultiplier *= 1.10; 
       }
     }
 
@@ -264,37 +353,46 @@ export function calculateFare({
     const totalRoundTripKm = workingDistance;
 
     if (vehicleType === "sedan") {
-      if (totalRoundTripKm > 400 && totalRoundTripKm < 600) {
-        currentMultiplier = 2.45;
-      } else if (totalRoundTripKm >= 600) {
-        currentMultiplier = 2.10;
+      if (totalRoundTripKm > 1000) {
+        currentMultiplier = 1.30;
+        ratePerKm = 11.00;
+      } else if (totalRoundTripKm > 600) {
+        currentMultiplier = 1.25;
+        ratePerKm = 11.00;
+      } else if (totalRoundTripKm > 400) {
+        currentMultiplier = 1.50;
+        ratePerKm = 11.00;
       } else {
-        currentMultiplier = 3.40;
+        currentMultiplier = 1.95;
+        ratePerKm = 11.00;
       }
     } else if (vehicleType === "ertiga") {
-      if (totalRoundTripKm > 400 && totalRoundTripKm < 600) {
-        currentMultiplier = 2.90;
-      } else if (totalRoundTripKm >= 600) {
-        currentMultiplier = 2.55;
+      if (totalRoundTripKm > 1000) {
+        currentMultiplier = 1.40;
+        ratePerKm = 13.00;
+      } else if (totalRoundTripKm > 600) {
+        currentMultiplier = 1.45;
+        ratePerKm = 13.00;
+      } else if (totalRoundTripKm > 400) {
+        currentMultiplier = 1.80;
+        ratePerKm = 13.00;
       } else {
-        currentMultiplier = 2.90;
+        currentMultiplier = 2.10;
+        ratePerKm = 13.00;
       }
     } else if (vehicleType === "crysta") {
-      if (totalRoundTripKm > 400 && totalRoundTripKm < 600) {
-        currentMultiplier = 2.90;
-      } else if (totalRoundTripKm >= 600) {
-        currentMultiplier = 2.55;
+      if (totalRoundTripKm > 1000) {
+        currentMultiplier = 1.35;
+        ratePerKm = 18.00;
+      } else if (totalRoundTripKm > 600) {
+        currentMultiplier = 1.40;
+        ratePerKm = 18.00;
+      } else if (totalRoundTripKm > 400) {
+        currentMultiplier = 1.90;
+        ratePerKm = 18.00;
       } else {
-        currentMultiplier = 2.90;
-      }
-    }
-
-    // Roundtrip non-popular hub check agar zaroorat ho
-    if (!isPopularHub(drop)) {
-      if (totalRoundTripKm <= 300) {
-        currentMultiplier *= 1.45;
-      } else {
-        currentMultiplier *= 1.10;
+        currentMultiplier = 2.20;
+        ratePerKm = 18.00;
       }
     }
 
@@ -349,6 +447,7 @@ export function calculateFare({
     discountPercent: 0,
     durationMinutes,
     haltCharges,
-    autoCorrectedService: finalServiceType
+    autoCorrectedService: finalServiceType,
+    isOneWayAvailable: oneWayAvailable
   };
 }
