@@ -16,7 +16,7 @@ import {
 } from "@/lib/fareCalculator";
 
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, collection, addDoc, serverTimestamp, Firestore } from "firebase/firestore";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, Firestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -72,15 +72,15 @@ type TollData = {
   encodedPolyline?: string;
 };
 
-type SuccessReceipt = {
-  invoiceId: string;
-  pickup: string;
-  drop: string;
-  date: string;
-  time: string;
-  vehicle: string;
-  amount: number;
-  paymentMode: "50% ADVANCE" | "FULL PAYMENT";
+type SpecialOffer = {
+  id: string;
+  fromCity: string;
+  toCity: string;
+  vehicleType: string;
+  tripType: string;
+  strikeFare: number;
+  offerFare: number;
+  offerAvailable: boolean;
 };
 
 const ROUTES = [
@@ -93,7 +93,7 @@ const ROUTES = [
 export default function HomePage() {
   const [popupData, setPopupData] = useState<PopupData | null>(null);
   const [showPopup, setShowPopup] = useState(false);
-  const [successReceipt, setSuccessReceipt] = useState<SuccessReceipt | null>(null);
+  const [successReceipt, setSuccessReceipt] = useState<any | null>(null);
   const [paymentLoadingId, setPaymentLoadingId] = useState<string | null>(null);
   const [selectedVehicleType, setSelectedVehicleType] = useState<VehicleType>("sedan");
   const [paymentSplitMode, setPaymentSplitMode] = useState<Record<string, "full" | "half">>({});
@@ -107,6 +107,11 @@ export default function HomePage() {
   const [showTollModal, setShowTollModal] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
   const [tollLoading, setTollLoading] = useState(false);
+
+  // Special Offers States
+  const [activeOffers, setActiveOffers] = useState<SpecialOffer[]>([]);
+  const [currentOfferIndex, setCurrentOfferIndex] = useState(0);
+  const [showAllOffersModal, setShowAllOffersModal] = useState(false);
 
   const [showInitialRatingModal, setShowInitialRatingModal] = useState(false);
   const calculatorSectionRef = useRef<HTMLDivElement>(null);
@@ -123,11 +128,43 @@ export default function HomePage() {
       }
     };
     window.addEventListener("khatuScrollToCalc", handleScrollTrigger);
+
+    let unsubscribeOffers: (() => void) | undefined;
+    if (db) {
+      const q = query(collection(db, "special_offers"), orderBy("createdAt", "desc"));
+      unsubscribeOffers = onSnapshot(q, (snapshot) => {
+        const fetched: SpecialOffer[] = [];
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          if (data.offerAvailable) {
+            fetched.push({ id: doc.id, ...data } as SpecialOffer);
+          }
+        });
+        setActiveOffers(fetched);
+      });
+    }
+
     return () => {
       clearTimeout(timer);
       window.removeEventListener("khatuScrollToCalc", handleScrollTrigger);
+      if (unsubscribeOffers) unsubscribeOffers();
     };
   }, []);
+
+  useEffect(() => {
+    if (activeOffers.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentOfferIndex((prev) => (prev + 1) % activeOffers.length);
+    }, 4500);
+    return () => clearInterval(interval);
+  }, [activeOffers.length]);
+
+  const getVehicleImageByName = (vType: string) => {
+    const lower = vType.toLowerCase();
+    if (lower.includes("crysta") || lower.includes("innova")) return "/crysta.png";
+    if (lower.includes("ertiga") || lower.includes("suv") || lower.includes("xylo")) return "/ertiga.png";
+    return "/dezire.png";
+  };
 
   const convertToIndianDate = (dateString: string) => {
     if (!dateString) return "--/--/----";
@@ -341,25 +378,15 @@ export default function HomePage() {
 
   const handleWhatsAppManualRedirect = (option: FareOption) => {
     if (!popupData) return;
-
     const textPayload = `🚗 *New Cab Booking Enquiry - Khatu Rides Travels* 🏁
-
-Hello! I am interested in booking an outstation trip. Here are my travel details for your review:
-
-📍 *TRAVEL ITINERARY:*
+Hello! I am interested in booking an outstation trip:
 • *From:* ${popupData.pickup}
 • *To:* ${popupData.drop}
 • *Trip Type:* ${popupData.bookingType.toUpperCase()}
-• *Date & Time:* ${convertToIndianDate(popupData.pickupDate)} | ${formatTimeToAMPM(popupData.pickupTime)}
+• *Vehicle:* ${option.vehicleLabel}
+• *Estimated Fare:* Rs. ${option.finalFare.toLocaleString("en-IN")}/-`;
 
-🚖 *VEHICLE SELECTION:*
-• *Category:* ${option.vehicleLabel}
-• *Estimated Fare:* Rs. ${option.finalFare.toLocaleString("en-IN")}/- (All-Inclusive)
-
-Kindly let me know about the availability and the booking process. I look forward to traveling with Khatu Rides! ✨`;
-
-    const cleanFormattedUrl = `https://wa.me/919244137353?text=${encodeURIComponent(textPayload)}`;
-    window.open(cleanFormattedUrl, "_blank");
+    window.open(`https://wa.me/919244137353?text=${encodeURIComponent(textPayload)}`, "_blank");
   };
 
   const selectedOption = popupData?.fareOptions.find((item) => item.vehicleType === selectedVehicleType);
@@ -411,12 +438,112 @@ Kindly let me know about the availability and the booking process. I look forwar
           </div>
         </header>
 
+        {/* Chhattisgarh & Madhya Pradesh Fastest Growing Banner */}
         <div className="w-full bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 border-b border-orange-500/30 py-2.5 px-4 text-center text-xs font-black text-orange-300 tracking-wide">
           ⚡ Chhattisgarh & Madhya Pradesh ka Fastest Growing Cab Service
         </div>
 
-        <section className="relative px-4 pt-8 pb-16 sm:py-16">
-          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        {/* 👑 MOBILE TOP ORDER CONTAINER: OFFER CARD FIRST, THEN FARE CALCULATOR */}
+        <section className="relative px-4 pt-6 pb-16 sm:py-12 max-w-7xl mx-auto">
+          
+          {/* Mobile First Wrapper for Offer Card */}
+          <div className="max-w-4xl mx-auto space-y-3 mb-8 block lg:hidden order-1">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[11px] font-black uppercase tracking-widest text-orange-400 flex items-center gap-1.5">
+                <span>🔥</span> TODAY'S SPECIAL OFFER
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowAllOffersModal(true)}
+                className="text-[11px] font-black uppercase tracking-wider text-slate-300 hover:text-white transition bg-slate-900 px-3.5 py-1.5 rounded-xl border border-slate-800 shadow-sm"
+              >
+                View All Running Offer
+              </button>
+            </div>
+
+            {activeOffers.length === 0 ? (
+              <div className="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-lg text-slate-900">
+                <span className="text-xl mb-0.5 block">🏷️</span>
+                <p className="text-xs font-black uppercase tracking-wide">Presently no any offer are available</p>
+                <p className="text-[9px] text-slate-500 mt-0.5">Check back soon for exciting discount packages across CG & MP corridors.</p>
+              </div>
+            ) : (
+              <div className="relative rounded-2xl overflow-hidden bg-white border border-orange-200 px-4 py-3 sm:px-6 sm:py-3.5 shadow-xl text-slate-900">
+                <AnimatePresence mode="wait">
+                  {activeOffers[currentOfferIndex] && (() => {
+                    const offer = activeOffers[currentOfferIndex];
+                    const diff = Math.max(0, offer.strikeFare - offer.offerFare);
+                    return (
+                      <motion.div
+                        key={offer.id}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.25 }}
+                        className="flex flex-col sm:flex-row items-center justify-between gap-3"
+                      >
+                        <div className="flex items-center gap-3.5 text-center sm:text-left w-full sm:w-auto">
+                          <div className="w-14 h-12 bg-slate-100 rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
+                            <img
+                              src={getVehicleImageByName(offer.vehicleType)}
+                              alt="Vehicle"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="space-y-0.5">
+                            <div className="flex items-center justify-center sm:justify-start gap-2">
+                              <span className="bg-orange-100 text-orange-700 text-[8px] font-black uppercase px-2 py-0.2 rounded border border-orange-200">
+                                {offer.tripType}
+                              </span>
+                              <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded">● LIVE DEAL</span>
+                            </div>
+                            <h4 className="text-sm font-black text-slate-900 tracking-tight">
+                              {offer.fromCity} ➔ {offer.toCity}
+                            </h4>
+                            <div className="flex items-center justify-center sm:justify-start gap-2 text-xs font-bold flex-wrap">
+                              <span className="text-slate-500 capitalize text-[11px]">{offer.vehicleType}</span>
+                              <span className="text-slate-300">|</span>
+                              <span className="text-red-500 line-through text-xs font-bold">₹{offer.strikeFare}</span>
+                              <span className="text-emerald-600 font-black text-sm">₹{offer.offerFare}</span>
+                              {diff > 0 && (
+                                <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black px-1.5 py-0.5 rounded ml-1">
+                                  Save Rs. {diff.toLocaleString("en-IN")}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="w-full sm:w-auto shrink-0">
+                          <a
+                            href="tel:+919244137353"
+                            className="block w-full sm:w-auto text-center bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-[11px] uppercase tracking-wider px-5 py-2.5 rounded-xl shadow-md transition shadow-orange-600/30"
+                          >
+                            📞 CALL NOW FOR BOOK
+                          </a>
+                        </div>
+                      </motion.div>
+                    );
+                  })()}
+                </AnimatePresence>
+
+                {activeOffers.length > 1 && (
+                  <div className="flex justify-center gap-1.5 mt-2">
+                    {activeOffers.map((_, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setCurrentOfferIndex(idx)}
+                        className={`h-1 rounded-full transition-all ${idx === currentOfferIndex ? "w-5 bg-orange-600" : "w-1 bg-slate-300"}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center pt-2">
             
             <div className="lg:col-span-5 text-center lg:text-left space-y-4 order-2 lg:order-1">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-[10px] font-black uppercase tracking-widest">
@@ -448,8 +575,105 @@ Kindly let me know about the availability and the booking process. I look forwar
               </div>
             </div>
 
-            <div ref={calculatorSectionRef} className="lg:col-span-7 relative z-20 order-1 lg:order-2">
-              <div className="absolute -inset-1 bg-gradient-to-r from-orange-600 to-amber-500 rounded-3xl blur-md opacity-30 animate-pulse" />
+            <div ref={calculatorSectionRef} className="lg:col-span-7 relative z-20 order-1 lg:order-2 space-y-6">
+              
+              {/* Desktop Offer Card Wrapper */}
+              <div className="max-w-4xl mx-auto space-y-3 hidden lg:block">
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-[11px] font-black uppercase tracking-widest text-orange-400 flex items-center gap-1.5">
+                    <span>🔥</span> TODAY'S SPECIAL OFFER
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowAllOffersModal(true)}
+                    className="text-[11px] font-black uppercase tracking-wider text-slate-300 hover:text-white transition bg-slate-900 px-3.5 py-1.5 rounded-xl border border-slate-800 shadow-sm"
+                  >
+                    View All Running Offer
+                  </button>
+                </div>
+
+                {activeOffers.length === 0 ? (
+                  <div className="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-lg text-slate-900">
+                    <span className="text-xl mb-0.5 block">🏷️</span>
+                    <p className="text-xs font-black uppercase tracking-wide">Presently no any offer are available</p>
+                    <p className="text-[9px] text-slate-500 mt-0.5">Check back soon for exciting discount packages across CG & MP corridors.</p>
+                  </div>
+                ) : (
+                  <div className="relative rounded-2xl overflow-hidden bg-white border border-orange-200 px-4 py-3 sm:px-6 sm:py-3.5 shadow-xl text-slate-900">
+                    <AnimatePresence mode="wait">
+                      {activeOffers[currentOfferIndex] && (() => {
+                        const offer = activeOffers[currentOfferIndex];
+                        const diff = Math.max(0, offer.strikeFare - offer.offerFare);
+                        return (
+                          <motion.div
+                            key={offer.id}
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -6 }}
+                            transition={{ duration: 0.25 }}
+                            className="flex flex-col sm:flex-row items-center justify-between gap-3"
+                          >
+                            <div className="flex items-center gap-3.5 text-center sm:text-left w-full sm:w-auto">
+                              <div className="w-14 h-12 bg-slate-100 rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
+                                <img
+                                  src={getVehicleImageByName(offer.vehicleType)}
+                                  alt="Vehicle"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <div className="space-y-0.5">
+                                <div className="flex items-center justify-center sm:justify-start gap-2">
+                                  <span className="bg-orange-100 text-orange-700 text-[8px] font-black uppercase px-2 py-0.2 rounded border border-orange-200">
+                                    {offer.tripType}
+                                  </span>
+                                  <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded">● LIVE DEAL</span>
+                                </div>
+                                <h4 className="text-sm font-black text-slate-900 tracking-tight">
+                                  {offer.fromCity} ➔ {offer.toCity}
+                                </h4>
+                                <div className="flex items-center justify-center sm:justify-start gap-2 text-xs font-bold flex-wrap">
+                                  <span className="text-slate-500 capitalize text-[11px]">{offer.vehicleType}</span>
+                                  <span className="text-slate-300">|</span>
+                                  <span className="text-red-500 line-through text-xs font-bold">₹{offer.strikeFare}</span>
+                                  <span className="text-emerald-600 font-black text-sm">₹{offer.offerFare}</span>
+                                  {diff > 0 && (
+                                    <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black px-1.5 py-0.5 rounded ml-1">
+                                      Save Rs. {diff.toLocaleString("en-IN")}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="w-full sm:w-auto shrink-0">
+                              <a
+                                href="tel:+919244137353"
+                                className="block w-full sm:w-auto text-center bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-[11px] uppercase tracking-wider px-5 py-2.5 rounded-xl shadow-md transition shadow-orange-600/30"
+                              >
+                                📞 CALL NOW FOR BOOK
+                              </a>
+                            </div>
+                          </motion.div>
+                        );
+                      })()}
+                    </AnimatePresence>
+
+                    {activeOffers.length > 1 && (
+                      <div className="flex justify-center gap-1.5 mt-2">
+                        {activeOffers.map((_, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setCurrentOfferIndex(idx)}
+                            className={`h-1 rounded-full transition-all ${idx === currentOfferIndex ? "w-5 bg-orange-600" : "w-1 bg-slate-300"}`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="relative">
                 <FareCalculator
                   onFareCalculated={(data) => {
@@ -494,6 +718,7 @@ Kindly let me know about the availability and the booking process. I look forwar
                   }}
                 />
               </div>
+
             </div>
 
           </div>
@@ -607,6 +832,49 @@ Kindly let me know about the availability and the booking process. I look forwar
           </a>
         </div>
       </main>
+
+      {/* ALL OFFERS MODAL */}
+      <AnimatePresence>
+        {showAllOffersModal && (
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white border border-slate-200 w-full max-w-lg rounded-3xl p-6 text-slate-900 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+              <button type="button" onClick={() => setShowAllOffersModal(false)} className="absolute top-4 right-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full h-8 w-8 flex items-center justify-center font-bold">✕</button>
+              <h3 className="text-lg font-black text-slate-900 mb-1">🎁 All Running Route Offers</h3>
+              <p className="text-xs text-slate-500 mb-4">Direct active discounts curated by Khatu Rides admin desk.</p>
+
+              {activeOffers.length === 0 ? (
+                <div className="text-center py-10 text-xs font-bold text-slate-500 bg-slate-50 rounded-2xl border border-slate-200">
+                  Presently no any offer are available.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {activeOffers.map((o) => {
+                    const diff = Math.max(0, o.strikeFare - o.offerFare);
+                    return (
+                      <div key={o.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-center justify-between gap-3 shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <img src={getVehicleImageByName(o.vehicleType)} alt="car" className="w-12 h-10 object-cover rounded-xl" />
+                          <div>
+                            <h4 className="text-xs font-black text-slate-900">{o.fromCity} ➔ {o.toCity}</h4>
+                            <div className="flex items-center gap-2 mt-0.5 text-xs">
+                              <span className="text-red-500 line-through">₹{o.strikeFare}</span>
+                              <span className="text-emerald-600 font-black">₹{o.offerFare}</span>
+                              {diff > 0 && <span className="text-[9px] text-emerald-700 font-bold bg-emerald-100 px-1.5 py-0.5 rounded">Save ₹{diff}</span>}
+                            </div>
+                          </div>
+                        </div>
+                        <a href="tel:+919244137353" className="bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-black uppercase px-3.5 py-2 rounded-xl transition shadow-sm">
+                          Book
+                        </a>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showInitialRatingModal && (

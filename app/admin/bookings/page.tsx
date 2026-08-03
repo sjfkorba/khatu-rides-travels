@@ -552,6 +552,13 @@ export default function AdminBookingsDashboard() {
           <button type="button" onClick={() => setShowManualForm(true)} className="w-full sm:w-auto bg-orange-600 hover:bg-orange-700 text-white text-xs font-black uppercase tracking-widest py-3 px-5 rounded-xl shadow-lg flex items-center justify-center gap-2">
             <Plus size={16} /> Create Manual Booking
           </button>
+           <button
+      type="button"
+      onClick={() => router.push("/admin/offers")} // Yahan apna target route daalein
+      className="bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-widest px-6 py-3 rounded-xl transition shadow-lg"
+    >
+      Open Offers Screen ➔
+    </button>
         </div>
       </header>
 
