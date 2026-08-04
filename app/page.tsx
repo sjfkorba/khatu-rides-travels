@@ -4,6 +4,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import Script from "next/script";
 import { AnimatePresence, motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import FareCalculator from "@/components/FareCalculator";
 import ReviewsCarousel from "@/components/ReviewsCarousel";
 import SeoTextBlock from "@/components/SeoTextBlock";
@@ -16,7 +17,9 @@ import {
 } from "@/lib/fareCalculator";
 
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, Firestore } from "firebase/firestore";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, Firestore, doc, getDoc, setDoc } from "firebase/firestore";
+import { onAuthStateChanged, User, signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "@/lib/firebase";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -91,6 +94,16 @@ const ROUTES = [
 ];
 
 export default function HomePage() {
+  const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authChecking, setAuthChecking] = useState(true);
+  
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [showLoginAlertModal, setShowLoginAlertModal] = useState(false);
+  const [phoneInput, setPhoneInput] = useState("");
+  const [needsPhoneModal, setNeedsPhoneModal] = useState(false);
+  const [pendingUser, setPendingUser] = useState<any>(null);
+
   const [popupData, setPopupData] = useState<PopupData | null>(null);
   const [showPopup, setShowPopup] = useState(false);
   const [successReceipt, setSuccessReceipt] = useState<any | null>(null);
@@ -118,6 +131,16 @@ export default function HomePage() {
 
   useEffect(() => {
     document.documentElement.style.scrollBehavior = "smooth";
+    
+    // Auth State Observer with Automatic Redirection for Logged-In Users
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      setAuthChecking(false);
+      if (user) {
+        router.replace("/customer/home");
+      }
+    });
+
     const timer = setTimeout(() => {
       setShowInitialRatingModal(true);
     }, 1000);
@@ -146,10 +169,11 @@ export default function HomePage() {
 
     return () => {
       clearTimeout(timer);
+      unsubscribeAuth();
       window.removeEventListener("khatuScrollToCalc", handleScrollTrigger);
       if (unsubscribeOffers) unsubscribeOffers();
     };
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     if (activeOffers.length <= 1) return;
@@ -158,6 +182,73 @@ export default function HomePage() {
     }, 4500);
     return () => clearInterval(interval);
   }, [activeOffers.length]);
+
+  const handleGoogleLoginInline = async () => {
+    if (!db) return;
+    setLoginLoading(true);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      const customerRef = doc(db, "customers", user.uid);
+      const customerSnap = await getDoc(customerRef);
+
+      if (!customerSnap.exists() || !customerSnap.data().phone) {
+        setPendingUser(user);
+        setShowLoginAlertModal(false);
+        setNeedsPhoneModal(true);
+        setLoginLoading(false);
+        return;
+      }
+
+      await setDoc(customerRef, {
+        lastLoginAt: serverTimestamp(),
+      }, { merge: true });
+
+      setShowLoginAlertModal(false);
+      setLoginLoading(false);
+      router.push("/customer/home");
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      alert("Login failed: " + error.message);
+      setLoginLoading(false);
+    }
+  };
+
+  const handleSavePhoneAndProceedInline = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (phoneInput.length < 10) {
+      alert("Kripya sahi 10-digit mobile number darj karein.");
+      return;
+    }
+    if (!db) return;
+
+    setLoginLoading(true);
+    try {
+      const user = pendingUser;
+      const customerRef = doc(db, "customers", user.uid);
+
+      await setDoc(customerRef, {
+        uid: user.uid,
+        name: user.displayName || "Valued Customer",
+        email: user.email || "",
+        phone: phoneInput.trim(),
+        photoURL: user.photoURL || "",
+        totalTrips: 0,
+        walletBalance: 0,
+        membershipTier: "Standard",
+        createdAt: serverTimestamp(),
+        lastLoginAt: serverTimestamp(),
+      }, { merge: true });
+
+      setNeedsPhoneModal(false);
+      setLoginLoading(false);
+      router.push("/customer/home");
+    } catch (err: any) {
+      alert("Error saving profile: " + err.message);
+      setLoginLoading(false);
+    }
+  };
 
   const getVehicleImageByName = (vType: string) => {
     const lower = vType.toLowerCase();
@@ -203,6 +294,11 @@ export default function HomePage() {
   };
 
   const triggerQuickBooking = (from: string, to: string, routeDistance: number) => {
+    if (!currentUser) {
+      setShowLoginAlertModal(true);
+      return;
+    }
+
     const now = new Date();
     now.setHours(now.getHours() + 2);
     const baseDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -282,6 +378,10 @@ export default function HomePage() {
   };
 
   const handleOnlinePaymentCheckout = async (option: FareOption) => {
+    if (!currentUser) {
+      setShowLoginAlertModal(true);
+      return;
+    }
     if (!popupData) return;
     if (!customerName.trim() || !customerPhone.trim() || customerPhone.length < 10) {
       alert("⚠️ Kripya sahi Naam aur 10-digit Mobile Number darj karein!");
@@ -394,6 +494,14 @@ Hello! I am interested in booking an outstation trip:
   const currentSelectedMode = selectedOption && paymentSplitMode[selectedOption.id] ? paymentSplitMode[selectedOption.id] : "full";
   const displayPayNowNumber = currentSelectedMode === "half" ? Math.round(totalPricingBase / 2) : totalPricingBase;
 
+  if (authChecking) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-orange-500 font-bold text-xs uppercase tracking-widest animate-pulse">
+        Loading Khatu Rides...
+      </div>
+    );
+  }
+
   return (
     <>
       <Script id="razorpay-checkout-js" src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
@@ -431,9 +539,15 @@ Hello! I am interested in booking an outstation trip:
               <a href="https://wa.me/919244137353" target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-white shadow-md hover:bg-emerald-500 transition">
                 <span className="text-base">💬</span>
               </a>
-              <button onClick={() => setShowInitialRatingModal(true)} className="rounded-full bg-gradient-to-r from-orange-600 to-amber-500 px-4 py-2 text-[11px] font-black uppercase tracking-wider text-white hover:from-orange-500 hover:to-amber-400 transition shadow-lg shadow-orange-600/30">
-                Login
-              </button>
+              {currentUser ? (
+                <button onClick={() => router.push("/customer/home")} className="rounded-full bg-emerald-600 px-4 py-2 text-[11px] font-black uppercase tracking-wider text-white hover:bg-emerald-500 transition shadow-lg">
+                  Dashboard
+                </button>
+              ) : (
+                <button onClick={() => router.push("/login")} className="rounded-full bg-gradient-to-r from-orange-600 to-amber-500 px-4 py-2 text-[11px] font-black uppercase tracking-wider text-white hover:from-orange-500 hover:to-amber-400 transition shadow-lg shadow-orange-600/30">
+                  Login
+                </button>
+              )}
             </div>
           </div>
         </header>
@@ -443,7 +557,7 @@ Hello! I am interested in booking an outstation trip:
           ⚡ Chhattisgarh & Madhya Pradesh ka Fastest Growing Cab Service
         </div>
 
-        {/* 👑 MOBILE TOP ORDER CONTAINER: OFFER CARD FIRST, THEN FARE CALCULATOR */}
+        {/* 👑 MOBILE FIRST ORDER: OFFER CARD FIRST, THEN FARE CALCULATOR */}
         <section className="relative px-4 pt-6 pb-16 sm:py-12 max-w-7xl mx-auto">
           
           {/* Mobile First Wrapper for Offer Card */}
@@ -833,6 +947,81 @@ Hello! I am interested in booking an outstation trip:
         </div>
       </main>
 
+      {/* 👑 CUSTOMIZED "LOGIN TO CONTINUE" MODAL */}
+      <AnimatePresence>
+        {showLoginAlertModal && (
+          <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white border border-slate-200 w-full max-w-sm rounded-3xl p-6 sm:p-8 text-center text-slate-900 shadow-2xl relative">
+              <button onClick={() => setShowLoginAlertModal(false)} className="absolute top-4 right-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full h-8 w-8 flex items-center justify-center font-bold">✕</button>
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-50 text-3xl text-orange-600 border border-orange-100 shadow-inner">🔒</div>
+              <h3 className="text-xl font-black text-slate-900 tracking-tight">Login To Continue</h3>
+              <p className="text-xs text-slate-500 mt-2 mb-6 leading-relaxed">Please sign in securely with your Google account to complete your online booking.</p>
+              
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={handleGoogleLoginInline}
+                  disabled={loginLoading}
+                  className="w-full flex items-center justify-center gap-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-900 font-black text-xs uppercase tracking-wider py-4 rounded-2xl shadow-sm transition disabled:opacity-50"
+                >
+                  <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="Google" />
+                  {loginLoading ? "Authenticating..." : "Continue with Google"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowLoginAlertModal(false)}
+                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase py-3 rounded-2xl transition"
+                >
+                  Cancel
+                </button>
+              </div>
+              <p className="text-[9px] text-slate-400 mt-5">Protected by Khatu Rides Secure Auth & Privacy Protocols.</p>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 👑 PHONE VERIFICATION MODAL FOR FIRST TIME GOOGLE LOGIN */}
+      <AnimatePresence>
+        {needsPhoneModal && (
+          <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white border border-slate-200 w-full max-w-md rounded-3xl p-6 sm:p-8 text-slate-900 shadow-2xl relative text-left">
+              <div className="bg-orange-50 border border-orange-100 p-4 rounded-2xl text-center mb-5">
+                <span className="text-xs font-black text-orange-600 uppercase tracking-widest block">One Last Step</span>
+                <h3 className="text-sm font-black text-slate-900 mt-1">Verify Mobile Number</h3>
+                <p className="text-[10px] text-slate-500 mt-0.5">Driver details & trip updates will be sent via SMS/WhatsApp.</p>
+              </div>
+
+              <form onSubmit={handleSavePhoneAndProceedInline} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Mobile Number *</label>
+                  <div className="flex items-center bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden focus-within:border-orange-500 transition">
+                    <span className="bg-slate-100 px-4 py-3.5 text-xs font-bold text-slate-600 border-r border-slate-200">+91</span>
+                    <input
+                      type="tel"
+                      maxLength={10}
+                      placeholder="Enter 10-digit mobile number"
+                      value={phoneInput}
+                      onChange={(e) => setPhoneInput(e.target.value.replace(/\D/g, ""))}
+                      required
+                      className="w-full bg-transparent px-4 py-3.5 text-xs font-bold text-slate-900 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loginLoading}
+                  className="w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-xs uppercase tracking-widest py-4 rounded-2xl shadow-xl shadow-orange-600/30 transition disabled:opacity-50"
+                >
+                  {loginLoading ? "Creating Profile..." : "Complete Signup & Continue"}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* ALL OFFERS MODAL */}
       <AnimatePresence>
         {showAllOffersModal && (
@@ -1165,6 +1354,10 @@ Hello! I am interested in booking an outstation trip:
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  if (!currentUser) {
+                                    setShowLoginAlertModal(true);
+                                    return;
+                                  }
                                   setSelectedVehicleType(opt.vehicleType);
                                   setPaymentSplitMode((p) => ({ ...p, [opt.id]: "half" }));
                                   setShowUserForm(true);
