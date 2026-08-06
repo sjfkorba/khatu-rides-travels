@@ -506,7 +506,7 @@ Hello! I am interested in booking an outstation trip:
     <>
       <Script id="razorpay-checkout-js" src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
 
-      <main className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-100 pb-20 md:pb-0 font-sans selection:bg-orange-500 selection:text-white relative overflow-hidden">
+      <main className="min-h-screen bg-linear-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-100 pb-20 md:pb-0 font-sans selection:bg-orange-500 selection:text-white relative overflow-hidden">
         
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-600/15 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -532,28 +532,28 @@ Hello! I am interested in booking an outstation trip:
               <a href="#contact" className="hover:text-orange-400 transition">Contact Us</a>
             </nav>
 
-            <div className="flex items-center gap-2.5 shrink-0">
-              <a href="tel:+919244137353" className="hidden md:flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900/90 px-3.5 py-2 text-[11px] font-black text-slate-200 hover:bg-slate-800 transition shadow-inner">
-                <span className="text-emerald-400 text-xs">📞</span> Call: <span className="text-orange-400">92441 37353</span>
-              </a>
-              <a href="https://wa.me/919244137353" target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-white shadow-md hover:bg-emerald-500 transition">
-                <span className="text-base">💬</span>
-              </a>
-              {currentUser ? (
-                <button onClick={() => router.push("/customer/home")} className="rounded-full bg-emerald-600 px-4 py-2 text-[11px] font-black uppercase tracking-wider text-white hover:bg-emerald-500 transition shadow-lg">
-                  Dashboard
-                </button>
-              ) : (
-                <button onClick={() => router.push("/login")} className="rounded-full bg-gradient-to-r from-orange-600 to-amber-500 px-4 py-2 text-[11px] font-black uppercase tracking-wider text-white hover:from-orange-500 hover:to-amber-400 transition shadow-lg shadow-orange-600/30">
-                  Login
-                </button>
-              )}
-            </div>
+          <div className="flex items-center gap-2.5 shrink-0">
+  <a href="tel:+919244137353" className="hidden md:flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900/90 px-3.5 py-2 text-[11px] font-black text-slate-200 hover:bg-slate-800 transition shadow-inner">
+    <span className="text-emerald-400 text-xs">📞</span> Call: <span className="text-orange-400">92441 37353</span>
+  </a>
+  <a href="https://wa.me/919244137353" target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-white shadow-md hover:bg-emerald-500 transition">
+    <span className="text-base">💬</span>
+  </a>
+  {currentUser ? (
+    <button onClick={() => router.push("/customer/home")} className="rounded-full bg-emerald-600 px-4 py-2 text-[11px] font-black uppercase tracking-wider text-white hover:bg-emerald-500 transition shadow-lg">
+      Dashboard
+    </button>
+  ) : (
+    <button onClick={() => router.push("/login")} className="rounded-full bg-gradient-to-r from-orange-600 to-amber-500 px-4 py-2 text-[11px] font-black uppercase tracking-wider text-white hover:from-orange-500 hover:to-amber-400 transition shadow-lg shadow-orange-600/30">
+      Login
+    </button>
+  )}
+</div>
           </div>
         </header>
 
         {/* Chhattisgarh & Madhya Pradesh Fastest Growing Banner */}
-        <div className="w-full bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 border-b border-orange-500/30 py-2.5 px-4 text-center text-xs font-black text-orange-300 tracking-wide">
+        <div className="w-full bg-linear-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 border-b border-orange-500/30 py-2.5 px-4 text-center text-xs font-black text-orange-300 tracking-wide">
           ⚡ Chhattisgarh & Madhya Pradesh ka Fastest Growing Cab Service
         </div>
 
@@ -631,7 +631,7 @@ Hello! I am interested in booking an outstation trip:
                         <div className="w-full sm:w-auto shrink-0">
                           <a
                             href="tel:+919244137353"
-                            className="block w-full sm:w-auto text-center bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-[11px] uppercase tracking-wider px-5 py-2.5 rounded-xl shadow-md transition shadow-orange-600/30"
+                            className="block w-full sm:w-auto text-center bg-linear-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-[11px] uppercase tracking-wider px-5 py-2.5 rounded-xl shadow-md transition shadow-orange-600/30"
                           >
                             📞 CALL NOW FOR BOOK
                           </a>
@@ -665,7 +665,7 @@ Hello! I am interested in booking an outstation trip:
               </div>
               <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-none text-white">
                 Har Safar,<br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500">Khatu Rides</span> Ke Saath.
+                <span className="text-transparent bg-clip-text bg-linear-to-r from-orange-500 via-amber-400 to-orange-500">Khatu Rides</span> Ke Saath.
               </h1>
               <p className="text-xs sm:text-sm font-bold text-slate-400">
                 Outstation • Local • Airport • Round Trip with absolute safety & transparent pricing.
@@ -762,7 +762,7 @@ Hello! I am interested in booking an outstation trip:
                             <div className="w-full sm:w-auto shrink-0">
                               <a
                                 href="tel:+919244137353"
-                                className="block w-full sm:w-auto text-center bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-[11px] uppercase tracking-wider px-5 py-2.5 rounded-xl shadow-md transition shadow-orange-600/30"
+                                className="block w-full sm:w-auto text-center bg-linear-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-[11px] uppercase tracking-wider px-5 py-2.5 rounded-xl shadow-md transition shadow-orange-600/30"
                               >
                                 📞 CALL NOW FOR BOOK
                               </a>
@@ -839,7 +839,7 @@ Hello! I am interested in booking an outstation trip:
         </section>
 
         <section id="offers" className="px-4 max-w-7xl mx-auto my-12">
-          <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-orange-950 via-slate-900 to-amber-950 border border-orange-500/30 p-6 sm:p-10 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="relative rounded-3xl overflow-hidden bg-linear-to-r from-orange-950 via-slate-900 to-amber-950 border border-orange-500/30 p-6 sm:p-10 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-orange-500/10 rounded-full blur-2xl pointer-events-none" />
             <div className="flex items-center gap-5 text-center sm:text-left relative z-10">
               <span className="text-5xl sm:text-7xl animate-bounce">🎁</span>
@@ -849,7 +849,7 @@ Hello! I am interested in booking an outstation trip:
                 <p className="text-xs sm:text-sm text-slate-300 mt-1">Limited Time Offer! Applicable on all outstation corridors across Chhattisgarh & MP.</p>
               </div>
             </div>
-            <button onClick={() => setShowInitialRatingModal(true)} className="relative z-10 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-xs uppercase tracking-widest px-8 py-4 shadow-xl shadow-orange-600/30 transition shrink-0">
+            <button onClick={() => setShowInitialRatingModal(true)} className="relative z-10 rounded-2xl bg-linear-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-xs uppercase tracking-widest px-8 py-4 shadow-xl shadow-orange-600/30 transition shrink-0">
               Claim Discount Now
             </button>
           </div>
@@ -894,7 +894,7 @@ Hello! I am interested in booking an outstation trip:
               >
                 <div className="h-44 w-full overflow-hidden relative">
                   <img src={route.image} alt={route.from} className="w-full h-full object-cover group-hover:scale-110 transition duration-500 opacity-80 group-hover:opacity-100" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+                  <div className="absolute inset-0 bg-linear-to-t from-slate-950 via-slate-950/40 to-transparent" />
                   <span className="absolute bottom-3 left-3 bg-slate-900/90 backdrop-blur-md px-3 py-1 rounded-xl text-[10px] font-black text-orange-400 border border-slate-700">
                     📍 {route.km}
                   </span>
@@ -926,7 +926,7 @@ Hello! I am interested in booking an outstation trip:
         <ReviewsCarousel />
         <SeoTextBlock />
 
-        <div className="fixed bottom-6 right-6 z-[999] flex flex-col gap-3 md:hidden pointer-events-auto">
+        <div className="fixed bottom-6 right-6 z-999 flex flex-col gap-3 md:hidden pointer-events-auto">
           <a
             href="https://wa.me/919244137353"
             target="_blank"
@@ -950,7 +950,7 @@ Hello! I am interested in booking an outstation trip:
       {/* 👑 CUSTOMIZED "LOGIN TO CONTINUE" MODAL */}
       <AnimatePresence>
         {showLoginAlertModal && (
-          <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md">
+          <div className="fixed inset-0 z-999999 flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md">
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white border border-slate-200 w-full max-w-sm rounded-3xl p-6 sm:p-8 text-center text-slate-900 shadow-2xl relative">
               <button onClick={() => setShowLoginAlertModal(false)} className="absolute top-4 right-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full h-8 w-8 flex items-center justify-center font-bold">✕</button>
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-50 text-3xl text-orange-600 border border-orange-100 shadow-inner">🔒</div>
@@ -984,7 +984,7 @@ Hello! I am interested in booking an outstation trip:
       {/* 👑 PHONE VERIFICATION MODAL FOR FIRST TIME GOOGLE LOGIN */}
       <AnimatePresence>
         {needsPhoneModal && (
-          <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md">
+          <div className="fixed inset-0 z-999999 flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md">
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white border border-slate-200 w-full max-w-md rounded-3xl p-6 sm:p-8 text-slate-900 shadow-2xl relative text-left">
               <div className="bg-orange-50 border border-orange-100 p-4 rounded-2xl text-center mb-5">
                 <span className="text-xs font-black text-orange-600 uppercase tracking-widest block">One Last Step</span>
@@ -1012,7 +1012,7 @@ Hello! I am interested in booking an outstation trip:
                 <button
                   type="submit"
                   disabled={loginLoading}
-                  className="w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-xs uppercase tracking-widest py-4 rounded-2xl shadow-xl shadow-orange-600/30 transition disabled:opacity-50"
+                  className="w-full bg-linear-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-xs uppercase tracking-widest py-4 rounded-2xl shadow-xl shadow-orange-600/30 transition disabled:opacity-50"
                 >
                   {loginLoading ? "Creating Profile..." : "Complete Signup & Continue"}
                 </button>
@@ -1025,7 +1025,7 @@ Hello! I am interested in booking an outstation trip:
       {/* ALL OFFERS MODAL */}
       <AnimatePresence>
         {showAllOffersModal && (
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md">
+          <div className="fixed inset-0 z-99999 flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md">
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white border border-slate-200 w-full max-w-lg rounded-3xl p-6 text-slate-900 shadow-2xl relative max-h-[85vh] overflow-y-auto">
               <button type="button" onClick={() => setShowAllOffersModal(false)} className="absolute top-4 right-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full h-8 w-8 flex items-center justify-center font-bold">✕</button>
               <h3 className="text-lg font-black text-slate-900 mb-1">🎁 All Running Route Offers</h3>
@@ -1067,7 +1067,7 @@ Hello! I am interested in booking an outstation trip:
 
       <AnimatePresence>
         {showInitialRatingModal && (
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md overflow-y-auto">
+          <div className="fixed inset-0 z-99999 flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md overflow-y-auto">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -1117,7 +1117,7 @@ Hello! I am interested in booking an outstation trip:
                     </a>
                   </div>
 
-                  <div className="bg-gradient-to-r from-orange-600 to-amber-500 text-white p-4 rounded-2xl text-center w-full sm:w-1/2 shadow-lg">
+                  <div className="bg-linear-to-r from-orange-600 to-amber-500 text-white p-4 rounded-2xl text-center w-full sm:w-1/2 shadow-lg">
                     <span className="text-[9px] font-black uppercase tracking-wider block">INSTANT DISCOUNT</span>
                     <div className="text-2xl sm:text-3xl font-black tracking-tighter mt-0.5">₹200*</div>
                     <span className="text-[9px] font-bold block opacity-90">ON YOUR BOOKING</span>
@@ -1169,7 +1169,7 @@ Hello! I am interested in booking an outstation trip:
 
       <AnimatePresence>
         {showPopup && popupData && (
-          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-950/85 p-0 sm:p-4 backdrop-blur-md overflow-y-auto">
+          <div className="fixed inset-0 z-999 flex items-center justify-center bg-slate-950/85 p-0 sm:p-4 backdrop-blur-md overflow-y-auto">
             <motion.div
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -1207,7 +1207,7 @@ Hello! I am interested in booking an outstation trip:
                 const minsNum = mins % 60;
 
                 return (
-                  <div className="bg-slate-950/60 px-3 sm:px-6 py-2.5 border-b border-slate-800 flex items-center justify-between text-xs font-bold text-slate-300 sticky top-[53px] z-20 backdrop-blur-md">
+                  <div className="bg-slate-950/60 px-3 sm:px-6 py-2.5 border-b border-slate-800 flex items-center justify-between text-xs font-bold text-slate-300 sticky top-13.25 z-20 backdrop-blur-md">
                     <div className="flex items-center gap-3 sm:gap-5 overflow-x-auto scrollbar-none whitespace-nowrap">
                       <span className="flex items-center gap-1.5 text-slate-200">
                         <span className="text-orange-400">📍</span> <strong>{dist} Kms</strong>
@@ -1255,7 +1255,7 @@ Hello! I am interested in booking an outstation trip:
                     <button
                       type="button"
                       onClick={handleConvertToRoundTrip}
-                      className="bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-xs uppercase tracking-widest px-8 py-4 rounded-2xl shadow-xl shadow-orange-600/30 transition"
+                      className="bg-linear-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-xs uppercase tracking-widest px-8 py-4 rounded-2xl shadow-xl shadow-orange-600/30 transition"
                     >
                       🔄 Book With Round Trip Fare
                     </button>
@@ -1327,7 +1327,7 @@ Hello! I am interested in booking an outstation trip:
                               <div className="text-right shrink-0">
                                 <div className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">Estimated Fare</div>
                                 <div className="text-xs sm:text-sm font-bold text-red-400 line-through">Rs. {strikePrice.toLocaleString("en-IN")}/-</div>
-                                <div className="bg-gradient-to-r from-orange-600 to-amber-500 text-white text-sm sm:text-xl font-black px-4 py-1.5 rounded-2xl shadow-lg inline-block tracking-tight mt-1">
+                                <div className="bg-linear-to-r from-orange-600 to-amber-500 text-white text-sm sm:text-xl font-black px-4 py-1.5 rounded-2xl shadow-lg inline-block tracking-tight mt-1">
                                   Rs. {opt.finalFare.toLocaleString("en-IN")}
                                 </div>
                               </div>
@@ -1362,7 +1362,7 @@ Hello! I am interested in booking an outstation trip:
                                   setPaymentSplitMode((p) => ({ ...p, [opt.id]: "half" }));
                                   setShowUserForm(true);
                                 }}
-                                className="bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-xs uppercase py-3 rounded-xl shadow-lg shadow-orange-600/30 transition text-center"
+                                className="bg-linear-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-xs uppercase py-3 rounded-xl shadow-lg shadow-orange-600/30 transition text-center"
                               >
                                 🚀 BOOK
                               </button>
@@ -1465,7 +1465,7 @@ Hello! I am interested in booking an outstation trip:
                             type="button"
                             onClick={() => selectedOption && handleOnlinePaymentCheckout(selectedOption)}
                             disabled={paymentLoadingId !== null}
-                            className="w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-xs uppercase tracking-widest py-4 rounded-2xl transition shadow-xl shadow-orange-600/30 disabled:opacity-50"
+                            className="w-full bg-linear-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-xs uppercase tracking-widest py-4 rounded-2xl transition shadow-xl shadow-orange-600/30 disabled:opacity-50"
                           >
                             {paymentLoadingId ? "Syncing..." : "Proceed to Pay"}
                           </button>
@@ -1482,7 +1482,7 @@ Hello! I am interested in booking an outstation trip:
 
       <AnimatePresence>
         {showTollModal && tollData && (
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md">
+          <div className="fixed inset-0 z-99999 flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md">
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-6 text-slate-100 shadow-2xl relative">
               <button onClick={() => setShowTollModal(false)} className="absolute top-4 right-4 bg-slate-800 hover:bg-slate-700 text-white rounded-full h-8 w-8 flex items-center justify-center">✕</button>
               <h3 className="text-lg font-black text-white mb-1">🛣️ Route Toll Breakdown</h3>
@@ -1508,7 +1508,7 @@ Hello! I am interested in booking an outstation trip:
                 ))}
               </div>
 
-              <button onClick={() => setShowTollModal(false)} className="w-full mt-5 bg-gradient-to-r from-orange-600 to-amber-500 text-white font-black text-xs uppercase tracking-wider py-3 rounded-xl shadow-lg">
+              <button onClick={() => setShowTollModal(false)} className="w-full mt-5 bg-linear-to-r from-orange-600 to-amber-500 text-white font-black text-xs uppercase tracking-wider py-3 rounded-xl shadow-lg">
                 Close
               </button>
             </motion.div>
@@ -1518,7 +1518,7 @@ Hello! I am interested in booking an outstation trip:
 
       <AnimatePresence>
         {showMapModal && popupData && (
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md">
+          <div className="fixed inset-0 z-99999 flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md">
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-3xl p-6 text-slate-100 shadow-2xl relative">
               <button onClick={() => setShowMapModal(false)} className="absolute top-4 right-4 bg-slate-800 hover:bg-slate-700 text-white rounded-full h-8 w-8 flex items-center justify-center">✕</button>
               <h3 className="text-lg font-black text-white mb-1">🗺️ Live Route Map Preview</h3>
@@ -1545,7 +1545,7 @@ Hello! I am interested in booking an outstation trip:
 
       <AnimatePresence>
         {successReceipt && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/85 p-3 backdrop-blur-md">
+          <div className="fixed inset-0 z-9999 flex items-center justify-center bg-slate-950/85 p-3 backdrop-blur-md">
             <motion.div initial={{ y: 20 }} animate={{ y: 0 }} className="w-full max-w-md overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl text-slate-100">
               <div className="bg-emerald-950/60 px-6 py-6 text-center border-b border-emerald-900/50">
                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 text-2xl text-emerald-400 border border-emerald-500/30">✓</div>
@@ -1557,8 +1557,8 @@ Hello! I am interested in booking an outstation trip:
                   <div className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-2">Invoice Summary</div>
                   <div className="flex justify-between"><span className="font-bold text-slate-400">Invoice ID:</span> <span className="text-white font-mono">{successReceipt.invoiceId}</span></div>
                   <div className="flex justify-between"><span className="font-bold text-slate-400">Vehicle:</span> <span className="text-white">{successReceipt.vehicle}</span></div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-400">Pickup:</span> <span className="truncate max-w-[180px] text-white">{successReceipt.pickup}</span></div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-400">Drop Point:</span> <span className="truncate max-w-[180px] text-white">{successReceipt.drop}</span></div>
+                  <div className="flex justify-between"><span className="font-bold text-slate-400">Pickup:</span> <span className="truncate max-w-45 text-white">{successReceipt.pickup}</span></div>
+                  <div className="flex justify-between"><span className="font-bold text-slate-400">Drop Point:</span> <span className="truncate max-w-45 text-white">{successReceipt.drop}</span></div>
                   <div className="flex justify-between"><span className="font-bold text-slate-400">Timeline:</span> <span className="text-white">{successReceipt.date} at {successReceipt.time}</span></div>
                   <div className="flex justify-between pt-3 border-t border-slate-800 font-black text-white text-sm">
                     <span>Amount Paid ({successReceipt.paymentMode}):</span> <span className="text-orange-400">₹{successReceipt.amount.toLocaleString("en-IN")}</span>

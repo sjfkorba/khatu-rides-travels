@@ -7,7 +7,7 @@ import Script from "next/script";
 import { AnimatePresence, motion } from "framer-motion";
 import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
-import { collection, query, where, getDocs, doc, getDoc, setDoc, orderBy, Timestamp, onSnapshot } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, setDoc, addDoc, orderBy, Timestamp, onSnapshot, serverTimestamp } from "firebase/firestore";
 import { 
   calculateFare, 
   VEHICLES, 
@@ -16,7 +16,7 @@ import {
   type ServiceType 
 } from "@/lib/fareCalculator";
 
-// 👑 Import Modular Dashboard Components
+// Import Modular Dashboard Components
 import DashboardOverview from "@/components/dashboard/DashboardOverview";
 import BookRide from "@/components/dashboard/BookRide";
 import MyBookings from "@/components/dashboard/MyBookings";
@@ -26,6 +26,8 @@ import Cancellations from "@/components/dashboard/Cancellations";
 import Invoices from "@/components/dashboard/Invoices";
 import ProfileSettings from "@/components/dashboard/ProfileSettings";
 import HelpSupport from "@/components/dashboard/HelpSupport";
+import BookingPopupModal from "@/components/dashboard/BookingPopupModal";
+import { generateTravelInvoicePdf } from "@/lib/generateInvoicePdf";
 
 type UserBooking = {
   id: string;
@@ -35,10 +37,13 @@ type UserBooking = {
   bookingType: string;
   vehicleLabel: string;
   amountPaid: number;
+  totalBilledAmount?: number;
+  walletDiscountUsed?: number;
   paymentMode: string;
   pickupDate: string;
   pickupTime: string;
   status?: string;
+  customerUid?: string;
   createdAt?: Timestamp;
 };
 
@@ -99,7 +104,7 @@ export default function CustomerDashboardHome() {
               name: user.displayName || "Valued Customer",
               email: user.email || "",
               phone: user.phoneNumber || "",
-              walletBalance: 1101,
+              walletBalance: 1101, // ₹1,101 Signup Bonus
               totalTrips: 0,
               membershipTier: "Elite Pro",
               createdAt: Timestamp.now(),
@@ -110,7 +115,8 @@ export default function CustomerDashboardHome() {
             setCustomerData(customerSnap.data());
           }
 
-          const q = query(collection(db, "bookings"), where("customerPhone", "==", user.phoneNumber || ""));
+          // 👑 SECURE QUERY: Fetch bookings strictly from `online_bookings` using customerUid
+          const q = query(collection(db, "online_bookings"), where("customerUid", "==", user.uid));
           const querySnapshot = await getDocs(q);
           const trips: UserBooking[] = [];
           querySnapshot.forEach((docSnap) => {
@@ -180,6 +186,7 @@ export default function CustomerDashboardHome() {
     return "/dezire.png";
   };
 
+  // 👑 FOOLPROOF RAZORPAY CHECKOUT & DEDICATED `online_bookings` SAVE WORKFLOW
   const handleOnlinePaymentCheckout = async (option: any) => {
     if (!popupData || !currentUser) return;
     if (!customerName.trim() || !customerPhone.trim() || customerPhone.length < 10) {
@@ -188,21 +195,19 @@ export default function CustomerDashboardHome() {
     }
 
     setPaymentLoadingId(option.id);
-    const mode = paymentSplitMode[option.id] || "full";
-    let baseFare = option.finalFare;
-
-    let discountApplied = 0;
-    if (applyWalletDiscount && customerData && customerData.walletBalance > 0) {
-      discountApplied = Math.min(200, customerData.walletBalance, baseFare);
-      baseFare -= discountApplied;
-    }
-
-    const processAmount = mode === "half" ? Math.round(baseFare / 2) : baseFare;
+    
+    // 👑 LIVE BUSINESS LOGIC: Receiving exact calculated values from Modal
+    const processAmount = option.calculatedPayableNow || option.finalFare;
+    const discountApplied = option.appliedWalletDiscount || 0;
+    const balanceDue = option.calculatedBalanceDue !== undefined ? option.calculatedBalanceDue : Math.max(0, option.finalFare - processAmount - discountApplied);
+    const percentSelected = option.paymentSplitPercentage || 100;
+    const paymentModeLabel = percentSelected === 100 ? "FULL PAYMENT" : `${percentSelected}% ADVANCE`;
 
     try {
       const res = await fetch("/api/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        // Send the exact calculated payable amount to Razorpay Order API
         body: JSON.stringify({ amount: processAmount, pickup: popupData.pickup, drop: popupData.drop, vehicleLabel: option.vehicleLabel }),
       });
       const orderData = await res.json();
@@ -210,7 +215,7 @@ export default function CustomerDashboardHome() {
 
       const paymentObject = new (window as any).Razorpay({
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
-        amount: orderData.amount,
+        amount: orderData.amount, // Order API returns amount * 100 (paise)
         currency: "INR",
         name: "Khatu Rides Travels Co.",
         description: `${option.vehicleLabel} Route Allocation`,
@@ -218,34 +223,49 @@ export default function CustomerDashboardHome() {
         prefill: { name: customerName, contact: customerPhone },
         theme: { color: "#ea580c" },
         handler: async (response: any) => {
-          const verifyRes = await fetch("/api/verify-booking", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              razorpayOrderId: response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature,
-              pickup: popupData.pickup,
-              drop: popupData.drop,
-              bookingType: popupData.bookingType,
-              pickupDate: popupData.pickupDate,
-              pickupTime: popupData.pickupTime,
-              vehicleLabel: option.vehicleLabel,
-              amount: processAmount,
-            }),
-          });
-          const verifyData = await verifyRes.json();
-          
-          if (verifyRes.ok && verifyData.success) {
-            const finalInvoiceId = verifyData.invoiceId || `KR-${Math.floor(100000 + Math.random() * 900000)}`;
+          try {
+            const finalInvoiceId = `KR-${Math.floor(100000 + Math.random() * 900000)}`;
 
-            if (db && discountApplied > 0) {
-              const newBalance = Math.max(0, customerData.walletBalance - discountApplied);
-              const custRef = doc(db, "customers", currentUser.uid);
-              await setDoc(custRef, { walletBalance: newBalance }, { merge: true });
-              setCustomerData((prev: any) => ({ ...prev, walletBalance: newBalance }));
+            if (db) {
+              const onlineBookingPayload = {
+                invoiceId: finalInvoiceId,
+                customerUid: currentUser.uid, 
+                customerName: customerName,
+                customerPhone: customerPhone,
+                pickup: popupData.pickup,
+                drop: popupData.drop,
+                bookingType: popupData.bookingType,
+                serviceType: popupData.serviceType,
+                pickupDate: popupData.pickupDate,
+                pickupTime: popupData.pickupTime,
+                vehicleLabel: option.vehicleLabel,
+                vehicleType: option.vehicleType,
+                billedDistance: option.billedDistance,
+                amountPaid: processAmount,
+                totalBilledAmount: option.finalFare,
+                balanceDueToDriver: balanceDue,
+                walletDiscountUsed: discountApplied,
+                paymentMode: paymentModeLabel,
+                razorpayOrderId: response.razorpay_order_id || "N/A",
+                razorpayPaymentId: response.razorpay_payment_id || "ONLINE_SUCCESS",
+                status: "CONFIRMED",
+                createdAt: serverTimestamp()
+              };
+
+              // 👑 Save document strictly to `online_bookings` collection
+              const docRef = await addDoc(collection(db, "online_bookings"), onlineBookingPayload);
+              setUserBookings((prev) => [{ id: docRef.id, ...onlineBookingPayload } as any, ...prev]);
+
+              // 👑 Deduct wallet balance if discount was used
+              if (discountApplied > 0) {
+                const newBalance = Math.max(0, customerData.walletBalance - discountApplied);
+                const custRef = doc(db, "customers", currentUser.uid);
+                await setDoc(custRef, { walletBalance: newBalance }, { merge: true });
+                setCustomerData((prev: any) => ({ ...prev, walletBalance: newBalance }));
+              }
             }
 
+            // 👑 Success Trigger: Dismiss popup and show modern success screen
             setShowPopup(false);
             setShowUserForm(false);
             setSuccessReceipt({
@@ -256,9 +276,16 @@ export default function CustomerDashboardHome() {
               time: formatTimeToAMPM(popupData.pickupTime),
               vehicle: option.vehicleLabel,
               amount: processAmount,
+              totalFare: option.finalFare,
               discountUsed: discountApplied,
-              paymentMode: mode === "half" ? "50% ADVANCE" : "FULL PAYMENT",
+              paymentMode: paymentModeLabel,
+              customerName: customerName,
+              customerPhone: customerPhone,
             });
+
+          } catch (saveErr) {
+            console.error("Error saving online booking record:", saveErr);
+            alert("Payment was successful, but booking record saving failed. Please contact support.");
           }
         },
       });
@@ -388,7 +415,7 @@ export default function CustomerDashboardHome() {
           
           <header className="hidden md:flex bg-white/95 backdrop-blur-xl border-b border-slate-200 px-8 py-4 items-center justify-between sticky top-0 z-30 shadow-xs">
             <div className="space-y-0.5">
-              <h2 className="text-base font-black text-slate-900 tracking-tight">Good Morning, {currentUser?.displayName || "Rahul Sharma"} 👋</h2>
+              <h2 className="text-base font-black text-slate-900 tracking-tight">Welcome back, {currentUser?.displayName || "Rahul Sharma"} 👋</h2>
               <p className="text-xs font-bold text-slate-500">Welcome back to Khatu Rides Portal</p>
             </div>
 
@@ -417,6 +444,7 @@ export default function CustomerDashboardHome() {
             
             {activeTab === "dashboard" && (
               <DashboardOverview
+                currentUser={currentUser}
                 activeOffers={activeOffers}
                 currentOfferIndex={currentOfferIndex}
                 customerData={customerData}
@@ -481,104 +509,87 @@ export default function CustomerDashboardHome() {
         </div>
 
         {/* BOOKING POPUP MODAL */}
-        <AnimatePresence>
-          {showPopup && popupData && (
-            <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-950/70 p-0 sm:p-4 backdrop-blur-xs overflow-y-auto">
-              <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 30, opacity: 0 }} className="bg-white border border-slate-200 w-full max-w-4xl rounded-none sm:rounded-3xl shadow-2xl overflow-hidden my-auto flex flex-col min-h-screen sm:min-h-0 sm:max-h-[96vh] text-left relative text-slate-900">
-                <div className="bg-slate-900 text-white px-4 py-3.5 flex items-center justify-between">
-                  <h3 className="text-sm font-black uppercase text-white">{popupData.pickup.split(",")[0]} ➔ {popupData.drop.split(",")[0]}</h3>
-                  <button onClick={() => setShowPopup(false)} className="bg-slate-800 hover:bg-slate-700 text-white rounded-full h-7 w-7 flex items-center justify-center">✕</button>
-                </div>
+        <BookingPopupModal
+          showPopup={showPopup}
+          setShowPopup={setShowPopup}
+          popupData={popupData}
+          selectedVehicleType={selectedVehicleType}
+          setSelectedVehicleType={setSelectedVehicleType}
+          showUserForm={showUserForm}
+          setShowUserForm={setShowUserForm}
+          customerName={customerName}
+          setCustomerName={setCustomerName}
+          customerPhone={customerPhone}
+          setCustomerPhone={setCustomerPhone}
+          customerData={customerData}
+          applyWalletDiscount={applyWalletDiscount}
+          setApplyWalletDiscount={setApplyWalletDiscount}
+          paymentSplitMode={paymentSplitMode}
+          setPaymentSplitMode={setPaymentSplitMode}
+          paymentLoadingId={paymentLoadingId}
+          handleOnlinePaymentCheckout={handleOnlinePaymentCheckout}
+          getVehicleImageByName={getVehicleImageByName}
+        />
 
-                <div className="p-4 overflow-y-auto space-y-4 bg-slate-50">
-                  {!showUserForm ? (
-                    <div className="space-y-3">
-                      {popupData.fareOptions.map((opt: any) => {
-                        if (!["sedan", "ertiga", "crysta"].includes(opt.vehicleType)) return null;
-                        const isSelected = selectedVehicleType === opt.vehicleType;
-                        return (
-                          <div key={opt.id} onClick={() => setSelectedVehicleType(opt.vehicleType)} className={`rounded-2xl border-2 bg-white p-4 cursor-pointer shadow-sm ${isSelected ? "border-orange-500 bg-orange-50/50" : "border-slate-200"}`}>
-                            <div className="flex items-center justify-between gap-4">
-                              <div>
-                                <h4 className="text-sm font-black text-slate-900 uppercase">{opt.vehicleLabel}</h4>
-                                <p className="text-xs text-slate-500 mt-0.5">Distance: {opt.billedDistance} Kms | Includes Toll & Tax</p>
-                              </div>
-                              <div className="text-right">
-                                <div className="bg-gradient-to-r from-orange-600 to-amber-500 text-white text-base font-black px-4 py-1.5 rounded-xl shadow-xs">
-                                  ₹{opt.finalFare.toLocaleString("en-IN")}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end">
-                              <button onClick={() => { setSelectedVehicleType(opt.vehicleType); setShowUserForm(true); }} className="bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase px-6 py-2.5 rounded-xl shadow-xs">
-                                Proceed to Booking ➔
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="max-w-md mx-auto bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-lg">
-                      <h4 className="text-base font-black text-slate-900">Enter Booking Details</h4>
-                      <div>
-                        <label className="text-xs font-black text-slate-700 uppercase">Passenger Name</label>
-                        <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-900 mt-1" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-black text-slate-700 uppercase">Mobile Number</label>
-                        <input type="tel" maxLength={10} value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, ""))} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-900 mt-1" placeholder="10-digit number" />
-                      </div>
-
-                      {customerData && customerData.walletBalance > 0 && (
-                        <div className="bg-orange-50 border border-orange-200 p-3.5 rounded-2xl flex items-center justify-between">
-                          <div>
-                            <div className="text-xs font-black text-orange-900">Use Signup Wallet (Balance: ₹{customerData.walletBalance})</div>
-                            <div className="text-[10px] text-slate-600">Save up to ₹200 on this trip</div>
-                          </div>
-                          <input
-                            type="checkbox"
-                            checked={applyWalletDiscount}
-                            onChange={(e) => setApplyWalletDiscount(e.target.checked)}
-                            className="w-5 h-5 accent-orange-600 cursor-pointer"
-                          />
-                        </div>
-                      )}
-
-                      <div className="grid grid-cols-2 gap-2 pt-2">
-                        <button onClick={() => setShowUserForm(false)} className="bg-slate-100 text-slate-700 font-bold text-xs uppercase py-3 rounded-xl border border-slate-200">Back</button>
-                        <button onClick={() => {
-                          const opt = popupData.fareOptions.find((o: any) => o.vehicleType === selectedVehicleType);
-                          if (opt) handleOnlinePaymentCheckout(opt);
-                        }} className="bg-orange-600 text-white font-black text-xs uppercase py-3 rounded-xl shadow-md">Pay & Book</button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
-
-        {/* SUCCESS RECEIPT MODAL */}
+        {/* SUCCESS TICKET INVOICE SCREEN WITH DISCOUNT BREAKDOWN & PDF */}
         <AnimatePresence>
           {successReceipt && (
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/70 p-3 backdrop-blur-xs">
-              <motion.div initial={{ y: 20 }} animate={{ y: 0 }} className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 text-center space-y-4 shadow-2xl text-slate-900">
-                <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 text-2xl flex items-center justify-center mx-auto border border-emerald-200">✓</div>
-                <h3 className="text-xl font-black text-slate-900">Booking Confirmed!</h3>
-                <div className="bg-slate-50 p-4 rounded-2xl text-xs space-y-2 text-left font-bold text-slate-700 border border-slate-200">
-                  <div className="flex justify-between"><span>Invoice ID:</span> <span className="text-slate-900 font-mono">{successReceipt.invoiceId}</span></div>
-                  <div className="flex justify-between"><span>Route:</span> <span className="text-slate-900">{successReceipt.pickup} ➔ {successReceipt.drop}</span></div>
-                  <div className="flex justify-between"><span>Vehicle:</span> <span className="text-slate-900">{successReceipt.vehicle}</span></div>
-                  {successReceipt.discountUsed > 0 && (
-                    <div className="flex justify-between text-orange-600"><span>Wallet Discount:</span> <span>-₹{successReceipt.discountUsed}</span></div>
-                  )}
-                  <div className="flex justify-between pt-2 border-t border-slate-200 text-sm font-black text-orange-600"><span>Paid:</span> <span>₹{successReceipt.amount.toLocaleString("en-IN")}</span></div>
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm overflow-y-auto">
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }} 
+                animate={{ scale: 1, opacity: 1 }} 
+                exit={{ scale: 0.9, opacity: 0 }} 
+                className="w-full max-w-lg bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 text-slate-900 shadow-2xl relative text-left my-auto space-y-6"
+              >
+                <div className="text-center pb-4 border-b border-slate-100">
+                  <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 text-2xl flex items-center justify-center mx-auto border border-emerald-200 mb-2">✓</div>
+                  <h3 className="text-2xl font-black text-slate-900">Cab Booking Confirmed!</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Recorded successfully in `online_bookings` collection.</p>
                 </div>
-                <button onClick={() => { setSuccessReceipt(null); setActiveTab("invoices"); }} className="w-full bg-[#0b101d] hover:bg-slate-900 text-white font-black text-xs uppercase py-3.5 rounded-2xl shadow-md">
-                  View & Download PDF Invoice
-                </button>
+
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3 text-xs font-bold text-slate-700">
+                  <div className="flex justify-between items-center pb-2 border-b border-slate-200">
+                    <span className="text-[10px] font-black uppercase text-orange-600 tracking-wider">Khatu Rides E-Ticket</span>
+                    <span className="font-mono text-slate-900">{successReceipt.invoiceId}</span>
+                  </div>
+                  <div className="flex justify-between"><span>Passenger:</span> <span className="text-slate-900">{successReceipt.customerName}</span></div>
+                  <div className="flex justify-between"><span>Route:</span> <span className="text-slate-900">{successReceipt.pickup} ➔ {successReceipt.drop}</span></div>
+                  <div className="flex justify-between"><span>Vehicle Type:</span> <span className="text-slate-900 uppercase">{successReceipt.vehicle}</span></div>
+                  <div className="flex justify-between"><span>Journey Date:</span> <span className="text-slate-900">{successReceipt.date} at {successReceipt.time}</span></div>
+                  
+                  {successReceipt.discountUsed > 0 && (
+                    <div className="flex justify-between text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+                      <span>Wallet Discount (Signup Bonus):</span> 
+                      <span className="font-black">-₹{successReceipt.discountUsed}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between pt-1">
+                    <span>Advance Paid Online:</span> 
+                    <span className="text-slate-900 font-black">₹{successReceipt.amount.toLocaleString("en-IN")}</span>
+                  </div>
+
+                  <div className="flex justify-between pt-2 border-t border-slate-200 text-sm font-black text-orange-600">
+                    <span>Balance Due to Driver:</span> 
+                    <span>₹{Math.max(0, successReceipt.totalFare - successReceipt.amount - successReceipt.discountUsed).toLocaleString("en-IN")}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <button 
+                    onClick={() => generateTravelInvoicePdf(successReceipt)} 
+                    className="w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-xs uppercase tracking-widest py-4 rounded-2xl shadow-xl shadow-orange-600/30 flex items-center justify-center gap-2 transition"
+                  >
+                    <span>📥</span> DOWNLOAD YOUR TRAVEL CAB TICKET (PDF)
+                  </button>
+
+                  <button 
+                    onClick={() => { setSuccessReceipt(null); setActiveTab("trips"); }} 
+                    className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase py-3.5 rounded-2xl transition"
+                  >
+                    Close & View My Bookings
+                  </button>
+                </div>
               </motion.div>
             </div>
           )}

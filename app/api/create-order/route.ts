@@ -2,36 +2,51 @@
 import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
 
-export const dynamic = "force-dynamic";
-
 const razorpay = new Razorpay({
-  key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
+  key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "",
+  key_secret: process.env.RAZORPAY_KEY_SECRET || "",
 });
 
 export async function POST(req: Request) {
   try {
-    const { amount, pickup, drop, vehicleLabel } = await req.json();
+    const body = await req.json();
+    
+    // 👑 FIX: Extract 'amount' from the frontend payload
+    const { amount, pickup, drop, vehicleLabel } = body;
 
-    if (!amount) {
-      return NextResponse.json({ error: "Amount required" }, { status: 400 });
+    // Safety Check: Agar amount nahi aaya ya galat hai, toh error return karein
+    if (!amount || isNaN(amount) || amount <= 0) {
+      return NextResponse.json(
+        { success: false, error: "Invalid payment amount received." },
+        { status: 400 }
+      );
     }
 
     const options = {
-      amount: Math.round(amount * 100), // convert rupees to paise
+      // 👑 FIX: Dynamic amount dynamically converted to Paise
+      amount: Math.round(amount * 100), 
       currency: "INR",
-      receipt: `rec_${Date.now()}`,
+      receipt: `receipt_${Date.now()}`,
       notes: {
-        pickup_loc: pickup.substring(0, 50),
-        drop_loc: drop.substring(0, 50),
-        vehicle: vehicleLabel,
+        pickup: pickup || "N/A",
+        drop: drop || "N/A",
+        vehicle: vehicleLabel || "N/A",
       },
     };
 
     const order = await razorpay.orders.create(options);
-    return NextResponse.json({ orderId: order.id, amount: order.amount });
+
+    return NextResponse.json({
+      success: true,
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+    });
   } catch (error: any) {
-    console.error("Razorpay Order Error:", error);
-    return NextResponse.json({ error: error.message || "Order creation failed" }, { status: 500 });
+    console.error("Razorpay Order Creation Error:", error);
+    return NextResponse.json(
+      { success: false, error: error.message || "Order creation failed" },
+      { status: 500 }
+    );
   }
 }
