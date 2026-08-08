@@ -220,7 +220,7 @@ export function calculateFare({
   if (finalServiceType === "local") {
     const localPackages: Record<string, { baseFare: number; rate: number }> = {
       sedan: { baseFare: 1200, rate: 11 },
-      ertiga: { baseFare: 1500, rate: 12 },
+      ertiga: { baseFare: 1500, rate: 14 },
       crysta: { baseFare: 2200, rate: 14 },
     };
     const pack = localPackages[vehicleType];
@@ -277,16 +277,16 @@ export function calculateFare({
   if (lowerDrop.includes("ambikapur") && showKms <200) {
     routeCustomMultiplier = 1.25; // Drop is Ambikapur
   } else if (lowerDrop.includes("ambikapur") && showKms > 200) {
-    routeCustomMultiplier = 1.05; // drop is Ambikapur
+    routeCustomMultiplier = 1.10; // drop is Ambikapur
   }
   else if (lowerPickup.includes("ambikapur")) {
     routeCustomMultiplier = 1.05; // Pickup is Ambikapur
   }
 
   if (bookingType === "oneway") {
-    if (showKms >= 39 && showKms < 70) {
+    if (showKms >= 39 && showKms < 50) {
       if (vehicleType === "sedan") {
-        currentMultiplier = 1.25;
+        currentMultiplier = 1.35;
         ratePerKm = VEHICLES.sedan.baseRatePerKm; 
       } else if (vehicleType === "ertiga") {
         currentMultiplier = 1.30;
@@ -296,7 +296,7 @@ export function calculateFare({
         ratePerKm = VEHICLES.crysta.baseRatePerKm; 
       }
     }
-    else if (showKms >= 70 && showKms <= 100) {
+    else if (showKms >= 50 && showKms <= 100) {
       if (vehicleType === "sedan") {
         currentMultiplier = 2.10;
         ratePerKm = 12.00; 
@@ -310,8 +310,8 @@ export function calculateFare({
     }
     else if (showKms >= 100 && showKms <= 150) {
       if (vehicleType === "sedan") {
-        currentMultiplier = 1.74;
-        ratePerKm = 11.00; 
+        currentMultiplier = 1.05;
+        ratePerKm = 20.00; 
       } else if (vehicleType === "ertiga") {
         currentMultiplier = 1.90;
         ratePerKm = 13.00; 
@@ -322,49 +322,49 @@ export function calculateFare({
     }
     else if (showKms >= 150 && showKms <= 260) {
       if (vehicleType === "sedan") {
-        currentMultiplier = 1.30;
-        ratePerKm = 11.00; 
+        currentMultiplier = 1.40;
+        ratePerKm = 12.00; 
       } else if (vehicleType === "ertiga") {
         currentMultiplier = 1.45;
-        ratePerKm = 13.00; 
+        ratePerKm = 14.00; 
       } else if (vehicleType === "crysta") {
         currentMultiplier = 1.15;
-        ratePerKm = 20.00; 
+        ratePerKm = 19.50; 
       }
     }
     else if (showKms > 260 && showKms <= 350) {
       if (vehicleType === "sedan") {
-        currentMultiplier = 1.25;
-        ratePerKm = 11.00; 
+        currentMultiplier = 1.45;
+        ratePerKm = 12.00; 
       } else if (vehicleType === "ertiga") {
-        currentMultiplier = 1.30;
-        ratePerKm = 13.00; 
-      } else if (vehicleType === "crysta") {
-        currentMultiplier = 1.25;
-        ratePerKm = 20.00; 
-      }
-    }
-    else if (showKms > 300 && showKms <= 600) {
-      if (vehicleType === "sedan") {
-        currentMultiplier = 1.35;
-        ratePerKm = 11.00; 
-      } else if (vehicleType === "ertiga") {
-        currentMultiplier = 1.55;
-        ratePerKm = 13.00; 
+        currentMultiplier = 1.40;
+        ratePerKm = 14.00; 
       } else if (vehicleType === "crysta") {
         currentMultiplier = 1.40;
         ratePerKm = 20.00; 
       }
     }
+    else if (showKms > 300 && showKms <= 600) {
+      if (vehicleType === "sedan") {
+        currentMultiplier = 1.60;
+        ratePerKm = 12.00; 
+      } else if (vehicleType === "ertiga") {
+        currentMultiplier = 1.85;
+        ratePerKm = 14.00; 
+      } else if (vehicleType === "crysta") {
+        currentMultiplier = 1.65;
+        ratePerKm = 20.00; 
+      }
+    }
     else {
       if (vehicleType === "sedan") {
-        currentMultiplier = 1.05;
+        currentMultiplier = 1.75;
         ratePerKm = 11.00; 
       } else if (vehicleType === "ertiga") {
-        currentMultiplier = 1.20;
+        currentMultiplier = 1.75;
         ratePerKm = 13.00; 
       } else if (vehicleType === "crysta") {
-        currentMultiplier = 1.05;
+        currentMultiplier = 1.45;
         ratePerKm = 20.00; 
       }
     }

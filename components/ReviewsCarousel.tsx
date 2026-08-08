@@ -195,10 +195,10 @@ export default function ReviewsCarousel() {
 
         <div className="mt-4 flex items-center justify-center gap-3">
           <span className="text-2xl font-extrabold text-amber-500 sm:text-3xl">
-            4.9 ★★★★★
+            4.6 ★★★★★
           </span>
           <span className="text-sm font-bold text-slate-600 sm:text-base">
-            (2,500+ Happy Intercity Journeys)
+            (2,500+ Happy Online & Offline Customers)
           </span>
         </div>
       </div>
