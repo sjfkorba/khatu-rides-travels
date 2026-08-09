@@ -20,6 +20,7 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, Firestore, doc, getDoc, setDoc } from "firebase/firestore";
 import { onAuthStateChanged, User, signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
+import SlidingTicker from "@/components/SlidingTicker";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -697,58 +698,12 @@ Hello! I am interested in booking an outstation trip:
       </div>
 
     </div>
+    <SlidingTicker></SlidingTicker>
 
 
-    {/* ================= MOBILE SERVICE BAR ================= */}
-    <div className="pb-2 md:hidden">
 
-      <div className="
-        flex items-center justify-between
-        rounded-xl border border-orange-100
-        bg-gradient-to-r from-orange-50 via-white to-amber-50
-        px-3 py-2
-      ">
 
-        <div className="flex items-center gap-2">
-
-          <div className="
-            flex h-7 w-7 items-center justify-center
-            rounded-lg bg-orange-100
-          ">
-            🚕
-          </div>
-
-          <div className="leading-none">
-            <p className="text-[8px] font-bold uppercase tracking-wider text-slate-400">
-              Khatu Rides
-            </p>
-
-            <p className="mt-0.5 text-[11px] font-black text-slate-900">
-              One Way Taxi Service
-            </p>
-          </div>
-
-        </div>
-
-        <div className="flex items-center gap-1">
-
-          <span className="text-[10px]">
-            ⭐
-          </span>
-
-          <span className="text-[10px] font-black text-slate-900">
-            4.6
-          </span>
-
-          <span className="text-[9px] text-slate-400">
-            Google
-          </span>
-
-        </div>
-
-      </div>
-
-    </div>
+    
 
   </div>
 </header>
@@ -883,131 +838,314 @@ Hello! I am interested in booking an outstation trip:
 
 </section>
 
-        {/* 👑 HERO + FULLSCREEN FARE CALCULATOR */}
+{/* 👑 HIGH-CONVERSION HERO + FARE CALCULATOR */}
 
-<section className="relative w-full bg-gradient-to-b from-white via-orange-50/20 to-white">
+<section className="w-full bg-white">
 
-  {/* ================= HERO ================= */}
-  <div
-    className="
-      mx-auto flex
-      min-h-[calc(100dvh-150px)]
+  {/* =========================================================
+      🚕 HERO BOOKING CONVERSION AREA
+  ========================================================= */}
+  <div className="relative overflow-hidden">
+
+    {/* PREMIUM BACKGROUND */}
+    <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-white to-amber-50" />
+
+    {/* SOFT GLOW EFFECTS */}
+    <div className="
+      pointer-events-none
+      absolute
+      -right-24
+      -top-24
+      h-72
+      w-72
+      rounded-full
+      bg-orange-300/20
+      blur-3xl
+    " />
+
+    <div className="
+      pointer-events-none
+      absolute
+      -bottom-32
+      -left-24
+      h-72
+      w-72
+      rounded-full
+      bg-amber-300/20
+      blur-3xl
+    " />
+
+
+    <div className="
+      relative
+      mx-auto
+      flex
       max-w-7xl
       flex-col
-      justify-center
       px-4
-      py-8
+      pb-7
+      pt-6
       sm:px-6
+      sm:pb-10
+      sm:pt-10
       lg:px-8
-      lg:py-10
-    "
-  >
+    ">
 
-    <div className="mx-auto w-full max-w-4xl text-center">
+      {/* =====================================================
+          TOP BADGE
+      ===================================================== */}
+      <div className="mx-auto text-center">
 
-      {/* BRAND BADGE */}
-      <div
-        className="
-          mx-auto inline-flex items-center gap-2
+        <div className="
+          inline-flex
+          items-center
+          gap-2
           rounded-full
-          border border-orange-200
-          bg-orange-50
-          px-3.5 py-1.5
-          text-[9px] font-black uppercase
-          tracking-[0.18em]
-          text-orange-700
+          border
+          border-orange-200
+          bg-white/90
+          px-3.5
+          py-1.5
           shadow-sm
-          sm:text-[10px]
-        "
-      >
-        <span className="text-xs">⚡</span>
-        Chhattisgarh & MP's Best Cab Agency
+        ">
+
+          <span className="
+            flex
+            h-5
+            w-5
+            items-center
+            justify-center
+            rounded-full
+            bg-orange-100
+            text-[10px]
+          ">
+            ⚡
+          </span>
+
+          <span className="
+            text-[9px]
+            font-black
+            uppercase
+            tracking-[0.16em]
+            text-orange-700
+          ">
+            One Way Taxi • No Return Fare
+          </span>
+
+        </div>
+
       </div>
 
 
-      {/* HERO TITLE */}
-      <h1
-        className="
-          mt-5
-          text-4xl font-black
-          leading-[1.05]
-          tracking-tight
+      {/* =====================================================
+          HERO CONTENT
+      ===================================================== */}
+      <div className="
+        mx-auto
+        mt-4
+        w-full
+        max-w-4xl
+        text-center
+        sm:mt-5
+      ">
+
+        <h1 className="
+          text-[30px]
+          font-black
+          leading-[1.08]
+          tracking-[-0.04em]
           text-slate-950
-          sm:mt-6
-          sm:text-6xl
-          lg:text-7xl
-        "
-      >
-        Book Your Cab
-        <br />
+          sm:text-5xl
+          lg:text-6xl
+        ">
 
-        <span className="text-orange-600">
-          In Just 30 Seconds
-        </span>
-      </h1>
+          Book Your Cab
+          <br />
+
+          <span className="
+            bg-gradient-to-r
+            from-orange-600
+            via-orange-500
+            to-amber-500
+            bg-clip-text
+            text-transparent
+          ">
+            In Just 30 Seconds
+          </span>
+
+        </h1>
 
 
-      {/* DESCRIPTION */}
-      <p
-        className="
-          mx-auto mt-4
-          max-w-2xl
-          text-xs font-semibold
+        <p className="
+          mx-auto
+          mt-3
+          max-w-xl
+          text-[11px]
+          font-semibold
           leading-relaxed
           text-slate-500
-          sm:mt-5
           sm:text-sm
-          lg:text-base
-        "
-      >
-        Reliable rides. Transparent fares. Instant booking.
-        <br className="hidden sm:block" />
-        No hidden charges.
-      </p>
+        ">
+          Transparent fare. Verified drivers. Clean cars.
+          <br className="hidden sm:block" />
+          Book your ride directly with Khatu Rides.
+        </p>
 
 
-      {/* ================= CTA ================= */}
-      <div
-        className="
-          mx-auto mt-7
-          flex w-full max-w-xl
-          flex-col gap-3
-          sm:mt-8
-          sm:flex-row
-          sm:justify-center
-        "
-      >
+        {/* =====================================================
+            DIRECT CALL CTA
+        ===================================================== */}
+        <div className="
+          mx-auto
+          mt-5
+          w-full
+          max-w-xl
+        ">
 
-        {/* CALL */}
-        <a
-          href="tel:+919244137353"
-          className="
-            flex h-14
-            items-center justify-center gap-2
-            rounded-2xl
-            bg-slate-950
-            px-6
-            text-[10px]
-            font-black
-            uppercase
-            tracking-widest
-            text-white
-            shadow-lg
-            transition-all
-            duration-200
-            hover:-translate-y-0.5
-            hover:bg-slate-800
-            hover:shadow-xl
-            active:scale-[0.98]
-            sm:flex-1
-          "
-        >
-          <span className="text-base">📞</span>
-          <span>9244137353</span>
-        </a>
+          <a
+            href="tel:+919244137353"
+            className="
+              relative
+              flex
+              min-h-[68px]
+              w-full
+              items-center
+              justify-between
+              overflow-hidden
+              rounded-2xl
+              bg-gradient-to-r
+              from-slate-950
+              via-slate-900
+              to-slate-950
+              px-4
+              shadow-[0_12px_35px_rgba(15,23,42,0.22)]
+              ring-1
+              ring-slate-800
+            "
+          >
+
+            {/* ORANGE GLOW */}
+            <div className="
+              pointer-events-none
+              absolute
+              -right-8
+              top-1/2
+              h-24
+              w-24
+              -translate-y-1/2
+              rounded-full
+              bg-orange-600/25
+              blur-2xl
+            " />
 
 
-        {/* CHECK FARE */}
+            {/* PHONE ICON */}
+            <div className="
+              relative
+              flex
+              h-11
+              w-11
+              shrink-0
+              items-center
+              justify-center
+              rounded-xl
+              bg-gradient-to-br
+              from-orange-500
+              to-orange-700
+              text-xl
+              shadow-lg
+              shadow-orange-600/30
+            ">
+              📞
+            </div>
+
+
+            {/* PHONE DETAILS */}
+            <div className="
+              relative
+              min-w-0
+              flex-1
+              px-3
+              text-left
+            ">
+
+              <p className="
+                text-[8px]
+                font-black
+                uppercase
+                tracking-[0.16em]
+                text-orange-400
+              ">
+                Instant Booking
+              </p>
+
+              <p className="
+                mt-0.5
+                text-base
+                font-black
+                tracking-tight
+                text-white
+                sm:text-lg
+              ">
+                92441 37353
+              </p>
+
+            </div>
+
+
+            {/* CALL BUTTON */}
+            <div className="
+              relative
+              flex
+              min-h-[42px]
+              shrink-0
+              items-center
+              justify-center
+              gap-1.5
+              rounded-xl
+              bg-orange-600
+              px-3
+              text-[9px]
+              font-black
+              uppercase
+              tracking-wider
+              text-white
+              shadow-lg
+              shadow-orange-600/30
+              sm:px-5
+            ">
+              Call Now
+              <span>→</span>
+            </div>
+
+          </a>
+
+
+          {/* CALL TRUST LINE */}
+          <div className="
+            mt-2.5
+            flex
+            items-center
+            justify-center
+            gap-2
+            text-[8px]
+            font-bold
+            text-slate-400
+          ">
+            <span className="text-emerald-600">●</span>
+            Available 24×7
+            <span className="text-slate-300">•</span>
+            Instant Response
+            <span className="text-slate-300">•</span>
+            Direct Booking
+          </div>
+
+        </div>
+
+
+        {/* =====================================================
+            ONLINE BOOKING CTA
+        ===================================================== */}
         <button
           type="button"
           onClick={() => {
@@ -1017,66 +1155,125 @@ Hello! I am interested in booking an outstation trip:
             });
           }}
           className="
-            group
-            flex h-14
-            items-center justify-center gap-2
+            mx-auto
+            mt-4
+            flex
+            min-h-[52px]
+            w-full
+            max-w-xl
+            items-center
+            justify-center
+            gap-2
             rounded-2xl
-            bg-orange-600
-            px-6
+            border
+            border-orange-200
+            bg-gradient-to-r
+            from-orange-600
+            to-amber-500
+            px-5
             text-[10px]
             font-black
             uppercase
-            tracking-widest
+            tracking-[0.13em]
             text-white
-            shadow-lg
-            shadow-orange-600/20
-            transition-all
-            duration-200
-            hover:-translate-y-0.5
-            hover:bg-orange-700
-            hover:shadow-xl
-            hover:shadow-orange-600/30
-            active:scale-[0.98]
-            sm:flex-1
+            shadow-[0_10px_25px_rgba(234,88,12,0.22)]
           "
         >
-          <span className="text-base transition-transform duration-200 group-hover:translate-x-0.5">
-            🚀
+
+          <span className="text-base">
+            🚕
           </span>
 
           <span>
             Check Fare & Book Online
           </span>
+
+          <span className="ml-1">
+            →
+          </span>
+
         </button>
 
-      </div>
+
+        {/* =====================================================
+            MINI TRUST STRIP
+        ===================================================== */}
+        <div className="
+          mx-auto
+          mt-5
+          grid
+          max-w-2xl
+          grid-cols-3
+          gap-2
+        ">
+
+          <div className="
+            rounded-xl
+            border
+            border-slate-200
+            bg-white/80
+            px-2
+            py-2.5
+          ">
+            <p className="text-xs">🛡️</p>
+            <p className="
+              mt-1
+              text-[8px]
+              font-black
+              uppercase
+              tracking-wider
+              text-slate-700
+            ">
+              Verified
+            </p>
+          </div>
 
 
-      {/* SMALL TRUST LINE */}
-      <div
-        className="
-          mt-6
-          flex items-center justify-center
-          gap-3
-          text-[9px]
-          font-bold
-          uppercase
-          tracking-wider
-          text-slate-400
-          sm:mt-7
-        "
-      >
-        <span>✓ Transparent Fare</span>
+          <div className="
+            rounded-xl
+            border
+            border-slate-200
+            bg-white/80
+            px-2
+            py-2.5
+          ">
+            <p className="text-xs">💰</p>
+            <p className="
+              mt-1
+              text-[8px]
+              font-black
+              uppercase
+              tracking-wider
+              text-slate-700
+            ">
+              Fair Price
+            </p>
+          </div>
 
-        <span className="h-1 w-1 rounded-full bg-slate-300" />
 
-        <span>✓ Instant Confirmation</span>
+          <div className="
+            rounded-xl
+            border
+            border-slate-200
+            bg-white/80
+            px-2
+            py-2.5
+          ">
+            <p className="text-xs">🎧</p>
+            <p className="
+              mt-1
+              text-[8px]
+              font-black
+              uppercase
+              tracking-wider
+              text-slate-700
+            ">
+              24×7 Support
+            </p>
+          </div>
 
-        <span className="hidden h-1 w-1 rounded-full bg-slate-300 sm:block" />
+        </div>
 
-        <span className="hidden sm:block">
-          ✓ 24×7 Support
-        </span>
       </div>
 
     </div>
@@ -1085,109 +1282,138 @@ Hello! I am interested in booking an outstation trip:
 
 
   {/* =========================================================
-      🚕 FULL SCREEN FARE CALCULATOR
+      🚕 FARE CALCULATOR
   ========================================================= */}
-
   <div
     ref={calculatorSectionRef}
     className="
-      scroll-mt-[76px]
-      min-h-[calc(100dvh-76px)]
+      scroll-mt-[65px]
       w-full
-      bg-slate-50
-      px-3
-      py-4
+      bg-slate-950
+      px-2
+      py-5
       sm:px-5
-      sm:py-6
-      lg:px-8
+      sm:py-8
     "
   >
 
-    <div
-      className="
-        mx-auto
-        flex
-        min-h-[calc(100dvh-108px)]
-        w-full
-        max-w-7xl
-        flex-col
-      "
-    >
+    <div className="
+      mx-auto
+      w-full
+      max-w-7xl
+    ">
 
-      {/* CALCULATOR HEADER */}
-      <div
-        className="
-          mb-3
-          flex
-          items-center
-          justify-between
-          gap-3
-          sm:mb-4
-        "
-      >
+
+      {/* =====================================================
+          CALCULATOR HEADER
+      ===================================================== */}
+      <div className="
+        mb-4
+        flex
+        items-center
+        justify-between
+        gap-3
+        px-1
+        sm:px-0
+      ">
 
         <div>
-          <p
-            className="
+
+          <div className="
+            flex
+            items-center
+            gap-2
+          ">
+
+            <span className="
               text-[9px]
               font-black
               uppercase
               tracking-[0.18em]
-              text-orange-600
-            "
-          >
-            Khatu Rides
-          </p>
+              text-orange-400
+            ">
+              Khatu Rides
+            </span>
 
-          <h2
-            className="
-              mt-0.5
-              text-lg
-              font-black
-              tracking-tight
-              text-slate-950
-              sm:text-2xl
-            "
-          >
-            Check Best Fare & Cab
+            <span className="
+              h-1
+              w-1
+              rounded-full
+              bg-orange-500
+            " />
+
+            <span className="
+              text-[8px]
+              font-bold
+              uppercase
+              tracking-wider
+              text-slate-500
+            ">
+              Instant Booking
+            </span>
+
+          </div>
+
+
+          <h2 className="
+            mt-1
+            text-lg
+            font-black
+            tracking-tight
+            text-white
+            sm:text-2xl
+          ">
+            Check Your Best Fare
           </h2>
+
         </div>
 
 
-        {/* 24x7 BADGE */}
-        <div
-          className="
-            flex shrink-0
-            items-center gap-1.5
+        {/* 24x7 */}
+        <div className="
+          flex
+          shrink-0
+          items-center
+          gap-1.5
+          rounded-full
+          border
+          border-emerald-500/20
+          bg-emerald-500/10
+          px-2.5
+          py-1.5
+          text-[8px]
+          font-black
+          uppercase
+          tracking-wider
+          text-emerald-400
+        ">
+
+          <span className="
+            h-1.5
+            w-1.5
             rounded-full
-            border border-emerald-200
-            bg-emerald-50
-            px-3 py-1.5
-            text-[9px]
-            font-black
-            uppercase
-            tracking-wider
-            text-emerald-700
-          "
-        >
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            bg-emerald-400
+          " />
+
           24×7
+
         </div>
 
       </div>
 
 
-      {/* CALCULATOR */}
-      <div
-        className="
-          flex-1
-          rounded-3xl
-          border border-slate-200
-          bg-white
-          shadow-[0_10px_40px_rgba(15,23,42,0.08)]
-          overflow-hidden
-        "
-      >
+      {/* =====================================================
+          CALCULATOR CARD
+      ===================================================== */}
+      <div className="
+        overflow-hidden
+        rounded-[24px]
+        border
+        border-slate-200
+        bg-white
+        shadow-[0_20px_60px_rgba(0,0,0,0.25)]
+        sm:rounded-[30px]
+      ">
 
         <FareCalculator
           onFareCalculated={(data) => {
@@ -1237,13 +1463,56 @@ Hello! I am interested in booking an outstation trip:
               baseDistance: baseSingleRouteDist,
             };
 
+
             setPopupData(updatedData);
             setSelectedVehicleType("sedan");
             setShowPopup(true);
             setShowUserForm(false);
             setPaymentSplitMode({});
+
           }}
         />
+
+      </div>
+
+
+      {/* =====================================================
+          CALCULATOR BOTTOM TRUST
+      ===================================================== */}
+      <div className="
+        mt-3
+        flex
+        flex-wrap
+        items-center
+        justify-center
+        gap-x-4
+        gap-y-1
+        text-center
+      ">
+
+        <span className="
+          text-[8px]
+          font-bold
+          text-slate-500
+        ">
+          ✓ No Hidden Charges
+        </span>
+
+        <span className="
+          text-[8px]
+          font-bold
+          text-slate-500
+        ">
+          ✓ Verified Drivers
+        </span>
+
+        <span className="
+          text-[8px]
+          font-bold
+          text-slate-500
+        ">
+          ✓ Instant Confirmation
+        </span>
 
       </div>
 
