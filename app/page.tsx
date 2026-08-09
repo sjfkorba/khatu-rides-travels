@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import FareCalculator from "@/components/FareCalculator";
 import ReviewsCarousel from "@/components/ReviewsCarousel";
 import SeoTextBlock from "@/components/SeoTextBlock";
+import SlidingTicker from "@/components/SlidingTicker";
 import {
   calculateFare,
   VEHICLES,
@@ -20,7 +21,6 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, Firestore, doc, getDoc, setDoc } from "firebase/firestore";
 import { onAuthStateChanged, User, signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
-import SlidingTicker from "@/components/SlidingTicker";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -88,10 +88,10 @@ type SpecialOffer = {
 };
 
 const ROUTES = [
-  { from: "Raipur, Chhattisgarh", to: "Korba, Chhattisgarh", price: "₹3299", time: "~4h 30m", km: "250 KM", image: "/images/raipur-korba.png", },
-  { from: "Korba, Chhattisgarh", to: "Bilaspur, Chhattisgarh", price: "₹1899", time: "~2h 30m", km: "130 KM", image: "/images/korba-bilaspur.png", },
-  { from: "Bilaspur, Chhattisgarh", to: "Raipur, Chhattisgarh", price: "₹3299", time: "~4h 30m", km: "250 KM", image: "/images/korba-bilaspur.png", },
-  { from: "Raipur, Chhattisgarh", to: "Bhopal, Madhya Pradesh", price: "₹9999", time: "~7h 00m", km: "450 KM", image: "/banner6.png" },
+  { from: "Raipur, Chhattisgarh", to: "Korba, Chhattisgarh", price: "₹3299", time: "~4h 30m", km: "250 KM", image: "/banner6.png" },
+  { from: "Korba, Chhattisgarh", to: "Bilaspur, Chhattisgarh", price: "₹1899", time: "~2h 30m", km: "130 KM", image: "/banner6.png" },
+  { from: "Bilaspur, Chhattisgarh", to: "Raipur, Chhattisgarh", price: "₹3299", time: "~4h 30m", km: "250 KM", image: "/banner6.png" },
+  { from: "Raipur, Chhattisgarh", to: "Bhopal, Madhya Pradesh", price: "₹3499", time: "~7h 00m", km: "450 KM", image: "/banner6.png" },
 ];
 
 export default function HomePage() {
@@ -135,9 +135,6 @@ export default function HomePage() {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       setAuthChecking(false);
-      if (user) {
-        router.replace("/customer/home");
-      }
     });
 
     const timer = setTimeout(() => {
@@ -164,7 +161,7 @@ export default function HomePage() {
       unsubscribeAuth();
       if (unsubscribeOffers) unsubscribeOffers();
     };
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     if (activeOffers.length <= 1) return;
@@ -226,8 +223,8 @@ export default function HomePage() {
         phone: phoneInput.trim(),
         photoURL: user.photoURL || "",
         totalTrips: 0,
-        walletBalance: 0,
-        membershipTier: "Standard",
+        walletBalance: 1101, // 👑 Instant ₹1101 Wallet Bonus credited on signup
+        membershipTier: "Premium",
         createdAt: serverTimestamp(),
         lastLoginAt: serverTimestamp(),
       }, { merge: true });
@@ -515,2183 +512,789 @@ Hello! I am interested in booking an outstation trip:
 
       <main className="min-h-screen bg-[#F8FAFC] text-slate-900 pb-20 md:pb-0 font-sans selection:bg-orange-500 selection:text-white relative overflow-hidden">
         
-       {/* 👑 PREMIUM RESPONSIVE TOP NAVBAR */}
-<header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-xl shadow-[0_2px_15px_rgba(15,23,42,0.06)] select-none">
-
-  <div className="mx-auto max-w-7xl px-3 sm:px-5 lg:px-8">
-
-    {/* ================= MAIN NAVBAR ================= */}
-    <div className="flex h-[68px] items-center justify-between gap-2 sm:h-[76px]">
-
-      {/* LEFT — BRAND */}
-      <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-
-        {/* CALL BUTTON */}
-        <a
-          href="tel:+919244137353"
-          aria-label="Call Khatu Rides"
-          className="
-            group flex h-10 w-10 shrink-0 items-center justify-center
-            rounded-full border border-orange-200
-            bg-orange-50 text-orange-600
-            shadow-sm transition-all duration-200
-            hover:-translate-y-0.5 hover:bg-orange-100 hover:shadow-md
-            active:scale-95
-            sm:h-11 sm:w-11
-          "
-        >
-          <span className="text-lg transition-transform duration-200 group-hover:scale-110">
-            📞
-          </span>
-        </a>
-
-        {/* BRAND */}
-        <div className="min-w-0 leading-none">
-
-          <div className="flex items-baseline whitespace-nowrap">
-            <span className="text-[19px] font-black tracking-tight text-slate-950 sm:text-2xl">
-              Khatu
-            </span>
-
-            <span className="text-[19px] font-black tracking-tight text-orange-600 sm:text-2xl">
-              Rides
-            </span>
-          </div>
-
-          <div className="mt-1 flex items-center gap-1.5">
-            <span className="text-[7px] font-black uppercase tracking-[0.25em] text-slate-500 sm:text-[9px]">
-              Travels Co.
-            </span>
-
-            <span className="hidden h-1 w-1 rounded-full bg-orange-500 sm:block" />
-
-            <span className="hidden text-[8px] font-bold text-slate-400 sm:block">
-              24×7
-            </span>
-          </div>
-
-        </div>
-
-      </div>
-
-
-      {/* CENTER — SERVICE BADGE */}
-      <div className="hidden md:flex items-center justify-center">
-
-        <div className="
-          flex items-center gap-2
-          rounded-full border border-slate-200
-          bg-slate-50 px-4 py-2
-          shadow-sm
-        ">
-
-          <span className="
-            flex h-7 w-7 items-center justify-center
-            rounded-full bg-orange-100 text-sm
-          ">
-            🚕
-          </span>
-
-          <div className="flex flex-col">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Premium Cab Service
-            </span>
-
-            <span className="text-xs font-black text-slate-900">
-              One Way Taxi Service
-            </span>
-          </div>
-
-        </div>
-
-      </div>
-
-
-      {/* RIGHT — RATING + LOGIN */}
-      <div className="flex items-center gap-2 sm:gap-3">
-
-        {/* GOOGLE RATING */}
-        <a
-          href="https://g.page/r/CbD5nSIGmvz1EBM/review"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="View Google Reviews"
-          className="
-            group flex items-center gap-1.5
-            rounded-full border border-amber-200
-            bg-amber-50 px-2.5 py-1.5
-            transition-all duration-200
-            hover:border-amber-300 hover:bg-amber-100
-            hover:shadow-sm
-            sm:px-3
-          "
-        >
-
-          <span className="text-sm sm:text-base">
-            ⭐
-          </span>
-
-          <div className="flex flex-col leading-none">
-            <span className="text-[11px] font-black text-slate-900 sm:text-xs">
-              4.6
-            </span>
-
-            <span className="hidden text-[8px] font-bold uppercase tracking-wide text-slate-500 sm:block">
-              Google
-            </span>
-          </div>
-
-        </a>
-
-
-        {/* LOGIN / DASHBOARD */}
-        {currentUser ? (
-
-          <button
-            onClick={() => router.push("/customer/home")}
-            className="
-              flex items-center gap-2
-              rounded-full bg-emerald-600
-              px-3.5 py-2.5
-              text-[10px] font-black uppercase tracking-wider
-              text-white shadow-md
-              transition-all duration-200
-              hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-lg
-              active:scale-95
-              sm:px-5 sm:text-xs
-            "
-          >
-            <span className="text-sm">👤</span>
-            <span>Dashboard</span>
-          </button>
-
-        ) : (
-
-          <button
-            onClick={() => router.push("/login")}
-            className="
-              flex items-center gap-1.5
-              rounded-full
-              bg-orange-600
-              px-3.5 py-2.5
-              text-[10px] font-black uppercase tracking-wider
-              text-white shadow-md
-              transition-all duration-200
-              hover:-translate-y-0.5 hover:bg-orange-700 hover:shadow-lg
-              active:scale-95
-              sm:gap-2 sm:px-5 sm:text-xs
-            "
-          >
-            <span className="text-sm">👤</span>
-
-            <span className="hidden xs:inline sm:inline">
-              Login
-            </span>
-
-            <span className="hidden sm:inline">
-              / Signup
-            </span>
-          </button>
-
-        )}
-
-      </div>
-
-    </div>
-    <SlidingTicker></SlidingTicker>
-
-
-
-
-    
-
-  </div>
-</header>
-
-
-
-        
-
-      {/* 👑 PREMIUM TRUST & SAFETY STRIP */}
-<section className="mx-auto max-w-7xl px-3 py-4 sm:px-5 lg:px-8">
-
-  <div className="grid grid-cols-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:grid-cols-3">
-
-    {/* VERIFIED DRIVERS */}
-    <div className="
-      group flex items-center gap-3.5
-      border-b border-slate-100
-      px-4 py-4
-      transition-all duration-200
-      hover:bg-slate-50
-      sm:border-b-0 sm:border-r
-      sm:px-5
-    ">
-
-      <div className="
-        flex h-11 w-11 shrink-0 items-center justify-center
-        rounded-xl
-        bg-emerald-50
-        text-xl
-        ring-1 ring-emerald-100
-        transition-transform duration-200
-        group-hover:scale-105
-      ">
-        👨‍✈️
-      </div>
-
-      <div className="min-w-0">
-        <p className="text-xs font-black text-slate-950 sm:text-sm">
-          Verified Drivers
-        </p>
-
-        <p className="mt-0.5 text-[10px] font-medium text-slate-500">
-          Police Verified • Experienced
-        </p>
-      </div>
-
-      <span className="ml-auto text-emerald-500">
-        ✓
-      </span>
-
-    </div>
-
-
-    {/* TRUSTED SERVICE */}
-    <div className="
-      group flex items-center gap-3.5
-      border-b border-slate-100
-      px-4 py-4
-      transition-all duration-200
-      hover:bg-slate-50
-      sm:border-b-0 sm:border-r
-      sm:px-5
-    ">
-
-      <div className="
-        flex h-11 w-11 shrink-0 items-center justify-center
-        rounded-xl
-        bg-orange-50
-        text-xl
-        ring-1 ring-orange-100
-        transition-transform duration-200
-        group-hover:scale-105
-      ">
-        🛡️
-      </div>
-
-      <div className="min-w-0">
-        <p className="text-xs font-black text-slate-950 sm:text-sm">
-          10,000+ Trips
-        </p>
-
-        <p className="mt-0.5 text-[10px] font-medium text-slate-500">
-          Trusted Intercity Service
-        </p>
-      </div>
-
-      <span className="ml-auto text-orange-500">
-        ✓
-      </span>
-
-    </div>
-
-
-    {/* 24x7 SUPPORT */}
-    <div className="
-      group flex items-center gap-3.5
-      px-4 py-4
-      transition-all duration-200
-      hover:bg-slate-50
-      sm:px-5
-    ">
-
-      <div className="
-        flex h-11 w-11 shrink-0 items-center justify-center
-        rounded-xl
-        bg-blue-50
-        text-xl
-        ring-1 ring-blue-100
-        transition-transform duration-200
-        group-hover:scale-105
-      ">
-        🎧
-      </div>
-
-      <div className="min-w-0">
-        <p className="text-xs font-black text-slate-950 sm:text-sm">
-          24×7 Support
-        </p>
-
-        <p className="mt-0.5 text-[10px] font-medium text-slate-500">
-          Always Available
-        </p>
-      </div>
-
-      <span className="ml-auto text-blue-500">
-        ✓
-      </span>
-
-    </div>
-
-  </div>
-
-</section>
-
-{/* 👑 HIGH-CONVERSION HERO + FARE CALCULATOR */}
-
-<section className="w-full bg-white">
-
-  {/* =========================================================
-      🚕 HERO BOOKING CONVERSION AREA
-  ========================================================= */}
-  <div className="relative overflow-hidden">
-
-    {/* PREMIUM BACKGROUND */}
-    <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-white to-amber-50" />
-
-    {/* SOFT GLOW EFFECTS */}
-    <div className="
-      pointer-events-none
-      absolute
-      -right-24
-      -top-24
-      h-72
-      w-72
-      rounded-full
-      bg-orange-300/20
-      blur-3xl
-    " />
-
-    <div className="
-      pointer-events-none
-      absolute
-      -bottom-32
-      -left-24
-      h-72
-      w-72
-      rounded-full
-      bg-amber-300/20
-      blur-3xl
-    " />
-
-
-    <div className="
-      relative
-      mx-auto
-      flex
-      max-w-7xl
-      flex-col
-      px-4
-      pb-7
-      pt-6
-      sm:px-6
-      sm:pb-10
-      sm:pt-10
-      lg:px-8
-    ">
-
-      {/* =====================================================
-          TOP BADGE
-      ===================================================== */}
-      <div className="mx-auto text-center">
-
-        <div className="
-          inline-flex
-          items-center
-          gap-2
-          rounded-full
-          border
-          border-orange-200
-          bg-white/90
-          px-3.5
-          py-1.5
-          shadow-sm
-        ">
-
-          <span className="
-            flex
-            h-5
-            w-5
-            items-center
-            justify-center
-            rounded-full
-            bg-orange-100
-            text-[10px]
-          ">
-            ⚡
-          </span>
-
-          <span className="
-            text-[9px]
-            font-black
-            uppercase
-            tracking-[0.16em]
-            text-orange-700
-          ">
-            One Way Taxi • No Return Fare
-          </span>
-
-        </div>
-
-      </div>
-
-
-      {/* =====================================================
-          HERO CONTENT
-      ===================================================== */}
-      <div className="
-        mx-auto
-        mt-4
-        w-full
-        max-w-4xl
-        text-center
-        sm:mt-5
-      ">
-
-        <h1 className="
-          text-[30px]
-          font-black
-          leading-[1.08]
-          tracking-[-0.04em]
-          text-slate-950
-          sm:text-5xl
-          lg:text-6xl
-        ">
-
-          Book Your Cab
-          <br />
-
-          <span className="
-            bg-gradient-to-r
-            from-orange-600
-            via-orange-500
-            to-amber-500
-            bg-clip-text
-            text-transparent
-          ">
-            In Just 30 Seconds
-          </span>
-
-        </h1>
-
-
-        <p className="
-          mx-auto
-          mt-3
-          max-w-xl
-          text-[11px]
-          font-semibold
-          leading-relaxed
-          text-slate-500
-          sm:text-sm
-        ">
-          Transparent fare. Verified drivers. Clean cars.
-          <br className="hidden sm:block" />
-          Book your ride directly with Khatu Rides.
-        </p>
-
-
-        {/* =====================================================
-            DIRECT CALL CTA
-        ===================================================== */}
-        <div className="
-          mx-auto
-          mt-5
-          w-full
-          max-w-xl
-        ">
-
-          <a
-            href="tel:+919244137353"
-            className="
-              relative
-              flex
-              min-h-[68px]
-              w-full
-              items-center
-              justify-between
-              overflow-hidden
-              rounded-2xl
-              bg-gradient-to-r
-              from-slate-950
-              via-slate-900
-              to-slate-950
-              px-4
-              shadow-[0_12px_35px_rgba(15,23,42,0.22)]
-              ring-1
-              ring-slate-800
-            "
-          >
-
-            {/* ORANGE GLOW */}
-            <div className="
-              pointer-events-none
-              absolute
-              -right-8
-              top-1/2
-              h-24
-              w-24
-              -translate-y-1/2
-              rounded-full
-              bg-orange-600/25
-              blur-2xl
-            " />
-
-
-            {/* PHONE ICON */}
-            <div className="
-              relative
-              flex
-              h-11
-              w-11
-              shrink-0
-              items-center
-              justify-center
-              rounded-xl
-              bg-gradient-to-br
-              from-orange-500
-              to-orange-700
-              text-xl
-              shadow-lg
-              shadow-orange-600/30
-            ">
-              📞
-            </div>
-
-
-            {/* PHONE DETAILS */}
-            <div className="
-              relative
-              min-w-0
-              flex-1
-              px-3
-              text-left
-            ">
-
-              <p className="
-                text-[8px]
-                font-black
-                uppercase
-                tracking-[0.16em]
-                text-orange-400
-              ">
-                Instant Booking
-              </p>
-
-              <p className="
-                mt-0.5
-                text-base
-                font-black
-                tracking-tight
-                text-white
-                sm:text-lg
-              ">
-                92441 37353
-              </p>
-
-            </div>
-
-
-            {/* CALL BUTTON */}
-            <div className="
-              relative
-              flex
-              min-h-[42px]
-              shrink-0
-              items-center
-              justify-center
-              gap-1.5
-              rounded-xl
-              bg-orange-600
-              px-3
-              text-[9px]
-              font-black
-              uppercase
-              tracking-wider
-              text-white
-              shadow-lg
-              shadow-orange-600/30
-              sm:px-5
-            ">
-              Call Now
-              <span>→</span>
-            </div>
-
-          </a>
-
-
-          {/* CALL TRUST LINE */}
-          <div className="
-            mt-2.5
-            flex
-            items-center
-            justify-center
-            gap-2
-            text-[8px]
-            font-bold
-            text-slate-400
-          ">
-            <span className="text-emerald-600">●</span>
-            Available 24×7
-            <span className="text-slate-300">•</span>
-            Instant Response
-            <span className="text-slate-300">•</span>
-            Direct Booking
-          </div>
-
-        </div>
-
-
-        {/* =====================================================
-            ONLINE BOOKING CTA
-        ===================================================== */}
-        <button
-          type="button"
-          onClick={() => {
-            calculatorSectionRef.current?.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            });
-          }}
-          className="
-            mx-auto
-            mt-4
-            flex
-            min-h-[52px]
-            w-full
-            max-w-xl
-            items-center
-            justify-center
-            gap-2
-            rounded-2xl
-            border
-            border-orange-200
-            bg-gradient-to-r
-            from-orange-600
-            to-amber-500
-            px-5
-            text-[10px]
-            font-black
-            uppercase
-            tracking-[0.13em]
-            text-white
-            shadow-[0_10px_25px_rgba(234,88,12,0.22)]
-          "
-        >
-
-          <span className="text-base">
-            🚕
-          </span>
-
-          <span>
-            Check Fare & Book Online
-          </span>
-
-          <span className="ml-1">
-            →
-          </span>
-
-        </button>
-
-
-        {/* =====================================================
-            MINI TRUST STRIP
-        ===================================================== */}
-        <div className="
-          mx-auto
-          mt-5
-          grid
-          max-w-2xl
-          grid-cols-3
-          gap-2
-        ">
-
-          <div className="
-            rounded-xl
-            border
-            border-slate-200
-            bg-white/80
-            px-2
-            py-2.5
-          ">
-            <p className="text-xs">🛡️</p>
-            <p className="
-              mt-1
-              text-[8px]
-              font-black
-              uppercase
-              tracking-wider
-              text-slate-700
-            ">
-              Verified
-            </p>
-          </div>
-
-
-          <div className="
-            rounded-xl
-            border
-            border-slate-200
-            bg-white/80
-            px-2
-            py-2.5
-          ">
-            <p className="text-xs">💰</p>
-            <p className="
-              mt-1
-              text-[8px]
-              font-black
-              uppercase
-              tracking-wider
-              text-slate-700
-            ">
-              Fair Price
-            </p>
-          </div>
-
-
-          <div className="
-            rounded-xl
-            border
-            border-slate-200
-            bg-white/80
-            px-2
-            py-2.5
-          ">
-            <p className="text-xs">🎧</p>
-            <p className="
-              mt-1
-              text-[8px]
-              font-black
-              uppercase
-              tracking-wider
-              text-slate-700
-            ">
-              24×7 Support
-            </p>
-          </div>
-
-        </div>
-
-      </div>
-
-    </div>
-
-  </div>
-
-
-  {/* =========================================================
-      🚕 FARE CALCULATOR
-  ========================================================= */}
-  <div
-    ref={calculatorSectionRef}
-    className="
-      scroll-mt-[65px]
-      w-full
-      bg-slate-950
-      px-2
-      py-5
-      sm:px-5
-      sm:py-8
-    "
-  >
-
-    <div className="
-      mx-auto
-      w-full
-      max-w-7xl
-    ">
-
-
-      {/* =====================================================
-          CALCULATOR HEADER
-      ===================================================== */}
-      <div className="
-        mb-4
-        flex
-        items-center
-        justify-between
-        gap-3
-        px-1
-        sm:px-0
-      ">
-
-        <div>
-
-          <div className="
-            flex
-            items-center
-            gap-2
-          ">
-
-            <span className="
-              text-[9px]
-              font-black
-              uppercase
-              tracking-[0.18em]
-              text-orange-400
-            ">
-              Khatu Rides
-            </span>
-
-            <span className="
-              h-1
-              w-1
-              rounded-full
-              bg-orange-500
-            " />
-
-            <span className="
-              text-[8px]
-              font-bold
-              uppercase
-              tracking-wider
-              text-slate-500
-            ">
-              Instant Booking
-            </span>
-
-          </div>
-
-
-          <h2 className="
-            mt-1
-            text-lg
-            font-black
-            tracking-tight
-            text-white
-            sm:text-2xl
-          ">
-            Check Your Best Fare
-          </h2>
-
-        </div>
-
-
-        {/* 24x7 */}
-        <div className="
-          flex
-          shrink-0
-          items-center
-          gap-1.5
-          rounded-full
-          border
-          border-emerald-500/20
-          bg-emerald-500/10
-          px-2.5
-          py-1.5
-          text-[8px]
-          font-black
-          uppercase
-          tracking-wider
-          text-emerald-400
-        ">
-
-          <span className="
-            h-1.5
-            w-1.5
-            rounded-full
-            bg-emerald-400
-          " />
-
-          24×7
-
-        </div>
-
-      </div>
-
-
-      {/* =====================================================
-          CALCULATOR CARD
-      ===================================================== */}
-      <div className="
-        overflow-hidden
-        rounded-[24px]
-        border
-        border-slate-200
-        bg-white
-        shadow-[0_20px_60px_rgba(0,0,0,0.25)]
-        sm:rounded-[30px]
-      ">
-
-        <FareCalculator
-          onFareCalculated={(data) => {
-
-            let oneWayAvail = true;
-            let baseSingleRouteDist = 150;
-
-            const updatedData = {
-              ...data,
-
-              fareOptions: data.fareOptions.map((opt) => {
-
-                const rawDist = opt.billedDistance;
-
-                const baseSingleDist =
-                  data.bookingType === "roundtrip"
-                    ? Math.round(rawDist / 2)
-                    : rawDist;
-
-                baseSingleRouteDist = baseSingleDist;
-
-                const recalculated = calculateFare({
-                  distance: baseSingleDist,
-                  vehicleType: opt.vehicleType,
-                  bookingType: data.bookingType,
-                  serviceType: data.serviceType,
-                  pickupDate: data.pickupDate,
-                  pickupTime: data.pickupTime,
-                  returnDate: data.returnDate,
-                  returnTime: data.returnTime,
-                  drop: data.drop,
-                  pickup: data.pickup,
-                });
-
-                oneWayAvail = recalculated.isOneWayAvailable;
-
-                return {
-                  ...opt,
-                  finalFare: recalculated.finalFare,
-                  billedDistance: recalculated.billedDistance,
-                  durationMinutes: recalculated.durationMinutes,
-                };
-
-              }),
-
-              isOneWayAvailable: oneWayAvail,
-              baseDistance: baseSingleRouteDist,
-            };
-
-
-            setPopupData(updatedData);
-            setSelectedVehicleType("sedan");
-            setShowPopup(true);
-            setShowUserForm(false);
-            setPaymentSplitMode({});
-
-          }}
-        />
-
-      </div>
-
-
-      {/* =====================================================
-          CALCULATOR BOTTOM TRUST
-      ===================================================== */}
-      <div className="
-        mt-3
-        flex
-        flex-wrap
-        items-center
-        justify-center
-        gap-x-4
-        gap-y-1
-        text-center
-      ">
-
-        <span className="
-          text-[8px]
-          font-bold
-          text-slate-500
-        ">
-          ✓ No Hidden Charges
-        </span>
-
-        <span className="
-          text-[8px]
-          font-bold
-          text-slate-500
-        ">
-          ✓ Verified Drivers
-        </span>
-
-        <span className="
-          text-[8px]
-          font-bold
-          text-slate-500
-        ">
-          ✓ Instant Confirmation
-        </span>
-
-      </div>
-
-    </div>
-
-  </div>
-
-</section>
-
-       {/* 👑 PREMIUM FLEET SECTION */}
-<section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-
-  {/* SECTION HEADER */}
-  <div className="mb-7 sm:mb-8">
-
-    <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5">
-      <span className="text-xs">🚕</span>
-      <span className="text-[9px] font-black uppercase tracking-[0.18em] text-orange-600">
-        Our Fleet
-      </span>
-    </div>
-
-    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
-      Our Premium Garage
-    </h2>
-
-    <p className="mt-1.5 max-w-xl text-xs font-medium leading-relaxed text-slate-500 sm:text-sm">
-      Comfortable, clean and well-maintained vehicles for every journey.
-    </p>
-
-  </div>
-
-
-  {/* FLEET GRID */}
-  <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-
-    {[
-      {
-        title: "Maruti Suzuki Dzire",
-        type: "Sedan • 4+1 Seater",
-        img: "/dezire.png",
-        rate: "₹11/KM",
-        tag: "Popular",
-      },
-      {
-        title: "Maruti Suzuki Ertiga",
-        type: "MUV • 6+1 Seater",
-        img: "/ertiga.png",
-        rate: "₹13/KM",
-        tag: "Family Choice",
-      },
-      {
-        title: "Toyota Innova Crysta",
-        type: "Luxury SUV • 6+1 Seater",
-        img: "/crysta.png",
-        rate: "₹20/KM",
-        tag: "Premium",
-      },
-    ].map((car, idx) => (
-
-      <div
-        key={idx}
-        className="
-          relative overflow-hidden
-          rounded-[28px]
-          border border-slate-200
-          bg-white
-          shadow-[0_6px_24px_rgba(15,23,42,0.06)]
-        "
-      >
-
-        {/* VEHICLE IMAGE */}
-        <div className="
-          relative
-          h-56
-          overflow-hidden
-          bg-gradient-to-b
-          from-slate-50
-          via-white
-          to-slate-100
-          sm:h-52
-          lg:h-56
-        ">
-
-          {/* IMAGE TAG */}
-          <div className="
-            absolute left-4 top-4 z-10
-            rounded-full
-            border border-slate-200
-            bg-white
-            px-3 py-1.5
-            text-[9px]
-            font-black
-            uppercase
-            tracking-wider
-            text-slate-700
-            shadow-sm
-          ">
-            {car.tag}
-          </div>
-
-
-          {/* SOFT BACKGROUND CIRCLE */}
-          <div className="
-            absolute
-            left-1/2
-            top-1/2
-            h-44
-            w-44
-            -translate-x-1/2
-            -translate-y-1/2
-            rounded-full
-            bg-orange-100/60
-            blur-3xl
-          " />
-
-
-          {/* FULL VEHICLE IMAGE */}
-          <img
-            src={car.img}
-            alt={car.title}
-            className="
-              absolute
-              bottom-0
-              left-1/2
-              w-[112%]
-              max-w-none
-              -translate-x-1/2
-              object-contain
-              drop-shadow-[0_16px_16px_rgba(15,23,42,0.16)]
-            "
-          />
-
-
-          {/* IMAGE BOTTOM BLEND */}
-          <div className="
-            pointer-events-none
-            absolute inset-x-0 bottom-0
-            h-12
-            bg-gradient-to-t
-            from-white
-            to-transparent
-          " />
-
-        </div>
-
-
-        {/* CARD DETAILS */}
-        <div className="px-5 pb-5 pt-4">
-
-          {/* VEHICLE NAME */}
-          <h3 className="
-            text-base
-            font-black
-            tracking-tight
-            text-slate-950
-          ">
-            {car.title}
-          </h3>
-
-
-          {/* VEHICLE TYPE */}
-          <p className="
-            mt-1
-            text-[10px]
-            font-bold
-            uppercase
-            tracking-wider
-            text-orange-600
-          ">
-            {car.type}
-          </p>
-
-
-          {/* DIVIDER */}
-          <div className="my-4 h-px bg-slate-100" />
-
-
-          {/* BOTTOM INFORMATION */}
-          <div className="flex items-center justify-between">
-
-            <div className="flex items-center gap-2.5">
-
-              <div className="
-                flex h-9 w-9
-                items-center justify-center
-                rounded-xl
-                bg-slate-50
-                text-base
-              ">
-                🚕
+        {/* 👑 TOP NAVBAR */}
+        <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-xl shadow-xs select-none">
+          <div className="mx-auto max-w-7xl px-3 sm:px-5 lg:px-8">
+            <div className="flex h-[68px] items-center justify-between gap-2 sm:h-[76px]">
+              
+              <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+                <a
+                  href="tel:+919244137353"
+                  aria-label="Call Khatu Rides"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-orange-200 bg-orange-50 text-orange-600 shadow-2xs transition-all hover:bg-orange-100 sm:h-11 sm:w-11"
+                >
+                  <span className="text-lg">📞</span>
+                </a>
+                <div className="min-w-0 leading-none">
+                  <div className="flex items-baseline whitespace-nowrap">
+                    <span className="text-[19px] font-black tracking-tight text-slate-950 sm:text-2xl">Khatu</span>
+                    <span className="text-[19px] font-black tracking-tight text-orange-600 sm:text-2xl">Rides</span>
+                  </div>
+                  <div className="mt-1 flex items-center gap-1.5">
+                    <span className="text-[7px] font-black uppercase tracking-[0.25em] text-slate-500 sm:text-[9px]">Travels Co.</span>
+                  </div>
+                </div>
               </div>
 
-              <div className="leading-none">
+              <div className="hidden md:flex items-center">
+                <span className="text-sm font-black uppercase tracking-widest text-slate-800 bg-slate-100 px-5 py-2 rounded-xl border border-slate-200 shadow-2xs">
+                  One Way Taxi Service
+                </span>
+              </div>
 
-                <p className="
-                  text-[8px]
-                  font-bold
-                  uppercase
-                  tracking-wider
-                  text-slate-400
-                ">
-                  Starting Rate
-                </p>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <a
+                  href="https://g.page/r/CbD5nSIGmvz1EBM/review"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1.5 transition-all hover:bg-amber-100 sm:px-3"
+                >
+                  <span className="text-sm sm:text-base">⭐</span>
+                  <div className="flex flex-col leading-none">
+                    <span className="text-[11px] font-black text-slate-900 sm:text-xs">4.6</span>
+                    <span className="hidden text-[8px] font-bold uppercase tracking-wide text-slate-500 sm:block">Google</span>
+                  </div>
+                </a>
 
-                <p className="
-                  mt-1
-                  text-[10px]
-                  font-bold
-                  text-slate-600
-                ">
-                  Per Kilometer
-                </p>
-
+                {currentUser ? (
+                  <button onClick={() => router.push("/customer/home")} className="rounded-full bg-emerald-600 px-4 py-2 text-[10px] font-black uppercase tracking-wider text-white hover:bg-emerald-700 transition shadow-md">
+                    Dashboard
+                  </button>
+                ) : (
+                  <button onClick={() => setShowLoginAlertModal(true)} className="rounded-full bg-orange-600 px-4 py-2 text-[10px] font-black uppercase tracking-wider text-white hover:bg-orange-700 transition shadow-md">
+                    👤 Login / Signup
+                  </button>
+                )}
               </div>
 
             </div>
+            <SlidingTicker />
+          </div>
+        </header>
 
+        {/* 👑 TRUST BADGES ROW */}
+        <section className="max-w-7xl mx-auto px-4 py-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3">
+              <span className="text-2xl">👨‍✈️</span>
+              <div>
+                <div className="text-xs font-black text-slate-900">Verified Drivers</div>
+                <div className="text-[10px] text-slate-500 font-medium">100% Police Verified & Experienced</div>
+              </div>
+            </div>
+            <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3">
+              <span className="text-2xl">🛡️</span>
+              <div>
+                <div className="text-xs font-black text-slate-900">Trusted by Thousand of Customers</div>
+                <div className="text-[10px] text-slate-500 font-medium">Over 10,000+ successful intercity trips</div>
+              </div>
+            </div>
+            <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3">
+              <span className="text-2xl">🎧</span>
+              <div>
+                <div className="text-xs font-black text-slate-900">24x7 Supports</div>
+                <div className="text-[10px] text-slate-500 font-medium">Dedicated round-the-clock desk</div>
+              </div>
+            </div>
+          </div>
+        </section>
 
-            {/* PRICE */}
-            <div className="text-right">
-
-              <p className="
-                text-xl
-                font-black
-                tracking-tight
-                text-slate-950
-              ">
-                {car.rate}
+        {/* 👑 HERO & FARE CALCULATOR SECTION (90% WIDTH) */}
+        <section className="relative px-4 pt-2 pb-12 sm:py-8 max-w-[90%] mx-auto">
+          <div className="flex flex-col gap-8 items-center text-center">
+            
+            <div className="max-w-3xl space-y-4">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-orange-100 text-orange-700 text-[10px] font-black uppercase tracking-widest border border-orange-200 shadow-2xs">
+                <span>⚡ CHHATTISGARH & MP'S BEST CAB AGENCY</span>
+              </div>
+              <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-tight text-slate-950">
+                Book Your Cab<br />
+                <span className="text-orange-600">In Just 30 Seconds</span>
+              </h1>
+              <p className="text-xs sm:text-sm font-bold text-slate-600 leading-relaxed max-w-xl mx-auto">
+                Experience agency-grade reliability with zero hidden fees, instant confirmation, and clean sanitized vehicles.
               </p>
 
+              <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+                <a
+                  href="tel:+919244137353"
+                  className="bg-slate-950 hover:bg-slate-900 text-white font-black text-xs uppercase tracking-widest py-4 px-8 rounded-2xl shadow-lg transition text-center flex items-center justify-center gap-2"
+                >
+                  <span>📞</span> 9244137353 (CALL NOW)
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (calculatorSectionRef.current) {
+                      calculatorSectionRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }
+                  }}
+                  className="bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-widest py-4 px-8 rounded-2xl shadow-lg shadow-orange-600/20 transition text-center flex items-center justify-center gap-2"
+                >
+                  <span>🚀</span> CHECK FARE & BOOK ONLINE
+                </button>
+              </div>
+            </div>
+
+            <div ref={calculatorSectionRef} className="w-full relative z-20 pt-4">
+              {currentUser ? (
+                <FareCalculator
+                  onFareCalculated={(data) => {
+                    let oneWayAvail = true;
+                    let baseSingleRouteDist = 150;
+
+                    const updatedData = {
+                      ...data,
+                      fareOptions: data.fareOptions.map((opt) => {
+                        const rawDist = opt.billedDistance;
+                        const baseSingleDist = data.bookingType === "roundtrip" ? Math.round(rawDist / 2) : rawDist;
+                        baseSingleRouteDist = baseSingleDist;
+
+                        const recalculated = calculateFare({
+                          distance: baseSingleDist,
+                          vehicleType: opt.vehicleType,
+                          bookingType: data.bookingType,
+                          serviceType: data.serviceType,
+                          pickupDate: data.pickupDate,
+                          pickupTime: data.pickupTime,
+                          returnDate: data.returnDate,
+                          returnTime: data.returnTime,
+                          drop: data.drop,
+                          pickup: data.pickup,
+                        });
+                        oneWayAvail = recalculated.isOneWayAvailable;
+                        return {
+                          ...opt,
+                          finalFare: recalculated.finalFare,
+                          billedDistance: recalculated.billedDistance,
+                          durationMinutes: recalculated.durationMinutes,
+                        };
+                      }),
+                      isOneWayAvailable: oneWayAvail,
+                      baseDistance: baseSingleRouteDist
+                    };
+                    setPopupData(updatedData);
+                    setSelectedVehicleType("sedan");
+                    setShowPopup(true);
+                    setShowUserForm(false);
+                    setPaymentSplitMode({});
+                  }}
+                />
+              ) : (
+                /* 👑 LOGGED OUT USERS: OFFER CAROUSEL PROMPT INSTEAD OF CALCULATOR */
+                <div className="bg-gradient-to-r from-orange-600 via-amber-500 to-orange-600 rounded-3xl p-8 text-white shadow-xl text-center space-y-4">
+                  <span className="text-4xl">🎁</span>
+                  <h3 className="text-xl sm:text-2xl font-black uppercase tracking-tight">
+                    Signup to Unlock Fare Calculator & Get ₹1101/- Wallet Bonus!
+                  </h3>
+                  <p className="text-xs sm:text-sm font-medium max-w-xl mx-auto text-orange-100">
+                    Create your free account instantly to check live rates, view exclusive corridor discounts, and claim your premium customer benefits.
+                  </p>
+                  <button
+                    onClick={() => setShowLoginAlertModal(true)}
+                    className="inline-block bg-slate-950 hover:bg-slate-900 text-white font-black text-xs uppercase tracking-widest px-8 py-4 rounded-2xl shadow-lg transition"
+                  >
+                    👤 Signup / Login Now
+                  </button>
+                </div>
+              )}
             </div>
 
           </div>
+        </section>
 
-        </div>
-
-
-        {/* STATIC BRAND ACCENT */}
-        <div className="
-          absolute
-          bottom-0
-          left-0
-          h-1
-          w-full
-          bg-gradient-to-r
-          from-orange-600
-          to-amber-400
-        " />
-
-      </div>
-
-    ))}
-
-  </div>
-
-</section>
-
-    {/* 👑 SERVICES CATALOGUE SECTION */}
-<section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-
-  {/* ================= SECTION HEADER ================= */}
-  <div className="mb-7 sm:mb-9">
-
-    <div className="
-      inline-flex items-center gap-2
-      rounded-full
-      border border-orange-200
-      bg-orange-50
-      px-3 py-1.5
-    ">
-      <span className="text-xs">✦</span>
-
-      <span className="
-        text-[9px]
-        font-black
-        uppercase
-        tracking-[0.18em]
-        text-orange-600
-      ">
-        What We Offer
-      </span>
-    </div>
-
-
-    <h2 className="
-      mt-2
-      text-2xl
-      font-black
-      tracking-tight
-      text-slate-950
-      sm:text-3xl
-    ">
-      Our Services
-    </h2>
-
-    <p className="
-      mt-1.5
-      max-w-2xl
-      text-xs
-      font-medium
-      leading-relaxed
-      text-slate-500
-      sm:text-sm
-    ">
-      Choose the ride that fits your journey.
-    </p>
-
-  </div>
-
-
-  {/* ================= SERVICES GRID ================= */}
-  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-
-    {[
-      {
-        icon: "🚀",
-        title: "One Way Taxi",
-        short: "One-side travel",
-        desc: "Pay for your journey in one direction.",
-        badge: "Best Value",
-        bg: "bg-orange-50",
-        iconBg: "bg-orange-100",
-        border: "border-orange-200",
-        text: "text-orange-600",
-      },
-
-      {
-        icon: "🔄",
-        title: "Round Trip",
-        short: "Complete journey",
-        desc: "Keep the same cab and driver for your trip.",
-        badge: "Popular",
-        bg: "bg-blue-50",
-        iconBg: "bg-blue-100",
-        border: "border-blue-200",
-        text: "text-blue-600",
-      },
-
-      {
-        icon: "🏙️",
-        title: "Local Rental",
-        short: "City travel",
-        desc: "Flexible packages for meetings and city travel.",
-        badge: "Flexible",
-        bg: "bg-emerald-50",
-        iconBg: "bg-emerald-100",
-        border: "border-emerald-200",
-        text: "text-emerald-600",
-      },
-
-      {
-        icon: "✈️",
-        title: "Airport Taxi",
-        short: "Pickup & drop",
-        desc: "Reliable airport transfers with timely pickup.",
-        badge: "24×7",
-        bg: "bg-violet-50",
-        iconBg: "bg-violet-100",
-        border: "border-violet-200",
-        text: "text-violet-600",
-      },
-    ].map((srv, idx) => (
-
-      <div
-        key={idx}
-        className={`
-          group
-          relative
-          overflow-hidden
-          rounded-[26px]
-          border
-          ${srv.border}
-          ${srv.bg}
-          p-5
-          shadow-[0_5px_20px_rgba(15,23,42,0.04)]
-        `}
-      >
-
-        {/* TOP ROW */}
-        <div className="flex items-start justify-between">
-
-          {/* ICON */}
-          <div className={`
-            flex
-            h-12
-            w-12
-            items-center
-            justify-center
-            rounded-2xl
-            ${srv.iconBg}
-            text-2xl
-            shadow-sm
-          `}>
-            {srv.icon}
-          </div>
-
-
-          {/* BADGE */}
-          <span className="
-            rounded-full
-            border border-white/80
-            bg-white/80
-            px-2.5
-            py-1
-            text-[8px]
-            font-black
-            uppercase
-            tracking-wider
-            text-slate-600
-            shadow-sm
-          ">
-            {srv.badge}
-          </span>
-
-        </div>
-
-
-        {/* SERVICE CONTENT */}
-        <div className="mt-5">
-
-          <h3 className="
-            text-[15px]
-            font-black
-            tracking-tight
-            text-slate-950
-          ">
-            {srv.title}
-          </h3>
-
-
-          <p className={`
-            mt-1
-            text-[9px]
-            font-black
-            uppercase
-            tracking-wider
-            ${srv.text}
-          `}>
-            {srv.short}
-          </p>
-
-
-          <p className="
-            mt-2
-            min-h-[38px]
-            text-[11px]
-            font-medium
-            leading-relaxed
-            text-slate-600
-          ">
-            {srv.desc}
-          </p>
-
-        </div>
-
-
-        {/* BOTTOM ACTION */}
-        <div className="
-          mt-5
-          flex
-          items-center
-          justify-between
-          border-t
-          border-white/80
-          pt-3.5
-        ">
-
-          <span className="
-            text-[9px]
-            font-bold
-            uppercase
-            tracking-wider
-            text-slate-400
-          ">
-            Khatu Rides
-          </span>
-
-          <span className={`
-            flex
-            h-8
-            w-8
-            items-center
-            justify-center
-            rounded-full
-            bg-white
-            ${srv.text}
-            text-sm
-            shadow-sm
-          `}>
-            →
-          </span>
-
-        </div>
-
-
-        {/* STATIC BOTTOM ACCENT */}
-        <div className={`
-          absolute
-          bottom-0
-          left-0
-          h-1
-          w-full
-          ${srv.text.replace("text-", "bg-")}
-        `} />
-
-      </div>
-
-    ))}
-
-  </div>
-
-
-  {/* ================= BOTTOM CTA ================= */}
-  <div className="
-    mt-6
-    flex
-    flex-col
-    items-center
-    justify-between
-    gap-3
-    rounded-2xl
-    border
-    border-slate-200
-    bg-white
-    px-4
-    py-4
-    shadow-sm
-    sm:flex-row
-    sm:px-5
-  ">
-
-    <div className="flex items-center gap-3">
-
-      <div className="
-        flex
-        h-9
-        w-9
-        shrink-0
-        items-center
-        justify-center
-        rounded-xl
-        bg-orange-50
-        text-base
-      ">
-        🚕
-      </div>
-
-      <div>
-
-        <p className="
-          text-xs
-          font-black
-          text-slate-900
-        ">
-          Ready to plan your ride?
-        </p>
-
-        <p className="
-          mt-0.5
-          text-[9px]
-          font-medium
-          text-slate-500
-        ">
-          Check your fare and book instantly.
-        </p>
-
-      </div>
-
-    </div>
-
-
-    <button
-      type="button"
-      onClick={() => {
-        calculatorSectionRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      }}
-      className="
-        flex
-        min-h-[42px]
-        w-full
-        items-center
-        justify-center
-        gap-2
-        rounded-xl
-        bg-orange-600
-        px-5
-        text-[9px]
-        font-black
-        uppercase
-        tracking-wider
-        text-white
-        shadow-md
-        sm:w-auto
-      "
-    >
-      Check Fare & Book
-      <span>→</span>
-    </button>
-
-  </div>
-
-</section>
-
-        {/* 👑 WHAT OUR CUSTOMERS SAYING */}
-        <ReviewsCarousel />
-
-       {/* 👑 HIGH-CONVERSION POPULAR ROUTES SECTION */}
-<section className="relative overflow-hidden bg-slate-50 py-12 sm:py-16">
-
-  {/* TOP BRAND ACCENT */}
-  <div className="absolute left-0 right-0 top-0 h-1 bg-gradient-to-r from-orange-600 via-amber-500 to-orange-600" />
+      {/* 👑 PREMIUM FLEET SECTION */}
+<section className="relative w-full bg-slate-50 py-12 sm:py-16">
 
   <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
-    {/* ================= HEADER ================= */}
-    <div className="mb-7 sm:mb-9">
+    {/* ================= SECTION HEADER ================= */}
+    <div className="mb-8 text-center sm:mb-10">
 
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-
-        <div>
-
-          {/* LABEL */}
-          <div className="
-            inline-flex
-            items-center
-            gap-2
-            rounded-full
-            border
-            border-orange-200
-            bg-orange-50
-            px-3
-            py-1.5
-          ">
-            <span className="text-xs">🛣️</span>
-
-            <span className="
-              text-[9px]
-              font-black
-              uppercase
-              tracking-[0.18em]
-              text-orange-600
-            ">
-              Top Corridors
-            </span>
-          </div>
-
-
-          {/* TITLE */}
-          <h2 className="
-            mt-3
-            text-2xl
-            font-black
-            tracking-tight
-            text-slate-950
-            sm:text-3xl
-            lg:text-4xl
-          ">
-            Popular Routes
-          </h2>
-
-
-          {/* SUBTITLE */}
-          <p className="
-            mt-2
-            max-w-2xl
-            text-xs
-            font-medium
-            leading-relaxed
-            text-slate-500
-            sm:text-sm
-          ">
-            Book our most travelled routes with transparent fares and
-            reliable intercity service.
-          </p>
-
-        </div>
-
-
-        {/* RIGHT TRUST BADGE */}
-        <div className="
-          flex
-          w-fit
-          items-center
-          gap-2.5
-          rounded-2xl
-          border
-          border-slate-200
-          bg-white
-          px-4
-          py-3
-          shadow-sm
-        ">
-
-          <div className="
-            flex
-            h-9
-            w-9
-            items-center
-            justify-center
-            rounded-xl
-            bg-orange-50
-            text-base
-          ">
-            🚕
-          </div>
-
-          <div>
-
-            <p className="
-              text-[9px]
-              font-black
-              uppercase
-              tracking-wider
-              text-slate-400
-            ">
-              Quick Booking
-            </p>
-
-            <p className="
-              mt-0.5
-              text-xs
-              font-black
-              text-slate-900
-            ">
-              Choose a route & book
-            </p>
-
-          </div>
-
-        </div>
-
+      <div
+        className="
+          mx-auto inline-flex items-center gap-2
+          rounded-full
+          border border-orange-200
+          bg-orange-50
+          px-3.5 py-1.5
+          text-[9px]
+          font-black
+          uppercase
+          tracking-[0.18em]
+          text-orange-700
+        "
+      >
+        <span>🚕</span>
+        Our Premium Garage
       </div>
+
+      <h2
+        className="
+          mt-3
+          text-2xl sm:text-3xl lg:text-4xl
+          font-black
+          tracking-tight
+          text-slate-950
+        "
+      >
+        Our Commercial Fleet
+      </h2>
+
+      <p
+        className="
+          mx-auto
+          mt-2
+          max-w-xl
+          text-xs sm:text-sm
+          font-medium
+          leading-relaxed
+          text-slate-500
+        "
+      >
+        Choose the right vehicle for your journey with
+        comfort, space and reliable highway performance.
+      </p>
 
     </div>
 
 
-    {/* ================= ROUTES GRID ================= */}
-    <div className="
-      grid
-      grid-cols-1
-      gap-5
-      sm:grid-cols-2
-      lg:grid-cols-4
-    ">
+    {/* ================= FLEET GRID ================= */}
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
 
-      {ROUTES.map((route, index) => (
+      {[
+        {
+          title: "Maruti Suzuki Dzire",
+          shortTitle: "Dzire",
+          type: "Sedan",
+          seats: "4+1 Seater",
+          img: "/dezire.png",
+          rate: "₹11/KM",
+          tag: "Most Popular",
+        },
+        {
+          title: "Maruti Suzuki Ertiga",
+          shortTitle: "Ertiga",
+          type: "Executive MUV",
+          seats: "6+1 Seater",
+          img: "/ertiga.png",
+          rate: "₹13/KM",
+          tag: "Family Choice",
+        },
+        {
+          title: "Toyota Innova Crysta",
+          shortTitle: "Innova Crysta",
+          type: "Premium SUV",
+          seats: "6+1 Seater",
+          img: "/crysta.png",
+          rate: "₹20/KM",
+          tag: "Luxury Choice",
+        },
+      ].map((car, idx) => (
 
-        <article
-          key={index}
-          onClick={() =>
-            triggerQuickBooking(
-              route.from,
-              route.to,
-              parseInt(route.km)
-            )
-          }
+        <div
+          key={idx}
           className="
             group
             relative
-            cursor-pointer
             overflow-hidden
-            rounded-[26px]
-            border
-            border-slate-200
+            rounded-[28px]
+            border border-slate-200
             bg-white
-            shadow-[0_6px_24px_rgba(15,23,42,0.06)]
+            shadow-[0_8px_30px_rgba(15,23,42,0.07)]
+            transition-all
+            duration-300
+            hover:-translate-y-1
+            hover:border-orange-300
+            hover:shadow-[0_18px_45px_rgba(15,23,42,0.12)]
           "
         >
 
-          {/* ================= ROUTE IMAGE ================= */}
-          <div className="
-            relative
-            h-48
-            w-full
-            overflow-hidden
-            bg-slate-100
-            sm:h-44
-            lg:h-48
-          ">
+          {/* ================= VEHICLE IMAGE ================= */}
+          <div
+            className="
+              relative
+              h-56
+              w-full
+              overflow-hidden
+              bg-gradient-to-br
+              from-slate-100
+              via-slate-50
+              to-orange-50
+              sm:h-60
+            "
+          >
 
-            <img
-              src={route.image}
-              alt={`${route.from} to ${route.to} taxi`}
+            {/* Background decorative circles */}
+            <div
               className="
-                h-full
-                w-full
-                object-cover
+                absolute
+                -right-16
+                -top-16
+                h-40
+                w-40
+                rounded-full
+                bg-orange-200/30
+                blur-2xl
+              "
+            />
+
+            <div
+              className="
+                absolute
+                -bottom-20
+                -left-16
+                h-40
+                w-40
+                rounded-full
+                bg-amber-200/20
+                blur-2xl
               "
             />
 
 
-            {/* IMAGE OVERLAY */}
-            <div className="
-              absolute
-              inset-0
-              bg-gradient-to-t
-              from-slate-950/80
-              via-slate-950/10
-              to-transparent
-            " />
-
-
-            {/* ROUTE NUMBER */}
-            <div className="
-              absolute
-              left-4
-              top-4
-              flex
-              h-8
-              w-8
-              items-center
-              justify-center
-              rounded-xl
-              border
-              border-white/30
-              bg-slate-950/70
-              text-[10px]
-              font-black
-              text-white
-              backdrop-blur-md
-            ">
-              {String(index + 1).padStart(2, "0")}
-            </div>
-
-
-            {/* DISTANCE */}
-            <div className="
-              absolute
-              bottom-4
-              left-4
-              flex
-              items-center
-              gap-1.5
-              rounded-xl
-              border
-              border-white/20
-              bg-white/95
-              px-3
-              py-1.5
-              text-[9px]
-              font-black
-              text-slate-900
-              shadow-lg
-              backdrop-blur
-            ">
-              📍 {route.km}
-            </div>
-
-
-            {/* POPULAR BADGE */}
-            {index === 0 && (
-              <div className="
+            {/* TAG */}
+            <div
+              className="
                 absolute
-                right-4
+                left-4
                 top-4
+                z-10
                 rounded-full
-                bg-orange-600
+                border
+                border-white/70
+                bg-white/90
                 px-3
                 py-1.5
                 text-[8px]
                 font-black
                 uppercase
                 tracking-wider
-                text-white
-                shadow-lg
-              ">
-                🔥 Popular
-              </div>
-            )}
+                text-slate-800
+                shadow-sm
+                backdrop-blur-md
+              "
+            >
+              {car.tag}
+            </div>
+
+
+            {/* VEHICLE IMAGE */}
+            <div
+              className="
+                absolute
+                inset-0
+                flex
+                items-center
+                justify-center
+                px-3
+                pt-7
+              "
+            >
+              <img
+  src={car.img}
+  alt={car.title}
+  className="
+    absolute
+    inset-0
+    h-full
+    w-full
+    object-cover
+    object-center
+    transition-transform
+    duration-500
+    ease-out
+    group-hover:scale-[1.03]
+  "
+/>
+            </div>
+
+
+            {/* BOTTOM IMAGE GRADIENT */}
+            <div
+              className="
+                pointer-events-none
+                absolute
+                inset-x-0
+                bottom-0
+                h-24
+                bg-gradient-to-t
+                from-slate-950/25
+                to-transparent
+              "
+            />
 
           </div>
 
 
-          {/* ================= ROUTE CONTENT ================= */}
+          {/* ================= CARD CONTENT ================= */}
           <div className="p-5">
 
-            {/* ROUTE NAME */}
-            <div>
+            {/* VEHICLE NAME */}
+            <div className="flex items-start justify-between gap-3">
 
-              <p className="
-                text-[9px]
-                font-black
-                uppercase
-                tracking-[0.15em]
-                text-orange-600
-              ">
-                One Way Taxi
-              </p>
+              <div>
 
-              <h3 className="
-                mt-1.5
-                text-[17px]
-                font-black
-                tracking-tight
-                text-slate-950
-              ">
-                {route.from.split(",")[0]}
-                <span className="mx-1.5 text-orange-500">
-                  →
-                </span>
-                {route.to.split(",")[0]}
-              </h3>
+                <p
+                  className="
+                    text-[8px]
+                    font-black
+                    uppercase
+                    tracking-[0.18em]
+                    text-orange-600
+                  "
+                >
+                  {car.type}
+                </p>
 
-            </div>
+                <h3
+                  className="
+                    mt-1
+                    text-lg
+                    font-black
+                    tracking-tight
+                    text-slate-950
+                  "
+                >
+                  {car.title}
+                </h3>
+
+              </div>
 
 
-            {/* ROUTE META */}
-            <div className="
-              mt-3
-              flex
-              items-center
-              gap-2
-              text-[10px]
-              font-bold
-              text-slate-500
-            ">
+              {/* SEAT BADGE */}
+              <div
+                className="
+                  shrink-0
+                  rounded-xl
+                  bg-slate-100
+                  px-2.5
+                  py-2
+                  text-center
+                "
+              >
+                <div className="text-sm">👥</div>
 
-              <span className="
-                rounded-lg
-                bg-slate-50
-                px-2.5
-                py-1.5
-              ">
-                📍 {route.km}
-              </span>
-
-              <span className="
-                rounded-lg
-                bg-slate-50
-                px-2.5
-                py-1.5
-              ">
-                ⏱️ {route.time}
-              </span>
+                <div
+                  className="
+                    mt-0.5
+                    text-[8px]
+                    font-black
+                    text-slate-600
+                  "
+                >
+                  {car.seats}
+                </div>
+              </div>
 
             </div>
 
 
-            {/* ================= PRICE BOX ================= */}
-            <div className="
-              mt-4
-              rounded-2xl
-              border
-              border-orange-100
-              bg-orange-50/70
-              p-3.5
-            ">
+            {/* ================= FEATURES ================= */}
+            <div
+              className="
+                mt-4
+                grid
+                grid-cols-3
+                gap-2
+              "
+            >
 
-              <div className="
+              <div
+                className="
+                  rounded-xl
+                  bg-slate-50
+                  px-2
+                  py-2.5
+                  text-center
+                "
+              >
+                <div className="text-sm">❄️</div>
+                <p
+                  className="
+                    mt-1
+                    text-[8px]
+                    font-bold
+                    text-slate-500
+                  "
+                >
+                  AC
+                </p>
+              </div>
+
+
+              <div
+                className="
+                  rounded-xl
+                  bg-slate-50
+                  px-2
+                  py-2.5
+                  text-center
+                "
+              >
+                <div className="text-sm">🧳</div>
+                <p
+                  className="
+                    mt-1
+                    text-[8px]
+                    font-bold
+                    text-slate-500
+                  "
+                >
+                  Luggage
+                </p>
+              </div>
+
+
+              <div
+                className="
+                  rounded-xl
+                  bg-slate-50
+                  px-2
+                  py-2.5
+                  text-center
+                "
+              >
+                <div className="text-sm">🛣️</div>
+                <p
+                  className="
+                    mt-1
+                    text-[8px]
+                    font-bold
+                    text-slate-500
+                  "
+                >
+                  Highway
+                </p>
+              </div>
+
+            </div>
+
+
+            {/* ================= PRICE + CTA ================= */}
+            <div
+              className="
+                mt-4
                 flex
-                items-end
+                items-center
                 justify-between
                 gap-3
-              ">
+                border-t
+                border-slate-100
+                pt-4
+              "
+            >
 
-                <div>
+              <div>
 
-                  <p className="
+                <p
+                  className="
                     text-[8px]
                     font-black
                     uppercase
                     tracking-wider
                     text-slate-400
-                  ">
-                    Starting Fare
-                  </p>
+                  "
+                >
+                  Starting Rate
+                </p>
 
-                  <p className="
-                    mt-0.5
-                    text-2xl
-                    font-black
-                    tracking-tight
-                    text-slate-950
-                  ">
-                    {route.price}
-                  </p>
+                <div className="flex items-baseline gap-1">
+
+                  <span
+                    className="
+                      text-xl
+                      font-black
+                      tracking-tight
+                      text-slate-950
+                    "
+                  >
+                    {car.rate}
+                  </span>
 
                 </div>
 
-
-                <span className="
-                  pb-1
-                  text-[8px]
-                  font-bold
-                  text-slate-400
-                ">
-                  One Way
-                </span>
-
               </div>
 
-            </div>
 
+              {/* BOOK BUTTON */}
+              <button
+                type="button"
+                onClick={() => {
+                  calculatorSectionRef.current?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  });
+                }}
+                className="
+                  flex
+                  min-h-[44px]
+                  items-center
+                  justify-center
+                  gap-1.5
+                  rounded-xl
+                  bg-slate-950
+                  px-4
+                  text-[9px]
+                  font-black
+                  uppercase
+                  tracking-wider
+                  text-white
+                  shadow-md
+                  transition-all
+                  duration-200
+                  hover:bg-orange-600
+                  active:scale-95
+                "
+              >
+                Book
+                <span>→</span>
+              </button>
 
-            {/* ================= BOOK CTA ================= */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-
-                triggerQuickBooking(
-                  route.from,
-                  route.to,
-                  parseInt(route.km)
-                );
-              }}
-              className="
-                mt-3
-                flex
-                min-h-[50px]
-                w-full
-                items-center
-                justify-center
-                gap-2
-                rounded-2xl
-                bg-slate-950
-                px-4
-                text-[10px]
-                font-black
-                uppercase
-                tracking-widest
-                text-white
-                shadow-md
-              "
-            >
-              <span>🚕</span>
-              Book This Route
-              <span className="ml-auto">→</span>
-            </button>
-
-
-            {/* TRUST LINE */}
-            <div className="
-              mt-3
-              flex
-              items-center
-              justify-center
-              gap-2
-              text-[8px]
-              font-bold
-              text-slate-400
-            ">
-              <span>✓ Transparent Fare</span>
-
-              <span className="h-1 w-1 rounded-full bg-slate-300" />
-
-              <span>✓ 24×7 Support</span>
             </div>
 
           </div>
 
 
-          {/* STATIC BOTTOM BRAND ACCENT */}
-          <div className="
-            absolute
-            bottom-0
-            left-0
-            h-1
-            w-full
-            bg-gradient-to-r
-            from-orange-600
-            to-amber-400
-          " />
+          {/* ORANGE BOTTOM ACCENT */}
+          <div
+            className="
+              absolute
+              bottom-0
+              left-0
+              h-1
+              w-full
+              bg-gradient-to-r
+              from-orange-600
+              via-amber-500
+              to-orange-600
+              opacity-80
+            "
+          />
 
-        </article>
+        </div>
 
       ))}
 
     </div>
 
 
-    {/* ================= BOTTOM CONVERSION BAR ================= */}
-    <div className="
-      mt-6
-      overflow-hidden
-      rounded-2xl
-      border
-      border-slate-200
-      bg-slate-950
-      px-4
-      py-4
-      shadow-xl
-      sm:px-6
-    ">
-
-      <div className="
+    {/* ================= BOTTOM TRUST BAR ================= */}
+    <div
+      className="
+        mx-auto
+        mt-6
         flex
-        flex-col
-        gap-4
-        sm:flex-row
-        sm:items-center
-        sm:justify-between
-      ">
+        max-w-4xl
+        flex-wrap
+        items-center
+        justify-center
+        gap-x-5
+        gap-y-2
+        rounded-2xl
+        border
+        border-slate-200
+        bg-white
+        px-4
+        py-3.5
+        shadow-sm
+      "
+    >
 
-        {/* MESSAGE */}
-        <div className="flex items-center gap-3">
+      <span className="text-[9px] font-black text-slate-600">
+        ✓ Clean & Maintained Cars
+      </span>
 
-          <div className="
-            flex
-            h-10
-            w-10
-            shrink-0
-            items-center
-            justify-center
-            rounded-xl
-            bg-orange-600
-            text-lg
-          ">
-            🚕
-          </div>
+      <span className="hidden h-1 w-1 rounded-full bg-slate-300 sm:block" />
 
-          <div>
+      <span className="text-[9px] font-black text-slate-600">
+        ✓ Experienced Drivers
+      </span>
 
-            <p className="
-              text-xs
-              font-black
-              text-white
-              sm:text-sm
-            ">
-              Your route isn't listed?
-            </p>
+      <span className="hidden h-1 w-1 rounded-full bg-slate-300 sm:block" />
 
-            <p className="
-              mt-0.5
-              text-[9px]
-              font-medium
-              text-slate-400
-              sm:text-[10px]
-            ">
-              Check fare for any destination across CG & MP.
-            </p>
-
-          </div>
-
-        </div>
-
-
-        {/* CTA */}
-        <button
-          type="button"
-          onClick={() => {
-            calculatorSectionRef.current?.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            });
-          }}
-          className="
-            flex
-            min-h-[46px]
-            w-full
-            items-center
-            justify-center
-            gap-2
-            rounded-xl
-            bg-orange-600
-            px-5
-            text-[9px]
-            font-black
-            uppercase
-            tracking-widest
-            text-white
-            sm:w-auto
-          "
-        >
-          Check Any Route
-          <span>→</span>
-        </button>
-
-      </div>
+      <span className="text-[9px] font-black text-slate-600">
+        ✓ 24×7 Support
+      </span>
 
     </div>
 
   </div>
 
 </section>
+
+        {/* 👑 SERVICES CATALOGUE SECTION */}
+        <section id="services" className="px-4 max-w-7xl mx-auto my-16 bg-white py-16 rounded-3xl border border-slate-200 shadow-2xs">
+          <div className="text-center mb-10">
+            <span className="text-[10px] font-black uppercase tracking-widest text-orange-600 block mb-1">What We Offer</span>
+            <h2 className="text-2xl sm:text-4xl font-black text-slate-950 tracking-tight">Our Services Catalogue</h2>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">Comprehensive ground transport solutions tailored for your every need.</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-4">
+            {[
+              { icon: "🚀", title: "Outstation One Way", desc: "Pay only for one side drop to any city across CG & MP." },
+              { icon: "🔄", title: "Round Trip Cabs", desc: "Dedicated vehicle and driver for multi-day itineraries." },
+              { icon: "🏙️", title: "Local Rental Packages", desc: "Flexible hourly packages for city sightseeing and business meetings." },
+              { icon: "✈️", title: "Airport Transfers", desc: "Punctual airport pickup and drop services with flight tracking." },
+            ].map((srv, idx) => (
+              <div key={idx} className="bg-slate-50 p-6 rounded-2xl border border-slate-200 text-left">
+                <span className="text-3xl mb-3 block">{srv.icon}</span>
+                <h3 className="text-sm font-black text-slate-900 mb-1">{srv.title}</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">{srv.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 👑 WHAT OUR CUSTOMERS SAYING */}
+        <ReviewsCarousel />
+
+        {/* 👑 POPULAR ROUTES SECTION */}
+        <section id="routes-heading" className="px-4 max-w-7xl mx-auto my-16" aria-labelledby="routes-heading">
+          <div className="text-center mb-10">
+            <span className="text-[10px] font-black uppercase tracking-widest text-orange-600 block mb-1">Top Corridors</span>
+            <h2 className="text-2xl sm:text-4xl font-black text-slate-950 tracking-tight">Popular Routes</h2>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">Most frequented intercity highway routes with fixed flat fares.</p>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {ROUTES.map((route, index) => (
+              <article
+                key={index}
+                onClick={() => triggerQuickBooking(route.from, route.to, parseInt(route.km))}
+                className="group relative rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-2xs hover:shadow-xl hover:border-orange-500 transition-all duration-300 cursor-pointer flex flex-col justify-between"
+              >
+                <div className="h-40 w-full overflow-hidden relative">
+                  <img src={route.image} alt={route.from} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 to-transparent" />
+                  <span className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-xl text-[10px] font-black text-slate-900">
+                    📍 {route.km}
+                  </span>
+                </div>
+
+                <div className="p-5 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-base font-black text-slate-950 tracking-tight group-hover:text-orange-600 transition">
+                      {route.from.split(",")[0]} ⇄ {route.to.split(",")[0]}
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-1">⏱️ {route.time} approx duration</p>
+                  </div>
+
+                  <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <div>
+                      <span className="text-[9px] text-slate-400 font-bold block uppercase">Starting at</span>
+                      <span className="text-lg font-black text-orange-600">{route.price}</span>
+                    </div>
+                    <span className="rounded-xl bg-slate-950 px-4 py-2 text-[10px] font-black uppercase text-white group-hover:bg-orange-600 transition">
+                      Book Now
+                    </span>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
 
         <SeoTextBlock />
 
@@ -2725,7 +1328,7 @@ Hello! I am interested in booking an outstation trip:
               <button onClick={() => setShowLoginAlertModal(false)} className="absolute top-4 right-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full h-8 w-8 flex items-center justify-center font-bold">✕</button>
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-50 text-3xl text-orange-600 border border-orange-100 shadow-inner">🔒</div>
               <h3 className="text-xl font-black text-slate-900 tracking-tight">Login To Continue</h3>
-              <p className="text-xs text-slate-500 mt-2 mb-6 leading-relaxed">Please sign in securely with your Google account to complete your online booking.</p>
+              <p className="text-xs text-slate-500 mt-2 mb-6 leading-relaxed">Please sign in securely with your Google account to get ₹1101/- wallet bonus and unlock fare calculator.</p>
               
               <div className="space-y-3">
                 <button
@@ -2757,7 +1360,7 @@ Hello! I am interested in booking an outstation trip:
           <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md">
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white border border-slate-200 w-full max-w-md rounded-3xl p-6 sm:p-8 text-slate-900 shadow-2xl relative text-left">
               <div className="bg-orange-50 border border-orange-100 p-4 rounded-2xl text-center mb-5">
-                <span className="text-xs font-black text-orange-600 uppercase tracking-widest block">One Last Step</span>
+                <span className="text-xs font-black text-orange-600 uppercase tracking-widest block">Bonus Credited: ₹1101/-</span>
                 <h3 className="text-sm font-black text-slate-900 mt-1">Verify Mobile Number</h3>
                 <p className="text-[10px] text-slate-500 mt-0.5">Driver details & trip updates will be sent via SMS/WhatsApp.</p>
               </div>
@@ -2784,7 +1387,7 @@ Hello! I am interested in booking an outstation trip:
                   disabled={loginLoading}
                   className="w-full bg-linear-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-xs uppercase tracking-widest py-4 rounded-2xl shadow-xl shadow-orange-600/30 transition disabled:opacity-50"
                 >
-                  {loginLoading ? "Creating Profile..." : "Complete Signup & Continue"}
+                  {loginLoading ? "Creating Profile..." : "Complete Signup & Claim ₹1101 Bonus"}
                 </button>
               </form>
             </motion.div>
@@ -2792,7 +1395,7 @@ Hello! I am interested in booking an outstation trip:
         )}
       </AnimatePresence>
 
-      {/* 👑 INITIAL GOOGLE RATING & INSTANT DISCOUNT POPUP MODAL (Matching 'pop-up screen.png') */}
+      {/* 👑 INITIAL GOOGLE RATING & INSTANT DISCOUNT POPUP MODAL */}
       <AnimatePresence>
         {showInitialRatingModal && (
           <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm overflow-y-auto">
@@ -2818,64 +1421,47 @@ Hello! I am interested in booking an outstation trip:
                 <div className="w-24 h-0.5 bg-slate-200 mx-auto mt-1 mb-4" />
 
                 <span className="text-[10px] font-black uppercase tracking-widest text-orange-600 bg-orange-50 px-3 py-1 rounded-full border border-orange-100">
-                  — LOVE OUR SERVICE? —
+                  — GET ₹1101/- WALLET BONUS —
                 </span>
                 
                 <h4 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-3">
-                  Give 5 Star Rating <br />
-                  & Get <span className="text-orange-600">Instant Discount!</span>
+                  Signup Now & Unlock <br />
+                  <span className="text-orange-600">Instant Fare Calculator!</span>
                 </h4>
-
-                <div className="mt-6 bg-slate-50 rounded-2xl p-4 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="text-left w-full sm:w-1/2">
-                    <div className="text-xs font-black text-slate-900">Khatu Rides Travels Co.</div>
-                    <div className="flex items-center gap-1 text-xs text-amber-500 font-bold mt-0.5">
-                      <span>4.6</span>
-                      <span>★★★★★</span>
-                      <span className="text-slate-400 font-normal">(1,200+)</span>
-                    </div>
-                    <p className="text-[10px] text-slate-500 mt-1">Taxi Service • Korba, Chhattisgarh</p>
-                    <a
-                      href="https://g.page/r/CbD5nSIGmvz1EBM/review"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-block mt-3 text-[11px] font-black text-blue-600 hover:underline"
-                    >
-                      ✏️ Write a review
-                    </a>
-                  </div>
-
-                  <div className="bg-linear-to-r from-orange-600 to-amber-500 text-white p-4 rounded-2xl text-center w-full sm:w-1/2 shadow-md">
-                    <span className="text-[9px] font-black uppercase tracking-wider block">INSTANT DISCOUNT</span>
-                    <div className="text-2xl sm:text-3xl font-black tracking-tighter mt-0.5">₹200*</div>
-                    <span className="text-[9px] font-bold block opacity-90">ON YOUR BOOKING</span>
-                  </div>
-                </div>
 
                 <div className="mt-5 space-y-2 text-left text-xs font-bold text-slate-700 bg-amber-50/50 p-4 rounded-2xl border border-amber-100">
                   <div className="flex items-center gap-2.5">
-                    <span className="h-5 w-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-black">1</span>
-                    <span>Give 5 Star Rating on our Google Business Profile</span>
+                    <span className="h-5 w-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-black">✓</span>
+                    <span>Get Rs. 1101/- Wallet Balance on Signup</span>
                   </div>
                   <div className="flex items-center gap-2.5">
-                    <span className="h-5 w-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-black">2</span>
-                    <span>Write a Short & Best Review about your experience</span>
+                    <span className="h-5 w-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-black">✓</span>
+                    <span>Unlock live outstation fare calculators instantly</span>
                   </div>
                   <div className="flex items-center gap-2.5">
-                    <span className="h-5 w-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-black">3</span>
-                    <span>Send Screenshot on WhatsApp to get instant discount</span>
+                    <span className="h-5 w-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-black">✓</span>
+                    <span>24x7 Dedicated Customer Support Guarantee</span>
                   </div>
                 </div>
 
-                <div className="mt-5">
+                <div className="mt-5 space-y-3">
+                  <button
+                    onClick={() => {
+                      setShowInitialRatingModal(false);
+                      setShowLoginAlertModal(true);
+                    }}
+                    className="w-full bg-linear-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black text-xs uppercase tracking-widest py-4 rounded-2xl shadow-lg flex items-center justify-center gap-2 transition"
+                  >
+                    <span>👤</span> Signup / Login to Claim ₹1101 Bonus
+                  </button>
+
                   <a
-                    href="https://wa.me/919244137353?text=Hello%20Khatu%20Rides!%20I%20have%20rated%205-stars%20on%20Google.%20Here%20is%20my%20screenshot%20for%20the%20₹200%20instant%20discount:%20https://g.page/r/CbD5nSIGmvz1EBM/review"
+                    href="https://wa.me/919244137353?text=Hello%20Khatu%20Rides!%20I%20want%20to%20book%20a%20cab%20directly."
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={() => setShowInitialRatingModal(false)}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-widest py-4 rounded-2xl shadow-lg flex items-center justify-center gap-2 transition"
                   >
-                    <span className="text-lg">💬</span> SEND SCREENSHOT ON WHATSAPP
+                    <span className="text-lg">💬</span> Book Directly via WhatsApp (9244137353)
                   </a>
                 </div>
 
@@ -2887,7 +1473,7 @@ Hello! I am interested in booking an outstation trip:
                   >
                     Maybe Later
                   </button>
-                  <p className="text-[9px] text-slate-400 mt-1">*T&C Apply</p>
+                  <p className="text-[9px] text-slate-400 mt-1">*One Way Fare depends on vehicle availability and drop location.</p>
                 </div>
               </div>
             </motion.div>
