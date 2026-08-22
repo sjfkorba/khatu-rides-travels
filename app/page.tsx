@@ -21,6 +21,8 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, Firestore, doc, getDoc, setDoc } from "firebase/firestore";
 import { onAuthStateChanged, User, signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
+import PremiumSplashScreen from "@/components/PremiumSplashScreen";
+import CarCursor from "@/components/CarCursor";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -432,30 +434,29 @@ Hello! I am interested in booking an outstation trip:
 
   if (authChecking) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center text-orange-600 font-bold text-xs uppercase tracking-widest animate-pulse">
-        Loading Khatu Rides...
-      </div>
+      <PremiumSplashScreen></PremiumSplashScreen>
     );
   }
 
   return (
     <>
+    <CarCursor></CarCursor>
       <Script id="razorpay-checkout-js" src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
 
-      <main className="min-h-screen bg-[#f7f9fc] text-slate-950 pb-20 md:pb-0 font-sans selection:bg-amber-500 selection:text-white">
+      <main className="min-h-screen bg-[#06101d] text-white pb-20 md:pb-0 font-sans selection:bg-amber-500 selection:text-white">
         {/* PREMIUM NAVBAR */}
-        <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 backdrop-blur-xl shadow-[0_4px_24px_rgba(15,23,42,0.06)]">
+        <header className="sticky top-0 z-50 border-b border-white/10 bg-[#06101d]/90 backdrop-blur-2xl shadow-[0_8px_35px_rgba(0,0,0,0.25)]">
           <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
             <div className="flex min-h-[76px] items-center justify-between gap-4">
               <a href="/" className="flex shrink-0 items-center">
                 <img
-                  src="/logo.png"
+                  src="/nav_logo.png"
                   alt="Khatu Rides Travels Co."
                   className="h-14 w-auto object-contain sm:h-[68px]"
                 />
               </a>
 
-              <nav className="hidden xl:flex items-center gap-7 text-[12px] font-extrabold text-slate-700">
+              <nav className="hidden xl:flex items-center gap-7 text-[12px] font-extrabold text-white/75">
                 <a href="/" className="hover:text-amber-600 transition">Home</a>
                 <a href="#services" className="hover:text-amber-600 transition">Outstation</a>
                 <a href="#airport" className="hover:text-amber-600 transition">Airport Taxi</a>
@@ -470,15 +471,15 @@ Hello! I am interested in booking an outstation trip:
                 <a href="tel:+919244137353" className="hidden sm:flex items-center gap-2 text-right">
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-50 text-amber-600 text-lg">☎</span>
                   <span className="leading-tight">
-                    <span className="block text-[10px] font-black uppercase tracking-wider text-slate-500">24×7 Support</span>
-                    <span className="block text-sm font-black text-slate-950">+91 92441 37353</span>
+                    <span className="block text-[10px] font-black uppercase tracking-wider text-white/45">24×7 Support</span>
+                    <span className="block text-sm font-black text-white">+91 92441 37353</span>
                   </span>
                 </a>
                 <a
                   href="https://wa.me/919244137353"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hidden sm:flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-[10px] font-black uppercase tracking-wider text-white shadow-lg hover:bg-amber-600 transition"
+                  className="hidden sm:flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-[10px] font-black uppercase tracking-wider text-white shadow-lg hover:bg-amber-500 hover:text-slate-950 transition"
                 >
                   <span className="text-base">◉</span> WhatsApp Us
                 </a>
@@ -498,29 +499,30 @@ Hello! I am interested in booking an outstation trip:
         </header>
 
         {/* HERO / BOOKING ENGINE */}
-        <section className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-[url('/banner6.png')] bg-cover bg-center opacity-[0.13]" />
-          <div className="absolute inset-0 bg-gradient-to-b from-white via-white/95 to-[#f7f9fc]" />
-          <div className="relative mx-auto max-w-[1500px] px-4 pb-12 pt-8 sm:px-6 lg:px-8 lg:pb-16 lg:pt-12">
+        <section className="relative min-h-[760px] overflow-hidden bg-[#06101d]">
+          <div className="absolute inset-0 bg-[url('/splash-bg.png')] bg-cover bg-center opacity-55" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#06101d]/95 via-[#06101d]/70 to-[#06101d]/25" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#06101d]/40 via-transparent to-[#06101d]" />
+          <div className="relative mx-auto max-w-[1500px] px-4 pb-14 pt-10 sm:px-6 lg:px-8 lg:pb-20 lg:pt-14">
             <div className="grid items-center gap-8 lg:grid-cols-[0.9fr_1.1fr] xl:gap-12">
               <div className="relative z-10">
-                <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-[9px] font-black uppercase tracking-[0.18em] text-amber-700">
+                <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-[9px] font-black uppercase tracking-[0.18em] text-amber-300 backdrop-blur">
                   ✦ Chhattisgarh & MP's trusted cab partner
                 </div>
 
-                <h1 className="max-w-2xl text-5xl font-black leading-[0.98] tracking-[-0.04em] text-slate-950 sm:text-6xl lg:text-7xl">
+                <h1 className="max-w-2xl text-5xl font-black leading-[0.98] tracking-[-0.04em] text-white sm:text-6xl lg:text-7xl">
                   Your Journey.
                   <br />
                   <span className="text-amber-500">Our Responsibility.</span>
                 </h1>
 
-                <p className="mt-5 max-w-xl text-sm font-semibold leading-7 text-slate-600 sm:text-base">
+                <p className="mt-5 max-w-xl text-sm font-semibold leading-7 text-white/65 sm:text-base">
                   Reliable cab service across Chhattisgarh & beyond with transparent fares,
                   comfortable cars, experienced drivers and 24×7 travel support.
                 </p>
 
                 <div className="mt-7 flex flex-wrap gap-3">
-                  <a href="tel:+919244137353" className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-5 py-3.5 text-[10px] font-black uppercase tracking-wider text-white shadow-xl hover:bg-slate-800 transition">
+                  <a href="tel:+919244137353" className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-5 py-3.5 text-[10px] font-black uppercase tracking-wider text-white shadow-xl backdrop-blur hover:bg-white/15 transition">
                     ☎ Call Now
                   </a>
                   <button
@@ -538,20 +540,20 @@ Hello! I am interested in booking an outstation trip:
                     ["♢", "Verified", "Drivers"],
                     ["▣", "Clean", "Cars"],
                   ].map(([icon, title, sub]) => (
-                    <div key={title} className="rounded-xl border border-slate-200 bg-white/90 p-3 shadow-sm backdrop-blur">
+                    <div key={title} className="rounded-xl border border-white/10 bg-white/10 p-3 shadow-lg backdrop-blur-xl">
                       <div className="text-lg font-black text-amber-500">{icon}</div>
-                      <div className="mt-1 text-[10px] font-black text-slate-950">{title}</div>
-                      <div className="text-[8px] font-bold uppercase tracking-wide text-slate-500">{sub}</div>
+                      <div className="mt-1 text-[10px] font-black text-white">{title}</div>
+                      <div className="text-[8px] font-bold uppercase tracking-wide text-white/45">{sub}</div>
                     </div>
                   ))}
                 </div>
               </div>
 
               <div className="relative min-h-[390px] lg:min-h-[520px]">
-                <div className="absolute right-0 top-5 h-[82%] w-[82%] rounded-full bg-amber-200/40 blur-3xl" />
+                <div className="absolute right-0 top-5 h-[82%] w-[82%] rounded-full bg-amber-500/20 blur-3xl" />
                 <div className="absolute bottom-12 left-1/2 h-2 w-[90%] -translate-x-1/2 rounded-full bg-slate-950/15 blur-md" />
                 <img
-                  src="/crysta.png"
+                  src="/crysta_hero.png"
                   alt="Innova Crysta"
                   className="absolute inset-x-0 bottom-8 z-10 mx-auto w-[92%] max-w-[680px] object-contain drop-shadow-[0_30px_35px_rgba(15,23,42,0.22)] lg:bottom-12"
                 />
@@ -566,31 +568,10 @@ Hello! I am interested in booking an outstation trip:
 
             {/* BOOKING CARD */}
             <div ref={calculatorSectionRef} className="relative z-30 -mt-2 sm:-mt-8">
-              <div className="overflow-hidden rounded-[26px] border border-white bg-white shadow-[0_25px_70px_rgba(15,23,42,0.14)]">
-                <div className="flex overflow-x-auto border-b border-slate-100 px-2 pt-2 scrollbar-none">
-                  {[
-                    ["oneway", "ONE WAY", "⌁"],
-                    ["roundtrip", "ROUND TRIP", "↔"],
-                    ["airport", "AIRPORT TAXI", "✈"],
-                    ["local", "LOCAL RENTAL", "◷"],
-                    ["rental", "CAR RENTAL", "▣"],
-                  ].map(([id, label, icon], i) => (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => {
-                        if (i === 0) calculatorSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-                      }}
-                      className={`flex min-w-max items-center gap-2 rounded-t-2xl px-4 py-4 text-[10px] font-black tracking-wider transition sm:px-7 ${
-                        i === 0 ? "bg-slate-950 text-white" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-                      }`}
-                    >
-                      <span className={i === 0 ? "text-amber-400" : ""}>{icon}</span>{label}
-                    </button>
-                  ))}
-                </div>
+              <div className="overflow-hidden rounded-[28px] border border-white/10 bg-[#0b1a2c]/90 shadow-[0_30px_90px_rgba(0,0,0,0.35)] backdrop-blur-2xl">
+                
 
-                <div className="bg-white p-3 sm:p-5">
+                <div className="bg-transparent p-3 sm:p-5">
                   <FareCalculator
                     onFareCalculated={(data) => {
                       let oneWayAvail = true;
@@ -636,7 +617,7 @@ Hello! I am interested in booking an outstation trip:
                 </div>
               </div>
 
-              <div className="mt-3 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[9px] font-black uppercase tracking-wide text-slate-500 shadow-sm">
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-[9px] font-black uppercase tracking-wide text-white/55 shadow-sm backdrop-blur">
                 <span>✓ No hidden charges</span>
                 <span>✓ Instant estimate</span>
                 <span>✓ 24×7 support</span>
@@ -648,7 +629,7 @@ Hello! I am interested in booking an outstation trip:
 
         {/* TRUST STRIP */}
         <section className="mx-auto max-w-[1500px] px-4 pb-10 sm:px-6 lg:px-8">
-          <div className="grid overflow-hidden rounded-2xl bg-slate-950 text-white shadow-xl sm:grid-cols-5">
+          <div className="grid overflow-hidden rounded-2xl border border-white/10 bg-[#0b1a2c]/90 text-white shadow-2xl backdrop-blur-xl sm:grid-cols-5">
             {[
               ["60+", "Fleet Partners"],
               ["10K+", "Happy Customers"],
@@ -665,11 +646,11 @@ Hello! I am interested in booking an outstation trip:
         </section>
 
         {/* CORPORATE CLIENTS */}
-        <section className="border-y border-slate-200 bg-white py-10 overflow-hidden">
+        <section className="border-y border-white/10 bg-[#081522] py-10 overflow-hidden">
           <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
             <div className="text-center">
               <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-amber-700">Trusted Industry Partners</span>
-              <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-950">Corporate Clients & Fleet Partners</h2>
+              <h2 className="mt-3 text-2xl font-black tracking-tight text-white">Corporate Clients & Fleet Partners</h2>
             </div>
             <div className="mt-7 relative w-full overflow-hidden">
               <div className="flex w-max animate-marquee items-center gap-4 py-2">
@@ -696,13 +677,13 @@ Hello! I am interested in booking an outstation trip:
         </section>
 
         {/* FLEET */}
-        <section id="fleet" className="bg-[#f7f9fc] py-14 sm:py-20">
+        <section id="fleet" className="bg-[#06101d] py-14 sm:py-20">
           <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
               <div>
                 <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-amber-700">Our Premium Garage</span>
-                <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Choose Your Perfect Ride</h2>
-                <p className="mt-2 max-w-xl text-sm font-medium leading-6 text-slate-500">Comfortable, clean and reliable vehicles for family trips, airport transfers and corporate travel.</p>
+                <h2 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">Choose Your Perfect Ride</h2>
+                <p className="mt-2 max-w-xl text-sm font-medium leading-6 text-white/50">Comfortable, clean and reliable vehicles for family trips, airport transfers and corporate travel.</p>
               </div>
               <button onClick={() => calculatorSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })} className="w-fit rounded-xl bg-slate-950 px-5 py-3 text-[10px] font-black uppercase tracking-wider text-white hover:bg-amber-500 hover:text-slate-950 transition">View All Vehicles →</button>
             </div>
@@ -715,21 +696,21 @@ Hello! I am interested in booking an outstation trip:
                 { title: "Innova Crysta", type: "Luxury SUV", seats: "6+1", img: "/crysta.png", rate: "₹20/KM", tag: "Premium" },
                 { title: "Scorpio", type: "SUV", seats: "6+1", img: "/scorpio.png", rate: "₹18/KM", tag: "Adventure" },
               ].map((car) => (
-                <div key={car.title} className="group overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_8px_28px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1 hover:border-amber-300 hover:shadow-[0_18px_45px_rgba(15,23,42,0.12)]">
-                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-slate-100 to-amber-50">
+                <div key={car.title} className="group overflow-hidden rounded-[24px] border border-white/10 bg-[#0b1a2c] shadow-[0_15px_45px_rgba(0,0,0,0.22)] transition duration-300 hover:-translate-y-1 hover:border-amber-400/40 hover:shadow-[0_22px_55px_rgba(0,0,0,0.32)]">
+                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-[#12263b] to-[#2a1b0a]">
                     <span className="absolute left-3 top-3 z-10 rounded-full bg-white/90 px-2.5 py-1 text-[8px] font-black uppercase tracking-wider text-slate-800 shadow-sm backdrop-blur">{car.tag}</span>
                     <img src={car.img} alt={car.title} className="h-full w-full object-contain p-3 transition duration-500 group-hover:scale-105" />
                   </div>
                   <div className="p-4">
                     <div className="text-[8px] font-black uppercase tracking-widest text-amber-600">{car.type}</div>
-                    <h3 className="mt-1 text-lg font-black text-slate-950">{car.title}</h3>
+                    <h3 className="mt-1 text-lg font-black text-white">{car.title}</h3>
                     <div className="mt-3 grid grid-cols-3 gap-1.5 text-center">
-                      <div className="rounded-lg bg-slate-50 px-1 py-2"><div className="text-xs">👥</div><div className="text-[7px] font-bold text-slate-500">{car.seats} Seats</div></div>
-                      <div className="rounded-lg bg-slate-50 px-1 py-2"><div className="text-xs">❄</div><div className="text-[7px] font-bold text-slate-500">AC</div></div>
-                      <div className="rounded-lg bg-slate-50 px-1 py-2"><div className="text-xs">🧳</div><div className="text-[7px] font-bold text-slate-500">Luggage</div></div>
+                      <div className="rounded-lg border border-white/5 bg-white/5 px-1 py-2"><div className="text-xs">👥</div><div className="text-[7px] font-bold text-white/45">{car.seats} Seats</div></div>
+                      <div className="rounded-lg border border-white/5 bg-white/5 px-1 py-2"><div className="text-xs">❄</div><div className="text-[7px] font-bold text-white/45">AC</div></div>
+                      <div className="rounded-lg border border-white/5 bg-white/5 px-1 py-2"><div className="text-xs">🧳</div><div className="text-[7px] font-bold text-white/45">Luggage</div></div>
                     </div>
                     <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
-                      <div><div className="text-[8px] font-black uppercase tracking-wide text-slate-400">Starting Rate</div><div className="text-base font-black text-slate-950">{car.rate}</div></div>
+                      <div><div className="text-[8px] font-black uppercase tracking-wide text-slate-400">Starting Rate</div><div className="text-base font-black text-white">{car.rate}</div></div>
                       <button onClick={() => calculatorSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })} className="rounded-lg bg-slate-950 px-3 py-2 text-[8px] font-black uppercase tracking-wider text-white hover:bg-amber-500 hover:text-slate-950 transition">Book Now</button>
                     </div>
                   </div>
@@ -740,11 +721,11 @@ Hello! I am interested in booking an outstation trip:
         </section>
 
         {/* SERVICES */}
-        <section id="services" className="bg-white py-14 sm:py-20">
+        <section id="services" className="bg-[#081522] py-14 sm:py-20">
           <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
             <div className="text-center">
               <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-amber-700">What We Offer</span>
-              <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Everything You Need To Travel</h2>
+              <h2 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">Everything You Need To Travel</h2>
               <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-slate-500">From one-way city transfers to multi-day family journeys and corporate mobility.</p>
             </div>
 
@@ -759,10 +740,10 @@ Hello! I am interested in booking an outstation trip:
                 ["◆", "Corporate Travel", "Employee, client, hotel and business transportation solutions."],
                 ["◎", "Multi-City", "Explore multiple destinations with one vehicle and one booking."],
               ].map(([icon, title, desc]) => (
-                <div key={title} className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-amber-300 hover:shadow-lg">
+                <div key={title} className="group rounded-2xl border border-white/10 bg-[#0b1a2c] p-5 shadow-xl transition hover:-translate-y-1 hover:border-amber-400/40 hover:shadow-2xl">
                   <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-950 text-xl font-black text-amber-400 group-hover:bg-amber-500 group-hover:text-slate-950 transition">{icon}</div>
-                  <h3 className="mt-4 text-sm font-black text-slate-950">{title}</h3>
-                  <p className="mt-1.5 text-[11px] leading-5 text-slate-500">{desc}</p>
+                  <h3 className="mt-4 text-sm font-black text-white">{title}</h3>
+                  <p className="mt-1.5 text-[11px] leading-5 text-white/50">{desc}</p>
                 </div>
               ))}
             </div>
@@ -794,7 +775,7 @@ Hello! I am interested in booking an outstation trip:
         </section>
 
         {/* CORPORATE */}
-        <section id="corporate" className="bg-[#f7f9fc] py-14 sm:py-20">
+        <section id="corporate" className="bg-[#06101d] py-14 sm:py-20">
           <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
             <div className="overflow-hidden rounded-[30px] bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
               <div className="grid lg:grid-cols-[1.15fr_0.85fr]">
@@ -823,35 +804,35 @@ Hello! I am interested in booking an outstation trip:
         </section>
 
         {/* REVIEWS */}
-        <section className="bg-white py-14 sm:py-20">
+        <section className="bg-[#081522] py-14 sm:py-20">
           <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
             <div className="mb-8 text-center">
               <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-amber-700">Customer Voice</span>
-              <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Real Journeys. Real Experiences.</h2>
+              <h2 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">Real Journeys. Real Experiences.</h2>
             </div>
             <ReviewsCarousel />
           </div>
         </section>
 
         {/* ROUTES */}
-        <section id="routes-heading" className="bg-[#f7f9fc] py-14 sm:py-20" aria-labelledby="routes-title">
+        <section id="routes-heading" className="bg-[#06101d] py-14 sm:py-20" aria-labelledby="routes-title">
           <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
             <div className="mb-9 text-center">
               <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-amber-700">Top Corridors</span>
-              <h2 id="routes-title" className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Popular Routes</h2>
-              <p className="mt-2 text-sm text-slate-500">Frequently booked intercity routes with transparent starting fares.</p>
+              <h2 id="routes-title" className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">Popular Routes</h2>
+              <p className="mt-2 text-sm text-white/50">Frequently booked intercity routes with transparent starting fares.</p>
             </div>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {ROUTES.map((route, index) => (
-                <article key={index} onClick={() => triggerQuickBooking(route.from, route.to, parseInt(route.km))} className="group cursor-pointer overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-amber-300 hover:shadow-xl">
+                <article key={index} onClick={() => triggerQuickBooking(route.from, route.to, parseInt(route.km))} className="group cursor-pointer overflow-hidden rounded-[24px] border border-white/10 bg-[#0b1a2c] shadow-xl transition hover:-translate-y-1 hover:border-amber-400/40 hover:shadow-2xl">
                   <div className="relative h-40 overflow-hidden">
                     <img src={route.image} alt={`${route.from} to ${route.to}`} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 to-transparent" />
                     <span className="absolute bottom-3 left-3 rounded-lg bg-white/90 px-2.5 py-1 text-[9px] font-black text-slate-950">{route.km}</span>
                   </div>
                   <div className="p-5">
-                    <h3 className="text-base font-black tracking-tight text-slate-950 group-hover:text-amber-600 transition">{route.from.split(",")[0]} → {route.to.split(",")[0]}</h3>
-                    <p className="mt-1 text-[10px] font-bold text-slate-500">⏱ {route.time} approx.</p>
+                    <h3 className="text-base font-black tracking-tight text-white group-hover:text-amber-400 transition">{route.from.split(",")[0]} → {route.to.split(",")[0]}</h3>
+                    <p className="mt-1 text-[10px] font-bold text-white/45">⏱ {route.time} approx.</p>
                     <div className="mt-5 flex items-end justify-between border-t border-slate-100 pt-4">
                       <div><div className="text-[8px] font-black uppercase tracking-wider text-slate-400">Starting from</div><div className="text-lg font-black text-amber-600">{route.price}</div></div>
                       <span className="rounded-lg bg-slate-950 px-3 py-2 text-[9px] font-black uppercase tracking-wider text-white group-hover:bg-amber-500 group-hover:text-slate-950 transition">Book</span>
@@ -864,11 +845,11 @@ Hello! I am interested in booking an outstation trip:
         </section>
 
         {/* HOW IT WORKS */}
-        <section className="bg-white py-14 sm:py-20">
+        <section className="bg-[#081522] py-14 sm:py-20">
           <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
             <div className="text-center">
               <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-amber-700">Simple Booking</span>
-              <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Book In 3 Simple Steps</h2>
+              <h2 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">Book In 3 Simple Steps</h2>
             </div>
             <div className="mt-10 grid gap-5 md:grid-cols-3">
               {[
@@ -876,7 +857,7 @@ Hello! I am interested in booking an outstation trip:
                 ["02", "Check Fare & Choose", "Compare the estimated fare and select your vehicle."],
                 ["03", "Confirm Your Booking", "Pay securely or connect on WhatsApp for assistance."],
               ].map(([num, title, desc]) => (
-                <div key={num} className="relative rounded-[24px] border border-slate-200 bg-[#f7f9fc] p-6 text-center">
+                <div key={num} className="relative rounded-[24px] border border-white/10 bg-[#0b1a2c] p-6 text-center shadow-xl">
                   <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-950 text-lg font-black text-amber-400">{num}</div>
                   <h3 className="mt-5 text-base font-black text-slate-950">{title}</h3>
                   <p className="mt-2 text-xs leading-5 text-slate-500">{desc}</p>
