@@ -443,7 +443,7 @@ Hello! I am interested in booking an outstation trip:
     <CarCursor></CarCursor>
       <Script id="razorpay-checkout-js" src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
 
-      <main className="min-h-screen bg-[#06101d] text-white pb-20 md:pb-0 font-sans selection:bg-amber-500 selection:text-white">
+      <main className="min-h-screen overflow-x-clip bg-[#06101d] pb-20 font-sans text-white selection:bg-amber-500 selection:text-white md:pb-0">
         {/* PREMIUM NAVBAR */}
         <header className="sticky top-0 z-50 border-b border-white/10 bg-[#06101d]/90 backdrop-blur-2xl shadow-[0_8px_35px_rgba(0,0,0,0.25)]">
           <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
@@ -499,48 +499,58 @@ Hello! I am interested in booking an outstation trip:
         </header>
 
         {/* HERO / BOOKING ENGINE */}
-        <section className="relative min-h-[760px] overflow-hidden bg-[#06101d]">
-          <div className="absolute inset-0 bg-[url('/splash-bg.png')] bg-cover bg-center opacity-55" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#06101d]/95 via-[#06101d]/70 to-[#06101d]/25" />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#06101d]/40 via-transparent to-[#06101d]" />
-          <div className="relative mx-auto max-w-[1500px] px-4 pb-14 pt-10 sm:px-6 lg:px-8 lg:pb-20 lg:pt-14">
-            <div className="grid items-center gap-8 lg:grid-cols-[0.9fr_1.1fr] xl:gap-12">
-              <div className="relative z-10">
-                <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-[9px] font-black uppercase tracking-[0.18em] text-amber-300 backdrop-blur">
+        <section className="relative overflow-x-clip bg-[#06101d]">
+          {/* Background layers are decorative only and never participate in layout. */}
+          <div className="pointer-events-none absolute inset-0 bg-[url('/splash-bg.png')] bg-cover bg-center opacity-55" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#06101d]/95 via-[#06101d]/70 to-[#06101d]/25" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#06101d]/40 via-transparent to-[#06101d]" />
+
+          <div className="relative mx-auto w-full max-w-[1500px] px-4 pb-8 pt-8 sm:px-6 sm:pb-10 sm:pt-10 lg:px-8 lg:pb-12 lg:pt-12">
+            {/* HERO CONTENT — normal document flow, no negative margins or absolute content overlap. */}
+            <div className="grid items-center gap-7 lg:grid-cols-[0.9fr_1.1fr] lg:gap-10 xl:gap-14">
+              <div className="relative z-10 min-w-0">
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-[9px] font-black uppercase tracking-[0.18em] text-amber-300 backdrop-blur">
                   ✦ Chhattisgarh & MP's trusted cab partner
                 </div>
 
-                <h1 className="max-w-2xl text-5xl font-black leading-[0.98] tracking-[-0.04em] text-white sm:text-6xl lg:text-7xl">
+                <h1 className="max-w-2xl text-4xl font-black leading-[0.98] tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl xl:text-7xl">
                   Your Journey.
                   <br />
                   <span className="text-amber-500">Our Responsibility.</span>
                 </h1>
 
-                <p className="mt-5 max-w-xl text-sm font-semibold leading-7 text-white/65 sm:text-base">
+                <p className="mt-4 max-w-xl text-sm font-semibold leading-6 text-white/65 sm:text-base sm:leading-7">
                   Reliable cab service across Chhattisgarh & beyond with transparent fares,
                   comfortable cars, experienced drivers and 24×7 travel support.
                 </p>
 
-                <div className="mt-7 flex flex-wrap gap-3">
-                  <a href="tel:+919244137353" className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-5 py-3.5 text-[10px] font-black uppercase tracking-wider text-white shadow-xl backdrop-blur hover:bg-white/15 transition">
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <a
+                    href="tel:+919244137353"
+                    className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-5 py-3.5 text-[10px] font-black uppercase tracking-wider text-white shadow-xl backdrop-blur transition hover:bg-white/15"
+                  >
                     ☎ Call Now
                   </a>
+
                   <button
                     type="button"
                     onClick={() => calculatorSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })}
-                    className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-3.5 text-[10px] font-black uppercase tracking-wider text-slate-950 shadow-xl shadow-amber-500/20 hover:bg-amber-400 transition"
+                    className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-3.5 text-[10px] font-black uppercase tracking-wider text-slate-950 shadow-xl shadow-amber-500/20 transition hover:bg-amber-400"
                   >
                     Check Fare →
                   </button>
                 </div>
 
-                <div className="mt-8 grid max-w-xl grid-cols-3 gap-2">
+                <div className="mt-6 grid max-w-xl grid-cols-3 gap-2">
                   {[
                     ["◷", "24×7", "Support"],
                     ["♢", "Verified", "Drivers"],
                     ["▣", "Clean", "Cars"],
                   ].map(([icon, title, sub]) => (
-                    <div key={title} className="rounded-xl border border-white/10 bg-white/10 p-3 shadow-lg backdrop-blur-xl">
+                    <div
+                      key={title}
+                      className="rounded-xl border border-white/10 bg-white/10 p-3 shadow-lg backdrop-blur-xl"
+                    >
                       <div className="text-lg font-black text-amber-500">{icon}</div>
                       <div className="mt-1 text-[10px] font-black text-white">{title}</div>
                       <div className="text-[8px] font-bold uppercase tracking-wide text-white/45">{sub}</div>
@@ -549,29 +559,45 @@ Hello! I am interested in booking an outstation trip:
                 </div>
               </div>
 
-              <div className="relative min-h-[390px] lg:min-h-[520px]">
-                <div className="absolute right-0 top-5 h-[82%] w-[82%] rounded-full bg-amber-500/20 blur-3xl" />
-                <div className="absolute bottom-12 left-1/2 h-2 w-[90%] -translate-x-1/2 rounded-full bg-slate-950/15 blur-md" />
-                <img
-                  src="/crysta_hero.png"
-                  alt="Innova Crysta"
-                  className="absolute inset-x-0 bottom-8 z-10 mx-auto w-[92%] max-w-[680px] object-contain drop-shadow-[0_30px_35px_rgba(15,23,42,0.22)] lg:bottom-12"
-                />
-                <div className="absolute right-0 top-10 z-20 w-44 rounded-2xl border border-slate-700 bg-slate-950 p-4 text-white shadow-2xl sm:w-52">
-                  <div className="text-[9px] font-black uppercase tracking-[0.18em] text-amber-400">Get Instant Fare</div>
-                  <div className="mt-1 text-xs font-bold text-white/80">No hidden charges</div>
-                  <div className="mt-3 text-3xl font-black text-amber-400">₹</div>
-                  <div className="mt-2 text-[10px] font-black leading-4">Transparent Pricing<br />Before You Book!</div>
+              {/* VEHICLE VISUAL — contained inside its own layout box. */}
+              <div className="relative min-w-0">
+                <div className="grid items-center gap-4 sm:grid-cols-[minmax(0,1fr)_190px] lg:grid-cols-[minmax(0,1fr)_205px]">
+                  <div className="relative flex min-h-[250px] items-center justify-center sm:min-h-[310px] lg:min-h-[350px]">
+                    <div className="pointer-events-none absolute right-0 top-1/2 h-[75%] w-[75%] -translate-y-1/2 rounded-full bg-amber-500/20 blur-3xl" />
+                    <div className="pointer-events-none absolute bottom-5 left-1/2 h-2 w-[86%] -translate-x-1/2 rounded-full bg-slate-950/20 blur-md" />
+                    <img
+                      src="/crysta_hero.png"
+                      alt="Innova Crysta"
+                      className="relative z-10 block h-auto w-full max-w-[620px] object-contain drop-shadow-[0_30px_35px_rgba(15,23,42,0.22)]"
+                    />
+                  </div>
+
+                  {/* Instant-fare card is in normal grid flow — never over the car or booking card. */}
+                  <div className="relative z-20 w-full rounded-2xl border border-slate-700 bg-slate-950 p-4 text-white shadow-2xl">
+                    <div className="text-[9px] font-black uppercase tracking-[0.18em] text-amber-400">
+                      Get Instant Fare
+                    </div>
+                    <div className="mt-1 text-xs font-bold text-white/80">
+                      No hidden charges
+                    </div>
+                    <div className="mt-3 text-3xl font-black text-amber-400">₹</div>
+                    <div className="mt-2 text-[10px] font-black leading-4">
+                      Transparent Pricing
+                      <br />
+                      Before You Book!
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* BOOKING CARD */}
-            <div ref={calculatorSectionRef} className="relative z-30 -mt-2 sm:-mt-8">
-              <div className="overflow-hidden rounded-[28px] border border-white/10 bg-[#0b1a2c]/90 shadow-[0_30px_90px_rgba(0,0,0,0.35)] backdrop-blur-2xl">
-                
-
-                <div className="bg-transparent p-3 sm:p-5">
+            {/* BOOKING CARD — deliberately separated from hero content; no negative margin. */}
+            <div
+              ref={calculatorSectionRef}
+              className="relative z-30 mt-6 scroll-mt-24 sm:mt-7 lg:mt-8"
+            >
+              <div className="overflow-visible rounded-[28px] border border-white/10 bg-[#0b1a2c]/90 shadow-[0_30px_90px_rgba(0,0,0,0.35)] backdrop-blur-2xl">
+                <div className="bg-transparent p-2.5 sm:p-3 lg:p-4">
                   <FareCalculator
                     onFareCalculated={(data) => {
                       let oneWayAvail = true;
@@ -581,7 +607,10 @@ Hello! I am interested in booking an outstation trip:
                         ...data,
                         fareOptions: data.fareOptions.map((opt) => {
                           const rawDist = opt.billedDistance;
-                          const baseSingleDist = data.bookingType === "roundtrip" ? Math.round(rawDist / 2) : rawDist;
+                          const baseSingleDist = data.bookingType === "roundtrip"
+                            ? Math.round(rawDist / 2)
+                            : rawDist;
+
                           baseSingleRouteDist = baseSingleDist;
 
                           const recalculated = calculateFare({
@@ -596,7 +625,9 @@ Hello! I am interested in booking an outstation trip:
                             drop: data.drop,
                             pickup: data.pickup,
                           });
+
                           oneWayAvail = recalculated.isOneWayAvailable;
+
                           return {
                             ...opt,
                             finalFare: recalculated.finalFare,
@@ -605,8 +636,9 @@ Hello! I am interested in booking an outstation trip:
                           };
                         }),
                         isOneWayAvailable: oneWayAvail,
-                        baseDistance: baseSingleRouteDist
+                        baseDistance: baseSingleRouteDist,
                       };
+
                       setPopupData(updatedData);
                       setSelectedVehicleType("sedan");
                       setShowPopup(true);
@@ -617,7 +649,7 @@ Hello! I am interested in booking an outstation trip:
                 </div>
               </div>
 
-              <div className="mt-3 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-[9px] font-black uppercase tracking-wide text-white/55 shadow-sm backdrop-blur">
+              <div className="mt-2.5 flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 text-[8px] font-black uppercase tracking-wide text-white/55 shadow-sm backdrop-blur sm:mt-3 sm:px-4 sm:py-3 sm:text-[9px]">
                 <span>✓ No hidden charges</span>
                 <span>✓ Instant estimate</span>
                 <span>✓ 24×7 support</span>
@@ -698,7 +730,7 @@ Hello! I am interested in booking an outstation trip:
               ].map((car) => (
                 <div key={car.title} className="group overflow-hidden rounded-[24px] border border-white/10 bg-[#0b1a2c] shadow-[0_15px_45px_rgba(0,0,0,0.22)] transition duration-300 hover:-translate-y-1 hover:border-amber-400/40 hover:shadow-[0_22px_55px_rgba(0,0,0,0.32)]">
                   <div className="relative h-40 overflow-hidden bg-gradient-to-br from-[#12263b] to-[#2a1b0a]">
-                    <span className="absolute left-3 top-3 z-10 rounded-full bg-white/90 px-2.5 py-1 text-[8px] font-black uppercase tracking-wider text-slate-800 shadow-sm backdrop-blur">{car.tag}</span>
+                    <span className="absolute left-2 top-2 z-10 rounded-full bg-white/90 px-2.5 py-1 text-[8px] font-black uppercase tracking-wider text-slate-800 shadow-sm backdrop-blur">{car.tag}</span>
                     <img src={car.img} alt={car.title} className="h-full w-full object-contain p-3 transition duration-500 group-hover:scale-105" />
                   </div>
                   <div className="p-4">
@@ -859,7 +891,7 @@ Hello! I am interested in booking an outstation trip:
               ].map(([num, title, desc]) => (
                 <div key={num} className="relative rounded-[24px] border border-white/10 bg-[#0b1a2c] p-6 text-center shadow-xl">
                   <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-950 text-lg font-black text-amber-400">{num}</div>
-                  <h3 className="mt-5 text-base font-black text-slate-950">{title}</h3>
+                  <h3 className="mt-5 text-base font-black text-white">{title}</h3>
                   <p className="mt-2 text-xs leading-5 text-slate-500">{desc}</p>
                 </div>
               ))}
