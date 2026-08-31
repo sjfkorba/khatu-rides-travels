@@ -1,7 +1,7 @@
 // components/FareCalculator.tsx
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   calculateFare,
   VEHICLES,
@@ -24,62 +24,40 @@ interface FareCalculatorProps {
   }) => void;
 }
 
-type CalculatorMode =
-  | "outstation"
-  | "airport"
-  | "local";
-
 export default function FareCalculator({
   onFareCalculated,
 }: FareCalculatorProps) {
   /* =========================================================
-     SERVICE / BOOKING
+     SERVICE / BOOKING STATE
   ========================================================= */
 
   const [serviceType, setMainServiceType] =
-    useState<"outstation" | "local">(
-      "outstation"
-    );
-
-  const [calculatorMode, setCalculatorMode] =
-    useState<CalculatorMode>(
-      "outstation"
-    );
+    useState<"outstation" | "local">("outstation");
 
   const [bookingType, setBookingType] =
     useState<BookingType>("oneway");
 
   /* =========================================================
-     FORM
+     FORM STATE
   ========================================================= */
 
   const [pickup, setPickup] = useState("");
   const [drop, setDrop] = useState("");
 
-  const [pickupDate, setPickupDate] =
-    useState("");
+  const [pickupDate, setPickupDate] = useState("");
+  const [pickupTime, setPickupTime] = useState("");
 
-  const [pickupTime, setPickupTime] =
-    useState("");
-
-  const [returnDate, setReturnDate] =
-    useState("");
-
-  const [returnTime, setReturnTime] =
-    useState("");
+  const [returnDate, setReturnDate] = useState("");
+  const [returnTime, setReturnTime] = useState("");
 
   /* =========================================================
-     UI
+     UI STATE
   ========================================================= */
 
-  const [loading, setLoading] =
-    useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const [minDate, setMinDate] =
-    useState("");
-
-  const [minTime, setMinTime] =
-    useState("");
+  const [minDate, setMinDate] = useState("");
+  const [minTime, setMinTime] = useState("");
 
   const [pickupSuggestions, setPickupSuggestions] =
     useState<string[]>([]);
@@ -99,40 +77,39 @@ export default function FareCalculator({
   const [dropFocused, setDropFocused] =
     useState(false);
 
-  const pickupRef =
-    useRef<HTMLDivElement>(null);
-
-  const dropRef =
-    useRef<HTMLDivElement>(null);
+  const pickupRef = useRef<HTMLDivElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
 
   /* =========================================================
-     DATE / TIME
+     CURRENT DATE / TIME
   ========================================================= */
 
   useEffect(() => {
-    const now = new Date();
+    const updateDateTime = () => {
+      const today = new Date();
 
-    const dateValue =
-      `${now.getFullYear()}-${String(
-        now.getMonth() + 1
+      const dateValue = `${today.getFullYear()}-${String(
+        today.getMonth() + 1
       ).padStart(2, "0")}-${String(
-        now.getDate()
+        today.getDate()
       ).padStart(2, "0")}`;
 
-    const timeValue =
-      `${String(
-        now.getHours()
+      const timeValue = `${String(
+        today.getHours()
       ).padStart(2, "0")}:${String(
-        now.getMinutes()
+        today.getMinutes()
       ).padStart(2, "0")}`;
 
-    setMinDate(dateValue);
-    setMinTime(timeValue);
+      setMinDate(dateValue);
+      setMinTime(timeValue);
+    };
+
+    updateDateTime();
   }, []);
 
   /* =========================================================
      GOOGLE PLACES AUTOCOMPLETE
-     EXISTING API PRESERVED
+     BACKEND LOGIC UNCHANGED
   ========================================================= */
 
   const fetchLiveSuggestions = async (
@@ -158,64 +135,25 @@ export default function FareCalculator({
         )}`
       );
 
-      /*
-       * Do not blindly call response.json()
-       * on an HTML 404/500 response.
-       *
-       * This also prevents:
-       * Unexpected token '<'
-       */
+      const data = await response.json();
 
-      const text = await response.text();
-
-      if (!response.ok) {
-        console.error(
-          `[places-autocomplete] HTTP ${response.status}`,
-          text.slice(0, 300)
+      if (data && data.predictions) {
+        const results = data.predictions.map(
+          (p: any) => p.description
         );
-
-        return;
-      }
-
-      let data: any;
-
-      try {
-        data = JSON.parse(text);
-      } catch (error) {
-        console.error(
-          "Places API returned invalid JSON:",
-          text.slice(0, 300)
-        );
-
-        return;
-      }
-
-      if (
-        data &&
-        Array.isArray(data.predictions)
-      ) {
-        const results =
-          data.predictions.map(
-            (p: any) =>
-              p.description
-          );
 
         if (type === "pickup") {
           setPickupSuggestions(results);
-          setShowPickupList(
-            results.length > 0
-          );
+          setShowPickupList(results.length > 0);
         } else {
           setDropSuggestions(results);
-          setShowDropList(
-            results.length > 0
-          );
+          setShowDropList(results.length > 0);
         }
       }
-    } catch (error) {
+    } catch (err) {
       console.error(
         "Autocomplete error:",
-        error
+        err
       );
     }
   };
@@ -225,11 +163,8 @@ export default function FareCalculator({
   ========================================================= */
 
   useEffect(() => {
-    const handleClickOutside = (
-      event: MouseEvent
-    ) => {
-      const target =
-        event.target as Node;
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node;
 
       if (
         pickupRef.current &&
@@ -244,7 +179,7 @@ export default function FareCalculator({
       ) {
         setShowDropList(false);
       }
-    };
+    }
 
     document.addEventListener(
       "mousedown",
@@ -260,65 +195,44 @@ export default function FareCalculator({
   }, []);
 
   /* =========================================================
-     SERVICE BUTTONS
+     SWAP LOCATIONS
   ========================================================= */
 
-  const selectOutstation = () => {
-    setCalculatorMode(
-      "outstation"
-    );
+  const swapLocations = () => {
+    const oldPickup = pickup;
 
-    setMainServiceType(
-      "outstation"
-    );
+    setPickup(drop);
+    setDrop(oldPickup);
 
-    setBookingType("oneway");
-
-    setReturnDate("");
-    setReturnTime("");
+    setShowPickupList(false);
+    setShowDropList(false);
   };
 
-  const selectAirport = () => {
-    /*
-     * Airport mode uses the existing
-     * one-way/outstation fare flow.
-     *
-     * No backend/service contract is changed.
-     */
+  /* =========================================================
+     CLEAR PICKUP
+  ========================================================= */
 
-    setCalculatorMode("airport");
-
-    setMainServiceType(
-      "outstation"
-    );
-
-    setBookingType("oneway");
-
-    setReturnDate("");
-    setReturnTime("");
+  const clearPickup = () => {
+    setPickup("");
+    setPickupSuggestions([]);
+    setShowPickupList(false);
   };
 
-  const selectLocal = () => {
-    setCalculatorMode("local");
+  /* =========================================================
+     CLEAR DROP
+  ========================================================= */
 
-    setMainServiceType("local");
-
-    setBookingType("oneway");
-
+  const clearDrop = () => {
     setDrop("");
-
-    setReturnDate("");
-    setReturnTime("");
-
     setDropSuggestions([]);
     setShowDropList(false);
   };
 
   /* =========================================================
-     BOOKING TYPE
+     BOOKING TYPE CHANGE
   ========================================================= */
 
-  const selectBookingType = (
+  const handleBookingTypeChange = (
     type: BookingType
   ) => {
     setBookingType(type);
@@ -330,58 +244,38 @@ export default function FareCalculator({
   };
 
   /* =========================================================
-     CLEAR
+     MAIN SERVICE CHANGE
   ========================================================= */
 
-  const clearPickup = () => {
-    setPickup("");
-    setPickupSuggestions([]);
-    setShowPickupList(false);
-  };
+  const handleServiceChange = (
+    type: "outstation" | "local"
+  ) => {
+    setMainServiceType(type);
 
-  const clearDrop = () => {
-    setDrop("");
-    setDropSuggestions([]);
-    setShowDropList(false);
-  };
+    if (type === "local") {
+      setBookingType("oneway");
 
-  /* =========================================================
-     SWAP
-  ========================================================= */
+      setDrop("");
+      setReturnDate("");
+      setReturnTime("");
 
-  const swapLocations = () => {
-    const currentPickup =
-      pickup;
-
-    setPickup(drop);
-    setDrop(currentPickup);
-
-    setShowPickupList(false);
-    setShowDropList(false);
+      setDropSuggestions([]);
+      setShowDropList(false);
+    } else {
+      setBookingType("oneway");
+    }
   };
 
   /* =========================================================
-     SHARED FIELD STYLE
+     ERROR HANDLER
   ========================================================= */
 
-  const fieldClass = (
-    active = false
-  ) =>
-    [
-      "rounded-[18px]",
-      "border",
-      "bg-white",
-      "transition-all",
-      "duration-200",
-      "overflow-visible",
-
-      active
-        ? "border-orange-400 ring-4 ring-orange-500/10 shadow-[0_8px_25px_rgba(249,115,22,0.10)]"
-        : "border-slate-200 shadow-[0_4px_16px_rgba(15,23,42,0.045)]",
-    ].join(" ");
+  const showError = (message: string) => {
+    alert(`⚠️ ${message}`);
+  };
 
   /* =========================================================
-     CALCULATE
+     CALCULATE FARE
      EXISTING FARE LOGIC PRESERVED
   ========================================================= */
 
@@ -390,6 +284,10 @@ export default function FareCalculator({
   ) => {
     e.preventDefault();
 
+    /* -------------------------------------------------------
+       BASIC VALIDATION
+    ------------------------------------------------------- */
+
     if (
       !pickup.trim() ||
       (serviceType !== "local" &&
@@ -397,140 +295,123 @@ export default function FareCalculator({
       !pickupDate ||
       !pickupTime
     ) {
-      alert(
-        "⚠️ Error: All fields are mandatory!"
+      showError(
+        "All fields are mandatory!"
       );
 
       return;
     }
+
+    /* -------------------------------------------------------
+       ROUND TRIP VALIDATION
+    ------------------------------------------------------- */
 
     if (
       bookingType === "roundtrip" &&
       (!returnDate || !returnTime)
     ) {
-      alert(
-        "⚠️ Error: Return details are required for Round Trips!"
+      showError(
+        "Return details are required for Round Trips!"
       );
 
       return;
     }
 
+    /* -------------------------------------------------------
+       START LOADING
+    ------------------------------------------------------- */
+
     setLoading(true);
 
     try {
+      /* -----------------------------------------------------
+         LOCAL DEFAULT DISTANCE
+      ----------------------------------------------------- */
+
       let mappedDistance =
         serviceType === "local"
           ? 80
           : 45;
 
-      /* =====================================================
-         DISTANCE API
-         EXISTING BACKEND PRESERVED
-      ===================================================== */
+      /* -----------------------------------------------------
+         GOOGLE ROUTE DISTANCE
+         BACKEND ENDPOINT UNCHANGED
+      ----------------------------------------------------- */
 
-      if (
-        serviceType !== "local"
-      ) {
+      if (serviceType !== "local") {
         try {
-          const response =
-            await fetch(
-              "/api/distance",
-              {
-                method: "POST",
+          const response = await fetch(
+            "/api/distance",
+            {
+              method: "POST",
 
-                headers: {
-                  "Content-Type":
-                    "application/json",
-                },
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
 
-                body: JSON.stringify({
-                  origin: pickup,
-                  destination:
-                    drop,
-                }),
-              }
-            );
-
-          const text =
-            await response.text();
-
-          if (response.ok) {
-            try {
-              const routeData =
-                JSON.parse(text);
-
-              if (
-                routeData &&
-                routeData.distanceKm
-              ) {
-                mappedDistance =
-                  routeData.distanceKm;
-              }
-            } catch (error) {
-              console.error(
-                "Distance API returned invalid JSON:",
-                text.slice(0, 300)
-              );
+              body: JSON.stringify({
+                origin: pickup,
+                destination: drop,
+              }),
             }
-          } else {
-            console.error(
-              `[distance] HTTP ${response.status}`,
-              text.slice(0, 300)
-            );
+          );
+
+          const routeData =
+            await response.json();
+
+          if (
+            response.ok &&
+            routeData.distanceKm
+          ) {
+            mappedDistance =
+              routeData.distanceKm;
           }
-        } catch (error) {
+        } catch (err) {
           console.error(
             "Distance API error:",
-            error
+            err
           );
         }
       }
 
-      /* =====================================================
+      /* -----------------------------------------------------
          FARE CALCULATION
-      ===================================================== */
+      ----------------------------------------------------- */
 
-      let computedServiceType:
-        ServiceType =
+      let computedServiceType: ServiceType =
         serviceType;
 
       const options = (
-        Object.keys(
-          VEHICLES
-        ) as VehicleType[]
+        Object.keys(VEHICLES) as VehicleType[]
       ).map((type) => {
-        const res =
-          calculateFare({
-            distance:
-              mappedDistance,
+        const res = calculateFare({
+          distance: mappedDistance,
 
-            vehicleType:
-              type,
+          vehicleType: type,
 
-            bookingType,
+          bookingType,
 
-            serviceType,
+          serviceType,
 
-            pickupDate,
+          pickupDate,
 
-            pickupTime,
+          pickupTime,
 
-            returnDate:
-              bookingType ===
-              "roundtrip"
-                ? returnDate
-                : undefined,
+          returnDate:
+            bookingType === "roundtrip"
+              ? returnDate
+              : undefined,
 
-            returnTime:
-              bookingType ===
-              "roundtrip"
-                ? returnTime
-                : undefined,
+          returnTime:
+            bookingType === "roundtrip"
+              ? returnTime
+              : undefined,
 
-            drop,
+          drop,
 
-            pickup,
-          });
+          pickup,
+        });
 
         computedServiceType =
           res.autoCorrectedService;
@@ -546,16 +427,13 @@ export default function FareCalculator({
           vehicleImage:
             VEHICLES[type].image,
 
-          finalFare:
-            res.finalFare,
+          finalFare: res.finalFare,
 
-          strikeFare:
-            res.strikeFare,
+          strikeFare: res.strikeFare,
 
-          fareText:
-            `₹${res.finalFare.toLocaleString(
-              "en-IN"
-            )}`,
+          fareText: `₹${res.finalFare.toLocaleString(
+            "en-IN"
+          )}`,
 
           billedDistance:
             res.billedDistance,
@@ -565,9 +443,9 @@ export default function FareCalculator({
         };
       });
 
-      /* =====================================================
-         SEND RESULT
-      ===================================================== */
+      /* -----------------------------------------------------
+         SEND RESULT TO PARENT
+      ----------------------------------------------------- */
 
       onFareCalculated({
         fareOptions: options,
@@ -590,14 +468,12 @@ export default function FareCalculator({
         pickupTime,
 
         returnDate:
-          bookingType ===
-          "roundtrip"
+          bookingType === "roundtrip"
             ? returnDate
             : undefined,
 
         returnTime:
-          bookingType ===
-          "roundtrip"
+          bookingType === "roundtrip"
             ? returnTime
             : undefined,
       });
@@ -607,8 +483,8 @@ export default function FareCalculator({
         error
       );
 
-      alert(
-        "⚠️ Unable to calculate fare right now. Please try again."
+      showError(
+        "Unable to calculate fare right now. Please try again."
       );
     } finally {
       setLoading(false);
@@ -616,334 +492,195 @@ export default function FareCalculator({
   };
 
   /* =========================================================
-     SERVICE BUTTON COMPONENT
+     SHARED FIELD CLASS
   ========================================================= */
 
-  const ServiceButton = ({
-    active,
-    icon,
-    label,
-    onClick,
-  }: {
-    active: boolean;
-    icon: string;
-    label: string;
-    onClick: () => void;
-  }) => {
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        className={`relative flex min-h-[46px] flex-1 items-center justify-center gap-1.5 rounded-[14px] px-2 text-[9px] font-black tracking-wide transition-all duration-200 sm:min-h-[50px] sm:text-[11px] ${
-          active
-            ? "bg-gradient-to-br from-orange-600 via-orange-500 to-amber-400 text-white shadow-[0_6px_16px_rgba(249,115,22,0.28)]"
-            : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-        }`}
-      >
-        <span className="text-sm sm:text-base">
-          {icon}
-        </span>
-
-        <span>
-          {label}
-        </span>
-
-        {active && (
-          <span className="absolute -bottom-[4px] left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-amber-400" />
-        )}
-      </button>
-    );
-  };
+  const fieldClass = (
+    active = false
+  ) =>
+    [
+      "rounded-[20px]",
+      "border",
+      "bg-white",
+      "transition-all",
+      "duration-200",
+      active
+        ? "border-orange-400 ring-4 ring-orange-500/10 shadow-[0_10px_30px_rgba(249,115,22,0.10)]"
+        : "border-slate-200 shadow-[0_4px_18px_rgba(15,23,42,0.045)]",
+    ].join(" ");
 
   /* =========================================================
-     LOCATION FIELD
-  ========================================================= */
-
-  const LocationField = ({
-    type,
-  }: {
-    type: "pickup" | "drop";
-  }) => {
-    const isPickup =
-      type === "pickup";
-
-    const value = isPickup
-      ? pickup
-      : drop;
-
-    const focused =
-      isPickup
-        ? pickupFocused
-        : dropFocused;
-
-    const suggestions =
-      isPickup
-        ? pickupSuggestions
-        : dropSuggestions;
-
-    const showList =
-      isPickup
-        ? showPickupList
-        : showDropList;
-
-    const setFocused =
-      isPickup
-        ? setPickupFocused
-        : setDropFocused;
-
-    const setValue = isPickup
-      ? setPickup
-      : setDrop;
-
-    const clear = isPickup
-      ? clearPickup
-      : clearDrop;
-
-    return (
-      <div
-        ref={
-          isPickup
-            ? pickupRef
-            : dropRef
-        }
-        className={`${fieldClass(
-          focused
-        )} relative z-30`}
-      >
-        <label className="block px-3.5 pt-2.5 text-[7px] font-black uppercase tracking-[0.15em] text-slate-400 sm:px-4 sm:pt-3 sm:text-[8px]">
-          {isPickup
-            ? "From • Pickup Location"
-            : "To • Drop Location"}
-        </label>
-
-        <div className="flex items-center gap-2 px-3.5 pb-2.5 pt-1 sm:px-4 sm:pb-3">
-          <div
-            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-sm ${
-              isPickup
-                ? "bg-emerald-50"
-                : "bg-red-50"
-            }`}
-          >
-            📍
-          </div>
-
-          <input
-            required
-            type="text"
-            value={value}
-            placeholder={
-              isPickup
-                ? "Enter pickup location"
-                : "Enter drop location"
-            }
-            onFocus={() =>
-              setFocused(true)
-            }
-            onBlur={() =>
-              setFocused(false)
-            }
-            onChange={(e) => {
-              setValue(
-                e.target.value
-              );
-
-              fetchLiveSuggestions(
-                e.target.value,
-                type
-              );
-            }}
-            className="min-w-0 flex-1 bg-transparent text-[12px] font-bold text-slate-950 outline-none placeholder:text-slate-400 sm:text-sm"
-          />
-
-          {value && (
-            <button
-              type="button"
-              onClick={clear}
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs text-slate-500 transition hover:bg-slate-200"
-              aria-label={
-                isPickup
-                  ? "Clear pickup"
-                  : "Clear drop"
-              }
-            >
-              ×
-            </button>
-          )}
-        </div>
-
-        {/* SUGGESTIONS */}
-
-        {showList &&
-          suggestions.length >
-            0 && (
-            <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-[1000] overflow-hidden rounded-[16px] border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
-              <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-3.5 py-2">
-                <span className="text-[7px] font-black uppercase tracking-[0.15em] text-slate-400">
-                  {isPickup
-                    ? "Suggested Locations"
-                    : "Suggested Destinations"}
-                </span>
-
-                <span className="text-[7px] font-bold text-slate-300">
-                  Google Maps
-                </span>
-              </div>
-
-              <ul className="max-h-48 overflow-y-auto">
-                {suggestions.map(
-                  (
-                    item,
-                    index
-                  ) => (
-                    <li
-                      key={`${item}-${index}`}
-                    >
-                      <button
-                        type="button"
-                        onMouseDown={(
-                          e
-                        ) =>
-                          e.preventDefault()
-                        }
-                        onClick={() => {
-                          setValue(
-                            item
-                          );
-
-                          if (
-                            isPickup
-                          ) {
-                            setShowPickupList(
-                              false
-                            );
-                          } else {
-                            setShowDropList(
-                              false
-                            );
-                          }
-                        }}
-                        className="flex w-full items-start gap-2.5 border-b border-slate-50 px-3.5 py-2.5 text-left transition hover:bg-orange-50"
-                      >
-                        <span
-                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs ${
-                            isPickup
-                              ? "bg-emerald-50"
-                              : "bg-red-50"
-                          }`}
-                        >
-                          📍
-                        </span>
-
-                        <span className="text-[10px] font-semibold leading-4 text-slate-700">
-                          {item}
-                        </span>
-                      </button>
-                    </li>
-                  )
-                )}
-              </ul>
-            </div>
-          )}
-      </div>
-    );
-  };
-
-  /* =========================================================
-     RENDER
+     UI
   ========================================================= */
 
   return (
     <div className="w-full px-0">
 
-      <div className="mx-auto w-full max-w-[1180px]">
+      <div className="mx-auto w-full max-w">
 
-        {/* =====================================================
-            MAIN CALCULATOR CARD
-        ===================================================== */}
+        {/* ===================================================
+            SERVICE SWITCH
+        =================================================== */}
 
-        <div className="overflow-visible rounded-[24px] border border-slate-200 bg-white shadow-[0_16px_55px_rgba(15,23,42,0.10)]">
+        <div className="mb-3 rounded-[20px] border border-slate-200 bg-white p-1.5 shadow-[0_7px_25px_rgba(15,23,42,0.07)]">
 
-          {/* ===================================================
-              SERVICE TABS
-              OUTSTATION / AIRPORT / LOCAL
-          =================================================== */}
+          <div className="grid grid-cols-3 gap-1.5">
 
-          <div className="border-b border-slate-100 p-1.5 sm:p-2">
+            {/* OUTSTATION */}
 
-            <div className="flex w-full gap-1.5 rounded-[18px] bg-slate-50 p-1">
-
-              <ServiceButton
-                active={
-                  calculatorMode ===
+            <button
+              type="button"
+              onClick={() =>
+                handleServiceChange(
                   "outstation"
-                }
-                icon="🚕"
-                label="Outstation"
-                onClick={
-                  selectOutstation
-                }
-              />
+                )
+              }
+              className={`relative min-h-[52px] rounded-[16px] px-2 transition-all duration-200 ${
+                serviceType ===
+                "outstation"
+                  ? "bg-gradient-to-br from-orange-600 to-amber-500 text-white shadow-[0_7px_18px_rgba(249,115,22,0.28)]"
+                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+              }`}
+            >
 
-              <ServiceButton
-                active={
-                  calculatorMode ===
-                  "airport"
-                }
-                icon="✈️"
-                label="Airport Dropping"
-                onClick={
-                  selectAirport
-                }
-              />
+              <div className="flex items-center justify-center gap-2">
 
-              <ServiceButton
-                active={
-                  calculatorMode ===
+                <span className="text-lg leading-none">
+                  🚗
+                </span>
+
+                <span className="text-[10px] font-black tracking-wide sm:text-xs">
+                  Outstation
+                </span>
+
+              </div>
+
+              {serviceType ===
+                "outstation" && (
+                <span className="absolute bottom-[-4px] left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-amber-500" />
+              )}
+
+            </button>
+
+            {/* ROUND TRIP */}
+
+            <button
+              type="button"
+              onClick={() => {
+                setMainServiceType(
+                  "outstation"
+                );
+
+                setBookingType(
+                  "roundtrip"
+                );
+              }}
+              className={`relative min-h-[52px] rounded-[16px] px-2 transition-all duration-200 ${
+                serviceType ===
+                  "outstation" &&
+                bookingType ===
+                  "roundtrip"
+                  ? "bg-gradient-to-br from-orange-600 to-amber-500 text-white shadow-[0_7px_18px_rgba(249,115,22,0.28)]"
+                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+              }`}
+            >
+
+              <div className="flex items-center justify-center gap-2">
+
+                <span className="text-lg leading-none">
+                  ⇄
+                </span>
+
+                <span className="text-[10px] font-black tracking-wide sm:text-xs">
+                  Round Trip
+                </span>
+
+              </div>
+
+              {serviceType ===
+                  "outstation" &&
+                bookingType ===
+                  "roundtrip" && (
+                  <span className="absolute bottom-[-4px] left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-amber-500" />
+                )}
+
+            </button>
+
+            {/* LOCAL */}
+
+            <button
+              type="button"
+              onClick={() =>
+                handleServiceChange(
                   "local"
-                }
-                icon="🏙️"
-                label="Local Package"
-                onClick={
-                  selectLocal
-                }
-              />
+                )
+              }
+              className={`relative min-h-[52px] rounded-[16px] px-2 transition-all duration-200 ${
+                serviceType ===
+                "local"
+                  ? "bg-gradient-to-br from-orange-600 to-amber-500 text-white shadow-[0_7px_18px_rgba(249,115,22,0.28)]"
+                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+              }`}
+            >
 
-            </div>
+              <div className="flex items-center justify-center gap-2">
+
+                <span className="text-lg leading-none">
+                  🏙️
+                </span>
+
+                <span className="text-[10px] font-black tracking-wide sm:text-xs">
+                  Local
+                </span>
+
+              </div>
+
+              {serviceType ===
+                "local" && (
+                <span className="absolute bottom-[-4px] left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-amber-500" />
+              )}
+
+            </button>
 
           </div>
 
-          {/* ===================================================
-              HEADER
-          =================================================== */}
+        </div>
 
-          <div className="border-b border-slate-100 px-4 py-3 sm:px-6 sm:py-3.5">
+        {/* ===================================================
+            MAIN CARD
+        =================================================== */}
+
+        <div className="overflow-visible rounded-[26px] border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.10)]">
+
+          {/* =================================================
+              HEADER
+          ================================================= */}
+
+          <div className="border-b border-slate-100 px-5 py-4 sm:px-7">
 
             <div className="flex items-center justify-between gap-3">
 
-              <div className="flex min-w-0 items-center gap-2.5">
+              <div className="flex min-w-0 items-center gap-3">
 
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-gradient-to-br from-orange-500 to-amber-400 text-base shadow-[0_6px_15px_rgba(249,115,22,0.23)]">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-gradient-to-br from-orange-500 to-amber-400 text-lg shadow-[0_7px_18px_rgba(249,115,22,0.23)]">
                   🧮
                 </div>
 
                 <div className="min-w-0">
 
-                  <h2 className="truncate text-[16px] font-black tracking-tight text-slate-950 sm:text-[18px]">
+                  <h2 className="truncate text-[18px] font-black tracking-tight text-slate-950 sm:text-xl">
 
-                    {calculatorMode ===
+                    {serviceType ===
                     "local"
                       ? "Local Package Fare"
-                      : calculatorMode ===
-                        "airport"
-                      ? "Airport Dropping Fare"
                       : bookingType ===
                         "roundtrip"
                       ? "Round Trip Fare"
-                      : "Outstation Fare"}
+                      : "Get Your Fare"}
 
                   </h2>
 
-                  <p className="mt-0.5 text-[8px] font-semibold text-slate-500 sm:text-[9px]">
+                  <p className="mt-0.5 text-[9px] font-semibold text-slate-500 sm:text-[10px]">
                     Instant fare • Simple booking • Transparent pricing
                   </p>
 
@@ -951,9 +688,11 @@ export default function FareCalculator({
 
               </div>
 
+              {/* TRUST BADGE */}
+
               <div className="hidden shrink-0 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 sm:block">
 
-                <span className="text-[7px] font-black uppercase tracking-wide text-emerald-700">
+                <span className="text-[8px] font-black uppercase tracking-wide text-emerald-700">
                   ✓ Transparent Fare
                 </span>
 
@@ -963,61 +702,67 @@ export default function FareCalculator({
 
           </div>
 
-          {/* ===================================================
-              LOCAL PACKAGE SUMMARY
-          =================================================== */}
+          {/* =================================================
+              LOCAL PACKAGE
+          ================================================= */}
 
           {serviceType ===
             "local" && (
-            <div className="px-4 pt-2.5 sm:px-6">
+            <div className="px-5 pt-3 sm:px-7">
 
-              <div className="rounded-[16px] border border-orange-100 bg-gradient-to-r from-orange-50 to-amber-50 p-1.5">
+              <div className="rounded-[17px] border border-orange-100 bg-gradient-to-r from-orange-50 to-amber-50 p-2">
 
-                <div className="grid grid-cols-3 gap-1.5">
+                <div className="grid grid-cols-3 gap-2">
 
-                  <div className="rounded-[12px] bg-white px-1.5 py-1.5 text-center shadow-sm">
+                  {/* DURATION */}
 
-                    <span className="block text-xs">
+                  <div className="rounded-[13px] bg-white px-2 py-2 text-center shadow-sm">
+
+                    <span className="block text-sm">
                       ⏱️
                     </span>
 
-                    <span className="block text-[6px] font-bold uppercase tracking-wide text-slate-400">
+                    <span className="block text-[7px] font-bold uppercase tracking-wide text-slate-400">
                       Duration
                     </span>
 
-                    <span className="block text-[9px] font-black text-slate-900">
+                    <span className="block text-[10px] font-black text-slate-900">
                       8 Hours
                     </span>
 
                   </div>
 
-                  <div className="rounded-[12px] bg-white px-1.5 py-1.5 text-center shadow-sm">
+                  {/* KM */}
 
-                    <span className="block text-xs">
+                  <div className="rounded-[13px] bg-white px-2 py-2 text-center shadow-sm">
+
+                    <span className="block text-sm">
                       🛣️
                     </span>
 
-                    <span className="block text-[6px] font-bold uppercase tracking-wide text-slate-400">
+                    <span className="block text-[7px] font-bold uppercase tracking-wide text-slate-400">
                       Included
                     </span>
 
-                    <span className="block text-[9px] font-black text-slate-900">
+                    <span className="block text-[10px] font-black text-slate-900">
                       80 KM
                     </span>
 
                   </div>
 
-                  <div className="rounded-[12px] bg-white px-1.5 py-1.5 text-center shadow-sm">
+                  {/* SERVICE */}
 
-                    <span className="block text-xs">
+                  <div className="rounded-[13px] bg-white px-2 py-2 text-center shadow-sm">
+
+                    <span className="block text-sm">
                       🚕
                     </span>
 
-                    <span className="block text-[6px] font-bold uppercase tracking-wide text-slate-400">
+                    <span className="block text-[7px] font-bold uppercase tracking-wide text-slate-400">
                       Service
                     </span>
 
-                    <span className="block text-[9px] font-black text-slate-900">
+                    <span className="block text-[10px] font-black text-slate-900">
                       Local
                     </span>
 
@@ -1030,60 +775,61 @@ export default function FareCalculator({
             </div>
           )}
 
-          {/* ===================================================
+          {/* =================================================
               FORM
-          =================================================== */}
+          ================================================= */}
 
           <form
-            onSubmit={
-              handleCalculate
-            }
+            onSubmit={handleCalculate}
           >
 
-            <div className="space-y-2.5 px-4 pb-3.5 pt-3 sm:px-6">
+            <div className="space-y-3 px-5 pb-4 pt-4 sm:px-7 sm:pt-4">
 
               {/* =================================================
-                  OUTSTATION / AIRPORT JOURNEY TYPE
+                  JOURNEY TYPE
               ================================================= */}
 
               {serviceType ===
                 "outstation" && (
                 <div>
 
-                  <div className="mb-1 flex items-center justify-between">
+                  <div className="mb-1.5 flex items-center justify-between">
 
-                    <span className="text-[7px] font-black uppercase tracking-[0.16em] text-slate-400">
+                    <span className="text-[8px] font-black uppercase tracking-[0.16em] text-slate-400">
                       Journey Type
                     </span>
 
-                    <span className="text-[7px] font-bold text-slate-400">
+                    <span className="text-[8px] font-bold text-slate-400">
                       Choose your trip
                     </span>
 
                   </div>
 
-                  <div className="grid grid-cols-2 gap-1.5 rounded-[15px] bg-slate-100 p-1">
+                  <div className="grid grid-cols-2 gap-2 rounded-[17px] bg-slate-100 p-1.5">
 
                     {/* ONE WAY */}
 
                     <button
                       type="button"
                       onClick={() =>
-                        selectBookingType(
+                        handleBookingTypeChange(
                           "oneway"
                         )
                       }
-                      className={`min-h-[36px] rounded-[11px] text-[9px] font-black transition-all sm:text-[10px] ${
+                      className={`min-h-[42px] rounded-[13px] text-[10px] font-black transition-all sm:text-xs ${
                         bookingType ===
                         "oneway"
                           ? "bg-white text-orange-600 shadow-sm ring-1 ring-orange-200"
                           : "text-slate-500 hover:text-slate-800"
                       }`}
                     >
-                      <span className="mr-1">
+
+                      <span className="mr-1.5">
                         →
                       </span>
+
                       ONE WAY
+
                     </button>
 
                     {/* ROUND TRIP */}
@@ -1091,21 +837,24 @@ export default function FareCalculator({
                     <button
                       type="button"
                       onClick={() =>
-                        selectBookingType(
+                        handleBookingTypeChange(
                           "roundtrip"
                         )
                       }
-                      className={`min-h-[36px] rounded-[11px] text-[9px] font-black transition-all sm:text-[10px] ${
+                      className={`min-h-[42px] rounded-[13px] text-[10px] font-black transition-all sm:text-xs ${
                         bookingType ===
                         "roundtrip"
                           ? "bg-white text-orange-600 shadow-sm ring-1 ring-orange-200"
                           : "text-slate-500 hover:text-slate-800"
                       }`}
                     >
-                      <span className="mr-1">
+
+                      <span className="mr-1.5">
                         ⇄
                       </span>
+
                       ROUND TRIP
+
                     </button>
 
                   </div>
@@ -1115,38 +864,165 @@ export default function FareCalculator({
 
               {/* =================================================
                   LOCATIONS
+
+                  DESKTOP:
+                  PICKUP | SWAP | DROP
+
+                  MOBILE:
+                  PICKUP
+                     ⇅
+                  DROP
               ================================================= */}
 
               {serviceType !==
-                "local" ? (
+              "local" ? (
                 <div className="relative">
 
-                  {/* DESKTOP:
-                      PICKUP | SWAP | DROP
+                  <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-[minmax(0,1fr)_52px_minmax(0,1fr)] lg:items-center lg:gap-0">
 
-                      MOBILE:
-                      PICKUP
-                      SWAP
-                      DROP
-                  */}
+                    {/* =========================================
+                        PICKUP
+                    ========================================= */}
 
-                  <div className="grid grid-cols-1 gap-1.5 lg:grid-cols-[minmax(0,1fr)_46px_minmax(0,1fr)] lg:items-center lg:gap-0">
+                    <div
+                      ref={pickupRef}
+                      className={`${fieldClass(
+                        pickupFocused
+                      )} relative z-30`}
+                    >
 
-                    {/* PICKUP */}
+                      <label className="block px-3.5 pt-2.5 text-[7px] font-black uppercase tracking-[0.16em] text-slate-400 sm:px-4 sm:pt-3 sm:text-[8px]">
+                        From • Pickup Location
+                      </label>
 
-                    <LocationField
-                      type="pickup"
-                    />
+                      <div className="flex items-center gap-2.5 px-3.5 pb-2.5 pt-1 sm:px-4 sm:pb-3">
 
-                    {/* =================================================
-                        CENTER SWAP
-                    ================================================= */}
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-emerald-50 text-sm">
+                          📍
+                        </div>
+
+                        <input
+                          required
+                          type="text"
+                          value={pickup}
+                          placeholder="Enter pickup location"
+                          onFocus={() =>
+                            setPickupFocused(
+                              true
+                            )
+                          }
+                          onBlur={() =>
+                            setPickupFocused(
+                              false
+                            )
+                          }
+                          onChange={(e) => {
+                            setPickup(
+                              e.target.value
+                            );
+
+                            fetchLiveSuggestions(
+                              e.target.value,
+                              "pickup"
+                            );
+                          }}
+                          className="min-w-0 flex-1 bg-transparent text-[12px] font-bold text-slate-950 outline-none placeholder:text-slate-400 sm:text-sm"
+                        />
+
+                        {pickup && (
+                          <button
+                            type="button"
+                            onClick={
+                              clearPickup
+                            }
+                            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs text-slate-500 transition hover:bg-slate-200"
+                            aria-label="Clear pickup"
+                          >
+                            ×
+                          </button>
+                        )}
+
+                      </div>
+
+                      {/* PICKUP SUGGESTIONS */}
+
+                      {showPickupList &&
+                        pickupSuggestions.length >
+                          0 && (
+                          <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-[1000] overflow-hidden rounded-[16px] border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+
+                            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-3.5 py-2">
+
+                              <span className="text-[7px] font-black uppercase tracking-[0.15em] text-slate-400">
+                                Suggested Locations
+                              </span>
+
+                              <span className="text-[7px] font-bold text-slate-300">
+                                Google Maps
+                              </span>
+
+                            </div>
+
+                            <ul className="max-h-52 overflow-y-auto">
+
+                              {pickupSuggestions.map(
+                                (
+                                  item,
+                                  idx
+                                ) => (
+                                  <li
+                                    key={`${item}-${idx}`}
+                                  >
+
+                                    <button
+                                      type="button"
+                                      onMouseDown={(
+                                        e
+                                      ) =>
+                                        e.preventDefault()
+                                      }
+                                      onClick={() => {
+                                        setPickup(
+                                          item
+                                        );
+
+                                        setShowPickupList(
+                                          false
+                                        );
+                                      }}
+                                      className="flex w-full items-start gap-2.5 border-b border-slate-50 px-3.5 py-2.5 text-left transition hover:bg-orange-50"
+                                    >
+
+                                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-xs">
+                                        📍
+                                      </span>
+
+                                      <span className="text-[10px] font-semibold leading-4 text-slate-700">
+                                        {item}
+                                      </span>
+
+                                    </button>
+
+                                  </li>
+                                )
+                              )}
+
+                            </ul>
+
+                          </div>
+                        )}
+
+                    </div>
+
+                    {/* =========================================
+                        SWAP BUTTON
+                    ========================================= */}
 
                     <div className="relative z-[200] flex h-7 items-center justify-center lg:h-full">
 
-                      {/* desktop connecting line */}
+                      {/* Desktop connector */}
 
-                      <span className="pointer-events-none absolute hidden h-px w-full bg-orange-200 lg:block" />
+                      <div className="absolute hidden h-px w-full bg-orange-200 lg:block" />
 
                       <button
                         type="button"
@@ -1154,45 +1030,194 @@ export default function FareCalculator({
                           swapLocations
                         }
                         aria-label="Swap pickup and drop locations"
-                        className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-orange-500 to-amber-400 text-sm font-black text-white shadow-[0_5px_15px_rgba(249,115,22,0.35)] transition-all duration-200 hover:scale-110 hover:shadow-[0_7px_20px_rgba(249,115,22,0.45)] active:scale-95 sm:h-9 sm:w-9"
+                        className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-[2px] border-white bg-gradient-to-br from-orange-500 to-amber-400 text-sm font-black text-white shadow-[0_5px_16px_rgba(249,115,22,0.38)] transition-all duration-200 hover:scale-110 hover:shadow-[0_7px_20px_rgba(249,115,22,0.45)] active:scale-95 sm:h-9 sm:w-9"
                       >
                         ⇅
                       </button>
 
                     </div>
 
-                    {/* DROP */}
+                    {/* =========================================
+                        DROP
+                    ========================================= */}
 
-                    <LocationField
-                      type="drop"
-                    />
+                    <div
+                      ref={dropRef}
+                      className={`${fieldClass(
+                        dropFocused
+                      )} relative z-20`}
+                    >
+
+                      <label className="block px-3.5 pt-2.5 text-[7px] font-black uppercase tracking-[0.16em] text-slate-400 sm:px-4 sm:pt-3 sm:text-[8px]">
+                        To • Drop Location
+                      </label>
+
+                      <div className="flex items-center gap-2.5 px-3.5 pb-2.5 pt-1 sm:px-4 sm:pb-3">
+
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-red-50 text-sm">
+                          📍
+                        </div>
+
+                        <input
+                          required
+                          type="text"
+                          value={drop}
+                          placeholder="Enter drop location"
+                          onFocus={() =>
+                            setDropFocused(
+                              true
+                            )
+                          }
+                          onBlur={() =>
+                            setDropFocused(
+                              false
+                            )
+                          }
+                          onChange={(e) => {
+                            setDrop(
+                              e.target.value
+                            );
+
+                            fetchLiveSuggestions(
+                              e.target.value,
+                              "drop"
+                            );
+                          }}
+                          className="min-w-0 flex-1 bg-transparent text-[12px] font-bold text-slate-950 outline-none placeholder:text-slate-400 sm:text-sm"
+                        />
+
+                        {drop && (
+                          <button
+                            type="button"
+                            onClick={
+                              clearDrop
+                            }
+                            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs text-slate-500 transition hover:bg-slate-200"
+                            aria-label="Clear drop"
+                          >
+                            ×
+                          </button>
+                        )}
+
+                      </div>
+
+                      {/* DROP SUGGESTIONS */}
+
+                      {showDropList &&
+                        dropSuggestions.length >
+                          0 && (
+                          <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-[1000] overflow-hidden rounded-[16px] border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+
+                            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-3.5 py-2">
+
+                              <span className="text-[7px] font-black uppercase tracking-[0.15em] text-slate-400">
+                                Suggested Destinations
+                              </span>
+
+                              <span className="text-[7px] font-bold text-slate-300">
+                                Google Maps
+                              </span>
+
+                            </div>
+
+                            <ul className="max-h-52 overflow-y-auto">
+
+                              {dropSuggestions.map(
+                                (
+                                  item,
+                                  idx
+                                ) => (
+                                  <li
+                                    key={`${item}-${idx}`}
+                                  >
+
+                                    <button
+                                      type="button"
+                                      onMouseDown={(
+                                        e
+                                      ) =>
+                                        e.preventDefault()
+                                      }
+                                      onClick={() => {
+                                        setDrop(
+                                          item
+                                        );
+
+                                        setShowDropList(
+                                          false
+                                        );
+                                      }}
+                                      className="flex w-full items-start gap-2.5 border-b border-slate-50 px-3.5 py-2.5 text-left transition hover:bg-orange-50"
+                                    >
+
+                                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-red-50 text-xs">
+                                        📍
+                                      </span>
+
+                                      <span className="text-[10px] font-semibold leading-4 text-slate-700">
+                                        {item}
+                                      </span>
+
+                                    </button>
+
+                                  </li>
+                                )
+                              )}
+
+                            </ul>
+
+                          </div>
+                        )}
+
+                    </div>
 
                   </div>
 
                 </div>
               ) : (
                 /* =================================================
-                   LOCAL PICKUP
+                   LOCAL LOCATION
                 ================================================= */
 
-                <LocationField
-                  type="pickup"
-                />
+                <div className="rounded-[18px] border border-orange-100 bg-orange-50/60 px-4 py-2.5">
+
+                  <div className="flex items-center gap-2.5">
+
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-sm shadow-sm">
+                      📍
+                    </span>
+
+                    <div className="min-w-0">
+
+                      <p className="text-[7px] font-black uppercase tracking-[0.15em] text-orange-600">
+                        Pickup Location
+                      </p>
+
+                      <p className="truncate text-[11px] font-bold text-slate-800">
+                        {pickup ||
+                          "Enter your pickup location above"}
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                </div>
               )}
 
               {/* =================================================
-                  PICKUP DATE + TIME
+                  DATE / TIME
               ================================================= */}
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-3">
 
-                {/* DATE */}
+                {/* PICKUP DATE */}
 
                 <div
                   className={fieldClass()}
                 >
 
-                  <label className="block px-3.5 pt-2.5 text-[7px] font-black uppercase tracking-[0.15em] text-slate-400 sm:px-4 sm:pt-3 sm:text-[8px]">
+                  <label className="block px-3.5 pt-2.5 text-[7px] font-black uppercase tracking-[0.16em] text-slate-400 sm:px-4 sm:pt-3 sm:text-[8px]">
                     Pickup Date
                   </label>
 
@@ -1206,28 +1231,26 @@ export default function FareCalculator({
                       required
                       type="date"
                       min={minDate}
-                      value={
-                        pickupDate
-                      }
+                      value={pickupDate}
                       onChange={(e) =>
                         setPickupDate(
                           e.target.value
                         )
                       }
-                      className="min-w-0 w-full bg-transparent text-[10px] font-bold text-slate-900 outline-none sm:text-xs"
+                      className="min-w-0 w-full bg-transparent text-[11px] font-bold text-slate-900 outline-none sm:text-sm"
                     />
 
                   </div>
 
                 </div>
 
-                {/* TIME */}
+                {/* PICKUP TIME */}
 
                 <div
                   className={fieldClass()}
                 >
 
-                  <label className="block px-3.5 pt-2.5 text-[7px] font-black uppercase tracking-[0.15em] text-slate-400 sm:px-4 sm:pt-3 sm:text-[8px]">
+                  <label className="block px-3.5 pt-2.5 text-[7px] font-black uppercase tracking-[0.16em] text-slate-400 sm:px-4 sm:pt-3 sm:text-[8px]">
                     Pickup Time
                   </label>
 
@@ -1246,15 +1269,13 @@ export default function FareCalculator({
                           ? minTime
                           : undefined
                       }
-                      value={
-                        pickupTime
-                      }
+                      value={pickupTime}
                       onChange={(e) =>
                         setPickupTime(
                           e.target.value
                         )
                       }
-                      className="min-w-0 w-full bg-transparent text-[10px] font-bold text-slate-900 outline-none sm:text-xs"
+                      className="min-w-0 w-full bg-transparent text-[11px] font-bold text-slate-900 outline-none sm:text-sm"
                     />
 
                   </div>
@@ -1264,48 +1285,48 @@ export default function FareCalculator({
               </div>
 
               {/* =================================================
-                  ROUND TRIP RETURN
+                  ROUND TRIP RETURN DETAILS
               ================================================= */}
 
               {serviceType ===
                 "outstation" &&
                 bookingType ===
                   "roundtrip" && (
-                  <div className="rounded-[16px] border border-orange-100 bg-orange-50/60 p-2">
+                  <div className="rounded-[18px] border border-orange-100 bg-orange-50/60 p-2.5">
 
-                    <div className="mb-1.5 flex items-center justify-between">
+                    <div className="mb-2 flex items-center justify-between">
 
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-2">
 
-                        <span className="flex h-5 w-5 items-center justify-center rounded-md bg-orange-100 text-[10px]">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-orange-100 text-xs">
                           ⇄
                         </span>
 
-                        <span className="text-[7px] font-black uppercase tracking-[0.14em] text-orange-700">
+                        <span className="text-[8px] font-black uppercase tracking-[0.14em] text-orange-700">
                           Return Journey
                         </span>
 
                       </div>
 
-                      <span className="rounded-full bg-white px-1.5 py-0.5 text-[6px] font-black uppercase tracking-wide text-orange-600 shadow-sm">
+                      <span className="rounded-full bg-white px-2 py-1 text-[7px] font-black uppercase tracking-wide text-orange-600 shadow-sm">
                         Required
                       </span>
 
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-3">
 
                       {/* RETURN DATE */}
 
-                      <div className="rounded-[13px] border border-orange-100 bg-white">
+                      <div className="rounded-[15px] border border-orange-100 bg-white">
 
-                        <label className="block px-2.5 pt-2 text-[6px] font-black uppercase tracking-wide text-slate-400">
+                        <label className="block px-3.5 pt-2.5 text-[7px] font-black uppercase tracking-[0.16em] text-slate-400 sm:px-4 sm:pt-3 sm:text-[8px]">
                           Return Date
                         </label>
 
-                        <div className="flex items-center gap-1.5 px-2.5 pb-2 pt-0.5">
+                        <div className="flex items-center gap-2 px-3 pb-2 pt-1">
 
-                          <span className="text-xs">
+                          <span className="text-sm">
                             📅
                           </span>
 
@@ -1321,10 +1342,11 @@ export default function FareCalculator({
                             }
                             onChange={(e) =>
                               setReturnDate(
-                                e.target.value
+                                e.target
+                                  .value
                               )
                             }
-                            className="min-w-0 w-full bg-transparent text-[9px] font-bold text-slate-900 outline-none"
+                            className="min-w-0 w-full bg-transparent text-[11px] font-bold text-slate-900 outline-none sm:text-sm"
                           />
 
                         </div>
@@ -1333,15 +1355,15 @@ export default function FareCalculator({
 
                       {/* RETURN TIME */}
 
-                      <div className="rounded-[13px] border border-orange-100 bg-white">
+                      <div className="rounded-[15px] border border-orange-100 bg-white">
 
-                        <label className="block px-2.5 pt-2 text-[6px] font-black uppercase tracking-wide text-slate-400">
+                        <label className="block px-3.5 pt-2.5 text-[7px] font-black uppercase tracking-[0.16em] text-slate-400 sm:px-4 sm:pt-3 sm:text-[8px]">
                           Return Time
                         </label>
 
-                        <div className="flex items-center gap-1.5 px-2.5 pb-2 pt-0.5">
+                        <div className="flex items-center gap-2 px-3 pb-2 pt-1">
 
-                          <span className="text-xs">
+                          <span className="text-sm">
                             ⏰
                           </span>
 
@@ -1353,10 +1375,11 @@ export default function FareCalculator({
                             }
                             onChange={(e) =>
                               setReturnTime(
-                                e.target.value
+                                e.target
+                                  .value
                               )
                             }
-                            className="min-w-0 w-full bg-transparent text-[9px] font-bold text-slate-900 outline-none"
+                            className="min-w-0 w-full bg-transparent text-[11px] font-bold text-slate-900 outline-none sm:text-sm"
                           />
 
                         </div>
@@ -1369,31 +1392,38 @@ export default function FareCalculator({
                 )}
 
               {/* =================================================
-                  INFO
+                  LOCAL INFO
               ================================================= */}
 
               {serviceType ===
-                "local" ? (
-                <div className="flex items-center gap-2 rounded-[14px] border border-emerald-100 bg-emerald-50 px-2.5 py-1.5">
+                "local" && (
+                <div className="flex items-center gap-2.5 rounded-[16px] border border-emerald-100 bg-emerald-50 px-3 py-2">
 
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[9px] font-black text-emerald-700">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-black text-emerald-700">
                     ✓
                   </span>
 
-                  <p className="text-[7px] font-bold leading-3.5 text-emerald-700 sm:text-[8px]">
+                  <p className="text-[9px] font-bold leading-4 text-emerald-700 sm:text-[10px]">
                     8 Hours / 80 KM package included.
                     Fare is calculated according to the selected vehicle.
                   </p>
 
                 </div>
-              ) : (
-                <div className="flex items-center gap-2 rounded-[14px] border border-blue-100 bg-blue-50 px-2.5 py-1.5">
+              )}
 
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[9px]">
+              {/* =================================================
+                  OUTSTATION INFO
+              ================================================= */}
+
+              {serviceType ===
+                "outstation" && (
+                <div className="flex items-center gap-2.5 rounded-[16px] border border-blue-100 bg-blue-50 px-3 py-2">
+
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs">
                     ℹ️
                   </span>
 
-                  <p className="text-[7px] font-semibold leading-3.5 text-blue-700 sm:text-[8px]">
+                  <p className="text-[9px] font-semibold leading-4 text-blue-700 sm:text-[10px]">
                     Final fare is calculated using the actual route distance and selected journey type.
                   </p>
 
@@ -1407,16 +1437,16 @@ export default function FareCalculator({
               <button
                 type="submit"
                 disabled={loading}
-                className="group relative flex min-h-[50px] w-full items-center justify-center gap-2 overflow-hidden rounded-[16px] bg-gradient-to-r from-orange-600 via-orange-500 to-amber-400 px-4 text-[10px] font-black uppercase tracking-[0.12em] text-white shadow-[0_9px_24px_rgba(249,115,22,0.28)] transition-all duration-200 hover:shadow-[0_12px_30px_rgba(249,115,22,0.36)] active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-80 sm:min-h-[52px] sm:text-xs"
+                className="group relative mt-1 flex min-h-[56px] w-full items-center justify-center gap-2.5 overflow-hidden rounded-[18px] bg-gradient-to-r from-orange-600 via-orange-500 to-amber-400 px-5 text-[11px] font-black uppercase tracking-[0.13em] text-white shadow-[0_11px_28px_rgba(249,115,22,0.30)] transition-all duration-200 hover:shadow-[0_15px_34px_rgba(249,115,22,0.38)] active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-80 sm:text-sm"
               >
 
-                {/* shine */}
+                {/* SHINE */}
 
                 <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
 
                 {loading ? (
                   <>
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
 
                     <span>
                       CALCULATING FARE...
@@ -1424,7 +1454,7 @@ export default function FareCalculator({
                   </>
                 ) : (
                   <>
-                    <span className="text-base">
+                    <span className="text-lg">
                       🧮
                     </span>
 
@@ -1432,16 +1462,10 @@ export default function FareCalculator({
                       {serviceType ===
                       "local"
                         ? "CALCULATE PACKAGE FARE"
-                        : calculatorMode ===
-                          "airport"
-                        ? "CALCULATE AIRPORT FARE"
-                        : bookingType ===
-                          "roundtrip"
-                        ? "SEARCH ROUND TRIP CABS"
                         : "SEARCH CABS"}
                     </span>
 
-                    <span className="text-base transition-transform group-hover:translate-x-1">
+                    <span className="text-lg transition-transform group-hover:translate-x-1">
                       →
                     </span>
                   </>
@@ -1450,47 +1474,54 @@ export default function FareCalculator({
               </button>
 
             </div>
+
           </form>
 
-          {/* ===================================================
+          {/* =================================================
               TRUST FOOTER
-          =================================================== */}
+          ================================================= */}
 
-          <div className="border-t border-slate-100 bg-slate-50/70 px-4 py-2.5 sm:px-6">
+          <div className="border-t border-slate-100 bg-slate-50/70 px-5 py-3 sm:px-7">
 
             <div className="grid grid-cols-3 divide-x divide-slate-200">
 
-              <div className="flex items-center justify-center gap-1.5 px-1 text-center">
+              {/* TRANSPARENT */}
 
-                <span className="text-xs">
+              <div className="flex items-center justify-center gap-1.5 px-2 text-center">
+
+                <span className="text-sm">
                   🛡️
                 </span>
 
-                <span className="text-[6px] font-black uppercase tracking-wide text-slate-500 sm:text-[7px]">
-                  Transparent Fare
+                <span className="text-[7px] font-black uppercase tracking-wide text-slate-500 sm:text-[8px]">
+                  Transparent
                 </span>
 
               </div>
 
-              <div className="flex items-center justify-center gap-1.5 px-1 text-center">
+              {/* VERIFIED */}
 
-                <span className="text-xs">
+              <div className="flex items-center justify-center gap-1.5 px-2 text-center">
+
+                <span className="text-sm">
                   🚕
                 </span>
 
-                <span className="text-[6px] font-black uppercase tracking-wide text-slate-500 sm:text-[7px]">
+                <span className="text-[7px] font-black uppercase tracking-wide text-slate-500 sm:text-[8px]">
                   Verified Cabs
                 </span>
 
               </div>
 
-              <div className="flex items-center justify-center gap-1.5 px-1 text-center">
+              {/* SUPPORT */}
 
-                <span className="text-xs">
+              <div className="flex items-center justify-center gap-1.5 px-2 text-center">
+
+                <span className="text-sm">
                   ☎️
                 </span>
 
-                <span className="text-[6px] font-black uppercase tracking-wide text-slate-500 sm:text-[7px]">
+                <span className="text-[7px] font-black uppercase tracking-wide text-slate-500 sm:text-[8px]">
                   Support
                 </span>
 
