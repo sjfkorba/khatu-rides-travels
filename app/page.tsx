@@ -649,12 +649,7 @@ Hello! I am interested in booking an outstation trip:
                 </div>
               </div>
 
-              <div className="mt-2.5 flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 text-[8px] font-black uppercase tracking-wide text-white/55 shadow-sm backdrop-blur sm:mt-3 sm:px-4 sm:py-3 sm:text-[9px]">
-                <span>✓ No hidden charges</span>
-                <span>✓ Instant estimate</span>
-                <span>✓ 24×7 support</span>
-                <span>✓ WhatsApp confirmation</span>
-              </div>
+              
             </div>
           </div>
         </section>
@@ -667,7 +662,7 @@ Hello! I am interested in booking an outstation trip:
               ["10K+", "Happy Customers"],
               ["24×7", "Customer Support"],
               ["100+", "Popular Routes"],
-              ["4.9★", "Google Rating"],
+              ["4.7★", "Google Rating"],
             ].map(([value, label], i) => (
               <div key={label} className={`px-4 py-5 text-center ${i !== 4 ? "border-b sm:border-b-0 sm:border-r border-white/10" : ""}`}>
                 <div className="text-2xl font-black text-amber-400 sm:text-3xl">{value}</div>
@@ -676,6 +671,159 @@ Hello! I am interested in booking an outstation trip:
             ))}
           </div>
         </section>
+
+        {/*dynamically fare discount offer*/}
+
+       <section className="relative overflow-hidden bg-gradient-to-br from-[#0a0f1a] via-[#0d1524] to-[#0f1a2e] py-14 sm:py-20">
+  {/* Animated background gradients */}
+  <div className="pointer-events-none absolute -left-20 top-0 h-80 w-80 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 blur-3xl" />
+  <div className="pointer-events-none absolute -right-20 bottom-0 h-80 w-80 rounded-full bg-gradient-to-br from-blue-500/20 to-cyan-500/20 blur-3xl" />
+  <div className="pointer-events-none absolute left-1/3 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-emerald-500/15 to-teal-500/15 blur-3xl" />
+  <div className="pointer-events-none absolute right-1/4 top-10 h-64 w-64 rounded-full bg-gradient-to-br from-pink-500/10 to-purple-500/10 blur-3xl" />
+
+  <div className="relative mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+    {/* Header */}
+    <div className="text-center">
+      <span className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-gradient-to-r from-amber-500/20 to-orange-500/20 px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.18em] text-amber-200 shadow-[0_4px_20px_rgba(245,158,11,0.25)] backdrop-blur">
+        <span className="h-2 w-2 animate-pulse rounded-full bg-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.8)]" />
+        Limited Time Offer
+      </span>
+      <h2 className="mt-4 bg-gradient-to-r from-amber-200 via-orange-200 to-amber-200 bg-clip-text text-3xl font-black tracking-tight text-transparent sm:text-4xl lg:text-5xl">
+        Book Early, Save Big
+      </h2>
+      <p className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-6 text-white/60">
+        Plan your trip in advance and unlock exclusive discounts on every booking
+      </p>
+    </div>
+
+    {/* Discount Cards */}
+    <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {/* 15% Card - Amber/Orange */}
+      <div className="group relative overflow-hidden rounded-[28px] border border-amber-400/20 bg-gradient-to-b from-[#1a1f2e] via-[#151a28] to-[#0f1420] p-6 shadow-[0_15px_45px_rgba(0,0,0,0.35)] transition duration-300 hover:-translate-y-2 hover:border-amber-400/50 hover:shadow-[0_25px_60px_rgba(245,158,11,0.25)]">
+        <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-gradient-to-br from-amber-500/25 to-orange-500/25 blur-2xl transition duration-500 group-hover:from-amber-500/35 group-hover:to-orange-500/35" />
+        <div className="absolute inset-0 bg-gradient-to-b from-amber-500/5 via-transparent to-transparent opacity-0 transition duration-500 group-hover:opacity-100" />
+        <div className="relative">
+          <div className="flex items-center justify-between">
+            <span className="inline-flex items-center gap-1.5 rounded-xl border border-amber-400/40 bg-gradient-to-r from-amber-500/25 to-orange-500/25 px-3 py-1.5 text-[8px] font-black uppercase tracking-wider text-amber-200 shadow-[0_4px_12px_rgba(245,158,11,0.2)]">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)]" />
+              Quick Book
+            </span>
+            <span className="text-4xl">⏰</span>
+          </div>
+          <div className="mt-5 text-center">
+            <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/50">Book Before</div>
+            <div className="mt-1 bg-gradient-to-r from-amber-300 to-orange-300 bg-clip-text text-2xl font-black text-transparent">2 Days</div>
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <span className="bg-gradient-to-br from-amber-300 via-amber-400 to-orange-400 bg-clip-text text-5xl font-black text-transparent drop-shadow-[0_0_25px_rgba(245,158,11,0.5)]">15%</span>
+              <span className="text-lg font-black text-white/60">OFF</span>
+            </div>
+          </div>
+          <div className="mt-5 rounded-xl border border-amber-400/30 bg-gradient-to-r from-amber-500/20 to-orange-500/20 px-3 py-2.5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
+            <p className="text-[9px] font-bold text-amber-100">
+              Save instantly on your fare
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 20% Card - Blue/Cyan */}
+      <div className="group relative overflow-hidden rounded-[28px] border border-blue-400/20 bg-gradient-to-b from-[#1a1f2e] via-[#151a28] to-[#0f1420] p-6 shadow-[0_15px_45px_rgba(0,0,0,0.35)] transition duration-300 hover:-translate-y-2 hover:border-blue-400/50 hover:shadow-[0_25px_60px_rgba(59,130,246,0.25)]">
+        <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-gradient-to-br from-blue-500/25 to-cyan-500/25 blur-2xl transition duration-500 group-hover:from-blue-500/35 group-hover:to-cyan-500/35" />
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 via-transparent to-transparent opacity-0 transition duration-500 group-hover:opacity-100" />
+        <div className="relative">
+          <div className="flex items-center justify-between">
+            <span className="inline-flex items-center gap-1.5 rounded-xl border border-blue-400/40 bg-gradient-to-r from-blue-500/25 to-cyan-500/25 px-3 py-1.5 text-[8px] font-black uppercase tracking-wider text-blue-200 shadow-[0_4px_12px_rgba(59,130,246,0.2)]">
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
+              Smart Book
+            </span>
+            <span className="text-4xl">📅</span>
+          </div>
+          <div className="mt-5 text-center">
+            <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/50">Book Before</div>
+            <div className="mt-1 bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-2xl font-black text-transparent">1 Week</div>
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <span className="bg-gradient-to-br from-blue-300 via-blue-400 to-cyan-400 bg-clip-text text-5xl font-black text-transparent drop-shadow-[0_0_25px_rgba(59,130,246,0.5)]">20%</span>
+              <span className="text-lg font-black text-white/60">OFF</span>
+            </div>
+          </div>
+          <div className="mt-5 rounded-xl border border-blue-400/30 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 px-3 py-2.5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
+            <p className="text-[9px] font-bold text-blue-100">
+              Extra savings on advance booking
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 25% Card - Emerald/Green */}
+      <div className="group relative overflow-hidden rounded-[28px] border border-emerald-400/20 bg-gradient-to-b from-[#1a1f2e] via-[#151a28] to-[#0f1420] p-6 shadow-[0_15px_45px_rgba(0,0,0,0.35)] transition duration-300 hover:-translate-y-2 hover:border-emerald-400/50 hover:shadow-[0_25px_60px_rgba(16,185,129,0.25)]">
+        <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-gradient-to-br from-emerald-500/25 to-green-500/25 blur-2xl transition duration-500 group-hover:from-emerald-500/35 group-hover:to-green-500/35" />
+        <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 via-transparent to-transparent opacity-0 transition duration-500 group-hover:opacity-100" />
+        <div className="relative">
+          <div className="flex items-center justify-between">
+            <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-400/40 bg-gradient-to-r from-emerald-500/25 to-green-500/25 px-3 py-1.5 text-[8px] font-black uppercase tracking-wider text-emerald-200 shadow-[0_4px_12px_rgba(16,185,129,0.2)]">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+              Best Value
+            </span>
+            <span className="text-4xl">🏆</span>
+          </div>
+          <div className="mt-5 text-center">
+            <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/50">Book Before</div>
+            <div className="mt-1 bg-gradient-to-r from-emerald-300 to-green-300 bg-clip-text text-2xl font-black text-transparent">10 Days</div>
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <span className="bg-gradient-to-br from-emerald-300 via-emerald-400 to-green-400 bg-clip-text text-5xl font-black text-transparent drop-shadow-[0_0_25px_rgba(16,185,129,0.5)]">25%</span>
+              <span className="text-lg font-black text-white/60">OFF</span>
+            </div>
+          </div>
+          <div className="mt-5 rounded-xl border border-emerald-400/30 bg-gradient-to-r from-emerald-500/20 to-green-500/20 px-3 py-2.5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
+            <p className="text-[9px] font-bold text-emerald-100">
+              Maximum discount available
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Trust Banner - Colorful gradient */}
+    <div className="mt-10 relative overflow-hidden rounded-[24px] border border-emerald-400/30 bg-gradient-to-r from-emerald-500/20 via-teal-500/15 to-cyan-500/20 px-6 py-5 shadow-[0_10px_40px_rgba(16,185,129,0.2)] backdrop-blur">
+      <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-transparent to-cyan-500/5" />
+      <div className="relative flex flex-col items-center justify-between gap-4 sm:flex-row">
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500/30 to-green-500/30 text-3xl shadow-[0_8px_25px_rgba(16,185,129,0.3)]">
+            ✅
+          </div>
+          <div>
+            <h3 className="text-xl font-black tracking-tight text-white">
+              100% No Hidden Charges
+            </h3>
+            <p className="mt-1 text-sm font-medium text-white/60">
+              Transparent pricing with zero extra fees. What you see is what you pay.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-gradient-to-r from-emerald-500/25 to-green-500/25 px-4 py-2.5 shadow-[0_4px_15px_rgba(16,185,129,0.2)]">
+          <span className="text-2xl">🛡️</span>
+          <span className="text-[9px] font-black uppercase tracking-wider text-emerald-100">
+            Price Guarantee
+          </span>
+        </div>
+      </div>
+    </div>
+
+    {/* CTA - Colorful gradient button */}
+    <div className="mt-8 text-center">
+      <button
+        onClick={() => calculatorSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })}
+        className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 px-8 py-3.5 text-sm font-black uppercase tracking-wider text-white shadow-[0_10px_35px_rgba(245,158,11,0.4)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_16px_45px_rgba(245,158,11,0.55)] hover:from-amber-400 hover:via-orange-400 hover:to-amber-400"
+      >
+        Book Your Cab Now
+        <span className="text-lg transition duration-300 group-hover:translate-x-1">→</span>
+      </button>
+      <p className="mt-3 text-[10px] font-bold text-white/50">
+        No advance payment required • Pay after ride
+      </p>
+    </div>
+  </div>
+</section>
 
         {/* CORPORATE CLIENTS */}
         <section className="border-y border-white/10 bg-[#081522] py-10 overflow-hidden">
@@ -709,48 +857,109 @@ Hello! I am interested in booking an outstation trip:
         </section>
 
         {/* FLEET */}
-        <section id="fleet" className="bg-[#06101d] py-14 sm:py-20">
-          <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-              <div>
-                <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-amber-700">Our Premium Garage</span>
-                <h2 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">Choose Your Perfect Ride</h2>
-                <p className="mt-2 max-w-xl text-sm font-medium leading-6 text-white/50">Comfortable, clean and reliable vehicles for family trips, airport transfers and corporate travel.</p>
-              </div>
-              <button onClick={() => calculatorSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })} className="w-fit rounded-xl bg-slate-950 px-5 py-3 text-[10px] font-black uppercase tracking-wider text-white hover:bg-amber-500 hover:text-slate-950 transition">View All Vehicles →</button>
-            </div>
+      <section id="fleet" className="relative bg-[#06101d] py-14 sm:py-20">
+  <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
+    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+      <div>
+        <span className="inline-flex items-center gap-2 rounded-full border border-amber-200/40 bg-amber-500/10 px-3 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-amber-400 backdrop-blur">
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.6)]" />
+          Our Premium Garage
+        </span>
+        <h2 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">
+          Choose Your Perfect Ride
+        </h2>
+        <p className="mt-2 max-w-xl text-sm font-medium leading-6 text-white/50">
+          Comfortable, clean and reliable vehicles for family trips, airport transfers and corporate travel.
+        </p>
+      </div>
+      <button
+        onClick={() => calculatorSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })}
+        className="group inline-flex items-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-[10px] font-black uppercase tracking-wider text-white shadow-[0_10px_25px_rgba(0,0,0,0.35)] transition hover:-translate-y-0.5 hover:bg-amber-500 hover:text-slate-950 hover:shadow-[0_14px_30px_rgba(245,158,11,0.25)]"
+      >
+        View All Vehicles
+        <span className="text-base transition group-hover:translate-x-0.5">→</span>
+      </button>
+    </div>
 
-            <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
-              {[
-                { title: "Swift Dzire", type: "Sedan", seats: "4+1", img: "/dezire.png", rate: "₹11/KM", tag: "Popular" },
-                { title: "Ertiga", type: "MUV", seats: "6+1", img: "/ertiga.png", rate: "₹13/KM", tag: "Family Choice" },
-                { title: "Innova", type: "SUV", seats: "6+1", img: "/ertiga.png", rate: "₹17/KM", tag: "Comfort" },
-                { title: "Innova Crysta", type: "Luxury SUV", seats: "6+1", img: "/crysta.png", rate: "₹20/KM", tag: "Premium" },
-                { title: "Scorpio", type: "SUV", seats: "6+1", img: "/scorpio.png", rate: "₹18/KM", tag: "Adventure" },
-              ].map((car) => (
-                <div key={car.title} className="group overflow-hidden rounded-[24px] border border-white/10 bg-[#0b1a2c] shadow-[0_15px_45px_rgba(0,0,0,0.22)] transition duration-300 hover:-translate-y-1 hover:border-amber-400/40 hover:shadow-[0_22px_55px_rgba(0,0,0,0.32)]">
-                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-[#12263b] to-[#2a1b0a]">
-                    <span className="absolute left-2 top-2 z-10 rounded-full bg-white/90 px-2.5 py-1 text-[8px] font-black uppercase tracking-wider text-slate-800 shadow-sm backdrop-blur">{car.tag}</span>
-                    <img src={car.img} alt={car.title} className="h-full w-full object-contain p-3 transition duration-500 group-hover:scale-105" />
-                  </div>
-                  <div className="p-4">
-                    <div className="text-[8px] font-black uppercase tracking-widest text-amber-600">{car.type}</div>
-                    <h3 className="mt-1 text-lg font-black text-white">{car.title}</h3>
-                    <div className="mt-3 grid grid-cols-3 gap-1.5 text-center">
-                      <div className="rounded-lg border border-white/5 bg-white/5 px-1 py-2"><div className="text-xs">👥</div><div className="text-[7px] font-bold text-white/45">{car.seats} Seats</div></div>
-                      <div className="rounded-lg border border-white/5 bg-white/5 px-1 py-2"><div className="text-xs">❄</div><div className="text-[7px] font-bold text-white/45">AC</div></div>
-                      <div className="rounded-lg border border-white/5 bg-white/5 px-1 py-2"><div className="text-xs">🧳</div><div className="text-[7px] font-bold text-white/45">Luggage</div></div>
-                    </div>
-                    <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
-                      <div><div className="text-[8px] font-black uppercase tracking-wide text-slate-400">Starting Rate</div><div className="text-base font-black text-white">{car.rate}</div></div>
-                      <button onClick={() => calculatorSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })} className="rounded-lg bg-slate-950 px-3 py-2 text-[8px] font-black uppercase tracking-wider text-white hover:bg-amber-500 hover:text-slate-950 transition">Book Now</button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+    <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
+      {[
+        { title: "Swift Dzire", type: "Sedan", seats: "4+1", img: "/dezire.png", rate: "₹11/KM", tag: "Popular" },
+        { title: "Ertiga", type: "MUV", seats: "6+1", img: "/ertiga.png", rate: "₹13/KM", tag: "Family Choice" },
+        { title: "Innova", type: "SUV", seats: "6+1", img: "/crysta.png", rate: "₹17/KM", tag: "Comfort" },
+        { title: "Innova Crysta", type: "Luxury SUV", seats: "6+1", img: "/crysta.png", rate: "₹20/KM", tag: "Premium" },
+        { title: "Scorpio", type: "SUV", seats: "6+1", img: "/scorpio.png", rate: "₹18/KM", tag: "Adventure" },
+      ].map((car) => (
+        <div
+          key={car.title}
+          className="group relative overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-b from-[#0b1a2c] to-[#081422] shadow-[0_15px_45px_rgba(0,0,0,0.28)] transition duration-300 hover:-translate-y-1.5 hover:border-amber-400/40 hover:shadow-[0_22px_55px_rgba(0,0,0,0.42)]"
+        >
+          {/* Image Container */}
+          <div className="relative flex h-40 items-center justify-center overflow-hidden bg-gradient-to-br from-[#12263b] via-[#0f1f33] to-[#0b1a2c]">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(245,158,11,0.08),transparent_60%)]" />
+            <span className="absolute left-2 top-2 z-10 inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-500/15 px-2.5 py-1 text-[8px] font-black uppercase tracking-wider text-amber-300 shadow-[0_4px_12px_rgba(0,0,0,0.25)] backdrop-blur">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.7)]" />
+              {car.tag}
+            </span>
+            <div className="relative h-full w-full p-4">
+              <img
+                src={car.img}
+                alt={car.title}
+                className="h-full w-full object-contain transition duration-500 group-hover:scale-105 group-hover:drop-shadow-[0_10px_25px_rgba(245,158,11,0.15)]"
+                loading="lazy"
+              />
             </div>
           </div>
-        </section>
+
+          {/* Content */}
+          <div className="p-4">
+            <div className="flex items-center justify-between">
+              <span className="rounded-lg border border-white/5 bg-white/5 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-amber-400">
+                {car.type}
+              </span>
+              <span className="text-[8px] font-bold text-white/40">{car.seats} Seats</span>
+            </div>
+
+            <h3 className="mt-2 text-lg font-black tracking-tight text-white">
+              {car.title}
+            </h3>
+
+            <div className="mt-3 grid grid-cols-3 gap-1.5">
+              <div className="flex flex-col items-center justify-center rounded-xl border border-white/5 bg-white/5 px-2 py-2.5 transition hover:bg-white/10">
+                <span className="text-lg">👥</span>
+                <span className="mt-0.5 text-[7px] font-bold text-white/50">{car.seats}</span>
+              </div>
+              <div className="flex flex-col items-center justify-center rounded-xl border border-white/5 bg-white/5 px-2 py-2.5 transition hover:bg-white/10">
+                <span className="text-lg">❄</span>
+                <span className="mt-0.5 text-[7px] font-bold text-white/50">AC</span>
+              </div>
+              <div className="flex flex-col items-center justify-center rounded-xl border border-white/5 bg-white/5 px-2 py-2.5 transition hover:bg-white/10">
+                <span className="text-lg">🧳</span>
+                <span className="mt-0.5 text-[7px] font-bold text-white/50">Luggage</span>
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-3">
+              <div>
+                <div className="text-[8px] font-black uppercase tracking-wide text-white/40">Starting Rate</div>
+                <div className="text-base font-black text-white">{car.rate}</div>
+              </div>
+              <button
+                onClick={() => calculatorSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                className="group inline-flex items-center gap-1.5 rounded-lg bg-slate-950 px-3 py-2 text-[8px] font-black uppercase tracking-wider text-white shadow-[0_6px_15px_rgba(0,0,0,0.35)] transition hover:-translate-y-0.5 hover:bg-amber-500 hover:text-slate-950 hover:shadow-[0_10px_20px_rgba(245,158,11,0.25)]"
+              >
+                Book Now
+                <span className="text-sm transition group-hover:translate-x-0.5">→</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Subtle glow on hover */}
+          <div className="pointer-events-none absolute inset-0 rounded-[28px] opacity-0 transition duration-500 group-hover:opacity-100" style={{ background: "radial-gradient(120px 60px at 50% -10%, rgba(245,158,11,0.12), transparent)" }} />
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
 
         {/* SERVICES */}
         <section id="services" className="bg-[#081522] py-14 sm:py-20">
