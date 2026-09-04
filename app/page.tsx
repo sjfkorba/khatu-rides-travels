@@ -23,6 +23,8 @@ import { onAuthStateChanged, User, signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import PremiumSplashScreen from "@/components/PremiumSplashScreen";
 import CarCursor from "@/components/CarCursor";
+import TopBar from "@/components/TopBar";
+import ChhattisgarhHighIntentRoutes from "@/components/ChhattisgarhHighIntentRoutes";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -55,6 +57,16 @@ type FareOption = {
   durationMinutes: number;
   allowedKmsLimit?: number; 
   discountPercent?: number;
+  localPackage?: string;
+  packageLabel?: string;
+  packageHours?: number;
+  packageKms?: number;
+  extraHourRate?: number;
+  extraKmRate?: number;
+  driverAllowanceIncluded?: boolean;
+  fuelIncluded?: boolean;
+  tollParkingExcluded?: boolean;
+  cancellationText?: string;
 };
 
 type PopupData = {
@@ -69,6 +81,8 @@ type PopupData = {
   returnTime?: string;
   isOneWayAvailable?: boolean;
   baseDistance?: number;
+  localPackage?: string;
+  packageLabel?: string;
 };
 
 type TollData = {
@@ -90,10 +104,10 @@ type SpecialOffer = {
 };
 
 const ROUTES = [
-  { from: "Raipur, Chhattisgarh", to: "Korba, Chhattisgarh", price: "₹3299", time: "~4h 30m", km: "250 KM", image: "/banner6.png" },
-  { from: "Korba, Chhattisgarh", to: "Bilaspur, Chhattisgarh", price: "₹1899", time: "~2h 30m", km: "130 KM", image: "/banner6.png" },
-  { from: "Bilaspur, Chhattisgarh", to: "Raipur, Chhattisgarh", price: "₹3299", time: "~4h 30m", km: "250 KM", image: "/banner6.png" },
-  { from: "Raipur, Chhattisgarh", to: "Bhopal, Madhya Pradesh", price: "₹3499", time: "~7h 00m", km: "450 KM", image: "/banner6.png" },
+  { from: "Raipur, Chhattisgarh", to: "Korba, Chhattisgarh", price: "₹3,749", time: "~4h 30m", km: "250 KM", image: "/images/raipur-korba.png" },
+  { from: "Korba, Chhattisgarh", to: "Bilaspur, Chhattisgarh", price: "₹2,349", time: "~2h 30m", km: "130 KM", image: "/images/korba-bilaspur.png" },
+  { from: "Bilaspur, Chhattisgarh", to: "Raipur, Chhattisgarh", price: "₹2,449", time: "~4h 30m", km: "250 KM", image: "/images/bilaspur-raipur.png" },
+  { from: "Raipur, Chhattisgarh", to: "Bhopal, Madhya Pradesh", price: "₹15,799", time: "~7h 00m", km: "450 KM", image: "/banner3.png" },
 ];
 
 const CORPORATE_CLIENTS = [
@@ -102,6 +116,29 @@ const CORPORATE_CLIENTS = [
   { name: "ADANI Raipur", logo: "/images/clients/ADANI.webp", subtitle: "Adani Power & Infra" },
   { name: "SSPARK", logo: "/images/clients/SSPARK.webp", subtitle: "SSPARK Sport Services" },
   { name: "Prem Travels", logo: "/images/clients/PREMTRAVELS.png", subtitle: "Partner Fleet Network", link: "https://www.premtravelsonline.com/" },
+];
+
+const HERO_SLIDES = [
+  {
+    eyebrow: "Chhattisgarh Cab Booking",
+    title: "Book Reliable Cabs Across Chhattisgarh",
+    description: "One-way taxi, round-trip cab, airport transfer and local rental with transparent fares and 24×7 support.",
+  },
+  {
+    eyebrow: "Raipur Airport Taxi",
+    title: "Airport Transfers Made Simple",
+    description: "Book a comfortable cab from Raipur Airport to Raipur, Bhilai, Durg, Bilaspur, Korba and nearby cities.",
+  },
+  {
+    eyebrow: "Local Cab Rental",
+    title: "Need A Cab For The Whole Day?",
+    description: "Choose 8 Hours / 80 KM or 12 Hours / 120 KM local packages for business, family and city travel.",
+  },
+  {
+    eyebrow: "Outstation Taxi",
+    title: "Travel From Korba, Raipur & Bilaspur",
+    description: "Compare Dzire, Ertiga and Innova Crysta fares before booking your next Chhattisgarh journey.",
+  },
 ];
 
 export default function HomePage() {
@@ -136,6 +173,14 @@ export default function HomePage() {
   const [showAllOffersModal, setShowAllOffersModal] = useState(false);
 
   const calculatorSectionRef = useRef<HTMLDivElement>(null);
+  const [heroSlide, setHeroSlide] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setHeroSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     document.documentElement.style.scrollBehavior = "smooth";
@@ -444,212 +489,123 @@ Hello! I am interested in booking an outstation trip:
       <Script id="razorpay-checkout-js" src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
 
       <main className="min-h-screen overflow-x-clip bg-[#06101d] pb-20 font-sans text-white selection:bg-amber-500 selection:text-white md:pb-0">
-        {/* PREMIUM NAVBAR */}
-        <header className="sticky top-0 z-50 border-b border-white/10 bg-[#06101d]/90 backdrop-blur-2xl shadow-[0_8px_35px_rgba(0,0,0,0.25)]">
-          <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
-            <div className="flex min-h-[76px] items-center justify-between gap-4">
-              <a href="/" className="flex shrink-0 items-center">
-                <img
-                  src="/nav_logo.png"
-                  alt="Khatu Rides Travels Co."
-                  className="h-14 w-auto object-contain sm:h-[68px]"
-                />
-              </a>
+       <TopBar></TopBar>
 
-              <nav className="hidden xl:flex items-center gap-7 text-[12px] font-extrabold text-white/75">
-                <a href="/" className="hover:text-amber-600 transition">Home</a>
-                <a href="#services" className="hover:text-amber-600 transition">Outstation</a>
-                <a href="#airport" className="hover:text-amber-600 transition">Airport Taxi</a>
-                <a href="#services" className="hover:text-amber-600 transition">Local Taxi</a>
-                <a href="#fleet" className="hover:text-amber-600 transition">Car Rental</a>
-                <a href="#corporate" className="hover:text-amber-600 transition">Corporate</a>
-                <a href="#routes-heading" className="hover:text-amber-600 transition">Tour Packages</a>
-                <a href="#contact" className="hover:text-amber-600 transition">Contact Us</a>
-              </nav>
+        {/* HERO + CENTERED BOOKING ENGINE */}
+        <section className="relative overflow-visible bg-[#06101d]">
+          <div className="pointer-events-none absolute inset-0 bg-[url('/splash-bg.png')] bg-cover bg-center opacity-40" />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(245,158,11,0.14),transparent_38%),linear-gradient(180deg,#06101d_0%,#081a2d_62%,#f8fafc_100%)]" />
 
-              <div className="flex items-center gap-2 sm:gap-3">
-                <a href="tel:+919244137353" className="hidden sm:flex items-center gap-2 text-right">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-50 text-amber-600 text-lg">☎</span>
-                  <span className="leading-tight">
-                    <span className="block text-[10px] font-black uppercase tracking-wider text-white/45">24×7 Support</span>
-                    <span className="block text-sm font-black text-white">+91 92441 37353</span>
-                  </span>
-                </a>
-                <a
-                  href="https://wa.me/919244137353"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hidden sm:flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-[10px] font-black uppercase tracking-wider text-white shadow-lg hover:bg-amber-500 hover:text-slate-950 transition"
+          <div className="relative mx-auto w-full max-w-[1540px] px-4 pb-12 pt-10 sm:px-6 sm:pb-16 sm:pt-12 lg:px-8">
+            <div className="mx-auto max-w-5xl text-center">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={heroSlide}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.35 }}
                 >
-                  <span className="text-base">◉</span> WhatsApp Us
-                </a>
-                {currentUser ? (
-                  <button onClick={() => router.push("/customer/home")} className="rounded-xl bg-emerald-600 px-4 py-3 text-[10px] font-black uppercase tracking-wider text-white shadow-md">
-                    Dashboard
-                  </button>
-                ) : (
-                  <button onClick={() => setNeedsPhoneModal(true)} className="rounded-xl bg-amber-500 px-4 py-3 text-[10px] font-black uppercase tracking-wider text-slate-950 shadow-md hover:bg-amber-400 transition">
-                    Login
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-          <SlidingTicker />
-        </header>
+                  <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/25 bg-white/5 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-amber-300 backdrop-blur-xl">
+                    <span className="h-2 w-2 rounded-full bg-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.8)]" />
+                    {HERO_SLIDES[heroSlide].eyebrow}
+                  </div>
+                  <h1 className="mx-auto mt-5 max-w-5xl text-4xl font-black leading-[0.98] tracking-[-0.045em] text-white sm:text-5xl lg:text-6xl xl:text-[68px]">
+                    {HERO_SLIDES[heroSlide].title}
+                  </h1>
+                  <p className="mx-auto mt-5 max-w-3xl text-sm font-medium leading-6 text-white/65 sm:text-base sm:leading-7">
+                    {HERO_SLIDES[heroSlide].description}
+                  </p>
+                </motion.div>
+              </AnimatePresence>
 
-        {/* HERO / BOOKING ENGINE */}
-        <section className="relative overflow-x-clip bg-[#06101d]">
-          {/* Background layers are decorative only and never participate in layout. */}
-          <div className="pointer-events-none absolute inset-0 bg-[url('/splash-bg.png')] bg-cover bg-center opacity-55" />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#06101d]/95 via-[#06101d]/70 to-[#06101d]/25" />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#06101d]/40 via-transparent to-[#06101d]" />
-
-          <div className="relative mx-auto w-full max-w-[1500px] px-4 pb-8 pt-8 sm:px-6 sm:pb-10 sm:pt-10 lg:px-8 lg:pb-12 lg:pt-12">
-            {/* HERO CONTENT — normal document flow, no negative margins or absolute content overlap. */}
-            <div className="grid items-center gap-7 lg:grid-cols-[0.9fr_1.1fr] lg:gap-10 xl:gap-14">
-              <div className="relative z-10 min-w-0">
-                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-[9px] font-black uppercase tracking-[0.18em] text-amber-300 backdrop-blur">
-                  ✦ Chhattisgarh & MP's trusted cab partner
-                </div>
-
-                <h1 className="max-w-2xl text-4xl font-black leading-[0.98] tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl xl:text-7xl">
-                  Your Journey.
-                  <br />
-                  <span className="text-amber-500">Our Responsibility.</span>
-                </h1>
-
-                <p className="mt-4 max-w-xl text-sm font-semibold leading-6 text-white/65 sm:text-base sm:leading-7">
-                  Reliable cab service across Chhattisgarh & beyond with transparent fares,
-                  comfortable cars, experienced drivers and 24×7 travel support.
-                </p>
-
-                <div className="mt-6 flex flex-wrap gap-3">
-                  <a
-                    href="tel:+919244137353"
-                    className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-5 py-3.5 text-[10px] font-black uppercase tracking-wider text-white shadow-xl backdrop-blur transition hover:bg-white/15"
-                  >
-                    ☎ Call Now
-                  </a>
-
+              <div className="mt-5 flex justify-center gap-1.5" aria-label="Hero slides">
+                {HERO_SLIDES.map((slide, index) => (
                   <button
+                    key={slide.eyebrow}
                     type="button"
-                    onClick={() => calculatorSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })}
-                    className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-3.5 text-[10px] font-black uppercase tracking-wider text-slate-950 shadow-xl shadow-amber-500/20 transition hover:bg-amber-400"
-                  >
-                    Check Fare →
-                  </button>
-                </div>
-
-                <div className="mt-6 grid max-w-xl grid-cols-3 gap-2">
-                  {[
-                    ["◷", "24×7", "Support"],
-                    ["♢", "Verified", "Drivers"],
-                    ["▣", "Clean", "Cars"],
-                  ].map(([icon, title, sub]) => (
-                    <div
-                      key={title}
-                      className="rounded-xl border border-white/10 bg-white/10 p-3 shadow-lg backdrop-blur-xl"
-                    >
-                      <div className="text-lg font-black text-amber-500">{icon}</div>
-                      <div className="mt-1 text-[10px] font-black text-white">{title}</div>
-                      <div className="text-[8px] font-bold uppercase tracking-wide text-white/45">{sub}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* VEHICLE VISUAL — contained inside its own layout box. */}
-              <div className="relative min-w-0">
-                <div className="grid items-center gap-4 sm:grid-cols-[minmax(0,1fr)_190px] lg:grid-cols-[minmax(0,1fr)_205px]">
-                  <div className="relative flex min-h-[250px] items-center justify-center sm:min-h-[310px] lg:min-h-[350px]">
-                    <div className="pointer-events-none absolute right-0 top-1/2 h-[75%] w-[75%] -translate-y-1/2 rounded-full bg-amber-500/20 blur-3xl" />
-                    <div className="pointer-events-none absolute bottom-5 left-1/2 h-2 w-[86%] -translate-x-1/2 rounded-full bg-slate-950/20 blur-md" />
-                    <img
-                      src="/crysta_hero.png"
-                      alt="Innova Crysta"
-                      className="relative z-10 block h-auto w-full max-w-[620px] object-contain drop-shadow-[0_30px_35px_rgba(15,23,42,0.22)]"
-                    />
-                  </div>
-
-                  {/* Instant-fare card is in normal grid flow — never over the car or booking card. */}
-                  <div className="relative z-20 w-full rounded-2xl border border-slate-700 bg-slate-950 p-4 text-white shadow-2xl">
-                    <div className="text-[9px] font-black uppercase tracking-[0.18em] text-amber-400">
-                      Get Instant Fare
-                    </div>
-                    <div className="mt-1 text-xs font-bold text-white/80">
-                      No hidden charges
-                    </div>
-                    <div className="mt-3 text-3xl font-black text-amber-400">₹</div>
-                    <div className="mt-2 text-[10px] font-black leading-4">
-                      Transparent Pricing
-                      <br />
-                      Before You Book!
-                    </div>
-                  </div>
-                </div>
+                    aria-label={`Show slide ${index + 1}`}
+                    onClick={() => setHeroSlide(index)}
+                    className={`h-1.5 rounded-full transition-all ${index === heroSlide ? "w-8 bg-amber-400" : "w-1.5 bg-white/30"}`}
+                  />
+                ))}
               </div>
             </div>
 
-            {/* BOOKING CARD — deliberately separated from hero content; no negative margin. */}
-            <div
-              ref={calculatorSectionRef}
-              className="relative z-30 mt-6 scroll-mt-24 sm:mt-7 lg:mt-8"
-            >
-              <div className="overflow-visible rounded-[28px] border border-white/10 bg-[#0b1a2c]/90 shadow-[0_30px_90px_rgba(0,0,0,0.35)] backdrop-blur-2xl">
-                <div className="bg-transparent p-2.5 sm:p-3 lg:p-4">
-                  <FareCalculator
-                    onFareCalculated={(data) => {
+            {/* FULL-WIDTH FARE CALCULATOR: deliberately below the carousel text */}
+            <div ref={calculatorSectionRef} className="relative z-30 mx-auto mt-8 w-full max-w-[1400px] scroll-mt-24 sm:mt-10">
+              <div className="rounded-[30px] border border-white/70 bg-white/95 p-2 shadow-[0_30px_100px_rgba(0,0,0,0.28)] backdrop-blur-2xl sm:p-3 lg:p-4">
+                <FareCalculator
+                  onFareCalculated={(data) => {
+                    if (data.serviceType === "local") {
+                      const localOptions = data.fareOptions.map((opt: any) => ({
+                        ...opt,
+                        fareText: `₹${Number(opt.finalFare || 0).toLocaleString("en-IN")}`,
+                      }));
+
+                      setPopupData({
+                        ...data,
+                        fareOptions: localOptions,
+                        drop: "Local Cab Rental",
+                        isOneWayAvailable: true,
+                        baseDistance: localOptions[0]?.billedDistance || 0,
+                        localPackage: data.localPackage,
+                        packageLabel: data.packageLabel,
+                      });
+                    } else {
                       let oneWayAvail = true;
                       let baseSingleRouteDist = 150;
 
-                      const updatedData = {
+                      const options = data.fareOptions.map((opt: any) => {
+                        const rawDist = Number(opt.billedDistance || 0);
+                        const baseSingleDist = data.bookingType === "roundtrip" ? Math.round(rawDist / 2) : rawDist;
+                        baseSingleRouteDist = baseSingleDist;
+
+                        const recalculated = calculateFare({
+                          distance: baseSingleDist,
+                          vehicleType: opt.vehicleType,
+                          bookingType: data.bookingType,
+                          serviceType: data.serviceType,
+                          pickupDate: data.pickupDate,
+                          pickupTime: data.pickupTime,
+                          returnDate: data.returnDate,
+                          returnTime: data.returnTime,
+                          drop: data.drop,
+                          pickup: data.pickup,
+                        });
+
+                        oneWayAvail = recalculated.isOneWayAvailable;
+                        return {
+                          ...opt,
+                          finalFare: recalculated.finalFare,
+                          fareText: `₹${recalculated.finalFare.toLocaleString("en-IN")}`,
+                          billedDistance: recalculated.billedDistance,
+                          durationMinutes: recalculated.durationMinutes,
+                        };
+                      });
+
+                      setPopupData({
                         ...data,
-                        fareOptions: data.fareOptions.map((opt) => {
-                          const rawDist = opt.billedDistance;
-                          const baseSingleDist = data.bookingType === "roundtrip"
-                            ? Math.round(rawDist / 2)
-                            : rawDist;
-
-                          baseSingleRouteDist = baseSingleDist;
-
-                          const recalculated = calculateFare({
-                            distance: baseSingleDist,
-                            vehicleType: opt.vehicleType,
-                            bookingType: data.bookingType,
-                            serviceType: data.serviceType,
-                            pickupDate: data.pickupDate,
-                            pickupTime: data.pickupTime,
-                            returnDate: data.returnDate,
-                            returnTime: data.returnTime,
-                            drop: data.drop,
-                            pickup: data.pickup,
-                          });
-
-                          oneWayAvail = recalculated.isOneWayAvailable;
-
-                          return {
-                            ...opt,
-                            finalFare: recalculated.finalFare,
-                            billedDistance: recalculated.billedDistance,
-                            durationMinutes: recalculated.durationMinutes,
-                          };
-                        }),
+                        fareOptions: options,
                         isOneWayAvailable: oneWayAvail,
                         baseDistance: baseSingleRouteDist,
-                      };
+                      });
+                    }
 
-                      setPopupData(updatedData);
-                      setSelectedVehicleType("sedan");
-                      setShowPopup(true);
-                      setShowUserForm(false);
-                      setPaymentSplitMode({});
-                    }}
-                  />
-                </div>
+                    setSelectedVehicleType("sedan");
+                    setShowPopup(true);
+                    setShowUserForm(false);
+                    setPaymentSplitMode({});
+                    setExpandedInclusionsId(null);
+                  }}
+                />
               </div>
+            </div>
 
-              
+            <div className="mx-auto mt-5 flex max-w-5xl flex-wrap items-center justify-center gap-2 text-[10px] font-bold text-white/55">
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2">✓ Transparent fare</span>
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2">✓ Verified travel support</span>
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2">✓ Free cancellation before 6 hours</span>
             </div>
           </div>
         </section>
@@ -1107,6 +1063,7 @@ Hello! I am interested in booking an outstation trip:
             </div>
           </div>
         </section>
+        <ChhattisgarhHighIntentRoutes></ChhattisgarhHighIntentRoutes>
 
         <SeoTextBlock />
 
@@ -1245,290 +1202,278 @@ Hello! I am interested in booking an outstation trip:
         )}
       </AnimatePresence>
 
-      {/* 👑 FARE RESULTS POPUP MODAL - MINIMUM SIDE SCREEN */}
+      {/* PREMIUM FARE RESULTS — FULL VIEWPORT + INTERNAL SCROLL */}
       <AnimatePresence>
         {showPopup && popupData && (
-          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-950/80 p-0 sm:p-4 backdrop-blur-sm overflow-y-auto">
+          <div className="fixed inset-0 z-[999] bg-slate-950/75 backdrop-blur-sm">
             <motion.div
-              initial={{ y: 30, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 30, opacity: 0 }}
-              className="bg-slate-100 w-full max-w-4xl rounded-none sm:rounded-3xl shadow-2xl overflow-hidden my-auto flex flex-col min-h-screen sm:min-h-0 sm:max-h-[96vh] text-left relative"
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 18 }}
+              className="flex h-[100dvh] w-full flex-col overflow-hidden bg-[#f5f7fa] text-left"
             >
-              <div className="bg-slate-950 text-white px-3 sm:px-6 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-md">
-                <div className="flex items-center gap-2 flex-wrap min-w-0">
-                  <span className="bg-orange-500 text-white text-[9px] font-black uppercase px-2.5 py-1 rounded tracking-wider shrink-0">
-                    {popupData.bookingType}
-                  </span>
-                  <h3 className="text-xs sm:text-base font-black tracking-tight text-white truncate flex items-center gap-1.5">
-                    <span>{popupData.pickup.split(",")[0]}</span>
-                    <span className="text-orange-500">➔</span>
-                    <span>{popupData.drop.split(",")[0]}</span>
-                  </h3>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setShowPopup(false)}
-                    className="bg-slate-800 hover:bg-slate-700 text-white rounded-full h-8 w-8 flex items-center justify-center transition border border-slate-700"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-
-              {/* STATS SUMMARY BAR */}
-              {(() => {
-                const firstOpt = popupData.fareOptions[0];
-                const dist = firstOpt?.billedDistance || 0;
-                const mins = firstOpt?.durationMinutes || 120;
-                const hoursNum = Math.floor(mins / 60);
-                const minsNum = mins % 60;
-
-                let dropDateTimeStr = "Calculated on transit";
-                try {
-                  const pickupDt = new Date(`${popupData.pickupDate}T${popupData.pickupTime}`);
-                  if (!isNaN(pickupDt.getTime())) {
-                    const dropDt = new Date(pickupDt.getTime() + mins * 60 * 1000);
-                    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-                    const dStr = `${dropDt.getDate()} ${months[dropDt.getMonth()]}`;
-                    let h = dropDt.getHours();
-                    const ampm = h >= 12 ? "PM" : "AM";
-                    h = h % 12 || 12;
-                    const mStr = String(dropDt.getMinutes()).padStart(2, "0");
-                    dropDateTimeStr = `${dStr}, ${String(h).padStart(2, "0")}:${mStr} ${ampm}`;
-                  }
-                } catch (e) {}
-
-                return (
-                  <div className="bg-white px-3 sm:px-6 py-2.5 border-b border-slate-200 flex items-center justify-between text-xs font-bold text-slate-800 shadow-2xs sticky top-[57px] z-20">
-                    <div className="flex items-center gap-3 overflow-x-auto scrollbar-none whitespace-nowrap text-xs">
-                      <span className="flex items-center gap-1 text-slate-700">
-                        <span className="text-blue-600">📍</span> <strong>{dist} Kms</strong>
-                      </span>
-                      <span className="text-slate-300">|</span>
-                      <span className="flex items-center gap-1 text-slate-700">
-                        <span className="text-blue-600">⏱️</span> <strong>~{hoursNum}h {minsNum}m</strong>
-                      </span>
-                      <span className="text-slate-300">|</span>
-                      <span className="flex items-center gap-1 text-slate-700">
-                        <span className="text-blue-600">🏁</span> Est. Drop: <strong>{dropDateTimeStr}</strong>
-                      </span>
+              {/* STICKY RESULT HEADER */}
+              <header className="shrink-0 border-b border-slate-200 bg-white shadow-sm">
+                <div className="mx-auto flex min-h-[68px] w-full max-w-[1540px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowPopup(false)}
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-lg text-slate-700 shadow-sm transition hover:border-orange-300 hover:text-orange-600"
+                      aria-label="Back to fare search"
+                    >
+                      ←
+                    </button>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-orange-600">
+                          {popupData.serviceType === "local" ? "Hourly / Local" : popupData.bookingType === "roundtrip" ? "Round Trip" : "One Way"}
+                        </span>
+                        <span className="hidden text-[9px] font-bold text-slate-400 sm:inline">Khatu Rides</span>
+                      </div>
+                      <h2 className="mt-0.5 truncate text-base font-black tracking-tight text-slate-950 sm:text-xl">
+                        {popupData.pickup.split(",")[0]} <span className="text-orange-500">→</span> {popupData.drop.split(",")[0]}
+                      </h2>
                     </div>
                   </div>
-                );
-              })()}
+                  <div className="hidden items-center gap-6 text-right sm:flex">
+                    <div>
+                      <div className="text-[8px] font-black uppercase tracking-[0.15em] text-slate-400">Pickup</div>
+                      <div className="text-xs font-black text-slate-900">{convertToIndianDate(popupData.pickupDate)} · {formatTimeToAMPM(popupData.pickupTime)}</div>
+                    </div>
+                    <button type="button" onClick={() => setShowPopup(false)} className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200" aria-label="Close">✕</button>
+                  </div>
+                  <button type="button" onClick={() => setShowPopup(false)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 sm:hidden" aria-label="Close">✕</button>
+                </div>
 
-              <div className="p-2.5 sm:p-6 overflow-y-auto flex-1 space-y-3 bg-slate-100 pb-24 sm:pb-6">
+                {/* SEARCH SUMMARY */}
+                <div className="border-t border-slate-100 bg-white">
+                  <div className="mx-auto grid w-full max-w-[1540px] grid-cols-2 gap-2 px-4 py-2 sm:grid-cols-4 sm:px-6 lg:grid-cols-4 lg:px-8">
+                    <div className="rounded-xl bg-slate-50 px-3 py-2">
+                      <div className="text-[8px] font-black uppercase tracking-wider text-slate-400">Pickup</div>
+                      <div className="truncate text-[11px] font-black text-slate-800">{popupData.pickup.split(",")[0]}</div>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 px-3 py-2">
+                      <div className="text-[8px] font-black uppercase tracking-wider text-slate-400">Date & Time</div>
+                      <div className="text-[11px] font-black text-slate-800">{convertToIndianDate(popupData.pickupDate)} · {formatTimeToAMPM(popupData.pickupTime)}</div>
+                    </div>
+                    <div className="rounded-xl bg-orange-50 px-3 py-2">
+                      <div className="text-[8px] font-black uppercase tracking-wider text-orange-500">Package / Trip</div>
+                      <div className="truncate text-[11px] font-black text-orange-700">{popupData.serviceType === "local" ? popupData.packageLabel || "Local Package" : popupData.bookingType === "roundtrip" ? "Outstation Round Trip" : "Outstation One Way"}</div>
+                    </div>
+                    <div className="rounded-xl bg-emerald-50 px-3 py-2">
+                      <div className="text-[8px] font-black uppercase tracking-wider text-emerald-600">Booking Benefit</div>
+                      <div className="text-[11px] font-black text-emerald-700">Free cancellation 6h+</div>
+                    </div>
+                  </div>
+                </div>
+              </header>
+
+              {/* SCROLLABLE RESULT BODY */}
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
                 {!showUserForm ? (
-                  <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full">
-                    {popupData.fareOptions.map((opt) => {
-                      if (!["sedan", "ertiga", "crysta"].includes(opt.vehicleType)) return null;
-
-                      const dynamicLimitKms = getDynamicKmsLimitDisplay(opt);
-                      const extraRatePerKm = opt.vehicleType === "sedan" ? 13 : opt.vehicleType === "ertiga" ? 17 : 20.7;
-                      const isSelected = selectedVehicleType === opt.vehicleType;
-                      const isExpanded = expandedInclusionsId === opt.id;
-                      const strikePrice = Math.round(opt.finalFare * 1.15);
-
-                      const fullVehicleTitle = opt.vehicleType === "sedan" 
-                        ? "DZIRE, ETIOS" 
-                        : opt.vehicleType === "ertiga" 
-                        ? "ERTIGA, XYLO" 
-                        : "INNOVA CRYSTA";
-
-                      return (
-                        <div
-                          key={opt.id}
-                          onClick={() => setSelectedVehicleType(opt.vehicleType)}
-                          className={`rounded-2xl sm:rounded-3xl border-2 transition-all duration-200 bg-white p-4 sm:p-5 cursor-pointer relative shadow-sm ${
-                            isSelected ? "border-orange-500 ring-2 ring-orange-500/15 bg-orange-50/5" : "border-slate-200 hover:border-slate-300"
-                          }`}
-                        >
-                          {opt.vehicleType === "sedan" && (
-                            <div className="absolute -top-3 left-6 bg-orange-500 text-white text-[10px] font-black uppercase px-3 py-1 rounded-full tracking-wider shadow-sm">
-                              BEST PRICE
-                            </div>
-                          )}
-
-                          <div className="flex items-center justify-between gap-3 pt-1">
-                            <div className="bg-slate-50 rounded-2xl border border-slate-100 w-32 h-20 sm:w-40 sm:h-24 overflow-hidden flex items-center justify-center shrink-0 shadow-2xs">
-                              <img
-                                src={VEHICLES[opt.vehicleType]?.image}
-                                alt={opt.vehicleLabel}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-
-                            <div className="flex-1 min-w-0 px-2">
-                              <h4 className="text-sm sm:text-base font-black text-slate-900 tracking-tight uppercase truncate">
-                                {fullVehicleTitle}
-                              </h4>
-
-                              <div className="mt-1 space-y-0.5 text-xs text-slate-600 font-bold">
-                                <div className="flex items-center gap-1 text-slate-700">
-                                  <span>📍</span>
-                                  <span>{dynamicLimitKms} Kms Included</span>
-                                </div>
-                                <div className="flex items-center gap-1 text-slate-600 truncate">
-                                  <span>⚡</span>
-                                  <span className="truncate">Extra @ ₹{extraRatePerKm}/Km after limit</span>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="text-right shrink-0">
-                              <div className="text-xs sm:text-sm font-bold text-red-600 line-through">
-                                Rs. {strikePrice.toLocaleString("en-IN")}/-
-                              </div>
-                              <div className="bg-[#0284c7] text-white text-base sm:text-xl font-black px-4 py-1.5 rounded-full shadow-md inline-block tracking-tight mt-1">
-                                Rs. {opt.finalFare.toLocaleString("en-IN")}
-                              </div>
-                            </div>
+                  <div className="mx-auto grid w-full max-w-[1540px] gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:px-8 lg:py-7">
+                    <section className="min-w-0">
+                      <div className="mb-4 flex items-end justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-xl font-black tracking-tight text-slate-950 sm:text-2xl">{popupData.fareOptions.length} Cabs Available</h3>
+                            <span className="hidden text-xs text-slate-400 sm:inline">Compare & choose your ride</span>
                           </div>
-
-                          <div className="mt-4 pt-3 border-t border-slate-100 grid grid-cols-3 gap-2">
-                            <a
-                              href="tel:+919244137353"
-                              onClick={(e) => e.stopPropagation()}
-                              className="bg-[#581c87] hover:bg-[#4c1d95] text-white font-black text-[11px] sm:text-xs uppercase py-3 px-2 rounded-xl shadow-md transition text-center flex items-center justify-center gap-1 min-h-[42px]"
-                              aria-label="Call now"
-                            >
-                              📞 <span className="hidden sm:inline">CALL</span> NOW
-                            </a>
-
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleWhatsAppManualRedirect(opt);
-                              }}
-                              className="bg-[#22c55e] hover:bg-[#16a34a] text-white font-black text-[11px] sm:text-xs uppercase py-3 px-2 rounded-xl shadow-md transition text-center flex items-center justify-center gap-1 min-h-[42px]"
-                            >
-                              💬 <span className="hidden sm:inline">WHATSAPP</span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedVehicleType(opt.vehicleType);
-                                setPaymentSplitMode((p) => ({ ...p, [opt.id]: "half" }));
-                                setShowUserForm(true);
-                              }}
-                              className="bg-orange-600 hover:bg-orange-700 text-white font-black text-[11px] sm:text-xs uppercase py-3 px-2 rounded-xl shadow-md transition text-center min-h-[42px]"
-                            >
-                              🚀 BOOK
-                            </button>
-                          </div>
-
-                          <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
-                            <span className="text-slate-700 font-bold flex items-center gap-1 text-xs">
-                              <span className="text-emerald-600">✓</span> Toll, State Tax & Driver Allowance Included
-                            </span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setExpandedInclusionsId(isExpanded ? null : opt.id);
-                              }}
-                              className="font-black text-orange-600 hover:text-orange-700 text-xs shrink-0"
-                            >
-                              {isExpanded ? "Hide ▲" : "Inclusions ▼"}
-                            </button>
-                          </div>
-
-                          {isExpanded && (
-                            <div className="mt-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5 text-xs text-slate-700 animate-fadeIn">
-                              <div>✔ <strong>{dynamicLimitKms} Km included:</strong> ₹{extraRatePerKm}/km beyond limit.</div>
-                              <div>✔ <strong>Toll & State Tax:</strong> Fully covered in fare.</div>
-                              <div>✔ <strong>Driver Allowance:</strong> Included.</div>
-                              <div>✔ <strong>Waiting Time:</strong> Upto 45 mins free at pickup.</div>
-                            </div>
-                          )}
+                          <p className="mt-1 text-[11px] font-medium text-slate-500">All fares shown before booking. Check inclusions and extra charges below.</p>
                         </div>
-                      );
-                    })}
+                        <span className="shrink-0 rounded-full border border-orange-200 bg-white px-3 py-1.5 text-[9px] font-black uppercase tracking-wide text-orange-600 shadow-sm">Recommended</span>
+                      </div>
+
+                      <div className="space-y-4">
+                        {popupData.fareOptions.map((opt) => {
+                          if (!["sedan", "ertiga", "crysta"].includes(opt.vehicleType)) return null;
+                          const isSelected = selectedVehicleType === opt.vehicleType;
+                          const isExpanded = expandedInclusionsId === opt.id;
+                          const isLocal = popupData.serviceType === "local";
+                          const packageLabel = opt.packageLabel || popupData.packageLabel || "Outstation";
+                          const packageHours = opt.packageHours || 0;
+                          const packageKms = opt.packageKms || 0;
+                          const extraHourRate = opt.extraHourRate;
+                          const extraKmRate = opt.extraKmRate;
+                          const includedKms = isLocal ? packageKms : getDynamicKmsLimitDisplay(opt);
+                          const fare = Number(opt.finalFare || 0);
+                          const vehicleName = opt.vehicleType === "sedan" ? "Swift Dzire" : opt.vehicleType === "ertiga" ? "Maruti Ertiga" : "Toyota Innova Crysta";
+                          const vehicleType = opt.vehicleType === "sedan" ? "Sedan" : opt.vehicleType === "ertiga" ? "MUV" : "Premium SUV";
+                          const seats = opt.vehicleType === "sedan" ? "4+1" : "6+1";
+                          const extraOutstationRate = opt.vehicleType === "sedan" ? 13 : opt.vehicleType === "ertiga" ? 17 : 20.7;
+
+                          return (
+                            <article
+                              key={opt.id}
+                              onClick={() => setSelectedVehicleType(opt.vehicleType)}
+                              className={`relative overflow-hidden rounded-[24px] border bg-white shadow-[0_8px_30px_rgba(15,23,42,0.06)] transition-all duration-200 ${isSelected ? "border-orange-400 ring-2 ring-orange-500/10" : "border-slate-200 hover:border-slate-300"}`}
+                            >
+                              {opt.vehicleType === "sedan" && (
+                                <div className="absolute left-5 top-0 rounded-b-xl bg-orange-500 px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-white shadow-sm">Recommended</div>
+                              )}
+
+                              <div className="grid gap-4 p-4 pt-6 sm:grid-cols-[150px_minmax(0,1fr)_150px] sm:items-center sm:p-5 sm:pt-6">
+                                <div className="flex h-[104px] items-center justify-center overflow-hidden rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white p-2 sm:h-[112px]">
+                                  <img src={VEHICLES[opt.vehicleType]?.image} alt={vehicleName} className="h-full w-full object-contain" loading="lazy" />
+                                </div>
+
+                                <div className="min-w-0">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                      <h4 className="truncate text-base font-black tracking-tight text-slate-950 sm:text-lg">{vehicleName}</h4>
+                                      <p className="mt-0.5 text-[11px] font-bold text-slate-500">{vehicleType} · {seats} · AC</p>
+                                    </div>
+                                    <span className="rounded-full bg-orange-50 px-2 py-1 text-[8px] font-black uppercase tracking-wide text-orange-600">{isLocal ? "Hourly" : "Cab"}</span>
+                                  </div>
+
+                                  <div className="mt-4 grid grid-cols-3 gap-2">
+                                    <div className="rounded-xl bg-slate-50 px-2.5 py-2.5">
+                                      <div className="text-[8px] font-black uppercase tracking-wide text-slate-400">Package</div>
+                                      <div className="mt-0.5 truncate text-[10px] font-black text-slate-800">{isLocal ? packageLabel.replace(" / ", " • ") : `${includedKms} KM`}</div>
+                                    </div>
+                                    <div className="rounded-xl bg-slate-50 px-2.5 py-2.5">
+                                      <div className="text-[8px] font-black uppercase tracking-wide text-slate-400">Extra Hour</div>
+                                      <div className="mt-0.5 text-[10px] font-black text-slate-800">{isLocal && extraHourRate ? `₹${extraHourRate}/hr` : "As per fare"}</div>
+                                    </div>
+                                    <div className="rounded-xl bg-slate-50 px-2.5 py-2.5">
+                                      <div className="text-[8px] font-black uppercase tracking-wide text-slate-400">Extra KM</div>
+                                      <div className="mt-0.5 text-[10px] font-black text-slate-800">₹{isLocal && extraKmRate ? extraKmRate : extraOutstationRate}/km</div>
+                                    </div>
+                                  </div>
+
+                                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] font-bold">
+                                    <span className="text-emerald-700">✓ Fuel included</span>
+                                    <span className="text-emerald-700">✓ Driver allowance included</span>
+                                    <span className="text-slate-500">✓ Free cancellation 6h+</span>
+                                  </div>
+                                </div>
+
+                                <div className="flex flex-row items-center justify-between gap-3 border-t border-slate-100 pt-3 sm:flex-col sm:items-end sm:border-t-0 sm:pt-0">
+                                  <div className="text-left sm:text-right">
+                                    <div className="text-[8px] font-black uppercase tracking-[0.14em] text-slate-400">{isLocal ? "Package Fare" : "Estimated Fare"}</div>
+                                    <div className="mt-0.5 text-[25px] font-black tracking-tight text-slate-950">₹{fare.toLocaleString("en-IN")}</div>
+                                    <div className="text-[9px] font-bold text-slate-400">{isLocal ? `${packageHours} Hrs · ${packageKms} KM` : `${includedKms} KM included`}</div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedVehicleType(opt.vehicleType);
+                                      setPaymentSplitMode((p) => ({ ...p, [opt.id]: "half" }));
+                                      setShowUserForm(true);
+                                    }}
+                                    className="min-w-[135px] rounded-xl bg-orange-500 px-5 py-3 text-[10px] font-black uppercase tracking-wider text-white shadow-[0_8px_20px_rgba(249,115,22,0.22)] transition hover:bg-orange-600 active:scale-[0.98]"
+                                  >
+                                    Book Now →
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/80 px-4 py-2.5 sm:px-5">
+                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[9px] font-bold">
+                                  <span className="text-emerald-700">✓ Fuel</span>
+                                  <span className="text-emerald-700">✓ Driver</span>
+                                  <span className="text-slate-600">✓ Cancellation 6h+</span>
+                                  <span className={isLocal ? "text-orange-600" : "text-slate-600"}>{isLocal ? "Toll & parking actual" : "Toll/state tax as per fare"}</span>
+                                </div>
+                                <button type="button" onClick={(e) => { e.stopPropagation(); setExpandedInclusionsId(isExpanded ? null : opt.id); }} className="text-[9px] font-black uppercase tracking-wider text-orange-600 hover:text-orange-700">{isExpanded ? "Hide details ↑" : "Fare details ↓"}</button>
+                              </div>
+
+                              {isExpanded && (
+                                <div className="grid gap-2 border-t border-slate-100 bg-white px-4 py-4 text-[10px] font-semibold text-slate-600 sm:grid-cols-2 sm:px-5">
+                                  <div className="rounded-xl bg-slate-50 p-3">✓ <strong className="text-slate-900">Package:</strong> {packageLabel}</div>
+                                  <div className="rounded-xl bg-slate-50 p-3">✓ <strong className="text-slate-900">Included distance:</strong> {includedKms} KM</div>
+                                  <div className="rounded-xl bg-slate-50 p-3">✓ <strong className="text-slate-900">Fuel:</strong> Included</div>
+                                  <div className="rounded-xl bg-slate-50 p-3">✓ <strong className="text-slate-900">Driver allowance:</strong> Included</div>
+                                  <div className="rounded-xl bg-slate-50 p-3">✓ <strong className="text-slate-900">Cancellation:</strong> Free before 6 hours from journey time</div>
+                                  <div className="rounded-xl bg-slate-50 p-3">✓ <strong className="text-slate-900">Toll & parking:</strong> {isLocal ? "Customer pays actual" : "As applicable to route"}</div>
+                                </div>
+                              )}
+                            </article>
+                          );
+                        })}
+                      </div>
+                    </section>
+
+                    <aside className="hidden space-y-4 lg:block">
+                      <div className="sticky top-5 space-y-4">
+                        <div className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-[0_8px_30px_rgba(15,23,42,0.06)]">
+                          <div className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-400">Why Khatu Rides</div>
+                          <div className="mt-4 space-y-4">
+                            {[
+                              ["Transparent fare", "Know your package fare before booking."],
+                              ["Verified travel support", "Reliable local assistance when you need it."],
+                              ["Free cancellation", "Cancel before 6 hours from journey time."],
+                              ["24×7 assistance", "Call or WhatsApp our booking team."],
+                            ].map(([title, desc]) => (
+                              <div key={title} className="flex gap-3">
+                                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-xs font-black text-emerald-600">✓</span>
+                                <div><div className="text-[11px] font-black text-slate-900">{title}</div><div className="mt-0.5 text-[9px] leading-4 text-slate-500">{desc}</div></div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="rounded-[22px] border border-orange-100 bg-orange-50 p-5">
+                          <div className="text-[9px] font-black uppercase tracking-[0.18em] text-orange-600">Need help?</div>
+                          <p className="mt-2 text-[11px] font-medium leading-5 text-slate-600">Not sure which cab is right for your journey? Our booking team can help.</p>
+                          <div className="mt-4 grid grid-cols-2 gap-2">
+                            <a href="tel:+919244137353" className="rounded-xl border border-slate-200 bg-white py-3 text-center text-[9px] font-black uppercase tracking-wider text-slate-900 shadow-sm">Call</a>
+                            <a href="https://wa.me/919244137353" target="_blank" rel="noopener noreferrer" className="rounded-xl bg-emerald-600 py-3 text-center text-[9px] font-black uppercase tracking-wider text-white shadow-sm">WhatsApp</a>
+                          </div>
+                        </div>
+                      </div>
+                    </aside>
                   </div>
                 ) : (
-                  <div className="max-w-xl mx-auto bg-white border border-slate-200 rounded-3xl p-6 shadow-md text-left w-full my-auto">
-                    <div className="text-center mb-5">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-orange-600 bg-orange-50 px-2.5 py-1 rounded">Secure Form</span>
-                      <h4 className="text-lg font-black text-slate-900 mt-2">Enter Details to Complete Booking</h4>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-black text-slate-700 uppercase tracking-wider">Customer Full Name</label>
-                        <input
-                          type="text"
-                          placeholder="Type customer name..."
-                          value={customerName}
-                          onChange={(e) => setCustomerName(e.target.value)}
-                          className="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white text-sm font-bold focus:outline-none focus:border-orange-500 transition shadow-xs"
-                        />
-                      </div>
-
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-black text-slate-700 uppercase tracking-wider">Mobile Number (For Driver SMS)</label>
-                        <input
-                          type="tel"
-                          inputMode="numeric"
-                          maxLength={10}
-                          placeholder="Enter 10-digit phone number..."
-                          value={customerPhone}
-                          onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, ""))}
-                          className="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white text-sm font-bold focus:outline-none focus:border-orange-500 transition shadow-xs"
-                        />
-                      </div>
-
-                      {selectedOption && (
-                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mt-2">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Split Booking Matrix</span>
-                          <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-white p-1">
-                            <button
-                              type="button"
-                              onClick={() => setPaymentSplitMode((p) => ({ ...p, [selectedOption.id]: "half" }))}
-                              className={`rounded-lg py-2 text-center text-[11px] font-black uppercase tracking-wide ${currentSelectedMode === "half" ? "bg-orange-600 text-white shadow-sm" : "text-slate-500"}`}
-                            >
-                              50% Advance
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setPaymentSplitMode((p) => ({ ...p, [selectedOption.id]: "full" }))}
-                              className={`rounded-lg py-2 text-center text-[11px] font-black uppercase tracking-wide ${currentSelectedMode === "full" ? "bg-slate-900 text-white shadow-sm" : "text-slate-500"}`}
-                            >
-                              Full Pay
-                            </button>
-                          </div>
-
-                          <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-200/60">
-                            <div>
-                              <span className="text-[10px] font-black text-slate-400 block uppercase">Payable Now</span>
-                              <span className="text-xl font-black text-slate-900">₹{displayPayNowNumber.toLocaleString("en-IN")}</span>
-                            </div>
-                            <span className="text-[10px] font-bold text-slate-500 bg-white px-2 py-1 rounded border border-slate-200">{selectedOption.vehicleLabel}</span>
-                          </div>
+                  <div className="mx-auto flex min-h-full w-full max-w-2xl items-start justify-center px-4 py-8 sm:px-6 sm:py-12">
+                    <div className="w-full rounded-[26px] border border-slate-200 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.10)] sm:p-7">
+                      <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-5">
+                        <div>
+                          <div className="text-[9px] font-black uppercase tracking-[0.18em] text-orange-600">Secure Booking</div>
+                          <h3 className="mt-1 text-xl font-black tracking-tight text-slate-950">Complete your booking</h3>
+                          <p className="mt-1 text-[11px] text-slate-500">Your details are used for booking confirmation and driver coordination.</p>
                         </div>
-                      )}
+                        <button type="button" onClick={() => setShowUserForm(false)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">✕</button>
+                      </div>
 
-                      <div className="grid grid-cols-2 gap-2 pt-2">
-                        <button
-                          type="button"
-                          onClick={() => setShowUserForm(false)}
-                          className="w-full border border-slate-300 bg-slate-100 text-slate-700 font-bold text-xs uppercase py-3.5 rounded-xl transition"
-                        >
-                          ↩ Back
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => selectedOption && handleOnlinePaymentCheckout(selectedOption)}
-                          disabled={paymentLoadingId !== null}
-                          className="w-full bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-widest py-3.5 rounded-xl transition shadow-lg shadow-orange-600/20 disabled:opacity-50"
-                        >
-                          {paymentLoadingId ? "Syncing..." : "Proceed to Pay"}
-                        </button>
+                      <div className="mt-5 space-y-4">
+                        <div>
+                          <label className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-500">Customer Full Name</label>
+                          <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Enter your full name" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold text-slate-900 outline-none transition focus:border-orange-400 focus:bg-white focus:ring-4 focus:ring-orange-500/10" />
+                        </div>
+                        <div>
+                          <label className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-500">Mobile Number</label>
+                          <input type="tel" inputMode="numeric" maxLength={10} value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, ""))} placeholder="10-digit mobile number" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold text-slate-900 outline-none transition focus:border-orange-400 focus:bg-white focus:ring-4 focus:ring-orange-500/10" />
+                        </div>
+
+                        {selectedOption && (
+                          <div className="rounded-2xl border border-orange-100 bg-orange-50 p-4">
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <div className="text-[9px] font-black uppercase tracking-wider text-orange-600">Selected cab</div>
+                                <div className="mt-1 text-sm font-black text-slate-900">{selectedOption.vehicleLabel}</div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-[8px] font-black uppercase text-slate-400">Total fare</div>
+                                <div className="text-xl font-black text-slate-950">₹{selectedOption.finalFare.toLocaleString("en-IN")}</div>
+                              </div>
+                            </div>
+                            <div className="mt-4 grid grid-cols-2 gap-2 rounded-xl bg-white p-1">
+                              <button type="button" onClick={() => setPaymentSplitMode((p) => ({ ...p, [selectedOption.id]: "half" }))} className={`rounded-lg py-2.5 text-[10px] font-black uppercase ${currentSelectedMode === "half" ? "bg-orange-500 text-white" : "text-slate-500"}`}>50% Advance</button>
+                              <button type="button" onClick={() => setPaymentSplitMode((p) => ({ ...p, [selectedOption.id]: "full" }))} className={`rounded-lg py-2.5 text-[10px] font-black uppercase ${currentSelectedMode === "full" ? "bg-slate-950 text-white" : "text-slate-500"}`}>Full Pay</button>
+                            </div>
+                            <div className="mt-3 flex items-end justify-between border-t border-orange-100 pt-3">
+                              <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Payable now</span>
+                              <span className="text-2xl font-black text-slate-950">₹{displayPayNowNumber.toLocaleString("en-IN")}</span>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          <button type="button" onClick={() => setShowUserForm(false)} className="rounded-2xl border border-slate-200 bg-white py-3.5 text-[10px] font-black uppercase tracking-wider text-slate-700">← Back to cabs</button>
+                          <button type="button" onClick={() => selectedOption && handleOnlinePaymentCheckout(selectedOption)} disabled={paymentLoadingId !== null} className="rounded-2xl bg-orange-500 py-3.5 text-[10px] font-black uppercase tracking-wider text-white shadow-lg shadow-orange-500/20 disabled:opacity-50">{paymentLoadingId ? "Processing..." : "Proceed to Pay →"}</button>
+                        </div>
                       </div>
                     </div>
                   </div>
