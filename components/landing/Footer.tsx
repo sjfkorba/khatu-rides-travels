@@ -433,7 +433,7 @@ export default function Footer() {
                 <div className="flex items-center gap-1">
 
                   <span className="text-sm font-black text-slate-950">
-                    4.9
+                    4.6
                   </span>
 
                   <span className="text-[9px] font-bold text-slate-400">

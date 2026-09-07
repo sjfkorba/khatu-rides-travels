@@ -1,88 +1,296 @@
 // components/ImageCarousel.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 
-const BANNERS = [
-  { id: 1, src: "/banner1.png", alt: "One Way Car Service - Khatu Rides" },
-  { id: 2, src: "/banner2.png", alt: "One Way Taxi Service Offer" },
-  { id: 3, src: "/banner3.png", alt: "Premium Taxi 20% Off" },
-  { id: 4, src: "/banner4.png", alt: "Chhattisgarh Route Fleet" },
-  { id: 5, src: "/banner5.png", alt: "Happy Customers Family Travel" },
-  { id: 6, src: "/banner6.png", alt: "Chhattisgarh's Fastest Growing Service" },
-  { id: 7, src: "/banner7.png", alt: "100% Satisfaction Guarantee" },
-  { id: 8, src: "/banner8.png", alt: "Best Taxi Service Network" },
+const ROUTE_BANNERS = [
+  {
+    id: 1,
+    src: "/hero/01.png",
+    alt: "One Way Taxi Service - Khatu Rides",
+  },
+  {
+    id: 2,
+    src: "/hero/02.png",
+    alt: "Airport Taxi Service - Khatu Rides",
+  },
+  {
+    id: 3,
+    src: "/hero/03.png",
+    alt: "Outstation Cab Service - Khatu Rides",
+  },
+  {
+    id: 4,
+    src: "/hero/04.png",
+    alt: "Prayagraj Taxi Tour - Khatu Rides",
+  },
+  {
+    id: 5,
+    src: "/hero/05.png",
+    alt: "Travel and Tour Cab Service - Khatu Rides",
+  },
+  {
+    id: 6,
+    src: "/hero/donation.png",
+    alt: "Khatu Rides Social Initiative",
+  },
 ];
 
 export default function ImageCarousel() {
   const [current, setCurrent] = useState(0);
 
+  const activeBanner =
+    ROUTE_BANNERS[current] ?? ROUTE_BANNERS[0];
+
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % BANNERS.length);
-    }, 4500);
-    return () => clearInterval(timer);
+    const timer = window.setInterval(() => {
+      setCurrent((prev) =>
+        prev >= ROUTE_BANNERS.length - 1 ? 0 : prev + 1
+      );
+    }, 4000);
+
+    return () => window.clearInterval(timer);
   }, []);
 
   return (
-    <div className="relative w-full overflow-hidden bg-slate-950 border-b border-orange-600/20 z-0 select-none py-4 px-4 sm:px-8">
-      
-      {/* Symmetrical Centered View Area */}
-      <div className="mx-auto max-w-5xl flex items-center justify-center w-full">
-        
-        {/* 👑 GLOWING BORDER CONTAINER: Added dynamic drop-shadow and vibrant solid orange ring wrapper */}
-        <div className="relative w-full aspect-[2.3/1] sm:aspect-[2.6/1] lg:h-[400px] rounded-2xl md:rounded-[2rem] border-2 border-orange-500 shadow-[0_0_30px_rgba(234,88,12,0.45),inset_0_0_15px_rgba(234,88,12,0.2)] overflow-hidden bg-slate-950">
-          
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={current}
-              /* 👑 RIGHT TO LEFT ANIMATION LOGIC: Initiates from positive x (right) and shifts to negative x (left) on exit */
-              initial={{ opacity: 0, x: "100%" }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: "-100%" }}
-              transition={{ duration: 0.55, ease: [0.25, 1, 0.5, 1] }}
-              className="absolute inset-0 w-full h-full"
+    <section
+      aria-label="Khatu Rides promotional banners"
+      className="
+        relative
+        z-10
+        flex
+        w-full
+        items-center
+        justify-center
+        overflow-hidden
+        bg-[#f8fafc]
+        px-2
+        py-1.5
+        sm:px-4
+        sm:py-2
+      "
+    >
+      {/* Main Carousel */}
+      <div
+        className="
+          relative
+          flex
+          h-[10vh]
+          min-h-[64px]
+          max-h-[110px]
+          w-full
+          items-center
+          justify-center
+          overflow-hidden
+          rounded-xl
+          border
+          border-slate-200
+          bg-white
+          shadow-[0_8px_30px_rgba(15,23,42,0.10)]
+          sm:rounded-2xl
+        "
+      >
+        {/* Soft background */}
+        <div
+          aria-hidden="true"
+          className="
+            pointer-events-none
+            absolute
+            inset-0
+            bg-gradient-to-r
+            from-[#F9B900]/[0.04]
+            via-transparent
+            to-orange-500/[0.04]
+          "
+        />
+
+        <AnimatePresence
+          mode="wait"
+          initial={false}
+        >
+          <motion.div
+            key={activeBanner.id}
+            initial={{
+              x: "105%",
+              opacity: 0,
+            }}
+            animate={{
+              x: 0,
+              opacity: 1,
+            }}
+            exit={{
+              x: "-105%",
+              opacity: 0,
+            }}
+            transition={{
+              duration: 0.65,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            className="
+              absolute
+              inset-0
+              flex
+              h-full
+              w-full
+              items-center
+              justify-center
+            "
+          >
+            {/* ==========================================
+                BLURRED BACKGROUND
+            ========================================== */}
+            <div
+              aria-hidden="true"
+              className="
+                pointer-events-none
+                absolute
+                inset-0
+                overflow-hidden
+              "
             >
-              {/* Layer 1: Blurred Backdrop Layer */}
-              <div className="absolute inset-0 w-full h-full scale-105 blur-lg opacity-20 pointer-events-none">
-                <Image src={BANNERS[current].src} alt="Blur-Back" fill className="object-fill" />
-              </div>
-
-              {/* Layer 2: Color Shading Filter Overlay */}
-              <div className="absolute inset-0 z-10 bg-gradient-to-r from-slate-950/10 via-transparent to-slate-950/10" />
-
-              {/* Layer 3: Main Sharp Core Flyer Image */}
-              <div className="absolute inset-0 z-20 w-full h-full flex items-center justify-center">
-                <Image 
-                  src={BANNERS[current].src} 
-                  alt={BANNERS[current].alt} 
-                  fill 
-                  priority 
-                  className="object-contain w-full h-full p-1" 
-                />
-              </div>
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Pagination Indicators (Dots Layer) */}
-          <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 z-30 bg-gradient-to-t from-black/40 via-black/10 to-transparent pt-4 pb-1">
-            {BANNERS.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrent(idx)}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  current === idx ? "w-5 bg-orange-500 shadow-md" : "w-1.5 bg-white/40"
-                }`}
-                aria-label={`Slide ${idx + 1}`}
+              <Image
+                src={activeBanner.src}
+                alt=""
+                fill
+                sizes="100vw"
+                className="
+                  scale-110
+                  object-cover
+                  opacity-[0.08]
+                  blur-xl
+                "
               />
-            ))}
-          </div>
 
+              <div
+                className="
+                  absolute
+                  inset-0
+                  bg-white/80
+                  backdrop-blur-[2px]
+                "
+              />
+            </div>
+
+            {/* ==========================================
+                MAIN IMAGE
+            ========================================== */}
+            <div
+              className="
+                relative
+                z-20
+                flex
+                h-full
+                w-full
+                items-center
+                justify-center
+                px-1
+                sm:px-3
+              "
+            >
+              <Image
+                src={activeBanner.src}
+                alt={activeBanner.alt}
+                width={1920}
+                height={360}
+                priority={current === 0}
+                sizes="100vw"
+                className="
+                  h-[10vh]
+                  min-h-[64px]
+                  max-h-[110px]
+                  w-auto
+                  max-w-[96vw]
+                  object-contain
+                  select-none
+                  drop-shadow-[0_6px_18px_rgba(15,23,42,0.20)]
+                "
+                draggable={false}
+              />
+            </div>
+          </motion.div>
+        </AnimatePresence>
+
+        {/* ==========================================
+            EDGE DEPTH
+        ========================================== */}
+
+        <div
+          aria-hidden="true"
+          className="
+            pointer-events-none
+            absolute
+            inset-y-0
+            left-0
+            z-30
+            w-8
+            bg-gradient-to-r
+            from-white/40
+            to-transparent
+          "
+        />
+
+        <div
+          aria-hidden="true"
+          className="
+            pointer-events-none
+            absolute
+            inset-y-0
+            right-0
+            z-30
+            w-8
+            bg-gradient-to-l
+            from-white/40
+            to-transparent
+          "
+        />
+
+        {/* ==========================================
+            DOTS
+        ========================================== */}
+
+        <div
+          className="
+            absolute
+            bottom-1
+            left-1/2
+            z-40
+            flex
+            -translate-x-1/2
+            items-center
+            gap-1
+            rounded-full
+            bg-slate-900/25
+            px-2
+            py-1
+            backdrop-blur-md
+          "
+        >
+          {ROUTE_BANNERS.map((banner, index) => (
+            <button
+              key={banner.id}
+              type="button"
+              onClick={() => setCurrent(index)}
+              aria-label={`Show banner ${index + 1}`}
+              aria-current={
+                current === index ? "true" : undefined
+              }
+              className={`
+                h-1.5
+                rounded-full
+                transition-all
+                duration-300
+                ${
+                  current === index
+                    ? "w-5 bg-[#F9B900] shadow-[0_0_8px_rgba(249,185,0,0.60)]"
+                    : "w-1.5 bg-white/80 hover:bg-white"
+                }
+              `}
+            />
+          ))}
         </div>
-
       </div>
-    </div>
+    </section>
   );
 }
