@@ -23,8 +23,6 @@ import { onAuthStateChanged, User, signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import PremiumSplashScreen from "@/components/PremiumSplashScreen";
 import CarCursor from "@/components/CarCursor";
-import GoogleAdsTracker from "@/components/GoogleAdsTracker";
-import { trackBookingConversion, trackFareCheckConversion, trackWhatsAppClick } from "@/lib/googleAds";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -400,9 +398,7 @@ export default function HomePage() {
           if (verifyRes.ok && verifyData.success) {
             const finalInvoiceId = verifyData.invoiceId || `KR-${Math.floor(100000 + Math.random() * 900000)}`;
 
-                        trackBookingConversion(processAmount, finalInvoiceId);
-
-            if (db) {
+                        if (db) {
               await addDoc(collection(db, "bookings"), {
                 invoiceId: finalInvoiceId,
                 customerName: customerName,
@@ -455,7 +451,6 @@ Hello! I am interested in booking an outstation trip:
 • *Vehicle:* ${option.vehicleLabel}
 • *Estimated Fare:* Rs. ${option.finalFare.toLocaleString("en-IN")}/-`;
 
-    trackWhatsAppClick();
     window.open(`https://wa.me/919244137353?text=${encodeURIComponent(textPayload)}`, "_blank");
   };
 
@@ -488,8 +483,7 @@ Hello! I am interested in booking an outstation trip:
 
   return (
     <>
-      <GoogleAdsTracker />
-      <CarCursor></CarCursor>
+    <CarCursor></CarCursor>
       <Script id="razorpay-checkout-js" src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
 
       <main className="min-h-screen overflow-x-clip bg-[#06101d] pb-20 font-sans text-white selection:bg-amber-500 selection:text-white md:pb-0">
@@ -593,7 +587,6 @@ Hello! I am interested in booking an outstation trip:
               <div className="rounded-[30px] border border-white/70 bg-white/95 p-2 shadow-[0_30px_100px_rgba(0,0,0,0.28)] backdrop-blur-2xl sm:p-3 lg:p-4">
                 <FareCalculator
                   onFareCalculated={(data) => {
-                    trackFareCheckConversion(1);
                     if (data.serviceType === "local") {
                       const localOptions = data.fareOptions.map((opt: any) => ({
                         ...opt,
@@ -1042,7 +1035,7 @@ Hello! I am interested in booking an outstation trip:
                       <div key={x} className="flex items-center gap-2 text-xs font-black text-slate-700"><span className="text-amber-500">✓</span>{x}</div>
                     ))}
                   </div>
-                  <a href="https://wa.me/919244137353?text=Hello%20Khatu%20Rides%2C%20I%20want%20to%20discuss%20a%20corporate%20or%20hotel%20travel%20partnership." target="_blank" rel="noopener noreferrer" onClick={trackWhatsAppClick} className="mt-8 inline-flex rounded-xl bg-slate-950 px-5 py-3.5 text-[10px] font-black uppercase tracking-wider text-white hover:bg-amber-500 hover:text-slate-950 transition">Become Our Partner →</a>
+                  <a href="https://wa.me/919244137353?text=Hello%20Khatu%20Rides%2C%20I%20want%20to%20discuss%20a%20corporate%20or%20hotel%20travel%20partnership." target="_blank" rel="noopener noreferrer" className="mt-8 inline-flex rounded-xl bg-slate-950 px-5 py-3.5 text-[10px] font-black uppercase tracking-wider text-white hover:bg-amber-500 hover:text-slate-950 transition">Become Our Partner →</a>
                 </div>
                 <div className="relative min-h-[300px] bg-slate-950">
                   <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-amber-900/70" />
@@ -1131,7 +1124,7 @@ Hello! I am interested in booking an outstation trip:
             <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/60">Get your fare estimate and book a comfortable ride in minutes.</p>
             <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
               <button onClick={() => calculatorSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })} className="rounded-xl bg-amber-500 px-6 py-3.5 text-[10px] font-black uppercase tracking-wider text-slate-950 hover:bg-amber-400 transition">Check Fare & Book</button>
-              <a href="https://wa.me/919244137353" target="_blank" rel="noopener noreferrer" onClick={trackWhatsAppClick} className="rounded-xl border border-white/15 bg-white/5 px-6 py-3.5 text-[10px] font-black uppercase tracking-wider text-white hover:bg-white/10 transition">WhatsApp Us</a>
+              <a href="https://wa.me/919244137353" target="_blank" rel="noopener noreferrer" className="rounded-xl border border-white/15 bg-white/5 px-6 py-3.5 text-[10px] font-black uppercase tracking-wider text-white hover:bg-white/10 transition">WhatsApp Us</a>
             </div>
           </div>
         </section>
@@ -1139,7 +1132,7 @@ Hello! I am interested in booking an outstation trip:
         {/* MOBILE ACTION BAR */}
         <div className="fixed bottom-0 left-0 right-0 z-[900] grid grid-cols-3 border-t border-slate-200 bg-white/95 p-2 shadow-[0_-8px_30px_rgba(15,23,42,0.12)] backdrop-blur md:hidden">
           <a href="tel:+919244137353" className="flex items-center justify-center gap-1 rounded-xl py-3 text-[9px] font-black uppercase tracking-wider text-slate-900">☎ Call</a>
-          <a href="https://wa.me/919244137353" target="_blank" rel="noopener noreferrer" onClick={trackWhatsAppClick} className="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 py-3 text-[9px] font-black uppercase tracking-wider text-white">◉ WhatsApp</a>
+          <a href="https://wa.me/919244137353" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 py-3 text-[9px] font-black uppercase tracking-wider text-white">◉ WhatsApp</a>
           <button onClick={() => calculatorSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })} className="flex items-center justify-center gap-1 rounded-xl bg-amber-500 py-3 text-[9px] font-black uppercase tracking-wider text-slate-950">🚕 Book Now</button>
         </div>
       </main>
@@ -1475,7 +1468,7 @@ Hello! I am interested in booking an outstation trip:
                           <p className="mt-2 text-[11px] font-medium leading-5 text-slate-600">Not sure which cab is right for your journey? Our booking team can help.</p>
                           <div className="mt-4 grid grid-cols-2 gap-2">
                             <a href="tel:+919244137353" className="rounded-xl border border-slate-200 bg-white py-3 text-center text-[9px] font-black uppercase tracking-wider text-slate-900 shadow-sm">Call</a>
-                            <a href="https://wa.me/919244137353" target="_blank" rel="noopener noreferrer" onClick={trackWhatsAppClick} className="rounded-xl bg-emerald-600 py-3 text-center text-[9px] font-black uppercase tracking-wider text-white shadow-sm">WhatsApp</a>
+                            <a href="https://wa.me/919244137353" target="_blank" rel="noopener noreferrer" className="rounded-xl bg-emerald-600 py-3 text-center text-[9px] font-black uppercase tracking-wider text-white shadow-sm">WhatsApp</a>
                           </div>
                         </div>
                       </div>
