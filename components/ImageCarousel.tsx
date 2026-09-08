@@ -3,108 +3,182 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Check,
+  Phone,
+} from "lucide-react";
 
-const ROUTE_BANNERS = [
+import { PHONE } from "@/components/landing/data";
+
+const BANNERS = [
   {
     id: 1,
     src: "/hero/01.png",
-    alt: "One Way Taxi Service - Khatu Rides",
+    alt: "One Way Taxi Service - Khatu Rides Travels",
+    coupon: "ONEWAY",
   },
   {
     id: 2,
     src: "/hero/02.png",
-    alt: "Airport Taxi Service - Khatu Rides",
+    alt: "Book One Way Taxi - Khatu Rides Travels",
+    coupon: "ONEWAY",
   },
   {
     id: 3,
     src: "/hero/03.png",
-    alt: "Outstation Cab Service - Khatu Rides",
+    alt: "Airport Cab Service - Khatu Rides Travels",
+    coupon: "AIRPORT",
   },
   {
     id: 4,
     src: "/hero/04.png",
-    alt: "Prayagraj Taxi Tour - Khatu Rides",
+    alt: "Outstation Taxi Service - Khatu Rides Travels",
+    coupon: "OUTSTATION",
   },
   {
     id: 5,
     src: "/hero/05.png",
-    alt: "Travel and Tour Cab Service - Khatu Rides",
+    alt: "Divine Tour Cab Service - Khatu Rides Travels",
+    coupon: "DIVINE",
   },
   {
     id: 6,
+    src: "/hero/06.png",
+    alt: "Corporate Cab Service - Khatu Rides Travels",
+    coupon: "CORPORATE",
+  },
+  {
+    id: 7,
+    src: "/hero/07.png",
+    alt: "Tour and Travel Cab Service - Khatu Rides Travels",
+    coupon: "TRAVEL",
+  },
+  {
+    id: 8,
+    src: "/hero/08.png",
+    alt: "Cab Partner Service - Khatu Rides Travels",
+    coupon: "PARTNER",
+  },
+  {
+    id: 9,
+    src: "/hero/09.png",
+    alt: "Cab Booking Service - Khatu Rides Travels",
+    coupon: "BOOKCAB",
+  },
+  {
+    id: 10,
+    src: "/hero/10.png",
+    alt: "Best Cab Service - Khatu Rides Travels",
+    coupon: "KHATURIDES",
+  },
+  {
+    id: 11,
     src: "/hero/donation.png",
     alt: "Khatu Rides Social Initiative",
+    coupon: "",
   },
 ];
 
 export default function ImageCarousel() {
   const [current, setCurrent] = useState(0);
+  const [copied, setCopied] = useState(false);
 
-  const activeBanner =
-    ROUTE_BANNERS[current] ?? ROUTE_BANNERS[0];
+  const activeBanner = BANNERS[current] ?? BANNERS[0];
+
+  /* ==========================================================
+     AUTO SLIDE
+
+     7 seconds per banner
+  ========================================================== */
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setCurrent((prev) =>
-        prev >= ROUTE_BANNERS.length - 1 ? 0 : prev + 1
-      );
-    }, 4000);
+      setCurrent((prev) => (prev + 1) % BANNERS.length);
+    }, 7000);
 
-    return () => window.clearInterval(timer);
+    return () => {
+      window.clearInterval(timer);
+    };
   }, []);
+
+  /* ==========================================================
+     RESET COPY STATE
+  ========================================================== */
+
+  useEffect(() => {
+    setCopied(false);
+  }, [current]);
+
+  /* ==========================================================
+     PREVIOUS
+  ========================================================== */
+
+  const previousSlide = () => {
+    setCurrent((prev) =>
+      prev === 0 ? BANNERS.length - 1 : prev - 1
+    );
+  };
+
+  /* ==========================================================
+     NEXT
+  ========================================================== */
+
+  const nextSlide = () => {
+    setCurrent((prev) => (prev + 1) % BANNERS.length);
+  };
+
+  /* ==========================================================
+     COPY COUPON
+  ========================================================== */
+
+  const copyCoupon = async () => {
+    if (!activeBanner.coupon) return;
+
+    try {
+      await navigator.clipboard.writeText(
+        activeBanner.coupon
+      );
+
+      setCopied(true);
+
+      window.setTimeout(() => {
+        setCopied(false);
+      }, 1800);
+    } catch {
+      setCopied(false);
+    }
+  };
 
   return (
     <section
       aria-label="Khatu Rides promotional banners"
       className="
         relative
-        z-10
-        flex
         w-full
-        items-center
-        justify-center
         overflow-hidden
         bg-[#f8fafc]
-        px-2
-        py-1.5
-        sm:px-4
-        sm:py-2
       "
     >
-      {/* Main Carousel */}
+      {/* =====================================================
+          MAIN CAROUSEL
+      ====================================================== */}
+
       <div
         className="
           relative
-          flex
-          h-[10vh]
-          min-h-[64px]
-          max-h-[110px]
           w-full
-          items-center
-          justify-center
           overflow-hidden
-          rounded-xl
-          border
-          border-slate-200
           bg-white
-          shadow-[0_8px_30px_rgba(15,23,42,0.10)]
-          sm:rounded-2xl
+          shadow-[0_6px_24px_rgba(15,23,42,0.10)]
         "
       >
-        {/* Soft background */}
-        <div
-          aria-hidden="true"
-          className="
-            pointer-events-none
-            absolute
-            inset-0
-            bg-gradient-to-r
-            from-[#F9B900]/[0.04]
-            via-transparent
-            to-orange-500/[0.04]
-          "
-        />
+        {/* ===================================================
+            IMAGE
+        ==================================================== */}
 
         <AnimatePresence
           mode="wait"
@@ -113,147 +187,287 @@ export default function ImageCarousel() {
           <motion.div
             key={activeBanner.id}
             initial={{
-              x: "105%",
+              x: "100%",
               opacity: 0,
             }}
             animate={{
-              x: 0,
+              x: "0%",
               opacity: 1,
             }}
             exit={{
-              x: "-105%",
-              opacity: 0,
+              x: "-100%",
+              opacity: 1,
             }}
             transition={{
-              duration: 0.65,
+              duration: 0.7,
               ease: [0.22, 1, 0.36, 1],
             }}
             className="
-              absolute
-              inset-0
-              flex
-              h-full
+              relative
               w-full
-              items-center
-              justify-center
             "
           >
-            {/* ==========================================
-                BLURRED BACKGROUND
-            ========================================== */}
-            <div
-              aria-hidden="true"
+            <Image
+              src={activeBanner.src}
+              alt={activeBanner.alt}
+              width={2560}
+              height={320}
+              priority={current === 0}
+              sizes="100vw"
               className="
-                pointer-events-none
-                absolute
-                inset-0
-                overflow-hidden
-              "
-            >
-              <Image
-                src={activeBanner.src}
-                alt=""
-                fill
-                sizes="100vw"
-                className="
-                  scale-110
-                  object-cover
-                  opacity-[0.08]
-                  blur-xl
-                "
-              />
-
-              <div
-                className="
-                  absolute
-                  inset-0
-                  bg-white/80
-                  backdrop-blur-[2px]
-                "
-              />
-            </div>
-
-            {/* ==========================================
-                MAIN IMAGE
-            ========================================== */}
-            <div
-              className="
-                relative
-                z-20
-                flex
-                h-full
+                block
+                h-auto
                 w-full
-                items-center
-                justify-center
-                px-1
-                sm:px-3
+                select-none
               "
-            >
-              <Image
-                src={activeBanner.src}
-                alt={activeBanner.alt}
-                width={1920}
-                height={360}
-                priority={current === 0}
-                sizes="100vw"
-                className="
-                  h-[10vh]
-                  min-h-[64px]
-                  max-h-[110px]
-                  w-auto
-                  max-w-[96vw]
-                  object-contain
-                  select-none
-                  drop-shadow-[0_6px_18px_rgba(15,23,42,0.20)]
-                "
-                draggable={false}
-              />
-            </div>
+              draggable={false}
+            />
           </motion.div>
         </AnimatePresence>
 
-        {/* ==========================================
-            EDGE DEPTH
-        ========================================== */}
+        {/* ===================================================
+            LEFT ARROW
+        ==================================================== */}
 
-        <div
-          aria-hidden="true"
+        <button
+          type="button"
+          onClick={previousSlide}
+          aria-label="Previous banner"
           className="
-            pointer-events-none
             absolute
-            inset-y-0
-            left-0
-            z-30
-            w-8
-            bg-gradient-to-r
-            from-white/40
-            to-transparent
+            left-2
+            top-1/2
+            z-40
+            flex
+            h-9
+            w-9
+            -translate-y-1/2
+            items-center
+            justify-center
+            rounded-full
+            border
+            border-white/60
+            bg-slate-950/55
+            text-white
+            shadow-lg
+            backdrop-blur-md
+            transition-all
+            duration-200
+            hover:scale-110
+            hover:bg-slate-950/80
+            active:scale-95
+            sm:left-4
+            sm:h-11
+            sm:w-11
           "
-        />
+        >
+          <ChevronLeft
+            size={22}
+            strokeWidth={2.5}
+          />
+        </button>
 
-        <div
-          aria-hidden="true"
+        {/* ===================================================
+            RIGHT ARROW
+        ==================================================== */}
+
+        <button
+          type="button"
+          onClick={nextSlide}
+          aria-label="Next banner"
           className="
-            pointer-events-none
             absolute
-            inset-y-0
-            right-0
-            z-30
-            w-8
-            bg-gradient-to-l
-            from-white/40
-            to-transparent
+            right-2
+            top-1/2
+            z-40
+            flex
+            h-9
+            w-9
+            -translate-y-1/2
+            items-center
+            justify-center
+            rounded-full
+            border
+            border-white/60
+            bg-slate-950/55
+            text-white
+            shadow-lg
+            backdrop-blur-md
+            transition-all
+            duration-200
+            hover:scale-110
+            hover:bg-slate-950/80
+            active:scale-95
+            sm:right-4
+            sm:h-11
+            sm:w-11
           "
-        />
+        >
+          <ChevronRight
+            size={22}
+            strokeWidth={2.5}
+          />
+        </button>
 
-        {/* ==========================================
-            DOTS
-        ========================================== */}
+        {/* ===================================================
+            TOP RIGHT COUPON
+        ==================================================== */}
+
+        {activeBanner.coupon && (
+          <div
+            className="
+              absolute
+              right-2
+              top-2
+              z-40
+              flex
+              items-center
+              gap-1.5
+              rounded-lg
+              border
+              border-white/70
+              bg-white
+              p-1
+              shadow-[0_5px_18px_rgba(15,23,42,0.22)]
+              sm:right-5
+              sm:top-4
+              sm:gap-2
+              sm:rounded-xl
+              sm:p-1.5
+            "
+          >
+            <span
+              className="
+                px-1.5
+                text-[8px]
+                font-black
+                tracking-[0.10em]
+                text-slate-800
+                sm:px-2
+                sm:text-[10px]
+              "
+            >
+              {activeBanner.coupon}
+            </span>
+
+            <button
+              type="button"
+              onClick={copyCoupon}
+              aria-label="Copy coupon code"
+              className="
+                flex
+                h-6
+                items-center
+                gap-1
+                rounded-md
+                bg-[#F9B900]
+                px-2
+                text-[8px]
+                font-black
+                uppercase
+                tracking-wide
+                text-slate-950
+                shadow-sm
+                transition-all
+                hover:bg-[#eab000]
+                active:scale-95
+                sm:h-7
+                sm:px-2.5
+                sm:text-[9px]
+              "
+            >
+              {copied ? (
+                <>
+                  <Check size={11} />
+                  Copied
+                </>
+              ) : (
+                <>
+                  <Copy size={11} />
+                  Copy
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* ===================================================
+            BOTTOM LEFT CALL NOW CARD
+        ==================================================== */}
+
+        <a
+          href={`tel:${PHONE}`}
+          aria-label="Call Khatu Rides now"
+          className="
+            absolute
+            bottom-3
+            left-3
+            z-40
+            flex
+            items-center
+            gap-2.5
+            rounded-xl
+            bg-[#0B3B91]
+            px-4
+            py-2.5
+            text-white
+            shadow-[0_8px_25px_rgba(11,59,145,0.40)]
+            ring-1
+            ring-white/25
+            transition-all
+            duration-200
+            hover:-translate-y-0.5
+            hover:bg-[#082f75]
+            hover:shadow-[0_10px_30px_rgba(11,59,145,0.50)]
+            active:scale-95
+            sm:bottom-5
+            sm:left-5
+            sm:gap-3
+            sm:rounded-2xl
+            sm:px-5
+            sm:py-3
+          "
+        >
+          <span
+            className="
+              flex
+              h-8
+              w-8
+              items-center
+              justify-center
+              rounded-full
+              bg-white/15
+              sm:h-9
+              sm:w-9
+            "
+          >
+            <Phone
+              size={17}
+              strokeWidth={2.8}
+            />
+          </span>
+
+          <span
+            className="
+              text-[11px]
+              font-black
+              uppercase
+              tracking-[0.08em]
+              sm:text-sm
+            "
+          >
+            Call Now
+          </span>
+        </a>
+
+        {/* ===================================================
+            DOT NAVIGATION
+        ==================================================== */}
 
         <div
           className="
             absolute
-            bottom-1
+            bottom-2
             left-1/2
             z-40
             flex
@@ -261,20 +475,22 @@ export default function ImageCarousel() {
             items-center
             gap-1
             rounded-full
-            bg-slate-900/25
-            px-2
-            py-1
+            bg-slate-950/40
+            px-2.5
+            py-1.5
             backdrop-blur-md
           "
         >
-          {ROUTE_BANNERS.map((banner, index) => (
+          {BANNERS.map((banner, index) => (
             <button
               key={banner.id}
               type="button"
               onClick={() => setCurrent(index)}
               aria-label={`Show banner ${index + 1}`}
               aria-current={
-                current === index ? "true" : undefined
+                current === index
+                  ? "true"
+                  : undefined
               }
               className={`
                 h-1.5
@@ -283,7 +499,7 @@ export default function ImageCarousel() {
                 duration-300
                 ${
                   current === index
-                    ? "w-5 bg-[#F9B900] shadow-[0_0_8px_rgba(249,185,0,0.60)]"
+                    ? "w-6 bg-[#F9B900] shadow-[0_0_8px_rgba(249,185,0,0.65)]"
                     : "w-1.5 bg-white/80 hover:bg-white"
                 }
               `}
