@@ -1,55 +1,192 @@
 "use client";
 
 import { useState } from "react";
-import Icon from "./Icons";
+import Link from "next/link";
+import { Calculator, ChevronRight, Phone } from "lucide-react";
 import { PHONE, PHONE_DISPLAY, WHATSAPP } from "./data";
 
 const links = [
-  ["Home", "#home"], ["Cab Services", "#services"], ["Tour Packages", "#tours"],
-  ["Popular Routes", "#routes"], ["About Us", "#trust"], ["Contact", "#contact"],
+  { label: "Home", href: "/" },
+  { label: "Cab Booking", href: "/#cab-booking" },
+  { label: "Popular Routes", href: "/#popular-routes" },
+  { label: "Tour Packages", href: "/#tour-packages" },
+  { label: "Fleet", href: "/#fleet" },
+  { label: "Services", href: "/#services" },
+  { label: "Fare Calculator", href: "/fare-calculator" },
 ];
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
-  return (
-    <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 backdrop-blur-xl">
-      <div className="mx-auto flex h-[70px] max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <a href="#home" className="shrink-0">
-          <img src="/nav_logo.png" alt="Khatu Rides Travels" className="h-12 w-auto sm:h-14" />
-        </a>
 
-        <nav className="hidden items-center gap-7 lg:flex">
-          {links.map(([label, href], i) => (
-            <a key={label} href={href} className={`text-[12px] font-extrabold transition ${i === 0 ? "text-slate-950 after:mx-auto after:mt-2 after:block after:h-1 after:w-7 after:rounded-full after:bg-amber-400" : "text-slate-600 hover:text-slate-950"}`}>
-              {label}
-            </a>
-          ))}
+  const closeMenu = () => setOpen(false);
+
+  return (
+    <header className="sticky top-0 z-[100] border-b border-slate-200/80 bg-white/95 shadow-[0_4px_20px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+      <div className="mx-auto flex h-[68px] max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:h-[76px] lg:px-8">
+        {/* LOGO */}
+        <Link
+          href="/"
+          onClick={closeMenu}
+          className="flex min-w-0 items-center gap-2.5"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F5C400] shadow-[0_6px_16px_rgba(245,196,0,0.28)]">
+            <span className="text-[19px] font-black tracking-[-0.06em] text-[#071A3A]">
+              KR
+            </span>
+          </div>
+
+          <div className="min-w-0 leading-none">
+            <div className="truncate text-[15px] font-black tracking-[-0.03em] text-[#071A3A] sm:text-[17px]">
+              KHATU RIDES
+            </div>
+            <div className="mt-1 truncate text-[8px] font-bold uppercase tracking-[0.22em] text-slate-500 sm:text-[9px]">
+              Travels Co.
+            </div>
+          </div>
+        </Link>
+
+        {/* DESKTOP NAV */}
+        <nav className="hidden items-center gap-1 lg:flex">
+          {links.map((link) => {
+            const isCalculator = link.href === "/fare-calculator";
+
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={[
+                  "group relative flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-[11px] font-extrabold tracking-wide transition",
+                  isCalculator
+                    ? "bg-[#071A3A] text-white shadow-[0_6px_18px_rgba(7,26,58,0.16)] hover:bg-[#0B2A5B]"
+                    : "text-slate-700 hover:bg-slate-100 hover:text-[#071A3A]",
+                ].join(" ")}
+              >
+                {isCalculator && <Calculator className="h-3.5 w-3.5" />}
+                {link.label}
+                {isCalculator && (
+                  <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                )}
+              </Link>
+            );
+          })}
         </nav>
 
-        <div className="flex items-center gap-2">
-          <a href={`tel:${PHONE}`} className="hidden items-center gap-2 rounded-2xl bg-amber-400 px-4 py-2.5 shadow-sm sm:flex">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-950 text-amber-400"><Icon name="phone" size={15} /></span>
-            <span className="leading-tight">
-              <span className="block text-[9px] font-black uppercase tracking-wider text-slate-600">24×7 Customer Support</span>
-              <span className="block text-sm font-black text-slate-950">{PHONE_DISPLAY}</span>
-            </span>
-          </a>
-          <a href={`https://wa.me/${WHATSAPP}`} target="_blank" rel="noreferrer" className="hidden rounded-xl bg-slate-950 px-4 py-3 text-[10px] font-black uppercase tracking-wider text-white transition hover:bg-amber-400 hover:text-slate-950 md:block">
+        {/* DESKTOP CTA */}
+        <div className="hidden items-center gap-2 lg:flex">
+          <a
+            href={`https://wa.me/${WHATSAPP}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-11 items-center justify-center rounded-xl border border-[#18C964]/25 bg-[#18C964]/10 px-4 text-[11px] font-black uppercase tracking-wide text-[#079447] transition hover:bg-[#18C964]/15"
+          >
             WhatsApp
           </a>
-          <button onClick={() => setOpen(v => !v)} className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 text-slate-900 lg:hidden" aria-label="Open menu">
-            <Icon name={open ? "close" : "menu"} />
+
+          <a
+            href={`tel:${PHONE}`}
+            className="flex h-11 items-center gap-2 rounded-xl bg-[#063B8F] px-5 text-[11px] font-black uppercase tracking-wide text-white shadow-[0_9px_22px_rgba(6,59,143,0.22)] transition hover:-translate-y-0.5 hover:bg-[#052F73]"
+          >
+            <Phone className="h-4 w-4" strokeWidth={2.8} />
+            Call Now
+          </a>
+        </div>
+
+        {/* MOBILE CALL + MENU */}
+        <div className="flex items-center gap-2 lg:hidden">
+          <a
+            href={`tel:${PHONE}`}
+            aria-label={`Call Khatu Rides Travels at ${PHONE_DISPLAY}`}
+            className="flex h-10 items-center gap-1.5 rounded-xl bg-[#063B8F] px-3.5 text-[10px] font-black uppercase tracking-wide text-white shadow-[0_7px_18px_rgba(6,59,143,0.22)]"
+          >
+            <Phone className="h-4 w-4" strokeWidth={2.8} />
+            Call
+          </a>
+
+          <button
+            type="button"
+            aria-label={open ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={open}
+            onClick={() => setOpen((value) => !value)}
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#071A3A] shadow-sm transition active:scale-95"
+          >
+            {open ? (
+              /* CSS X — avoids lucide-react X module */
+              <span className="relative block h-5 w-5" aria-hidden="true">
+                <span className="absolute left-1/2 top-1/2 h-[2.5px] w-5 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-full bg-[#071A3A]" />
+                <span className="absolute left-1/2 top-1/2 h-[2.5px] w-5 -translate-x-1/2 -translate-y-1/2 -rotate-45 rounded-full bg-[#071A3A]" />
+              </span>
+            ) : (
+              /* CSS hamburger — avoids lucide-react Menu module */
+              <span
+                className="flex w-5 flex-col gap-[4px]"
+                aria-hidden="true"
+              >
+                <span className="h-[2.5px] w-5 rounded-full bg-[#071A3A]" />
+                <span className="h-[2.5px] w-5 rounded-full bg-[#071A3A]" />
+                <span className="h-[2.5px] w-5 rounded-full bg-[#071A3A]" />
+              </span>
+            )}
           </button>
         </div>
       </div>
 
+      {/* MOBILE MENU */}
       {open && (
-        <div className="border-t border-slate-100 bg-white px-4 py-3 shadow-xl lg:hidden">
-          <nav className="grid gap-1">
-            {links.map(([label, href]) => (
-              <a key={label} href={href} onClick={() => setOpen(false)} className="rounded-xl px-4 py-3 text-sm font-extrabold text-slate-700 hover:bg-amber-50 hover:text-slate-950">{label}</a>
-            ))}
-            <a href={`tel:${PHONE}`} className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 py-3 text-sm font-black text-slate-950"><Icon name="phone" size={17} /> Call {PHONE_DISPLAY}</a>
+        <div className="border-t border-slate-200 bg-white shadow-[0_16px_30px_rgba(15,23,42,0.10)] lg:hidden">
+          <nav className="mx-auto max-w-[1440px] px-4 py-3 sm:px-6">
+            <div className="grid gap-1.5">
+              {links.map((link) => {
+                const isCalculator = link.href === "/fare-calculator";
+
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={closeMenu}
+                    className={[
+                      "flex min-h-12 items-center justify-between rounded-xl px-4 text-[12px] font-black uppercase tracking-wide transition",
+                      isCalculator
+                        ? "bg-[#071A3A] text-white"
+                        : "text-slate-700 hover:bg-slate-100 hover:text-[#071A3A]",
+                    ].join(" ")}
+                  >
+                    <span className="flex items-center gap-2">
+                      {isCalculator && (
+                        <Calculator className="h-4 w-4" />
+                      )}
+                      {link.label}
+                    </span>
+
+                    <ChevronRight
+                      className={[
+                        "h-4 w-4",
+                        isCalculator ? "text-white" : "text-slate-400",
+                      ].join(" ")}
+                    />
+                  </Link>
+                );
+              })}
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3">
+              <a
+                href={`https://wa.me/${WHATSAPP}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex min-h-12 items-center justify-center rounded-xl bg-[#18C964] px-3 text-[10px] font-black uppercase tracking-wide text-white shadow-[0_8px_18px_rgba(24,201,100,0.18)]"
+              >
+                WhatsApp
+              </a>
+
+              <a
+                href={`tel:${PHONE}`}
+                onClick={closeMenu}
+                className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#063B8F] px-3 text-[10px] font-black uppercase tracking-wide text-white shadow-[0_8px_18px_rgba(6,59,143,0.18)]"
+              >
+                <Phone className="h-4 w-4" strokeWidth={2.8} />
+                Call Now
+              </a>
+            </div>
           </nav>
         </div>
       )}

@@ -190,7 +190,7 @@ export const DESTINATIONS = [
   {
     title: "Chitrakoot",
     type: "Chhattisgarh Tour",
-    image: "/tour/chitrakoot.png",
+    image: "/tour/chitrakut.png",
   },
   {
     title: "Tirathgarh",

@@ -89,33 +89,17 @@ export default function ImageCarousel() {
 
   const activeBanner = BANNERS[current] ?? BANNERS[0];
 
-  /* ==========================================================
-     AUTO SLIDE
-
-     7 seconds per banner
-  ========================================================== */
-
   useEffect(() => {
     const timer = window.setInterval(() => {
       setCurrent((prev) => (prev + 1) % BANNERS.length);
     }, 7000);
 
-    return () => {
-      window.clearInterval(timer);
-    };
+    return () => window.clearInterval(timer);
   }, []);
-
-  /* ==========================================================
-     RESET COPY STATE
-  ========================================================== */
 
   useEffect(() => {
     setCopied(false);
   }, [current]);
-
-  /* ==========================================================
-     PREVIOUS
-  ========================================================== */
 
   const previousSlide = () => {
     setCurrent((prev) =>
@@ -123,26 +107,15 @@ export default function ImageCarousel() {
     );
   };
 
-  /* ==========================================================
-     NEXT
-  ========================================================== */
-
   const nextSlide = () => {
     setCurrent((prev) => (prev + 1) % BANNERS.length);
   };
-
-  /* ==========================================================
-     COPY COUPON
-  ========================================================== */
 
   const copyCoupon = async () => {
     if (!activeBanner.coupon) return;
 
     try {
-      await navigator.clipboard.writeText(
-        activeBanner.coupon
-      );
-
+      await navigator.clipboard.writeText(activeBanner.coupon);
       setCopied(true);
 
       window.setTimeout(() => {
@@ -156,39 +129,52 @@ export default function ImageCarousel() {
   return (
     <section
       aria-label="Khatu Rides promotional banners"
-      className="
-        relative
-        w-full
-        overflow-hidden
-        bg-[#f8fafc]
-      "
+      className="relative w-full overflow-hidden bg-[#f8fafc]"
     >
-      {/* =====================================================
-          MAIN CAROUSEL
-      ====================================================== */}
+      {/*
+        ============================================================
+        Yaha se image aur frame ka height manually set kar sakte ho
+        ============================================================
+
+        Mobile  : h-[220px]
+        Small   : sm:h-[250px]
+        Tablet  : md:h-[300px]
+        Desktop : lg:h-[360px]
+        Large   : xl:h-[420px]
+
+        Sirf in values ko change karke carousel/frame ki height
+        manually adjust kar sakte ho.
+      */}
 
       <div
         className="
           relative
+          h-[220px]
           w-full
           overflow-hidden
           bg-white
           shadow-[0_6px_24px_rgba(15,23,42,0.10)]
+          sm:h-[250px]
+          md:h-[300px]
+          lg:h-[460px]
+          xl:h-[520px]
         "
       >
-        {/* ===================================================
-            IMAGE
-        ==================================================== */}
+        {/*
+          Slides absolute hain.
 
-        <AnimatePresence
-          mode="wait"
-          initial={false}
-        >
+          Is wajah se:
+          - Slide change hone par height change nahi hogi
+          - Homepage jump nahi karega
+          - Outgoing image parent ki height ko affect nahi karegi
+          - Incoming image parent ki height ko affect nahi karegi
+        */}
+        <AnimatePresence mode="sync" initial={false}>
           <motion.div
             key={activeBanner.id}
             initial={{
               x: "100%",
-              opacity: 0,
+              opacity: 1,
             }}
             animate={{
               x: "0%",
@@ -199,286 +185,187 @@ export default function ImageCarousel() {
               opacity: 1,
             }}
             transition={{
-              duration: 0.7,
+              duration: 0.75,
               ease: [0.22, 1, 0.36, 1],
             }}
-            className="
-              relative
-              w-full
-            "
+            className="absolute inset-0 z-10 h-full w-full"
           >
             <Image
               src={activeBanner.src}
               alt={activeBanner.alt}
-              width={2560}
-              height={320}
+              fill
               priority={current === 0}
               sizes="100vw"
-              className="
-                block
-                h-auto
-                w-full
-                select-none
-              "
+              className="select-none object-cover"
               draggable={false}
             />
           </motion.div>
         </AnimatePresence>
 
-        {/* ===================================================
-            LEFT ARROW
-        ==================================================== */}
-
+        {/* =========================================================
+            PREVIOUS BUTTON
+        ========================================================== */}
         <button
           type="button"
           onClick={previousSlide}
-          aria-label="Previous banner"
+          aria-label="Previous promotional banner"
           className="
             absolute
-            left-2
+            left-3
             top-1/2
-            z-40
+            z-30
             flex
-            h-9
-            w-9
+            h-10
+            w-10
             -translate-y-1/2
             items-center
             justify-center
             rounded-full
             border
-            border-white/60
-            bg-slate-950/55
+            border-white/50
+            bg-black/45
             text-white
-            shadow-lg
-            backdrop-blur-md
-            transition-all
-            duration-200
-            hover:scale-110
-            hover:bg-slate-950/80
+            shadow-xl
+            backdrop-blur-sm
+            transition
+            hover:bg-[#063B8F]
             active:scale-95
-            sm:left-4
-            sm:h-11
-            sm:w-11
+            sm:left-5
+            sm:h-12
+            sm:w-12
           "
         >
           <ChevronLeft
-            size={22}
-            strokeWidth={2.5}
+            className="h-5 w-5 sm:h-6 sm:w-6"
+            strokeWidth={2.7}
           />
         </button>
 
-        {/* ===================================================
-            RIGHT ARROW
-        ==================================================== */}
-
+        {/* =========================================================
+            NEXT BUTTON
+        ========================================================== */}
         <button
           type="button"
           onClick={nextSlide}
-          aria-label="Next banner"
+          aria-label="Next promotional banner"
           className="
             absolute
-            right-2
+            right-3
             top-1/2
-            z-40
+            z-30
             flex
-            h-9
-            w-9
+            h-10
+            w-10
             -translate-y-1/2
             items-center
             justify-center
             rounded-full
             border
-            border-white/60
-            bg-slate-950/55
+            border-white/50
+            bg-black/45
             text-white
-            shadow-lg
-            backdrop-blur-md
-            transition-all
-            duration-200
-            hover:scale-110
-            hover:bg-slate-950/80
+            shadow-xl
+            backdrop-blur-sm
+            transition
+            hover:bg-[#063B8F]
             active:scale-95
-            sm:right-4
-            sm:h-11
-            sm:w-11
+            sm:right-5
+            sm:h-12
+            sm:w-12
           "
         >
           <ChevronRight
-            size={22}
-            strokeWidth={2.5}
+            className="h-5 w-5 sm:h-6 sm:w-6"
+            strokeWidth={2.7}
           />
         </button>
 
-        {/* ===================================================
-            TOP RIGHT COUPON
-        ==================================================== */}
+        {/* =========================================================
+            DESKTOP COUPON
+        ========================================================== */}
+        
 
-        {activeBanner.coupon && (
-          <div
-            className="
-              absolute
-              right-2
-              top-2
-              z-40
-              flex
-              items-center
-              gap-1.5
-              rounded-lg
-              border
-              border-white/70
-              bg-white
-              p-1
-              shadow-[0_5px_18px_rgba(15,23,42,0.22)]
-              sm:right-5
-              sm:top-4
-              sm:gap-2
-              sm:rounded-xl
-              sm:p-1.5
-            "
-          >
-            <span
-              className="
-                px-1.5
-                text-[8px]
-                font-black
-                tracking-[0.10em]
-                text-slate-800
-                sm:px-2
-                sm:text-[10px]
-              "
-            >
-              {activeBanner.coupon}
-            </span>
-
-            <button
-              type="button"
-              onClick={copyCoupon}
-              aria-label="Copy coupon code"
-              className="
-                flex
-                h-6
-                items-center
-                gap-1
-                rounded-md
-                bg-[#F9B900]
-                px-2
-                text-[8px]
-                font-black
-                uppercase
-                tracking-wide
-                text-slate-950
-                shadow-sm
-                transition-all
-                hover:bg-[#eab000]
-                active:scale-95
-                sm:h-7
-                sm:px-2.5
-                sm:text-[9px]
-              "
-            >
-              {copied ? (
-                <>
-                  <Check size={11} />
-                  Copied
-                </>
-              ) : (
-                <>
-                  <Copy size={11} />
-                  Copy
-                </>
-              )}
-            </button>
-          </div>
-        )}
-
-        {/* ===================================================
-            BOTTOM LEFT CALL NOW CARD
-        ==================================================== */}
-
+        {/* =========================================================
+            CALL NOW
+        ========================================================== */}
         <a
           href={`tel:${PHONE}`}
-          aria-label="Call Khatu Rides now"
           className="
             absolute
-            bottom-3
-            left-3
-            z-40
+            bottom-4
+            left-4
+            z-30
             flex
             items-center
             gap-2.5
             rounded-xl
             bg-[#0B3B91]
             px-4
-            py-2.5
+            py-3
             text-white
-            shadow-[0_8px_25px_rgba(11,59,145,0.40)]
-            ring-1
-            ring-white/25
-            transition-all
-            duration-200
-            hover:-translate-y-0.5
-            hover:bg-[#082f75]
-            hover:shadow-[0_10px_30px_rgba(11,59,145,0.50)]
+            shadow-[0_8px_24px_rgba(0,0,0,0.32)]
+            transition
+            hover:bg-[#062d70]
             active:scale-95
             sm:bottom-5
-            sm:left-5
+            sm:left-6
             sm:gap-3
-            sm:rounded-2xl
             sm:px-5
-            sm:py-3
+            sm:py-3.5
           "
         >
           <span
             className="
               flex
-              h-8
-              w-8
+              h-9
+              w-9
               items-center
               justify-center
               rounded-full
-              bg-white/15
-              sm:h-9
-              sm:w-9
+              bg-white
+              text-[#0B3B91]
+              sm:h-10
+              sm:w-10
             "
           >
             <Phone
-              size={17}
+              className="h-5 w-5"
               strokeWidth={2.8}
             />
           </span>
 
-          <span
-            className="
-              text-[11px]
-              font-black
-              uppercase
-              tracking-[0.08em]
-              sm:text-sm
-            "
-          >
-            Call Now
+          <span className="flex flex-col leading-none">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-white/75">
+              Instant Booking
+            </span>
+
+            <span className="mt-1 text-sm font-extrabold sm:text-base">
+              Call Now
+            </span>
           </span>
         </a>
 
-        {/* ===================================================
-            DOT NAVIGATION
-        ==================================================== */}
-
+        {/* =========================================================
+            SLIDE DOTS
+        ========================================================== */}
         <div
           className="
             absolute
-            bottom-2
+            bottom-4
             left-1/2
-            z-40
+            z-30
             flex
             -translate-x-1/2
             items-center
-            gap-1
+            gap-1.5
             rounded-full
-            bg-slate-950/40
-            px-2.5
-            py-1.5
-            backdrop-blur-md
+            bg-black/45
+            px-3
+            py-2
+            backdrop-blur-sm
+            sm:bottom-5
+            sm:gap-2
+            sm:px-4
           "
         >
           {BANNERS.map((banner, index) => (
@@ -486,26 +373,69 @@ export default function ImageCarousel() {
               key={banner.id}
               type="button"
               onClick={() => setCurrent(index)}
-              aria-label={`Show banner ${index + 1}`}
+              aria-label={`Go to promotional banner ${index + 1}`}
               aria-current={
-                current === index
-                  ? "true"
-                  : undefined
+                current === index ? "true" : undefined
               }
               className={`
-                h-1.5
                 rounded-full
                 transition-all
                 duration-300
                 ${
                   current === index
-                    ? "w-6 bg-[#F9B900] shadow-[0_0_8px_rgba(249,185,0,0.65)]"
-                    : "w-1.5 bg-white/80 hover:bg-white"
+                    ? "h-1.5 w-6 bg-white sm:w-8"
+                    : "h-1.5 w-1.5 bg-white/55 hover:bg-white/90"
                 }
               `}
             />
           ))}
         </div>
+
+        {/* =========================================================
+            MOBILE COUPON
+        ========================================================== */}
+        {activeBanner.coupon && (
+          <button
+            type="button"
+            onClick={copyCoupon}
+            aria-label={`Copy coupon ${activeBanner.coupon}`}
+            className="
+              absolute
+              right-4
+              top-4
+              z-30
+              flex
+              items-center
+              gap-1.5
+              rounded-lg
+              border
+              border-white/30
+              bg-black/50
+              px-3
+              py-2
+              text-white
+              shadow-lg
+              backdrop-blur-md
+              sm:hidden
+            "
+          >
+            <span className="text-[10px] font-bold tracking-wide">
+              {activeBanner.coupon}
+            </span>
+
+            {copied ? (
+              <Check
+                className="h-3.5 w-3.5"
+                strokeWidth={3}
+              />
+            ) : (
+              <Copy
+                className="h-3.5 w-3.5"
+                strokeWidth={2.5}
+              />
+            )}
+          </button>
+        )}
       </div>
     </section>
   );
