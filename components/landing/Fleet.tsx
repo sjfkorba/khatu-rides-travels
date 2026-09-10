@@ -118,7 +118,7 @@ export default function Fleet() {
                   className="mt-3.5 flex w-full items-center justify-center gap-2 rounded-xl bg-amber-400 py-3.5 text-[10px] font-black uppercase tracking-wider text-slate-950 shadow-[0_7px_18px_rgba(251,191,36,0.20)] transition-all duration-200 hover:bg-amber-300 hover:shadow-[0_10px_24px_rgba(251,191,36,0.30)] active:scale-[0.98]"
                 >
                   <Icon name="phone" size={14} />
-                  Check Availability
+                  Book Now
                 </a>
 
               </div>
