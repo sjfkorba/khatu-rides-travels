@@ -192,17 +192,17 @@ export default function RootLayout({
     },
   };
 
-  return (
+ return (
     <html lang="en-IN" className={`${sansFont.variable} scroll-smooth`}>
-      <body className="antialiased bg-slate-50 text-slate-800 min-h-screen flex flex-col overflow-x-hidden">
-        
-        {/* Google Analytics & Ads Global Tag Logic Scripts */}
+      <head>
+        {/* Google tag (gtag.js) Base Script */}
         <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-FXZZCTGQ4R"
+          src="https://www.googletagmanager.com/gtag/js?id=AW-18196199181"
           strategy="afterInteractive"
         />
 
-        <Script id="google-analytics-ads-sync" strategy="afterInteractive">
+        {/* Global Configuration & Conversion Tracker Function */}
+        <Script id="google-tag-and-conversions" strategy="afterInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
@@ -210,25 +210,49 @@ export default function RootLayout({
 
             gtag('config', 'G-FXZZCTGQ4R', { 'anonymize_ip': true });
             gtag('config', 'AW-18196199181');
+
+            // Global Call Conversion Function
+            window.gtag_report_conversion = function(url) {
+              var callback = function () {
+                if (typeof(url) != 'undefined') {
+                  window.location = url;
+                }
+              };
+              if (typeof gtag === 'function') {
+                gtag('event', 'conversion', {
+                  'send_to': 'AW-18196199181/DXCJCJiJxPYcEI3uz-RD',
+                  'value': 1.0,
+                  'currency': 'INR',
+                  'event_callback': callback
+                });
+              } else {
+                if (typeof(url) != 'undefined') {
+                  window.location = url;
+                }
+              }
+              return false;
+            };
           `}
         </Script>
 
-        {/* Structured Local JSON-LD Schema Core Master Matrix */}
+        {/* Structured Local JSON-LD Schema */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify(businessSchema),
           }}
         />
+      </head>
 
+      <body className="antialiased bg-slate-50 text-slate-800 min-h-screen flex flex-col overflow-x-hidden">
         {/* Central Adaptive Viewport Master Node */}
         <main className="flex-grow w-full flex flex-col">
           {children}
         </main>
-        
-        <Footer />
 
+        <Footer />
       </body>
     </html>
   );
 }
+

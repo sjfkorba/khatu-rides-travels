@@ -244,6 +244,15 @@ export default function Hero() {
               <a
                 href={`tel:${PHONE}`}
                 aria-label={`Call Khatu Rides at ${PHONE_DISPLAY}`}
+                onClick={(e) => {
+    e.preventDefault();
+    const telUrl = `tel:${PHONE}`;
+    if (typeof window !== "undefined" && typeof (window as any).gtag_report_conversion === "function") {
+      (window as any).gtag_report_conversion(telUrl);
+    } else {
+      window.location.href = telUrl;
+    }
+  }}
                 className="group relative flex h-[56px] min-w-[205px] items-center justify-center gap-2.5 overflow-hidden rounded-[16px] border border-blue-300/20 bg-[#063B8F] px-5 text-white shadow-[0_12px_35px_rgba(6,59,143,.38)] transition-all duration-300 hover:-translate-y-1 hover:bg-[#084CA8] hover:shadow-[0_16px_45px_rgba(6,59,143,.5)] active:scale-[.98]"
               >
                 {/* Shine */}
@@ -258,6 +267,7 @@ export default function Hero() {
                 <span className="relative text-left">
                   <b className="block text-[14px] font-black uppercase leading-none tracking-[0.08em]">
                     Call Now
+                    
                   </b>
 
                   <small className="mt-1 block text-[8px] font-bold uppercase tracking-[0.12em] text-white/65">

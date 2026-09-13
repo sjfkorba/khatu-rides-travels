@@ -290,6 +290,15 @@ export default function ImageCarousel() {
         ========================================================== */}
         <a
           href={`tel:${PHONE}`}
+          onClick={(e) => {
+    e.preventDefault();
+    const telUrl = `tel:${PHONE}`;
+    if (typeof window !== "undefined" && typeof (window as any).gtag_report_conversion === "function") {
+      (window as any).gtag_report_conversion(telUrl);
+    } else {
+      window.location.href = telUrl;
+    }
+  }}
           className="
             absolute
             bottom-4

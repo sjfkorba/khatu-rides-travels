@@ -122,6 +122,15 @@ export default function Navbar() {
           <a
             href={`tel:${PHONE}`}
             aria-label={`Call Khatu Rides Travels at ${PHONE_DISPLAY}`}
+            onClick={(e) => {
+    e.preventDefault();
+    const telUrl = `tel:${PHONE}`;
+    if (typeof window !== "undefined" && typeof (window as any).gtag_report_conversion === "function") {
+      (window as any).gtag_report_conversion(telUrl);
+    } else {
+      window.location.href = telUrl;
+    }
+  }}
             className="group flex h-11 items-center gap-2 rounded-xl bg-[#063B8F] px-5 text-[11px] font-black uppercase tracking-wide text-white shadow-[0_9px_22px_rgba(6,59,143,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#052F73] hover:shadow-[0_12px_28px_rgba(6,59,143,0.34)]"
           >
             <Phone
