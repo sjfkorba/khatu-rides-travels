@@ -1,462 +1,964 @@
-// app/cabs/jharsuguda/page.tsx
-"use client";
-
-import React, { useState } from "react";
-import Script from "next/script";
-import { AnimatePresence, motion } from "framer-motion";
+import type { Metadata } from "next";
+import Link from "next/link";
 import {
-  Car,
-  Factory,
-  CheckCircle2,
+  ArrowRight,
   Building2,
+  Car,
+  CheckCircle2,
+  ChevronRight,
+  Clock3,
+  Factory,
+  MapPin,
+  Navigation,
   Phone,
   Plane,
+  Route,
+  ShieldCheck,
+  Star,
+  TrainFront,
+  Users,
+  WalletCards,
+  Zap,
 } from "lucide-react";
-import TrackedWhatsAppButton from "@/components/TrackedWhatsAppButton";
-import TrackedCallButton from "@/components/TrackedCallButton";
-import FareCalculator from "@/components/FareCalculator";
-import {
-  calculateFare,
-  VEHICLES,
-  type BookingType,
-  type VehicleType,
-  type ServiceType,
-} from "@/lib/fareCalculator";
 
-// Firebase initialization panel
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, collection, addDoc, serverTimestamp, Firestore } from "firebase/firestore";
+import Footer from "@/components/Footer";
 import ReviewsCarousel from "@/components/ReviewsCarousel";
 
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-};
+const SITE_URL = "https://www.khaturidescg.in";
+const PAGE_URL = `${SITE_URL}/cabs/jharsuguda`;
 
-let db: Firestore | null = null;
-if (typeof window !== "undefined") {
-  try {
-    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-    db = getFirestore(app);
-  } catch (error) {
-    console.error("Firebase initialization failed:", error);
-  }
+const PHONE = "9244137353";
+const PHONE_DISPLAY = "+91 92441 37353";
+const WHATSAPP = "919244137353";
+
+function waLink(message: string) {
+  return `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(message)}`;
 }
 
-type FareOption = {
-  id: string;
-  vehicleType: VehicleType;
-  vehicleLabel: string;
-  vehicleImage: string;
-  finalFare: number;
-  strikeFare?: number;
-  fareText: string;
-  billedDistance: number;
-  durationMinutes: number;
-  allowedKmsLimit?: number; 
-  discountPercent?: number;
-};
+/* =========================================================
+   MAJOR CHHATTISGARH HUBS
+========================================================= */
 
-type PopupData = {
-  fareOptions: FareOption[];
-  pickup: string;
-  drop: string;
-  bookingType: BookingType;
-  serviceType: ServiceType;
-  pickupDate: string;
-  pickupTime: string;
-  returnDate?: string;
-  returnTime?: string;
-};
+const MAJOR_HUBS = [
+  {
+    name: "Raigarh",
+    region: "Northern Chhattisgarh Gateway",
+    description:
+      "Book a Jharsuguda to Raigarh taxi for industrial travel, business meetings, railway connectivity, family visits and onward travel across northern Chhattisgarh.",
+    subHubs: [
+      "Kharsia",
+      "Sarangarh",
+      "Gharghoda",
+      "Tamnar",
+      "Dharamjaigarh",
+      "Lailunga",
+    ],
+  },
+  {
+    name: "Korba",
+    region: "Power & Industrial Hub",
+    description:
+      "Travel from Jharsuguda to Korba by outstation cab, with connectivity toward major industrial, mining, township and regional areas around Korba.",
+    subHubs: [
+      "Katghora",
+      "Dipka",
+      "Gevra",
+      "Kusmunda",
+      "Darri",
+      "Balco",
+      "Jamnipali",
+    ],
+  },
+  {
+    name: "Bilaspur",
+    region: "Central Chhattisgarh Hub",
+    description:
+      "Jharsuguda to Bilaspur cab service for business travel, railway journeys, medical visits, family travel and onward connectivity across central Chhattisgarh.",
+    subHubs: [
+      "Champa",
+      "Janjgir",
+      "Sakti",
+      "Mungeli",
+      "Pendra Road",
+      "Gaurela",
+      "Ratanpur",
+    ],
+  },
+  {
+    name: "Raipur",
+    region: "State Capital & Airport Gateway",
+    description:
+      "Book a Jharsuguda to Raipur taxi for airport transfers, corporate travel, railway journeys, government work, shopping, family travel and long-distance transportation.",
+    subHubs: [
+      "Raipur Airport",
+      "Naya Raipur",
+      "Abhanpur",
+      "Arang",
+      "Tilda",
+      "Bhatapara",
+      "Baloda Bazar",
+    ],
+  },
+  {
+    name: "Durg & Bhilai",
+    region: "Industrial & Business Corridor",
+    description:
+      "Long-distance cab connectivity from Jharsuguda to Durg, Bhilai and surrounding industrial, residential, railway and business areas.",
+    subHubs: [
+      "Durg",
+      "Bhilai",
+      "Bhilai Nagar",
+      "Bhilai Steel Plant Area",
+      "Kumhari",
+      "Charoda",
+      "Risali",
+    ],
+  },
+  {
+    name: "Ambikapur",
+    region: "Northern Chhattisgarh",
+    description:
+      "Book a long-distance taxi from Jharsuguda to Ambikapur for Surguja-region travel, family journeys, business trips and onward travel across northern Chhattisgarh.",
+    subHubs: [
+      "Surajpur",
+      "Bishrampur",
+      "Sitapur",
+      "Lakhanpur",
+      "Lundra",
+      "Manendragarh",
+      "Baikunthpur",
+    ],
+  },
+  {
+    name: "Jagdalpur",
+    region: "Bastar Gateway",
+    description:
+      "Jharsuguda to Jagdalpur outstation taxi service for long-distance travel toward Bastar, tourism, business travel and family journeys.",
+    subHubs: [
+      "Kondagaon",
+      "Kanker",
+      "Dantewada",
+      "Bacheli",
+      "Kirandul",
+      "Narayanpur",
+      "Bastar",
+    ],
+  },
+];
 
-type SuccessReceipt = {
-  invoiceId: string;
-  pickup: string;
-  drop: string;
-  date: string;
-  time: string;
-  vehicle: string;
-  amount: number;
-  paymentMode: "50% ADVANCE" | "FULL PAYMENT";
-};
+/* =========================================================
+   SUB HUBS
+========================================================= */
 
-const vehicles = [
+const SECONDARY_HUBS = [
+  {
+    name: "Raigarh Region",
+    places:
+      "Kharsia • Gharghoda • Tamnar • Dharamjaigarh • Sarangarh • Lailunga",
+  },
+  {
+    name: "Korba Industrial Region",
+    places:
+      "Katghora • Dipka • Gevra • Kusmunda • Balco • Darri • Jamnipali",
+  },
+  {
+    name: "Bilaspur Region",
+    places:
+      "Champa • Janjgir • Sakti • Mungeli • Ratanpur • Pendra Road • Gaurela",
+  },
+  {
+    name: "Raipur Region",
+    places:
+      "Naya Raipur • Tilda • Arang • Abhanpur • Bhatapara • Baloda Bazar",
+  },
+  {
+    name: "Durg-Bhilai Region",
+    places: "Durg • Bhilai • Kumhari • Risali • Charoda",
+  },
+  {
+    name: "Northern Chhattisgarh",
+    places:
+      "Ambikapur • Surajpur • Bishrampur • Lakhanpur • Sitapur • Manendragarh • Baikunthpur",
+  },
+  {
+    name: "Bastar Region",
+    places:
+      "Jagdalpur • Kanker • Kondagaon • Dantewada • Kirandul • Bacheli • Narayanpur",
+  },
+  {
+    name: "Janjgir-Champa Region",
+    places: "Janjgir • Champa • Akaltara • Naila",
+  },
+];
+
+/* =========================================================
+   SERVICES
+========================================================= */
+
+const SERVICES = [
+  {
+    icon: Route,
+    title: "One Way Taxi Service",
+    description:
+      "Point-to-point intercity cab booking from Jharsuguda to Chhattisgarh cities, towns, railway stations, industrial locations and other destinations.",
+  },
+  {
+    icon: Car,
+    title: "Round Trip Taxi",
+    description:
+      "Comfortable return cab service for business visits, family travel, medical appointments, personal work and multi-day journeys.",
+  },
+  {
+    icon: TrainFront,
+    title: "Railway Station Transfers",
+    description:
+      "Planned pickup and drop services for Jharsuguda Railway Station and major railway hubs across Chhattisgarh.",
+  },
+  {
+    icon: Plane,
+    title: "Airport Transfers",
+    description:
+      "Pre-planned airport pickup and drop services based on your flight schedule, destination and travel requirements.",
+  },
+  {
+    icon: Factory,
+    title: "Industrial Travel",
+    description:
+      "Cab solutions for plant visits, industrial locations, employees, contractors, vendors and business travellers.",
+  },
+  {
+    icon: Building2,
+    title: "Corporate Cab Service",
+    description:
+      "Professional transportation for meetings, client visits, employee movement, executive travel and corporate requirements.",
+  },
+];
+
+/* =========================================================
+   LOCAL JHARSUGUDA COVERAGE
+========================================================= */
+
+const LOCAL_AREAS = [
+  "Jharsuguda Main Town",
+  "Jharsuguda Railway Station",
+  "Jharsuguda Airport",
+  "Beheramal",
+  "Sarbahal",
+  "Brajarajnagar",
+  "Belpahar",
+  "Brajarajnagar Coal Belt",
+  "Laikera",
+  "Kolabira",
+  "Kirmira",
+  "Lakhanpur",
+  "Rengali",
+  "Bandhbahal",
+  "Orient Area",
+  "Industrial Belt",
+];
+
+/* =========================================================
+   VEHICLES
+========================================================= */
+
+const VEHICLES = [
   {
     name: "Maruti Suzuki Dzire",
-    type: "Premium Sedan (AC)",
-    price: "₹11/km onwards",
+    type: "Premium Sedan",
     image: "/dezire.png",
-    specs: ["4 Passengers", "2 Bags", "Climate Control", "Zero Cancel Rate"]
+    details: [
+      "4+1 Seats",
+      "Air Conditioned",
+      "2 Bags",
+      "Ideal for business travel",
+    ],
   },
   {
     name: "Maruti Suzuki Ertiga",
-    type: "Comfortable MUV (6+1 Seater)",
-    price: "₹13/km onwards",
+    type: "Family MUV",
     image: "/ertiga.png",
-    specs: ["6 Passengers", "4 Bags", "Dual AC System", "Best for Families"]
+    details: [
+      "6+1 Seats",
+      "Air Conditioned",
+      "4 Bags",
+      "Ideal for families",
+    ],
   },
   {
     name: "Toyota Innova Crysta",
-    type: "Luxury Executive SUV",
-    price: "₹20/km onwards",
+    type: "Premium SUV",
     image: "/crysta.png",
-    specs: ["7 Passengers", "Heavy Luggage", "Captain Seats", "VIP Protocol Standard"]
+    details: [
+      "6+1 Seats",
+      "Premium Comfort",
+      "Large Luggage",
+      "Ideal for long journeys",
+    ],
   },
 ];
 
-// 👑 INTERSTATE DIRECTORY - 10+ MICRO-CORRIDORS FOR CROSS-BORDER SEARCH DOMINATION
-const MICRO_ROUTES = [
-  { from: "Jharsuguda Airport (JRG)", to: "Raigarh Industrial Town", dist: "75 KMs", tag: "Interstate Link" },
-  { from: "Jharsuguda Junction (Station)", to: "BALCO Nagar, Korba", dist: "220 KMs", tag: "Industrial Corridor" },
-  { from: "Vedanta Alumina, Jharsuguda", to: "Swami Vivekananda Airport Raipur", dist: "345 KMs", tag: "Long-Haul Corporate" },
-  { from: "Brajarajnagar Mining Belt", to: "Gharghoda Coal Hub", dist: "85 KMs", tag: "Cross-Border Link" },
-  { from: "Sambalpur Bypass Loop", to: "Bilaspur Vyapar Vihar", dist: "250 KMs", tag: "Business Connection" },
-  { from: "SMC Power Industry", to: "Champa Junction Railway Station", dist: "165 KMs", tag: "Feeder Route" },
-  { from: "Belpahar Mining Sector", to: "Ambikapur North Hub", dist: "285 KMs", tag: "Regional Highway" },
-  { from: "Jharsuguda City Core", to: "Saraipali Bypass Loop", dist: "160 KMs", tag: "Border Feeder" },
-  { from: "Jharsuguda Outer Ring Rd", to: "Tatibandh Logistics, Raipur", dist: "340 KMs", tag: "Commercial Corridor" },
-  { from: "Beheramal Area, Jharsuguda", to: "Jashpur Hills Plateau", dist: "185 KMs", tag: "North Node Link" }
+/* =========================================================
+   FAQ
+========================================================= */
+
+const FAQS = [
+  {
+    q: "Can I book a taxi from Jharsuguda to Chhattisgarh?",
+    a: "Yes. You can enquire about one-way, round-trip and outstation taxi services from Jharsuguda to major Chhattisgarh destinations including Raigarh, Korba, Bilaspur, Raipur, Durg-Bhilai, Ambikapur and Jagdalpur.",
+  },
+  {
+    q: "Do you provide Jharsuguda to Raigarh taxi service?",
+    a: "Yes. One-way and round-trip taxi requirements from Jharsuguda to Raigarh can be discussed with the booking team. You can also enquire for nearby destinations such as Kharsia, Gharghoda, Tamnar and Sarangarh.",
+  },
+  {
+    q: "Can I book a Jharsuguda to Korba cab?",
+    a: "Yes. Jharsuguda to Korba is an important long-distance travel corridor. Cab enquiries can also be made for nearby locations including Katghora, Dipka, Gevra, Kusmunda, Balco and Darri.",
+  },
+  {
+    q: "Can I book a taxi from Jharsuguda to Bilaspur?",
+    a: "Yes. You can enquire for one-way and round-trip taxi services from Jharsuguda to Bilaspur. Nearby destinations such as Champa, Janjgir, Sakti, Mungeli and Ratanpur can also be discussed.",
+  },
+  {
+    q: "Can I book a Jharsuguda to Raipur Airport cab?",
+    a: "Yes. Pre-planned airport transfers from Jharsuguda to Raipur Airport can be arranged based on your flight schedule. Share your pickup location and flight timing with the booking team.",
+  },
+  {
+    q: "Do you provide Jharsuguda to Durg and Bhilai taxi service?",
+    a: "Yes. Long-distance cab enquiries can be made for Durg, Bhilai and surrounding industrial and residential areas. These services can be used for business travel, railway transfers, family journeys and personal travel.",
+  },
+  {
+    q: "Can I book a taxi to smaller towns or industrial areas?",
+    a: "Yes. You do not need to restrict your destination to a major city. Share your exact pickup and destination for smaller towns, industrial locations, railway stations, townships and regional destinations.",
+  },
+  {
+    q: "Which cars are available for long-distance travel?",
+    a: "Depending on availability, sedan, Ertiga and premium SUV options can be arranged. Vehicle selection can be based on passenger count, luggage, distance and comfort requirements.",
+  },
 ];
 
-export default function TaxiServiceInJharsugudaPage() {
-  const [popupData, setPopupData] = useState<PopupData | null>(null);
-  const [showPopup, setShowPopup] = useState(false);
-  const [successReceipt, setSuccessReceipt] = useState<SuccessReceipt | null>(null);
-  const [paymentLoadingId, setPaymentLoadingId] = useState<string | null>(null);
-  const [selectedVehicleType, setSelectedVehicleType] = useState<VehicleType>("sedan");
-  const [paymentSplitMode, setPaymentSplitMode] = useState<Record<string, "full" | "half">>({});
+/* =========================================================
+   WHATSAPP ICON
+========================================================= */
 
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [showUserForm, setShowUserForm] = useState(false);
+function WhatsAppIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg
+      viewBox="0 0 32 32"
+      width={size}
+      height={size}
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M16 3.25C9.04 3.25 3.4 8.89 3.4 15.85c0 2.22.58 4.31 1.69 6.14L3.25 28.75l6.94-1.8a12.5 12.5 0 0 0 5.81 1.43h.01c6.95 0 12.59-5.64 12.59-12.6C28.6 8.89 22.96 3.25 16 3.25Z"
+        fill="currentColor"
+      />
+      <path
+        d="M11.05 9.85c.25-.28.53-.3.77-.3.2 0 .42 0 .61.01.2.01.46-.08.72.47.26.56.9 2.19.98 2.35.08.16.13.35.02.56-.1.2-.15.35-.3.54-.15.18-.31.4-.45.53-.15.15-.3.31-.13.61.17.3.76 1.25 1.63 2.02 1.12.99 2.07 1.3 2.37 1.45.3.15.48.13.66-.08.18-.2.76-.89.96-1.2.2-.31.4-.25.67-.15.28.1 1.75.83 2.05.98.3.15.5.23.57.36.08.13.08.77-.18 1.5-.25.72-1.47 1.38-2.03 1.46-.52.08-1.18.12-1.9-.12-.44-.15-1-.32-1.72-.64-3.03-1.3-5-4.33-5.15-4.53-.15-.2-1.23-1.64-1.23-3.13 0-1.48.77-2.2 1.05-2.5Z"
+        fill="white"
+      />
+    </svg>
+  );
+}
 
-  const convertToIndianDate = (dateString: string) => {
-    if (!dateString) return "--/--/----";
-    const [year, month, day] = dateString.split("-");
-    return `${day}/${month}/${year}`;
-  };
+/* =========================================================
+   MOBILE FLOATING ACTION
+========================================================= */
 
-  const formatTimeToAMPM = (timeString: string) => {
-    if (!timeString) return "--:-- --";
-    let [hours, minutes] = timeString.split(":").map(Number);
-    const ampm = hours >= 12 ? "PM" : "AM";
-    hours = hours % 12 || 12;
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${ampm}`;
-  };
-
-  const getDynamicKmsLimitDisplay = (opt: FareOption): number => {
-    if (!popupData || popupData.bookingType !== "roundtrip" || !popupData.returnDate || !popupData.returnTime) {
-      return opt.billedDistance; 
-    }
-    try {
-      const start = new Date(`${popupData.pickupDate}T${popupData.pickupTime}`);
-      const end = new Date(`${popupData.returnDate}T${popupData.returnTime}`);
-      const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-      const days = Math.max(1, Math.ceil(hours / 24));
-      
-      const calculatedLimit = days * 250;
-      return calculatedLimit > opt.billedDistance ? calculatedLimit : opt.billedDistance;
-    } catch (e) {
-      return opt.billedDistance;
-    }
-  };
-
-  const handleOnlinePaymentCheckout = async (option: FareOption) => {
-    if (!popupData) return;
-    if (!customerName.trim() || !customerPhone.trim() || customerPhone.length < 10) {
-      alert("⚠️ Kripya sahi Naam aur 10-digit Mobile Number darj karein!");
-      return;
-    }
-
-    setPaymentLoadingId(option.id);
-    const mode = paymentSplitMode[option.id] || "full";
-    const totalFareValue = option.finalFare; 
-    const processAmount = mode === "half" ? Math.round(totalFareValue / 2) : totalFareValue;
-
-    try {
-      const res = await fetch("/api/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: processAmount, pickup: popupData.pickup, drop: popupData.drop, vehicleLabel: option.vehicleLabel }),
-      });
-      const orderData = await res.json();
-      if (!res.ok) throw new Error(orderData.error || "Order generation error");
-
-      const paymentObject = new (window as any).Razorpay({
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
-        amount: orderData.amount,
-        currency: "INR",
-        name: "Khatu Rides Travels Co.",
-        description: `${option.vehicleLabel} Route Allocation`,
-        order_id: orderData.orderId,
-        prefill: { name: customerName, contact: customerPhone },
-        theme: { color: "#ea580c" },
-        handler: async (response: any) => {
-          const verifyRes = await fetch("/api/verify-booking", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              razorpayOrderId: response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature,
-              pickup: popupData.pickup,
-              drop: popupData.drop,
-              bookingType: popupData.bookingType,
-              pickupDate: popupData.pickupDate,
-              pickupTime: popupData.pickupTime,
-              vehicleLabel: option.vehicleLabel,
-              amount: processAmount,
-            }),
-          });
-          const verifyData = await verifyRes.json();
-          
-          if (verifyRes.ok && verifyData.success) {
-            const finalInvoiceId = verifyData.invoiceId || `KR-${Math.floor(100000 + Math.random() * 900000)}`;
-
-            if (db) {
-              await addDoc(collection(db, "bookings"), {
-                invoiceId: finalInvoiceId,
-                customerName: customerName,
-                customerPhone: customerPhone,
-                pickup: popupData.pickup,
-                drop: popupData.drop,
-                bookingType: popupData.bookingType,
-                serviceType: popupData.serviceType,
-                pickupDate: popupData.pickupDate,
-                pickupTime: popupData.pickupTime,
-                returnDate: popupData.returnDate || null,
-                vehicleLabel: option.vehicleLabel,
-                amountPaid: processAmount,
-                paymentMode: mode === "half" ? "50% ADVANCE" : "FULL PAYMENT",
-                razorpayPaymentId: response.razorpay_payment_id,
-                createdAt: serverTimestamp()
-              });
-            }
-
-            setShowPopup(false);
-            setShowUserForm(false);
-            setSuccessReceipt({
-              invoiceId: finalInvoiceId,
-              pickup: popupData.pickup,
-              drop: popupData.drop,
-              date: convertToIndianDate(popupData.pickupDate),
-              time: formatTimeToAMPM(popupData.pickupTime),
-              vehicle: option.vehicleLabel,
-              amount: processAmount,
-              paymentMode: mode === "half" ? "50% ADVANCE" : "FULL PAYMENT",
-            });
-          }
-        },
-      });
-      paymentObject.open();
-    } catch (error: any) {
-      alert(error.message || "Payment interface failed");
-    } finally {
-      setPaymentLoadingId(null);
-    }
-  };
-
-  const handleWhatsAppManualRedirect = (option: FareOption) => {
-    if (!popupData) return;
-
-    const textPayload = `Hello Khatu Rides Travels Co., 
-
-I would like to book an outstation taxi from Jharsuguda. The route details are listed below:
-
-*ROUTE MANIFEST CARD:*
-• From : ${popupData.pickup}
-• To: ${popupData.drop}
-• Vehicle Segment : ${option.vehicleLabel}
-• Trip Type : ${popupData.bookingType.toUpperCase()}
-• Date & Time: ${convertToIndianDate(popupData.pickupDate)} at ${formatTimeToAMPM(popupData.pickupTime)}
-
-*PRICING ESTIMATION SHEET:*
-• Total Fare: Rs. ${option.finalFare.toLocaleString("en-IN")}.00 (All-Inclusive)
-
-Please arrange this interstate taxi profile immediately. Thank you!`;
-
-    const cleanFormattedUrl = `https://wa.me/919244137353?text=${encodeURIComponent(textPayload)}`;
-    window.open(cleanFormattedUrl, "_blank");
-  };
-
-  const jharsugudaSchema = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    "name": "Khatu Rides Jharsuguda Interstate Taxi Command Desk",
-    "image": "https://www.khaturidescg.in/dezire.png",
-    "description": "Premium cross-border outstation cabs from Jharsuguda to Raigarh, Korba, and Raipur Airport. Certified corporate car rentals.",
-    "brand": {
-      "@type": "Brand",
-      "name": "Khatu Rides Travels Co."
-    },
-    "offers": {
-      "@type": "AggregateOffer",
-      "priceCurrency": "INR",
-      "lowPrice": "1499",
-      "highPrice": "6500",
-      "offerCount": "25"
-    },
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": "4.9",
-      "bestRating": "5",
-      "ratingCount": "195"
-    }
-  };
-
-  const selectedOption = popupData?.fareOptions.find((item) => item.vehicleType === selectedVehicleType);
-  const totalPricingBase = selectedOption ? selectedOption.finalFare : 0;
-  const currentSelectedMode = selectedOption && paymentSplitMode[selectedOption.id] ? paymentSplitMode[selectedOption.id] : "full";
-  const displayPayNowNumber = currentSelectedMode === "half" ? Math.round(totalPricingBase / 2) : totalPricingBase;
+function FloatingActions() {
+  const message = waLink(
+    "Hello Khatu Rides, I want to book a cab from Jharsuguda. Please share available vehicle options and fare."
+  );
 
   return (
-    <main className="bg-slate-950 text-slate-100 min-h-screen">
-      <Script id="razorpay-checkout-js" src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
+    <details className="fixed bottom-5 right-4 z-50 md:hidden">
+      <summary className="flex h-14 w-14 cursor-pointer list-none items-center justify-center rounded-full border-2 border-white bg-[#FF1726] text-white shadow-[0_10px_30px_rgba(255,23,38,.45),0_0_35px_rgba(255,23,38,.25)] transition-all duration-300 hover:scale-105 hover:bg-[#E90012]">
+        <Phone
+          size={25}
+          strokeWidth={2.8}
+          fill="currentColor"
+        />
+      </summary>
+
+      <div className="absolute bottom-[68px] right-0 flex w-[190px] flex-col gap-2">
+        <a
+          href={`tel:+91${PHONE}`}
+          className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#FF1726] px-4 text-[12px] font-black text-white shadow-xl"
+        >
+          <Phone size={17} fill="currentColor" />
+          Call Now
+        </a>
+
+        <a
+          href={message}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#25D366] px-4 text-[12px] font-black text-white shadow-xl"
+        >
+          <WhatsAppIcon size={19} />
+          WhatsApp
+        </a>
+      </div>
+    </details>
+  );
+}
+
+/* =========================================================
+   SEO METADATA
+========================================================= */
+
+export const metadata: Metadata = {
+  title:
+    "Jharsuguda Taxi Service | Jharsuguda to Chhattisgarh Cab | Khatu Rides",
+  description:
+    "Book a taxi from Jharsuguda to Raigarh, Korba, Bilaspur, Raipur, Durg-Bhilai, Ambikapur and Jagdalpur. One-way, round-trip, airport, railway and outstation cab services.",
+  keywords: [
+    "Jharsuguda taxi service",
+    "Jharsuguda cab service",
+    "Jharsuguda outstation cab",
+    "Jharsuguda to Raigarh taxi",
+    "Jharsuguda to Korba taxi",
+    "Jharsuguda to Bilaspur taxi",
+    "Jharsuguda to Raipur taxi",
+    "Jharsuguda to Durg taxi",
+    "Jharsuguda to Bhilai taxi",
+    "Jharsuguda to Ambikapur taxi",
+    "Jharsuguda to Jagdalpur taxi",
+    "Jharsuguda airport taxi",
+    "Jharsuguda railway station taxi",
+    "Jharsuguda one way taxi",
+    "Jharsuguda outstation taxi",
+  ],
+  alternates: {
+    canonical: PAGE_URL,
+  },
+  openGraph: {
+    title: "Jharsuguda Taxi Service | Chhattisgarh Cab Booking",
+    description:
+      "Book one-way, round-trip and outstation taxis from Jharsuguda to major Chhattisgarh hubs and regional destinations.",
+    url: PAGE_URL,
+    siteName: "Khatu Rides Travels Co.",
+    type: "website",
+    images: [
+      {
+        url: `${SITE_URL}/logo.png`,
+        width: 1200,
+        height: 630,
+        alt: "Khatu Rides Travels Co.",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Jharsuguda Taxi Service | Khatu Rides",
+    description:
+      "Jharsuguda to Raigarh, Korba, Bilaspur, Raipur, Durg-Bhilai, Ambikapur and Jagdalpur cab booking.",
+    images: [`${SITE_URL}/logo.png`],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
+
+/* =========================================================
+   STRUCTURED DATA
+========================================================= */
+
+const localBusinessSchema = {
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "@id": `${PAGE_URL}#business`,
+  name: "Khatu Rides Travels Co.",
+  url: SITE_URL,
+  telephone: `+91${PHONE}`,
+  image: `${SITE_URL}/logo.png`,
+  priceRange: "₹₹",
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Korba",
+    addressRegion: "Chhattisgarh",
+    addressCountry: "IN",
+  },
+  areaServed: [
+    "Jharsuguda",
+    "Raigarh",
+    "Korba",
+    "Bilaspur",
+    "Raipur",
+    "Durg",
+    "Bhilai",
+    "Ambikapur",
+    "Jagdalpur",
+    "Chhattisgarh",
+    "Odisha",
+  ],
+};
+
+const serviceSchema = {
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "@id": `${PAGE_URL}#service`,
+  name: "Jharsuguda Taxi and Outstation Cab Service",
+  serviceType: "Taxi Service",
+  provider: {
+    "@type": "LocalBusiness",
+    name: "Khatu Rides Travels Co.",
+    url: SITE_URL,
+    telephone: `+91${PHONE}`,
+  },
+  areaServed: [
+    {
+      "@type": "City",
+      name: "Jharsuguda",
+    },
+    {
+      "@type": "State",
+      name: "Chhattisgarh",
+    },
+    {
+      "@type": "State",
+      name: "Odisha",
+    },
+  ],
+  availableChannel: {
+    "@type": "ServiceChannel",
+    serviceUrl: PAGE_URL,
+    servicePhone: {
+      "@type": "ContactPoint",
+      telephone: `+91${PHONE}`,
+    },
+  },
+};
+
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Home",
+      item: SITE_URL,
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "Cab Services",
+      item: `${SITE_URL}/#services`,
+    },
+    {
+      "@type": "ListItem",
+      position: 3,
+      name: "Jharsuguda Taxi Service",
+      item: PAGE_URL,
+    },
+  ],
+};
+
+/* =========================================================
+   PAGE
+========================================================= */
+
+export default function JharsugudaCabPage() {
+  const heroWhatsApp = waLink(
+    "Hello Khatu Rides, I need a cab from Jharsuguda to Chhattisgarh. Please share available vehicle options and fare."
+  );
+
+  return (
+    <main className="min-h-screen bg-[#f7f9fc] text-slate-950">
+      {/* =====================================================
+          JSON-LD
+      ===================================================== */}
+
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jharsugudaSchema) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(localBusinessSchema),
+        }}
       />
 
-      {/* HERO SECTION */}
-      <section className="relative overflow-hidden bg-slate-950 border-b border-slate-900 pb-12">
-        <div className="absolute inset-0 w-full h-full scale-105 opacity-10 blur-xs pointer-events-none">
-          <img src="/banner6.png" alt="Interstate Route Guide" className="w-full h-full object-cover" />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(serviceSchema),
+        }}
+      />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbSchema),
+        }}
+      />
+
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
+
+      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+          <Link
+            href="/"
+            className="flex shrink-0 items-center"
+          >
+            <img
+              src="/logo.png"
+              alt="Khatu Rides Travels Co."
+              className="h-12 w-auto object-contain sm:h-14"
+            />
+          </Link>
+
+          {/* Desktop Navigation */}
+
+          <nav className="hidden items-center gap-6 lg:flex">
+            <Link
+              href="/"
+              className="text-sm font-bold text-slate-600 transition hover:text-[#063B8F]"
+            >
+              Home
+            </Link>
+
+            <Link
+              href="/#popular-routes"
+              className="text-sm font-bold text-slate-600 transition hover:text-[#063B8F]"
+            >
+              Popular Routes
+            </Link>
+
+            <Link
+              href="/#services"
+              className="text-sm font-bold text-slate-600 transition hover:text-[#063B8F]"
+            >
+              Services
+            </Link>
+
+            <Link
+              href="/#fleet"
+              className="text-sm font-bold text-slate-600 transition hover:text-[#063B8F]"
+            >
+              Fleet
+            </Link>
+
+            <Link
+              href="/fare-calculator"
+              className="rounded-xl bg-[#FFC400] px-4 py-2.5 text-sm font-black text-slate-950 shadow-sm transition hover:bg-[#f2b900]"
+            >
+              Fare Calculator
+            </Link>
+          </nav>
+
+          {/* Desktop CTAs */}
+
+          <div className="hidden items-center gap-2 sm:flex">
+            <a
+              href={`tel:+91${PHONE}`}
+              className="flex h-11 items-center gap-2 rounded-xl bg-[#FF1726] px-4 text-xs font-black text-white shadow-[0_8px_20px_rgba(255,23,38,.22)] transition hover:-translate-y-0.5"
+            >
+              <Phone size={16} fill="currentColor" />
+              Call Now
+            </a>
+
+            <a
+              href={heroWhatsApp}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-11 items-center gap-2 rounded-xl bg-[#25D366] px-4 text-xs font-black text-white shadow-[0_8px_20px_rgba(37,211,102,.22)] transition hover:-translate-y-0.5"
+            >
+              <WhatsAppIcon size={18} />
+              WhatsApp
+            </a>
+          </div>
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-orange-600/5 via-slate-950/90 to-slate-950" />
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-orange-500/10 rounded-full blur-[140px] pointer-events-none" />
 
-        <div className="relative z-10 mx-auto max-w-7xl px-4 pt-16 md:pt-24 text-center">
-          <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-xs font-black uppercase tracking-widest text-emerald-400">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            Verified Interstate Cab Network
-          </span>
+        {/* Mobile Hindi Line */}
 
-          <h1 className="mt-6 text-4xl font-black tracking-tight sm:text-6xl text-white">
-            Premium Taxi Service in Jharsuguda
-          </h1>
-
-          <p className="mt-4 max-w-3xl mx-auto text-base sm:text-lg leading-relaxed text-slate-400">
-            Seamless cross-border car rentals from Jharsuguda to Chhattisgarh. Safe, verified oneway and roundtrip taxi drops covering Raigarh industrial clusters, Korba mining zones, and Raipur Airport.
+        <div className="border-t border-slate-100 bg-[#071A3A] px-4 py-2.5 text-center sm:hidden">
+          <p className="text-[22px] font-black leading-9 text-white">
+            झारसुगुड़ा से कहीं के लिए भी टैक्सी बुक करने के लिए कॉल करें{" "}
+            <a
+              href={`tel:+91${PHONE}`}
+              className="text-[#FFC400] underline decoration-[#FFC400]/40 underline-offset-2"
+            >
+              {PHONE}
+            </a>
           </p>
         </div>
+      </header>
 
-        {/* FARE CALCULATOR */}
-        <div className="relative z-20 mx-auto max-w-5xl px-4 mt-10">
-          <div className="rounded-3xl border border-white/5 bg-white/[0.02] backdrop-blur-xl p-4 sm:p-6 shadow-2xl shadow-black/50">
-            <h3 className="text-sm font-black text-center text-orange-500 uppercase tracking-widest mb-4">
-              Calculate Real-Time Jharsuguda Outstation Slabs
-            </h3>
-            <FareCalculator 
-              onFareCalculated={(data) => {
-                setPopupData(data);
-                setSelectedVehicleType("sedan");
-                setShowPopup(true);
-                setShowUserForm(false);
-                setPaymentSplitMode({});
-              }}
-            />
+      {/* =====================================================
+          HERO
+      ===================================================== */}
+
+      <section className="relative overflow-hidden bg-[#061735]">
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute -left-32 top-0 h-80 w-80 rounded-full bg-[#FFC400] blur-[120px]" />
+          <div className="absolute right-0 top-10 h-96 w-96 rounded-full bg-[#0b65d8] blur-[130px]" />
+        </div>
+
+        <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-20">
+          <div className="grid items-center gap-10 lg:grid-cols-[1.08fr_.92fr]">
+            <div>
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-[#FFC400] backdrop-blur">
+                <span className="h-2 w-2 rounded-full bg-[#25D366]" />
+                Odisha ↔ Chhattisgarh Intercity Cab
+              </div>
+
+              <h1 className="max-w-4xl text-4xl font-black leading-[1.02] tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl">
+                Jharsuguda Taxi Service
+                <span className="mt-2 block text-[#FFC400]">
+                  Chhattisgarh & Major Hubs
+                </span>
+              </h1>
+
+              <p className="mt-5 max-w-2xl text-base font-medium leading-7 text-slate-300 sm:text-lg">
+                Book one-way, round-trip and outstation cabs from Jharsuguda
+                to Raigarh, Korba, Bilaspur, Raipur, Durg-Bhilai, Ambikapur and
+                Jagdalpur, with connectivity to nearby towns, industrial areas
+                and regional destinations.
+              </p>
+
+              <div className="mt-7 grid max-w-xl grid-cols-2 gap-3 sm:grid-cols-4">
+                {[
+                  ["7+", "Major Hubs"],
+                  ["30+", "Regional Areas"],
+                  ["24×7", "Booking Enquiry"],
+                  ["AC", "Comfortable Cars"],
+                ].map(([value, label]) => (
+                  <div
+                    key={label}
+                    className="rounded-2xl border border-white/10 bg-white/[0.07] p-3 backdrop-blur"
+                  >
+                    <p className="text-lg font-black text-white">
+                      {value}
+                    </p>
+
+                    <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                      {label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <a
+                  href={`tel:+91${PHONE}`}
+                  className="flex h-14 items-center justify-center gap-3 rounded-2xl bg-[#FF1726] px-7 text-sm font-black text-white shadow-[0_15px_35px_rgba(255,23,38,.28)] transition hover:-translate-y-0.5"
+                >
+                  <Phone size={19} fill="currentColor" />
+                  Call {PHONE}
+                </a>
+
+                <a
+                  href={heroWhatsApp}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-14 items-center justify-center gap-3 rounded-2xl bg-[#25D366] px-7 text-sm font-black text-white shadow-[0_15px_35px_rgba(37,211,102,.22)] transition hover:-translate-y-0.5"
+                >
+                  <WhatsAppIcon size={21} />
+                  Get Cab on WhatsApp
+                </a>
+              </div>
+
+              <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-[10px] font-bold text-slate-400">
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 size={14} className="text-[#25D366]" />
+                  One Way Available
+                </span>
+
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 size={14} className="text-[#25D366]" />
+                  Round Trip
+                </span>
+
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 size={14} className="text-[#25D366]" />
+                  Airport & Railway
+                </span>
+              </div>
+            </div>
+
+            {/* Hero Visual */}
+
+            <div className="relative">
+              <div className="absolute -inset-5 rounded-[40px] bg-[#FFC400]/10 blur-2xl" />
+
+              <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.07] p-2 shadow-2xl backdrop-blur">
+                <div className="relative overflow-hidden rounded-[26px] bg-[#0b234b]">
+                  <img
+                    src="/hero/01.png"
+                    alt="Khatu Rides Jharsuguda taxi service"
+                    className="h-[300px] w-full object-cover sm:h-[390px]"
+                  />
+
+                  <div className="absolute inset-x-4 bottom-4 rounded-2xl border border-white/20 bg-[#061735]/90 p-4 backdrop-blur-xl">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-[9px] font-black uppercase tracking-[0.18em] text-[#FFC400]">
+                          Jharsuguda → Chhattisgarh
+                        </p>
+
+                        <p className="mt-1 text-lg font-black text-white">
+                          Tell us your destination
+                        </p>
+                      </div>
+
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#FFC400] text-slate-950">
+                        <Navigation size={19} fill="currentColor" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="absolute -bottom-5 -left-3 hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl sm:block">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                    <Star size={20} fill="currentColor" />
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-black text-slate-950">
+                      Trusted Cab Service
+                    </p>
+
+                    <p className="mt-0.5 text-[10px] font-semibold text-slate-500">
+                      Chhattisgarh & nearby destinations
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-     
-      {/* 👑 5. DYNAMIC REVIEWS SLIDER */}
-             <ReviewsCarousel />
+      {/* =====================================================
+          QUICK INTENT
+      ===================================================== */}
 
-      {/* SERVICES DOCK SECTION */}
-      <section className="relative z-10 mx-auto max-w-7xl px-4 py-16">
-        <header className="text-center mb-10">
-          <span className="text-[10px] font-black uppercase tracking-widest text-orange-500 block mb-1">
-            Operational Excellence
-          </span>
-          <h2 className="text-3xl font-black tracking-tight text-white">
-            Cross-Border Fleet Capabilities
-          </h2>
-        </header>
-
-        <div className="grid gap-6 md:grid-cols-4">
-          <Feature
-            icon={<Plane size={28} />}
-            title="Airport Connections"
-            text="Reliable transit syncing Jharsuguda Airport drops directly with Raigarh or Raipur trading sectors."
-          />
-          <Feature
-            icon={<Factory size={28} />}
-            title="Industrial Corridors"
-            text="Dedicated corporate logistics mapped specifically for Vedanta, SMC, and JSPL steel units."
-          />
-          <Feature
-            icon={<Building2 size={28} />}
-            title="Hassle-Free Tolls"
-            text="All applicable inter-state taxes, toll taxes, and route permits pre-integrated upfront."
-          />
-          <Feature
-            icon={<Phone size={28} />}
-            title="24/7 Route Assistance"
-            text="Continuous real-time dispatch tracking and live chauffeur updates at any hour."
-          />
+      <section className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 py-3 scrollbar-hide sm:px-6 lg:px-8">
+          {[
+            "One Way Taxi",
+            "Outstation Cab",
+            "Round Trip Taxi",
+            "Airport Transfer",
+            "Railway Transfer",
+            "Corporate Cab",
+            "Industrial Travel",
+            "Family Travel",
+            "Long Distance Taxi",
+          ].map((item) => (
+            <a
+              key={item}
+              href={heroWhatsApp}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-[10px] font-black text-slate-700 transition hover:border-[#FFC400] hover:bg-amber-50"
+            >
+              {item}
+            </a>
+          ))}
         </div>
       </section>
 
-      {/* VEHICLES MATRIX */}
-      <section className="bg-slate-900/40 py-16 border-y border-slate-900">
-        <div className="mx-auto max-w-7xl px-4">
-          <header className="text-center mb-12">
-            <span className="text-[10px] font-black uppercase tracking-widest text-orange-500 block mb-1">
-              Transparent Fleet Matrix
+      {/* =====================================================
+          MAJOR HUBS
+      ===================================================== */}
+
+      <section
+        className="bg-white py-14 sm:py-18"
+        id="major-hubs"
+      >
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl">
+            <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[#063B8F]">
+              Jharsuguda Outstation Network
             </span>
-            <h2 className="text-3xl font-black tracking-tight text-white">
-              Choose Your Jharsuguda Outstation Vehicle
+
+            <h2 className="mt-3 text-3xl font-black tracking-[-0.035em] text-slate-950 sm:text-4xl">
+              Jharsuguda to{" "}
+              <span className="text-[#063B8F]">
+                Major Chhattisgarh Hubs
+              </span>
             </h2>
-          </header>
 
-          <div className="grid gap-8 md:grid-cols-3">
-            {vehicles.map((vehicle) => (
+            <p className="mt-4 text-sm font-medium leading-7 text-slate-600 sm:text-base">
+              Travel from Jharsuguda to the major commercial, industrial,
+              residential and transport hubs of Chhattisgarh with an
+              outstation cab. Our coverage extends beyond major cities to
+              important nearby towns, railway connections, industrial areas
+              and regional destinations.
+            </p>
+          </div>
+
+          <div className="mt-9 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {MAJOR_HUBS.map((hub, index) => (
               <article
-                key={vehicle.name}
-                className="group relative overflow-hidden rounded-3xl border border-white/5 bg-white/[0.02] p-6 flex flex-col justify-between shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:border-orange-500/50 hover:bg-white/[0.04] transition-all duration-300 cursor-pointer"
+                key={hub.name}
+                className="group relative overflow-hidden rounded-[26px] border border-slate-200 bg-white p-5 shadow-[0_10px_35px_rgba(15,23,42,.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_50px_rgba(15,23,42,.11)]"
               >
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-black text-white">{vehicle.name}</h3>
-                    <span className="inline-block rounded-xl bg-orange-500/10 border border-orange-500/25 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-orange-500">
-                      {vehicle.type}
-                    </span>
+                <div className="absolute right-0 top-0 h-28 w-28 rounded-full bg-[#FFC400]/10 blur-2xl transition group-hover:bg-[#FFC400]/20" />
+
+                <div className="relative">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#071A3A] text-[#FFC400]">
+                        <MapPin
+                          size={20}
+                          fill="currentColor"
+                        />
+                      </div>
+
+                      <div>
+                        <p className="text-[9px] font-black uppercase tracking-[0.15em] text-[#063B8F]">
+                          {String(index + 1).padStart(2, "0")} · Major Hub
+                        </p>
+
+                        <h3 className="mt-1 text-xl font-black text-slate-950">
+                          Jharsuguda → {hub.name}
+                        </h3>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="relative h-40 w-full flex items-center justify-center rounded-2xl bg-slate-950/50 border border-white/[0.02] my-4 overflow-hidden">
-                    <img
-                      src={vehicle.image}
-                      alt={`${vehicle.name} - Khatu Rides Jharsuguda`}
-                      className="max-h-28 object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.4)] group-hover:scale-110 transition-all duration-300"
-                    />
+                  <p className="mt-4 text-[9px] font-black uppercase tracking-wider text-slate-400">
+                    {hub.region}
+                  </p>
+
+                  <p className="mt-2 text-sm font-medium leading-6 text-slate-600">
+                    {hub.description}
+                  </p>
+
+                  <div className="mt-5 border-t border-slate-100 pt-4">
+                    <p className="mb-3 text-[9px] font-black uppercase tracking-[0.16em] text-slate-400">
+                      Nearby Sub-Hubs
+                    </p>
+
+                    <div className="flex flex-wrap gap-2">
+                      {hub.subHubs.map((sub) => (
+                        <span
+                          key={sub}
+                          className="rounded-lg bg-slate-50 px-2.5 py-1.5 text-[10px] font-bold text-slate-600"
+                        >
+                          {sub}
+                        </span>
+                      ))}
+                    </div>
                   </div>
 
-                  <ul className="grid grid-cols-2 gap-2 mt-4">
-                    {vehicle.specs.map((spec, index) => (
-                      <li key={index} className="flex items-center gap-1 text-[11px] text-slate-400">
-                        <span className="h-1 w-1 rounded-full bg-orange-500" />
-                        <span>{spec}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-white/[0.04] flex items-center justify-between">
-                  <div>
-                    <span className="text-[8px] block text-slate-500 font-black uppercase tracking-widest">Base Dynamic Rate</span>
-                    <span className="text-lg font-black text-orange-500">{vehicle.price}</span>
-                  </div>
-                  <TrackedWhatsAppButton
-                    href="https://wa.me/919244137353"
-                    className="rounded-xl bg-white/5 hover:bg-orange-600 hover:text-white px-4 py-2 text-[10px] font-black uppercase tracking-wider transition-all"
+                  <a
+                    href={waLink(
+                      `Hello Khatu Rides, I need a cab from Jharsuguda to ${hub.name}. Please share available vehicles and fare.`
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-5 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#071A3A] text-xs font-black text-white transition hover:bg-[#063B8F]"
                   >
-                    Select Model
-                  </TrackedWhatsAppButton>
+                    Enquire for {hub.name}
+                    <ArrowRight size={14} />
+                  </a>
                 </div>
               </article>
             ))}
@@ -464,408 +966,894 @@ Please arrange this interstate taxi profile immediately. Thank you!`;
         </div>
       </section>
 
-      {/* MICRO-ROUTES DIRECTORY */}
-      <section className="mx-auto max-w-7xl px-4 py-16">
-        <header className="mb-10 text-center md:text-left">
-          <span className="text-[10px] font-black uppercase tracking-widest text-orange-500 block mb-1">
-            Cross-Border Active Slabs
-          </span>
-          <h2 className="text-3xl font-black tracking-tight text-white">
-            Hyper-Local Jharsuguda Interstate Lines
-          </h2>
-          <p className="text-slate-400 text-xs mt-1">
-            Pre-calculated commercial links tracking straight from Odisha industrial points into Chhattisgarh business hubs.
-          </p>
-        </header>
+      {/* =====================================================
+          SUB HUB NETWORK
+      ===================================================== */}
 
-        <div className="grid gap-4 md:grid-cols-2">
-          {MICRO_ROUTES.map((route, idx) => (
-            <article
-              key={idx}
-              className="group rounded-2xl border border-white/5 bg-white/[0.01] p-5 flex items-center justify-between hover:border-orange-500/30 hover:bg-white/[0.03] transition-all duration-300"
-            >
-              <div className="space-y-1 max-w-[70%]">
-                <span className="inline-block rounded-lg bg-orange-500/10 px-2 py-0.5 text-[8px] font-black uppercase tracking-wider text-orange-500">
-                  {route.tag}
+      <section className="bg-[#f5f7fb] py-14 sm:py-18">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-8 lg:grid-cols-[.8fr_1.2fr] lg:items-start">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[#063B8F]">
+                Regional Coverage
+              </span>
+
+              <h2 className="mt-3 text-3xl font-black tracking-[-0.035em] text-slate-950 sm:text-4xl">
+                Major Cities Ke Saath{" "}
+                <span className="text-[#063B8F]">
+                  Sub-Hubs & Regional Areas
                 </span>
-                <h4 className="text-xs font-black text-white flex items-center gap-1.5 flex-wrap">
-                  <span className="capitalize">{route.from}</span>
-                  <span className="text-orange-500 font-bold">→</span>
-                  <span className="capitalize">{route.to}</span>
-                </h4>
-                <p className="text-[10px] text-slate-500">
-                  Distance-optimized multi-lane cross-border network. Flat pricing policies apply.
-                </p>
-              </div>
+              </h2>
 
-              <div className="text-right">
-                <span className="text-[10px] block font-black text-slate-400">{route.dist}</span>
-                <TrackedWhatsAppButton
-                  href="https://wa.me/919244137353"
-                  className="mt-2 inline-block rounded-xl bg-white/5 group-hover:bg-orange-600 group-hover:text-white px-3 py-1.5 text-[9px] font-black uppercase tracking-widest transition-all"
+              <p className="mt-4 text-sm font-medium leading-7 text-slate-600">
+                Your final destination may be a smaller town, industrial
+                location, railway junction, township or regional area rather
+                than a major city. Share your exact destination with the
+                booking team for route and vehicle availability.
+              </p>
+
+              <div className="mt-6 rounded-2xl border border-[#FFC400]/40 bg-amber-50 p-5">
+                <p className="text-xs font-black text-slate-950">
+                  Destination not listed?
+                </p>
+
+                <p className="mt-1 text-xs font-medium leading-5 text-slate-600">
+                  Send your pickup location, destination, travel date and
+                  passenger count on WhatsApp.
+                </p>
+
+                <a
+                  href={heroWhatsApp}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#25D366] px-4 py-2.5 text-[10px] font-black text-white"
                 >
-                  Quote
-                </TrackedWhatsAppButton>
+                  <WhatsAppIcon size={16} />
+                  Ask on WhatsApp
+                </a>
               </div>
-            </article>
-          ))}
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              {SECONDARY_HUBS.map((item) => (
+                <div
+                  key={item.name}
+                  className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#071A3A] text-[#FFC400]">
+                      <Route size={16} />
+                    </div>
+
+                    <h3 className="text-sm font-black text-slate-950">
+                      {item.name}
+                    </h3>
+                  </div>
+
+                  <p className="mt-3 text-xs font-medium leading-5 text-slate-500">
+                    {item.places}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* COVERAGE MAP AREAS */}
-      <section className="bg-slate-900/40 py-16 border-t border-slate-900">
-        <div className="mx-auto max-w-7xl px-4">
-          <header className="text-center mb-10">
-            <span className="text-[10px] font-black uppercase tracking-widest text-orange-500 block mb-1">
-              Odisha-Side Presence Map
-            </span>
-            <h2 className="text-3xl font-black tracking-tight text-white">
-              Areas We Serve Across Jharsuguda Hub
-            </h2>
-          </header>
+      {/* =====================================================
+          AIRPORT + RAILWAY
+      ===================================================== */}
 
-          <div className="grid gap-4 grid-cols-2 md:grid-cols-5">
-            {[
-              "Jharsuguda Airport",
-              "Jharsuguda Junction RIG",
-              "Vedanta Alumina Area",
-              "SMC Power Sector",
-              "Brajarajnagar Mines",
-              "Belpahar Core Hub",
-              "Beheramal Sector",
-              "Sambalpur Bypass Loop",
-              "Sarbahal Residential",
-              "Industrial Estate Core",
-            ].map((area) => (
-              <div
-                key={area}
-                className="rounded-2xl border border-white/5 bg-slate-950 p-4 text-center text-xs font-black text-slate-300 hover:border-orange-500/40 hover:text-white transition cursor-default"
-              >
-                {area}
+      <section className="bg-[#071A3A] py-14 sm:py-18">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-5 lg:grid-cols-2">
+            {/* Airport */}
+
+            <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.06] p-6 sm:p-8">
+              <div className="absolute right-0 top-0 h-48 w-48 rounded-full bg-[#FFC400]/10 blur-3xl" />
+
+              <div className="relative">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FFC400] text-slate-950">
+                  <Plane size={22} />
+                </div>
+
+                <p className="mt-6 text-[10px] font-black uppercase tracking-[0.2em] text-[#FFC400]">
+                  Airport Connectivity
+                </p>
+
+                <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">
+                  Jharsuguda & Raipur Airport Transfers
+                </h2>
+
+                <p className="mt-4 text-sm font-medium leading-6 text-slate-300">
+                  Plan airport pickup and drop services around your flight
+                  schedule. Share the airport, pickup location and flight
+                  timing so the cab requirement can be planned in advance.
+                </p>
+
+                <div className="mt-5 grid grid-cols-2 gap-2">
+                  {[
+                    "Jharsuguda Airport",
+                    "Raipur Airport",
+                    "Airport Pickup",
+                    "Airport Drop",
+                  ].map((item) => (
+                    <div
+                      key={item}
+                      className="rounded-xl border border-white/10 bg-white/[0.05] p-3 text-[10px] font-bold text-slate-200"
+                    >
+                      {item}
+                    </div>
+                  ))}
+                </div>
+
+                <a
+                  href={waLink(
+                    "Hello Khatu Rides, I need an airport cab from Jharsuguda. Please help me plan the pickup/drop."
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-6 inline-flex h-11 items-center gap-2 rounded-xl bg-[#FFC400] px-5 text-xs font-black text-slate-950"
+                >
+                  Plan Airport Cab
+                  <ArrowRight size={14} />
+                </a>
               </div>
+            </div>
+
+            {/* Railway */}
+
+            <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.06] p-6 sm:p-8">
+              <div className="absolute right-0 top-0 h-48 w-48 rounded-full bg-[#0b65d8]/20 blur-3xl" />
+
+              <div className="relative">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#063B8F] text-white">
+                  <TrainFront size={22} />
+                </div>
+
+                <p className="mt-6 text-[10px] font-black uppercase tracking-[0.2em] text-[#66a7ff]">
+                  Railway Connectivity
+                </p>
+
+                <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">
+                  Railway Station Pickup & Drop
+                </h2>
+
+                <p className="mt-4 text-sm font-medium leading-6 text-slate-300">
+                  Arrange station pickup and drop from Jharsuguda Railway
+                  Station or enquire about long-distance travel to major
+                  railway hubs across Chhattisgarh.
+                </p>
+
+                <div className="mt-5 grid grid-cols-2 gap-2">
+                  {[
+                    "Jharsuguda Railway",
+                    "Raigarh Railway",
+                    "Korba Railway",
+                    "Bilaspur Junction",
+                    "Champa Junction",
+                    "Raipur Railway",
+                  ].map((item) => (
+                    <div
+                      key={item}
+                      className="rounded-xl border border-white/10 bg-white/[0.05] p-3 text-[10px] font-bold text-slate-200"
+                    >
+                      {item}
+                    </div>
+                  ))}
+                </div>
+
+                <a
+                  href={waLink(
+                    "Hello Khatu Rides, I need a railway station transfer from Jharsuguda. Please help me plan the cab."
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-6 inline-flex h-11 items-center gap-2 rounded-xl bg-[#25D366] px-5 text-xs font-black text-white"
+                >
+                  Book Station Transfer
+                  <ArrowRight size={14} />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================
+          SERVICES
+      ===================================================== */}
+
+      <section
+        className="bg-white py-14 sm:py-18"
+        id="services"
+      >
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[#063B8F]">
+              Taxi Services
+            </span>
+
+            <h2 className="mt-3 text-3xl font-black tracking-[-0.035em] text-slate-950 sm:text-4xl">
+              Complete Taxi Services{" "}
+              <span className="text-[#063B8F]">
+                from Jharsuguda
+              </span>
+            </h2>
+
+            <p className="mx-auto mt-4 max-w-2xl text-sm font-medium leading-7 text-slate-600">
+              From short intercity transfers to long-distance outstation
+              journeys, choose a cab service based on your destination,
+              passengers, luggage and travel requirements.
+            </p>
+          </div>
+
+          <div className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {SERVICES.map((service) => {
+              const Icon = service.icon;
+
+              return (
+                <article
+                  key={service.title}
+                  className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_8px_30px_rgba(15,23,42,.05)] transition hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+                    <Icon size={21} />
+                  </div>
+
+                  <h3 className="mt-5 text-lg font-black text-slate-950">
+                    {service.title}
+                  </h3>
+
+                  <p className="mt-2 text-sm font-medium leading-6 text-slate-600">
+                    {service.description}
+                  </p>
+
+                  <a
+                    href={heroWhatsApp}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-5 inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[#063B8F]"
+                  >
+                    Enquire Now
+                    <ChevronRight size={13} />
+                  </a>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================
+          INDUSTRIAL / CORPORATE
+      ===================================================== */}
+
+      <section className="bg-[#f5f7fb] py-14 sm:py-18">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="overflow-hidden rounded-[32px] bg-[#061735]">
+            <div className="grid lg:grid-cols-[1fr_.85fr]">
+              <div className="p-7 sm:p-10 lg:p-12">
+                <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[#FFC400]">
+                  Business & Industrial Travel
+                </span>
+
+                <h2 className="mt-3 max-w-2xl text-3xl font-black tracking-[-0.035em] text-white sm:text-4xl">
+                  Corporate & Industrial Cab Travel Across the
+                  Jharsuguda–Chhattisgarh Corridor
+                </h2>
+
+                <p className="mt-5 max-w-2xl text-sm font-medium leading-7 text-slate-300">
+                  Business and industrial travellers often require
+                  transportation between Jharsuguda, Raigarh, Korba,
+                  Bilaspur, Raipur and other industrial regions. Cab
+                  requirements can include plant visits, employee travel,
+                  contractor movement, vendor visits, client meetings and
+                  executive transportation.
+                </p>
+
+                <div className="mt-7 grid gap-3 sm:grid-cols-2">
+                  {[
+                    "Plant & industrial visits",
+                    "Employee transportation",
+                    "Vendor & contractor travel",
+                    "Client meetings",
+                    "Railway & airport transfers",
+                    "Multi-day business travel",
+                  ].map((item) => (
+                    <div
+                      key={item}
+                      className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] p-3 text-xs font-bold text-slate-200"
+                    >
+                      <CheckCircle2
+                        size={15}
+                        className="shrink-0 text-[#25D366]"
+                      />
+                      {item}
+                    </div>
+                  ))}
+                </div>
+
+                <a
+                  href={waLink(
+                    "Hello Khatu Rides, I need corporate or industrial cab service from Jharsuguda. Please discuss my travel requirement."
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-7 inline-flex h-12 items-center gap-2 rounded-xl bg-[#FFC400] px-5 text-xs font-black text-slate-950"
+                >
+                  Discuss Corporate Travel
+                  <ArrowRight size={15} />
+                </a>
+              </div>
+
+              <div className="relative min-h-[280px] overflow-hidden bg-[#0a2754]">
+                <div className="absolute inset-0 opacity-20">
+                  <div className="absolute right-[-15%] top-[-15%] h-80 w-80 rounded-full border-[60px] border-[#FFC400]" />
+                  <div className="absolute bottom-[-25%] left-[-10%] h-80 w-80 rounded-full border-[45px] border-[#0b65d8]" />
+                </div>
+
+                <div className="relative flex h-full flex-col justify-center p-8">
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      [Factory, "Industrial"],
+                      [Building2, "Corporate"],
+                      [Users, "Employee"],
+                      [Navigation, "Intercity"],
+                    ].map(([Icon, label]) => {
+                      const ItemIcon = Icon as typeof Factory;
+
+                      return (
+                        <div
+                          key={label as string}
+                          className="rounded-2xl border border-white/10 bg-white/[0.06] p-4"
+                        >
+                          <ItemIcon
+                            size={21}
+                            className="text-[#FFC400]"
+                          />
+
+                          <p className="mt-3 text-xs font-black text-white">
+                            {label as string}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================
+          LOCAL COVERAGE
+      ===================================================== */}
+
+      <section className="bg-white py-14 sm:py-18">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-10 lg:grid-cols-[.8fr_1.2fr]">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[#063B8F]">
+                Local Pickup Coverage
+              </span>
+
+              <h2 className="mt-3 text-3xl font-black tracking-[-0.035em] text-slate-950 sm:text-4xl">
+                Jharsuguda Local{" "}
+                <span className="text-[#063B8F]">
+                  Pickup Areas
+                </span>
+              </h2>
+
+              <p className="mt-4 text-sm font-medium leading-7 text-slate-600">
+                Pickup service can be discussed for locations across
+                Jharsuguda and nearby areas. Share the exact locality,
+                landmark, railway station, airport or industrial location
+                when making your booking enquiry.
+              </p>
+
+              <div className="mt-6 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#071A3A] text-[#FFC400]">
+                  <MapPin
+                    size={18}
+                    fill="currentColor"
+                  />
+                </div>
+
+                <div>
+                  <p className="text-xs font-black text-slate-950">
+                    Exact Pickup Location
+                  </p>
+
+                  <p className="mt-1 text-[10px] font-medium text-slate-500">
+                    Share your landmark or exact pickup point.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {LOCAL_AREAS.map((area) => (
+                <div
+                  key={area}
+                  className="flex min-h-[74px] items-center rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                >
+                  <div className="flex items-start gap-2">
+                    <MapPin
+                      size={15}
+                      className="mt-0.5 shrink-0 text-[#063B8F]"
+                    />
+
+                    <span className="text-xs font-bold leading-5 text-slate-700">
+                      {area}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================
+          FLEET
+      ===================================================== */}
+
+      <section
+        className="bg-[#f5f7fb] py-14 sm:py-18"
+        id="fleet"
+      >
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[#063B8F]">
+                Comfortable Fleet
+              </span>
+
+              <h2 className="mt-3 text-3xl font-black tracking-[-0.035em] text-slate-950 sm:text-4xl">
+                Choose the Right Cab for{" "}
+                <span className="text-[#063B8F]">
+                  Your Journey
+                </span>
+              </h2>
+            </div>
+
+            <a
+              href={heroWhatsApp}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#071A3A] px-5 text-xs font-black text-white"
+            >
+              Check Availability
+              <ArrowRight size={14} />
+            </a>
+          </div>
+
+          <div className="mt-9 grid gap-5 md:grid-cols-3">
+            {VEHICLES.map((vehicle) => (
+              <article
+                key={vehicle.name}
+                className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_10px_35px_rgba(15,23,42,.06)]"
+              >
+                <div className="relative h-[220px] overflow-hidden bg-slate-100">
+                  <img
+                    src={vehicle.image}
+                    alt={`${vehicle.name} cab from Jharsuguda`}
+                    className="h-full w-full object-cover transition duration-500 hover:scale-105"
+                  />
+
+                  <div className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-slate-950 shadow">
+                    {vehicle.type}
+                  </div>
+                </div>
+
+                <div className="p-5">
+                  <h3 className="text-xl font-black text-slate-950">
+                    {vehicle.name}
+                  </h3>
+
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    {vehicle.details.map((detail) => (
+                      <div
+                        key={detail}
+                        className="rounded-lg bg-slate-50 px-3 py-2 text-[10px] font-bold text-slate-600"
+                      >
+                        {detail}
+                      </div>
+                    ))}
+                  </div>
+
+                  <a
+                    href={waLink(
+                      `Hello Khatu Rides, I need a ${vehicle.name} from Jharsuguda. Please share availability and fare.`
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-5 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#25D366] text-xs font-black text-white"
+                  >
+                    <WhatsAppIcon size={17} />
+                    Enquire This Car
+                  </a>
+                </div>
+              </article>
             ))}
           </div>
         </div>
       </section>
 
-      {/* WHY CHOOSE US */}
-      <section className="mx-auto max-w-7xl px-4 py-16">
-        <h2 className="text-3xl font-black tracking-tight text-white text-center mb-10">
-          Why Choose Khatu Rides Travels in Jharsuguda?
-        </h2>
+      {/* =====================================================
+          WHY CHOOSE US
+      ===================================================== */}
 
-        <div className="grid gap-4 md:grid-cols-2">
-          {[
-            "Seamless Interstate Border Clearances & Active Tax Permits",
-            "Meticulously Sanitized Air-Conditioned Fleet Slabs",
-            "Fixed Upfront Slabs with Absolute Guarantee against Hidden Costing",
-            "Chauffeurs highly experienced with Highway Multi-Lane Routing",
-            "On-Time Flight-Synced Pickups from Jharsuguda Airport Core",
-            "24/7 Continuous Communication Links with Central Control Desk",
-          ].map((item) => (
-            <div
-              key={item}
-              className="flex items-center gap-3.5 rounded-2xl border border-white/5 bg-white/[0.01] p-5 hover:border-orange-500/20 transition"
-            >
-              <CheckCircle2 className="text-orange-500 shrink-0" size={18} />
-              <span className="text-xs font-bold text-slate-300">{item}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* FAQS */}
-      <section className="bg-slate-900/40 py-16 border-t border-slate-900">
-        <div className="mx-auto max-w-5xl px-4">
-          <h2 className="text-3xl font-black tracking-tight text-white text-center mb-10">
-            Frequently Asked Questions
-          </h2>
-
-          <div className="space-y-6">
-            <Faq
-              q="Do you provide taxi service from Jharsuguda to Raigarh or Korba?"
-              a="Yes, Khatu Rides specializes in providing smooth cross-border one-way and roundtrip cabs connecting Jharsuguda Vedanta, SMC, or Airport directly to Raigarh, Korba, and Raipur."
-            />
-            <Faq
-              q="Are state dynamic road tax permits included in your upfront price?"
-              a="Yes, all applicable interstate RTO road taxes, driver allowances, and dynamic highway toll assessments are calculated transparently under our flat upfront pricing sheets."
-            />
-            <Faq
-              q="Can I hire a 7-seater Ertiga or luxury Crysta for family airport pickup?"
-              a="Absolutely. We maintain a large premium fleet of clean Maruti Suzuki Ertigas and Toyota Innova Crystas equipped with heavy carrier accessories for luggage drops."
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* MOBILE ACTIONS */}
-      <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden pointer-events-none">
-        <div className="grid grid-cols-2 gap-3 bg-slate-950/90 backdrop-blur-lg border border-white/10 p-2.5 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.5)] pointer-events-auto">
-          
-          <TrackedWhatsAppButton 
-            href="https://wa.me/919244137353" 
-            className="relative flex h-12 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-xs font-black uppercase text-white shadow-[0_4px_20px_rgba(16,185,129,0.3)] transition-all active:scale-95 animate-pulse overflow-hidden"
-          >
-            <span className="absolute inset-0 bg-white/10 animate-ping rounded-xl opacity-20 pointer-events-none" />
-            <span className="text-sm">💬</span>
-            <span>WhatsApp</span>
-          </TrackedWhatsAppButton>
-
-          <TrackedCallButton 
-            href="tel:9244137353" 
-            className="group flex h-12 items-center justify-center gap-1.5 rounded-xl bg-orange-600 text-xs font-black uppercase text-white shadow-[0_4px_20px_rgba(249,115,22,0.3)] transition-all active:scale-95"
-          >
-            <span className="text-sm animate-[wiggle_1s_ease-in-out_infinite]">
-              📞
+      <section className="bg-white py-14 sm:py-18">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl text-center">
+            <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[#063B8F]">
+              Why Khatu Rides
             </span>
-            <span>Call Desk</span>
-          </TrackedCallButton>
 
+            <h2 className="mt-3 text-3xl font-black tracking-[-0.035em] text-slate-950 sm:text-4xl">
+              Built for Long-Distance{" "}
+              <span className="text-[#063B8F]">
+                Intercity Travel
+              </span>
+            </h2>
+
+            <p className="mt-4 text-sm font-medium leading-7 text-slate-600">
+              A straightforward booking experience for passengers travelling
+              between Jharsuguda, Odisha and major destinations across
+              Chhattisgarh.
+            </p>
+          </div>
+
+          <div className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              {
+                icon: ShieldCheck,
+                title: "Direct Booking",
+                text: "Connect directly through phone or WhatsApp for your cab requirement.",
+              },
+              {
+                icon: WalletCards,
+                title: "Fare Discussion",
+                text: "Discuss the destination, vehicle and trip requirement before booking.",
+              },
+              {
+                icon: Clock3,
+                title: "Planned Pickup",
+                text: "Useful for airport, railway and long-distance journeys requiring advance planning.",
+              },
+              {
+                icon: Zap,
+                title: "Wide Coverage",
+                text: "Major cities plus regional towns, industrial areas and sub-hubs.",
+              },
+            ].map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <div
+                  key={item.title}
+                  className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm"
+                >
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                    <Icon size={20} />
+                  </div>
+
+                  <h3 className="mt-5 text-base font-black text-slate-950">
+                    {item.title}
+                  </h3>
+
+                  <p className="mt-2 text-xs font-medium leading-5 text-slate-500">
+                    {item.text}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* POPUP ENGINE */}
-      <AnimatePresence>
-        {showPopup && popupData && (
-          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-950/60 p-2 sm:p-4 backdrop-blur-xs overflow-y-auto">
-            <motion.div 
-              initial={{ y: 30, opacity: 0 }} 
-              animate={{ y: 0, opacity: 1 }} 
-              exit={{ y: 30, opacity: 0 }} 
-              className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden my-auto flex flex-col max-h-[95vh] text-left"
-            >
-              <div className="bg-slate-100 px-5 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-slate-700">
-                <div>Route: <span className="text-slate-950 font-black text-sm block sm:inline">{popupData.pickup.split(",")[0]} - {popupData.drop.split(",")[0]}</span></div>
-                <div className="flex gap-4">
-                  <div>Trip: <span className="text-slate-950 font-black uppercase bg-orange-100 px-2 py-0.5 rounded text-[11px] text-orange-700">{popupData.bookingType}</span></div>
-                  <div>Date: <span className="text-slate-950 font-black">{convertToIndianDate(popupData.pickupDate)}</span></div>
-                  <div>Time: <span className="text-slate-950 font-black">{formatTimeToAMPM(popupData.pickupTime)}</span></div>
-                </div>
-                <button type="button" onClick={() => setShowPopup(false)} className="text-slate-400 hover:text-slate-900 font-black text-sm transition-colors">✕ Close</button>
+      {/* =====================================================
+          REVIEWS
+      ===================================================== */}
+
+      <section className="bg-[#f5f7fb] py-14 sm:py-18">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[#063B8F]">
+                Customer Experience
+              </span>
+
+              <h2 className="mt-2 text-3xl font-black text-slate-950">
+                Real Travellers. Real Journeys.
+              </h2>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="flex text-[#FFC400]">
+                <Star size={17} fill="currentColor" />
+                <Star size={17} fill="currentColor" />
+                <Star size={17} fill="currentColor" />
+                <Star size={17} fill="currentColor" />
+                <Star size={17} fill="currentColor" />
               </div>
 
-              <div className="bg-slate-900 text-white px-4 py-2.5 text-[10px] sm:text-xs grid grid-cols-3 gap-1 text-center font-black uppercase tracking-wider">
-                <div>₹ Pre-Fixed Pricing</div>
-                <div className="border-x border-white/20">🛡️ Chauffeur Slabs Inc.</div>
-                <div>🎧 24x7 Control Desk</div>
-              </div>
-
-              <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4 bg-slate-50/40">
-                {!showUserForm ? (
-                  <div className="flex flex-col gap-4">
-                    {popupData.fareOptions.map((opt) => {
-                      if (!["sedan", "ertiga", "crysta"].includes(opt.vehicleType)) return null;
-                      
-                      const dynamicLimitKms = getDynamicKmsLimitDisplay(opt);
-                      const extraRatePerKm = opt.vehicleType === "sedan" ? 11 : opt.vehicleType === "ertiga" ? 17 : 20.7;
-
-                      return (
-                        <div key={opt.id} className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-xs hover:shadow-md transition flex flex-col">
-                          <div className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black text-[10px] sm:text-xs py-2 px-4 uppercase tracking-wider text-center shadow-xs">
-                            🔥 Make Online Advance Payment and Get Upto 10% Discount On Your Booking Instantly
-                          </div>
-
-                          <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-                            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full sm:w-auto text-center sm:text-left">
-                              <img src={VEHICLES[opt.vehicleType]?.image} alt={opt.vehicleLabel} className="w-32 h-20 sm:w-36 sm:h-24 object-contain flex-shrink-0 mx-auto sm:mx-0" />
-                              <div>
-                                <h4 className="text-lg font-black text-slate-900">{opt.vehicleLabel}</h4>
-                                <p className="text-xs text-slate-400 mt-0.5 font-medium">or equivalent | {opt.vehicleType === "sedan" ? "4" : "6"}+1 Seater AC Cab</p>
-                                
-                                <div className="mt-2.5 flex flex-wrap gap-1.5 justify-center sm:justify-start text-[10px] font-bold">
-                                  <span className="bg-slate-100 text-slate-500 border border-slate-200/50 px-2 py-0.5 rounded">👤 Allowance Included</span>
-                                  <span className="bg-orange-50 text-orange-700 border border-orange-200/60 px-2 py-0.5 rounded">
-                                    📦 Kms Limit: {dynamicLimitKms} KM
-                                  </span>
-                                  <span className="bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-2 py-0.5 rounded">
-                                    ⚡ Extra Run: ₹{extraRatePerKm}/KM
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="text-center sm:text-right flex flex-col items-center sm:items-end justify-center min-w-full sm:min-w-[220px] border-t pt-3 sm:pt-0 sm:border-none border-slate-100 w-full sm:w-auto">
-                              <div className="mb-2 text-center sm:text-right">
-                                <span className="text-[10px] font-black text-slate-400 block uppercase tracking-wider">Estimated Total Fare:</span>
-                                <div className="text-3xl font-black text-slate-950 tracking-tight">₹{opt.finalFare.toLocaleString("en-IN")}</div>
-                              </div>
-                              
-                              <span className="text-[10px] text-slate-400 font-semibold block mb-3">Includes dynamic toll policies</span>
-                              
-                              <div className="flex flex-col gap-2 w-full sm:w-auto min-w-[200px]">
-                                <button
-                                  type="button"
-                                  onClick={() => handleWhatsAppManualRedirect(opt)}
-                                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-widest py-3 px-4 rounded-xl shadow-md transition-all text-center w-full flex items-center justify-center gap-1.5"
-                                >
-                                  💬 Book On WhatsApp
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedVehicleType(opt.vehicleType);
-                                    setPaymentSplitMode((p) => ({ ...p, [opt.id]: "half" }));
-                                    setShowUserForm(true);
-                                  }}
-                                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold text-xs uppercase tracking-wider py-2.5 px-4 rounded-xl shadow-xs transition-all text-center w-full"
-                                >
-                                  Book Online
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="w-full bg-slate-900 border-t border-slate-800 py-2 px-4 text-center sm:text-left flex items-center justify-center sm:justify-start gap-1.5 shadow-inner">
-                            <span className="text-[10px] sm:text-[11px] text-orange-500">🛡️</span>
-                            <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-300 uppercase tracking-wide">
-                              100% PAYABLE AMOUNT ON SCREEN. <span className="text-orange-400">NO ANY HIDDEN CHARGES</span>
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="max-w-md mx-auto bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-md text-left w-full">
-                    <div className="text-center mb-5">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-orange-600 bg-orange-50 px-2.5 py-1 rounded">Secure Form</span>
-                      <h4 className="text-base font-black text-slate-900 mt-2">Enter Details to Complete Booking</h4>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-black text-slate-700 uppercase tracking-wider">Customer Full Name</label>
-                        <input 
-                          type="text" 
-                          placeholder="Type customer name..." 
-                          value={customerName} 
-                          onChange={(e) => setCustomerName(e.target.value)} 
-                          className="w-full border border-slate-300 rounded-xl px-4 py-2.5 bg-white text-sm font-bold focus:outline-none focus:border-orange-500 transition shadow-xs"
-                        />
-                      </div>
-
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-black text-slate-700 uppercase tracking-wider">Mobile Number (For Driver SMS)</label>
-                        <input 
-                          type="tel" 
-                          maxLength={10} 
-                          placeholder="Enter 10-digit phone number..." 
-                          value={customerPhone} 
-                          onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, ""))} 
-                          className="w-full border border-slate-300 rounded-xl px-4 py-2.5 bg-white text-sm font-bold focus:outline-none focus:border-orange-500 transition shadow-xs"
-                        />
-                      </div>
-
-                      {selectedOption && (
-                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mt-2">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Split Booking Matrix</span>
-                          <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-white p-1">
-                            <button type="button" onClick={() => setPaymentSplitMode((p) => ({ ...p, [selectedOption.id]: "half" }))} className={`rounded-lg py-2 text-center text-[11px] font-black uppercase tracking-wide ${currentSelectedMode === "half" ? "bg-orange-600 text-white shadow-xs" : "text-slate-500"}`}>
-                              50% Advance
-                            </button>
-                            <button type="button" onClick={() => setPaymentSplitMode((p) => ({ ...p, [selectedOption.id]: "full" }))} className={`rounded-lg py-2 text-center text-[11px] font-black uppercase tracking-wide ${currentSelectedMode === "full" ? "bg-slate-900 text-white shadow-xs" : "text-slate-500"}`}>
-                              Full Pay
-                            </button>
-                          </div>
-                          
-                          <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-200/60">
-                            <div>
-                              <span className="text-[10px] font-black text-slate-400 block uppercase">Payable Now</span>
-                              <span className="text-xl font-black text-slate-900">₹{displayPayNowNumber.toLocaleString("en-IN")}</span>
-                            </div>
-                            <span className="text-[10px] font-bold text-slate-500 bg-white px-2 py-1 rounded border border-slate-200">{selectedOption.vehicleLabel}</span>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="grid grid-cols-2 gap-2 pt-2">
-                        <button type="button" onClick={() => setShowUserForm(false)} className="w-full border border-slate-300 bg-slate-100 text-slate-700 font-bold text-xs uppercase py-3.5 rounded-xl transition">
-                          ↩ Back
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => selectedOption && handleOnlinePaymentCheckout(selectedOption)}
-                          disabled={paymentLoadingId !== null}
-                          className="w-full bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-widest py-3.5 rounded-xl transition shadow-lg shadow-orange-600/20 disabled:opacity-50"
-                        >
-                          {paymentLoadingId ? "Syncing..." : "Book Online"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </motion.div>
+              <span className="text-xs font-black text-slate-700">
+                Google Reviews
+              </span>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
 
-      {/* SUCCESS RECEIPT */}
-      <AnimatePresence>
-        {successReceipt && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/70 p-3 backdrop-blur-xs">
-            <motion.div initial={{ y: 20 }} animate={{ y: 0 }} className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
-              <div className="bg-emerald-50 px-5 py-5 text-center border-b border-emerald-100">
-                <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100 text-xl text-emerald-700">✓</div>
-                <h3 className="text-lg font-black text-slate-950">Allocation Confirmed</h3>
-                <p className="text-xs text-slate-500 mt-1">Your route details have been securely recorded in Firebase.</p>
-              </div>
-              <div className="p-5 space-y-4 text-left">
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs space-y-2 text-slate-700">
-                  <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Invoice Summary</div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-900">Invoice ID:</span> <span>{successReceipt.invoiceId}</span></div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-900">Vehicle:</span> <span>{successReceipt.vehicle}</span></div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-900">Pickup:</span> <span className="truncate max-w-[180px]">{successReceipt.pickup}</span></div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-900">Drop Point:</span> <span className="truncate max-w-[180px]">{successReceipt.drop}</span></div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-900">Timeline:</span> <span>{successReceipt.date} at {successReceipt.time}</span></div>
-                  <div className="flex justify-between pt-2 border-t border-slate-200 font-black text-slate-950 text-sm">
-                    <span>Amount Paid ({successReceipt.paymentMode}):</span> <span>₹{successReceipt.amount.toLocaleString("en-IN")}</span>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => setSuccessReceipt(null)} className="w-full h-11 bg-slate-950 text-xs font-black uppercase tracking-wider text-white rounded-xl shadow">
-                    Close Panel
-                  </button>
-                </div>
-              </div>
-            </motion.div>
+          <ReviewsCarousel />
+        </div>
+      </section>
+
+      {/* =====================================================
+          DEEP SEO CONTENT
+      ===================================================== */}
+
+      <section className="bg-white py-16 sm:py-20">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6">
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[#063B8F]">
+              Jharsuguda Taxi Guide
+            </span>
+
+            <h2 className="mt-4 text-3xl font-black tracking-[-0.035em] text-slate-950 sm:text-4xl">
+              Jharsuguda Taxi Service for Chhattisgarh Travel
+            </h2>
+
+            <p className="mt-5 text-sm font-medium leading-7 text-slate-600">
+              Jharsuguda is an important transportation and industrial centre
+              in western Odisha, with travel requirements toward neighbouring
+              regions of Chhattisgarh. Passengers may need long-distance
+              transportation for business travel, industrial visits, family
+              functions, railway connections, airport transfers, medical
+              appointments and personal work.
+            </p>
+
+            <p className="mt-4 text-sm font-medium leading-7 text-slate-600">
+              Khatu Rides Travels provides cab booking assistance from
+              Jharsuguda toward major Chhattisgarh hubs including Raigarh,
+              Korba, Bilaspur, Raipur, Durg-Bhilai, Ambikapur and Jagdalpur.
+              Depending on the final destination, passengers can also enquire
+              about nearby towns, industrial locations, railway stations,
+              townships and regional sub-hubs.
+            </p>
+
+            <h3 className="mt-10 text-2xl font-black text-slate-950">
+              Jharsuguda to Raigarh Taxi
+            </h3>
+
+            <p className="mt-3 text-sm font-medium leading-7 text-slate-600">
+              A Jharsuguda to Raigarh taxi can be useful for industrial travel,
+              business meetings, railway transfers, family journeys and onward
+              travel across northern Chhattisgarh. Travellers continuing beyond
+              Raigarh can also enquire about destinations such as Kharsia,
+              Gharghoda, Tamnar, Dharamjaigarh and Sarangarh.
+            </p>
+
+            <h3 className="mt-10 text-2xl font-black text-slate-950">
+              Jharsuguda to Korba Taxi
+            </h3>
+
+            <p className="mt-3 text-sm font-medium leading-7 text-slate-600">
+              Jharsuguda to Korba is an important long-distance travel corridor
+              connecting western Odisha with the industrial and power region
+              of Chhattisgarh. Cab enquiries can also be made for nearby
+              destinations including Katghora, Dipka, Gevra, Kusmunda, Balco,
+              Darri and Jamnipali.
+            </p>
+
+            <h3 className="mt-10 text-2xl font-black text-slate-950">
+              Jharsuguda to Bilaspur Taxi
+            </h3>
+
+            <p className="mt-3 text-sm font-medium leading-7 text-slate-600">
+              Bilaspur is an important transport and commercial hub of central
+              Chhattisgarh. A Jharsuguda to Bilaspur cab can be used for
+              business travel, railway journeys, medical visits, family
+              travel and personal requirements. Nearby destinations such as
+              Champa, Janjgir, Sakti, Mungeli, Ratanpur and Pendra Road can
+              also be discussed with the booking team.
+            </p>
+
+            <h3 className="mt-10 text-2xl font-black text-slate-950">
+              Jharsuguda to Raipur Taxi & Airport Transfer
+            </h3>
+
+            <p className="mt-3 text-sm font-medium leading-7 text-slate-600">
+              Raipur is the capital of Chhattisgarh and an important commercial
+              and transportation hub. A Jharsuguda to Raipur taxi can be useful
+              for business meetings, airport transfers, railway journeys,
+              government work, shopping, family travel and onward
+              transportation across central Chhattisgarh.
+            </p>
+
+            <h3 className="mt-10 text-2xl font-black text-slate-950">
+              Jharsuguda to Durg & Bhilai Taxi
+            </h3>
+
+            <p className="mt-3 text-sm font-medium leading-7 text-slate-600">
+              Durg and Bhilai are important industrial and residential centres
+              of Chhattisgarh. Long-distance cab services from Jharsuguda can
+              be useful for industrial visits, business meetings, railway
+              transfers, family functions, employee travel and personal
+              journeys.
+            </p>
+
+            <h3 className="mt-10 text-2xl font-black text-slate-950">
+              Jharsuguda to Ambikapur Taxi
+            </h3>
+
+            <p className="mt-3 text-sm font-medium leading-7 text-slate-600">
+              Ambikapur is a major hub for the Surguja region of northern
+              Chhattisgarh. Travellers can enquire about long-distance cab
+              service from Jharsuguda to Ambikapur and nearby destinations such
+              as Surajpur, Bishrampur, Lakhanpur, Sitapur, Baikunthpur and
+              Manendragarh.
+            </p>
+
+            <h3 className="mt-10 text-2xl font-black text-slate-950">
+              Jharsuguda to Jagdalpur Taxi
+            </h3>
+
+            <p className="mt-3 text-sm font-medium leading-7 text-slate-600">
+              Jagdalpur is the primary gateway to the Bastar region. A
+              Jharsuguda to Jagdalpur taxi can be useful for long-distance
+              tourism, business travel and family journeys. Travellers can
+              also enquire about onward destinations including Kanker,
+              Kondagaon, Dantewada, Kirandul, Bacheli and other Bastar areas.
+            </p>
+
+            <h3 className="mt-10 text-2xl font-black text-slate-950">
+              Jharsuguda Taxi for Industrial & Corporate Travel
+            </h3>
+
+            <p className="mt-3 text-sm font-medium leading-7 text-slate-600">
+              The Jharsuguda–Raigarh–Korba corridor includes important
+              industrial and business destinations. Companies, employees,
+              contractors, vendors and visiting professionals may require
+              point-to-point transportation between plants, offices, railway
+              stations, airports, hotels and residential locations. Cab
+              requirements can be discussed according to the number of
+              passengers, luggage and travel duration.
+            </p>
+
+            <div className="mt-10 rounded-[24px] border border-[#FFC400]/40 bg-amber-50 p-6">
+              <h3 className="text-lg font-black text-slate-950">
+                Need a Destination Not Listed Here?
+              </h3>
+
+              <p className="mt-2 text-sm font-medium leading-6 text-slate-600">
+                Send your exact pickup location and destination for a town,
+                village, industrial site, railway station, airport, hotel or
+                other regional location.
+              </p>
+
+              <a
+                href={heroWhatsApp}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#25D366] px-5 py-3 text-xs font-black text-white"
+              >
+                <WhatsAppIcon size={17} />
+                Send Your Route
+              </a>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      </section>
+
+      {/* =====================================================
+          FAQ
+      ===================================================== */}
+
+      <section
+        className="bg-[#f5f7fb] py-14 sm:py-18"
+        id="faq"
+      >
+        <div className="mx-auto max-w-4xl px-4 sm:px-6">
+          <div className="text-center">
+            <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[#063B8F]">
+              Booking Questions
+            </span>
+
+            <h2 className="mt-3 text-3xl font-black text-slate-950 sm:text-4xl">
+              Jharsuguda Taxi FAQs
+            </h2>
+          </div>
+
+          <div className="mt-8 space-y-3">
+            {FAQS.map((faq) => (
+              <details
+                key={faq.q}
+                className="group rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm"
+              >
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-black text-slate-950">
+                  {faq.q}
+
+                  <ChevronRight
+                    size={17}
+                    className="shrink-0 transition group-open:rotate-90"
+                  />
+                </summary>
+
+                <p className="mt-3 border-t border-slate-100 pt-3 text-xs font-medium leading-6 text-slate-600">
+                  {faq.a}
+                </p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================
+          FINAL CTA
+      ===================================================== */}
+
+      <section className="bg-[#061735] py-14 sm:py-18">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+          <div className="overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.06] p-7 text-center backdrop-blur sm:p-10">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FFC400] text-slate-950">
+              <Car size={25} />
+            </div>
+
+            <h2 className="mt-6 text-3xl font-black tracking-[-0.035em] text-white sm:text-4xl">
+              Where Do You Want to Travel from Jharsuguda?
+            </h2>
+
+            <p className="mx-auto mt-4 max-w-2xl text-sm font-medium leading-6 text-slate-300">
+              Raigarh, Korba, Bilaspur, Raipur, Durg-Bhilai, Ambikapur,
+              Jagdalpur or a smaller regional destination — share your route
+              and get assistance with your cab requirement.
+            </p>
+
+            <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+              <a
+                href={`tel:+91${PHONE}`}
+                className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-[#FF1726] px-7 text-sm font-black text-white shadow-[0_15px_35px_rgba(255,23,38,.25)]"
+              >
+                <Phone size={19} fill="currentColor" />
+                Call {PHONE_DISPLAY}
+              </a>
+
+              <a
+                href={heroWhatsApp}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-[#25D366] px-7 text-sm font-black text-white shadow-[0_15px_35px_rgba(37,211,102,.22)]"
+              >
+                <WhatsAppIcon size={20} />
+                WhatsApp Booking
+              </a>
+            </div>
+
+            <div className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 text-[10px] font-bold text-slate-400">
+              <span>✓ One Way Taxi</span>
+              <span>✓ Round Trip</span>
+              <span>✓ Airport Cab</span>
+              <span>✓ Railway Transfer</span>
+              <span>✓ Outstation Travel</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================
+          FOOTER
+      ===================================================== */}
+
+      <Footer />
+
+      {/* =====================================================
+          MOBILE FLOATING CALL / WHATSAPP
+      ===================================================== */}
+
+      <FloatingActions />
     </main>
-  );
-}
-
-function Feature({
-  icon,
-  title,
-  text,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div className="rounded-3xl border border-white/5 bg-white/[0.01] p-6 hover:border-orange-500/20 transition-all">
-      <div className="text-orange-500">{icon}</div>
-      <h3 className="mt-4 text-lg font-black text-white">{title}</h3>
-      <p className="mt-2 text-xs leading-relaxed text-slate-400">{text}</p>
-    </div>
-  );
-}
-
-function Faq({
-  q,
-  a,
-}: {
-  q: string;
-  a: string;
-}) {
-  return (
-    <div className="p-6 rounded-2xl bg-white/[0.01] border border-white/5">
-      <h3 className="text-base font-black text-white">{q}</h3>
-      <p className="mt-2 text-xs leading-relaxed text-slate-400">{a}</p>
-    </div>
   );
 }

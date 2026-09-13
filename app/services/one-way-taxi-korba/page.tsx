@@ -1,871 +1,1624 @@
-// app/cabs/korba/page.tsx
-"use client";
-
-import React, { useState } from "react";
-import Script from "next/script";
-import { AnimatePresence, motion } from "framer-motion";
+import type { Metadata } from "next";
+import Link from "next/link";
 import {
+  ArrowRight,
   Car,
-  Factory,
   CheckCircle2,
-  Building2,
+  ChevronRight,
+  Clock3,
+  MapPin,
+  Navigation,
   Phone,
+  Plane,
+  ShieldCheck,
+  Star,
+  TrainFront,
+  Users,
 } from "lucide-react";
+
 import TrackedWhatsAppButton from "@/components/TrackedWhatsAppButton";
 import TrackedCallButton from "@/components/TrackedCallButton";
-import FareCalculator from "@/components/FareCalculator";
-import {
-  calculateFare,
-  VEHICLES,
-  type BookingType,
-  type VehicleType,
-  type ServiceType,
-} from "@/lib/fareCalculator";
-
-// Firebase initialization
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, collection, addDoc, serverTimestamp, Firestore } from "firebase/firestore";
 import ReviewsCarousel from "@/components/ReviewsCarousel";
+import Footer from "@/components/Footer";
 
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-};
+/* =========================================================
+   BRAND / CONTACT
+========================================================= */
 
-let db: Firestore | null = null;
-if (typeof window !== "undefined") {
-  try {
-    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-    db = getFirestore(app);
-  } catch (error) {
-    console.error("Firebase initialization failed:", error);
-  }
-}
+const SITE_URL = "https://www.khaturidescg.in";
 
-type FareOption = {
-  id: string;
-  vehicleType: VehicleType;
-  vehicleLabel: string;
-  vehicleImage: string;
-  finalFare: number;
-  strikeFare?: number;
-  fareText: string;
-  billedDistance: number;
-  durationMinutes: number;
-  allowedKmsLimit?: number; 
-  discountPercent?: number;
-};
+const PHONE = "9244137353";
+const PHONE_DISPLAY = "+91 92441 37353";
+const WHATSAPP = "919244137353";
 
-type PopupData = {
-  fareOptions: FareOption[];
-  pickup: string;
-  drop: string;
-  bookingType: BookingType;
-  serviceType: ServiceType;
-  pickupDate: string;
-  pickupTime: string;
-  returnDate?: string;
-  returnTime?: string;
-};
+const whatsappUrl = (message: string) =>
+  `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(message)}`;
 
-type SuccessReceipt = {
-  invoiceId: string;
-  pickup: string;
-  drop: string;
-  date: string;
-  time: string;
-  vehicle: string;
-  amount: number;
-  paymentMode: "50% ADVANCE" | "FULL PAYMENT";
-};
+const DEFAULT_WHATSAPP_MESSAGE =
+  "Namaste Khatu Rides Travels, I want to book a taxi from Korba. Please share availability and booking details.";
 
-const vehicles = [
+/* =========================================================
+   KORBA POPULAR ROUTES
+========================================================= */
+
+const ROUTES = [
+  {
+    from: "Korba",
+    to: "Raipur",
+    slug: "korba-to-raipur-taxi",
+    distance: "Approx. 210 KM",
+    type: "One Way Cab",
+    badge: "Most Booked",
+  },
+  {
+    from: "Korba",
+    to: "Bilaspur",
+    slug: "korba-to-bilaspur-taxi",
+    distance: "Approx. 95 KM",
+    type: "One Way Cab",
+    badge: "Popular",
+  },
+  {
+    from: "Korba",
+    to: "Raigarh",
+    slug: "korba-to-raigarh-taxi",
+    distance: "Approx. 160 KM",
+    type: "One Way Cab",
+    badge: "Popular",
+  },
+  {
+    from: "Korba",
+    to: "Ambikapur",
+    slug: "korba-to-ambikapur-taxi",
+    distance: "Approx. 135 KM",
+    type: "One Way Cab",
+    badge: "Popular",
+  },
+  {
+    from: "Korba",
+    to: "Champa",
+    slug: "korba-to-champa-taxi",
+    distance: "Approx. 55 KM",
+    type: "One Way Cab",
+    badge: "Quick Route",
+  },
+  {
+    from: "Korba",
+    to: "Janjgir",
+    slug: "korba-to-janjgir-taxi",
+    distance: "Approx. 65 KM",
+    type: "One Way Cab",
+    badge: "Regional",
+  },
+  {
+    from: "Korba",
+    to: "Katghora",
+    slug: "korba-to-katghora-taxi",
+    distance: "Local Route",
+    type: "Local Cab",
+    badge: "Local",
+  },
+];
+
+/* =========================================================
+   AIRPORT / RAILWAY TRANSFERS
+========================================================= */
+
+const TRANSFERS = [
+  {
+    icon: Plane,
+    title: "Korba to Raipur Airport",
+    description:
+      "Pre-book a comfortable cab from Korba to Swami Vivekananda Airport, Raipur.",
+    href: "/routes/korba-to-raipur-airport-cab",
+  },
+  {
+    icon: Plane,
+    title: "Korba to Bilaspur Airport",
+    description:
+      "Reliable airport transfer from Korba with convenient pickup and drop.",
+    href: "/routes/korba-to-bilaspur-airport-cab",
+  },
+  {
+    icon: TrainFront,
+    title: "Korba to Bilaspur Railway Station",
+    description:
+      "Book a direct cab for railway station pickup and drop from Korba.",
+    href: "/routes/korba-to-bilaspur-railway-station-cab",
+  },
+];
+
+/* =========================================================
+   SERVICES
+========================================================= */
+
+const SERVICES = [
+  {
+    icon: Navigation,
+    title: "One Way Taxi",
+    text: "Book a convenient one-way cab from Korba to major cities and nearby destinations.",
+  },
+  {
+    icon: Car,
+    title: "Round Trip Cab",
+    text: "Comfortable round-trip taxi service for same-day and multi-day travel requirements.",
+  },
+  {
+    icon: Plane,
+    title: "Airport Transfer",
+    text: "Pre-booked airport taxi service from Korba to Raipur Airport and Bilaspur Airport.",
+  },
+  {
+    icon: Users,
+    title: "Family & Group Travel",
+    text: "Spacious vehicles for family trips, group travel and journeys with luggage.",
+  },
+  {
+    icon: TrainFront,
+    title: "Railway Transfer",
+    text: "Convenient railway station pickup and drop cab service from Korba.",
+  },
+  {
+    icon: Clock3,
+    title: "Outstation Cab",
+    text: "Reliable outstation taxi options for business, personal and long-distance travel.",
+  },
+];
+
+/* =========================================================
+   FLEET
+========================================================= */
+
+const FLEET = [
   {
     name: "Maruti Suzuki Dzire",
-    type: "Premium Sedan (AC)",
-    price: "₹11/km onwards",
+    type: "Premium Sedan",
     image: "/dezire.png",
-    specs: ["4 Passengers", "2 Bags", "Climate Control", "Zero Cancel Rate"]
+    passengers: "4 Passengers",
+    luggage: "2 Bags",
+    bestFor: ["Couples", "Small Family", "Business"],
+    description:
+      "Clean, comfortable and economical sedan for one-way trips, airport transfers and daily outstation travel.",
   },
   {
     name: "Maruti Suzuki Ertiga",
-    type: "Comfortable MUV (6+1 Seater)",
-    price: "₹13/km onwards",
+    type: "Family MUV",
     image: "/ertiga.png",
-    specs: ["6 Passengers", "4 Bags", "Dual AC System", "Best for Families"]
+    passengers: "6+1 Seater",
+    luggage: "4 Bags",
+    bestFor: ["Families", "Groups", "Long Trips"],
+    description:
+      "Spacious MUV for family journeys, group travel and longer routes from Korba.",
   },
   {
     name: "Toyota Innova Crysta",
-    type: "Luxury Executive SUV",
-    price: "₹20/km onwards",
+    type: "Premium SUV",
     image: "/crysta.png",
-    specs: ["7 Passengers", "Heavy Luggage", "Captain Seats", "VIP Protocol Standard"]
+    passengers: "7 Passengers",
+    luggage: "Large Luggage",
+    bestFor: ["Premium Travel", "Families", "Corporate"],
+    description:
+      "Executive-level comfort for premium family travel, corporate journeys and long-distance routes.",
   },
 ];
 
-// 👑 MASTER KORBA & REGIONAL INDUSTRIAL MICRO-CORRIDORS WITH UNICODE ARROWS
-const MICRO_ROUTES = [
-  { from: "NTPC Jamnipali, Korba", to: "Swami Vivekananda Airport (RPR)", dist: "215 KMs", tag: "Airport Transfer" },
-  { from: "BALCO Township, Korba", to: "Raipur Railway Station", dist: "210 KMs", tag: "Capital Link" },
-  { from: "Gevra / Dipka Mines", to: "Bilaspur Junction", dist: "95 KMs", tag: "Frequent Run" },
-  { from: "Kusmunda Area, Korba", to: "Raigarh Industrial Belt", dist: "155 KMs", tag: "Industrial Link" },
-  { from: "Transport Nagar, Korba", to: "Champa Junction", dist: "55 KMs", tag: "Railway Connection" },
-  { from: "Urga Bypass, Korba", to: "Bilaspur High Court", dist: "85 KMs", tag: "Legal/Business Run" },
-  { from: "Katghora Outer, Korba", to: "Ambikapur Surguja", dist: "135 KMs", tag: "Mountain Route" },
-  { from: "CSEB Colony, Korba", to: "Janjgir Core", dist: "65 KMs", tag: "Regional Link" },
-  { from: "Darri Barrage, Korba", to: "Ratanpur Temple", dist: "60 KMs", tag: "Spiritual Tour" },
-  { from: "Korba City Core", to: "Jharsuguda Odisha", dist: "220 KMs", tag: "Interstate Link" }
+/* =========================================================
+   KORBA LOCAL AREAS
+========================================================= */
+
+const LOCAL_AREAS = [
+  "Korba City",
+  "BALCO Nagar",
+  "NTPC Jamnipali",
+  "Gevra",
+  "Dipka",
+  "Kusmunda",
+  "Darri",
+  "Transport Nagar",
+  "CSEB Colony",
+  "Urga",
 ];
 
-export default function TaxiServiceInKorbaPage() {
-  const [popupData, setPopupData] = useState<PopupData | null>(null);
-  const [showPopup, setShowPopup] = useState(false);
-  const [successReceipt, setSuccessReceipt] = useState<SuccessReceipt | null>(null);
-  const [paymentLoadingId, setPaymentLoadingId] = useState<string | null>(null);
-  const [selectedVehicleType, setSelectedVehicleType] = useState<VehicleType>("sedan");
-  const [paymentSplitMode, setPaymentSplitMode] = useState<Record<string, "full" | "half">>({});
+/* =========================================================
+   FAQ
+========================================================= */
 
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [showUserForm, setShowUserForm] = useState(false);
+const FAQS = [
+  {
+    question: "How can I book a taxi from Korba?",
+    answer:
+      "You can directly contact Khatu Rides Travels through the Call Now or WhatsApp Booking buttons on this page. Share your pickup location, destination, travel date and vehicle requirement to discuss your booking.",
+  },
+  {
+    question: "Is a taxi available from Korba to Raipur?",
+    answer:
+      "Yes. One-way and round-trip cab booking is available for Korba to Raipur travel. Airport and railway transfer requirements can also be discussed while booking.",
+  },
+  {
+    question: "Can I book a Korba to Bilaspur taxi?",
+    answer:
+      "Yes. Korba to Bilaspur cab service is available for one-way journeys, return trips, business travel and other travel requirements.",
+  },
+  {
+    question: "Can I book an airport taxi from Korba?",
+    answer:
+      "Yes. Airport transfer cab bookings are available from Korba to Raipur Airport and Bilaspur Airport. Advance booking is recommended for scheduled flights.",
+  },
+  {
+    question: "Which cab is suitable for family travel?",
+    answer:
+      "The Dzire can be suitable for couples and smaller families, while the Ertiga and Innova Crysta offer more space for larger families, groups and luggage.",
+  },
+  {
+    question: "Does Khatu Rides provide outstation cab service?",
+    answer:
+      "Yes. Outstation taxi booking is available from Korba for travel across Chhattisgarh and nearby destinations, subject to route and vehicle availability.",
+  },
+];
 
-  const convertToIndianDate = (dateString: string) => {
-    if (!dateString) return "--/--/----";
-    const [year, month, day] = dateString.split("-");
-    return `${day}/${month}/${year}`;
-  };
+/* =========================================================
+   WHATSAPP ICON
+========================================================= */
 
-  const formatTimeToAMPM = (timeString: string) => {
-    if (!timeString) return "--:-- --";
-    let [hours, minutes] = timeString.split(":").map(Number);
-    const ampm = hours >= 12 ? "PM" : "AM";
-    hours = hours % 12 || 12;
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${ampm}`;
-  };
-
-  const getDynamicKmsLimitDisplay = (opt: FareOption): number => {
-    if (!popupData || popupData.bookingType !== "roundtrip" || !popupData.returnDate || !popupData.returnTime) {
-      return opt.billedDistance; 
-    }
-    try {
-      const start = new Date(`${popupData.pickupDate}T${popupData.pickupTime}`);
-      const end = new Date(`${popupData.returnDate}T${popupData.returnTime}`);
-      const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-      const days = Math.max(1, Math.ceil(hours / 24));
-      
-      const calculatedLimit = days * 250;
-      return calculatedLimit > opt.billedDistance ? calculatedLimit : opt.billedDistance;
-    } catch (e) {
-      return opt.billedDistance;
-    }
-  };
-
-  const handleOnlinePaymentCheckout = async (option: FareOption) => {
-    if (!popupData) return;
-    if (!customerName.trim() || !customerPhone.trim() || customerPhone.length < 10) {
-      alert("⚠️ Kripya sahi Naam aur 10-digit Mobile Number darj karein!");
-      return;
-    }
-
-    setPaymentLoadingId(option.id);
-    const mode = paymentSplitMode[option.id] || "full";
-    const totalFareValue = option.finalFare; 
-    const processAmount = mode === "half" ? Math.round(totalFareValue / 2) : totalFareValue;
-
-    try {
-      const res = await fetch("/api/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: processAmount, pickup: popupData.pickup, drop: popupData.drop, vehicleLabel: option.vehicleLabel }),
-      });
-      const orderData = await res.json();
-      if (!res.ok) throw new Error(orderData.error || "Order generation error");
-
-      const paymentObject = new (window as any).Razorpay({
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
-        amount: orderData.amount,
-        currency: "INR",
-        name: "Khatu Rides Travels Co.",
-        description: `${option.vehicleLabel} Route Allocation`,
-        order_id: orderData.orderId,
-        prefill: { name: customerName, contact: customerPhone },
-        theme: { color: "#ea580c" },
-        handler: async (response: any) => {
-          const verifyRes = await fetch("/api/verify-booking", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              razorpayOrderId: response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature,
-              pickup: popupData.pickup,
-              drop: popupData.drop,
-              bookingType: popupData.bookingType,
-              pickupDate: popupData.pickupDate,
-              pickupTime: popupData.pickupTime,
-              vehicleLabel: option.vehicleLabel,
-              amount: processAmount,
-            }),
-          });
-          const verifyData = await verifyRes.json();
-          
-          if (verifyRes.ok && verifyData.success) {
-            const finalInvoiceId = verifyData.invoiceId || `KR-${Math.floor(100000 + Math.random() * 900000)}`;
-
-            if (db) {
-              await addDoc(collection(db, "bookings"), {
-                invoiceId: finalInvoiceId,
-                customerName: customerName,
-                customerPhone: customerPhone,
-                pickup: popupData.pickup,
-                drop: popupData.drop,
-                bookingType: popupData.bookingType,
-                serviceType: popupData.serviceType,
-                pickupDate: popupData.pickupDate,
-                pickupTime: popupData.pickupTime,
-                returnDate: popupData.returnDate || null,
-                vehicleLabel: option.vehicleLabel,
-                amountPaid: processAmount,
-                paymentMode: mode === "half" ? "50% ADVANCE" : "FULL PAYMENT",
-                razorpayPaymentId: response.razorpay_payment_id,
-                createdAt: serverTimestamp()
-              });
-            }
-
-            setShowPopup(false);
-            setShowUserForm(false);
-            setSuccessReceipt({
-              invoiceId: finalInvoiceId,
-              pickup: popupData.pickup,
-              drop: popupData.drop,
-              date: convertToIndianDate(popupData.pickupDate),
-              time: formatTimeToAMPM(popupData.pickupTime),
-              vehicle: option.vehicleLabel,
-              amount: processAmount,
-              paymentMode: mode === "half" ? "50% ADVANCE" : "FULL PAYMENT",
-            });
-          }
-        },
-      });
-      paymentObject.open();
-    } catch (error: any) {
-      alert(error.message || "Payment interface failed");
-    } finally {
-      setPaymentLoadingId(null);
-    }
-  };
-
-  const handleWhatsAppManualRedirect = (option: FareOption) => {
-    if (!popupData) return;
-
-    const textPayload = `Hello Khatu Rides Travels Co., 
-
-I would like to book an outstation cab package shortly from Korba. The route details are listed below:
-
-*ROUTE MANIFEST CARD:*
-• From : ${popupData.pickup}
-• To: ${popupData.drop}
-• Vehicle Segment : ${option.vehicleLabel}
-• Trip Type : ${popupData.bookingType.toUpperCase()}
-• Date & Time: ${convertToIndianDate(popupData.pickupDate)} at ${formatTimeToAMPM(popupData.pickupTime)}
-
-*PRICING ESTIMATION SHEET:*
-• Total Fare: Rs. ${option.finalFare.toLocaleString("en-IN")}.00 (All-Inclusive)
-
-Please register this vehicle booking manually in the control panel desk. Thank you!`;
-
-    const cleanFormattedUrl = `https://wa.me/919244137353?text=${encodeURIComponent(textPayload)}`;
-    window.open(cleanFormattedUrl, "_blank");
-  };
-
-  const korbaSchema = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    "name": "Khatu Rides Korba Taxi Service Desk",
-    "image": "https://www.khaturidescg.in/dezire.png",
-    "description": "Premium industrial outstation car rental, BALCO township transfers, and Raipur Airport drops from Korba, Chhattisgarh.",
-    "brand": {
-      "@type": "Brand",
-      "name": "Khatu Rides Travels Co."
-    },
-    "offers": {
-      "@type": "AggregateOffer",
-      "priceCurrency": "INR",
-      "lowPrice": "1199",
-      "highPrice": "4900",
-      "offerCount": "25"
-    },
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": "4.9",
-      "bestRating": "5",
-      "ratingCount": "315"
-    }
-  };
-
-  const selectedOption = popupData?.fareOptions.find((item) => item.vehicleType === selectedVehicleType);
-  const totalPricingBase = selectedOption ? selectedOption.finalFare : 0;
-  const currentSelectedMode = selectedOption && paymentSplitMode[selectedOption.id] ? paymentSplitMode[selectedOption.id] : "full";
-  const displayPayNowNumber = currentSelectedMode === "half" ? Math.round(totalPricingBase / 2) : totalPricingBase;
-
+function WhatsAppIcon({ size = 22 }: { size?: number }) {
   return (
-    <main className="bg-slate-950 text-slate-100 min-h-screen">
-      <Script id="razorpay-checkout-js" src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(korbaSchema) }}
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M27.2 4.7A15.1 15.1 0 0 0 16.1.1C7.8.1 1.1 6.8 1.1 15.1c0 2.6.7 5.1 1.9 7.3L.9 31.9l9.8-2.6a15 15 0 0 0 5.4 1c8.3 0 15-6.7 15-15 0-4-1.5-7.7-3.9-10.6Z"
+        fill="currentColor"
       />
 
-      {/* 👑 PREMIUM DYNAMIC HERO SECTION */}
-      <section className="relative overflow-hidden bg-slate-950 border-b border-slate-900 pb-12">
-        {/* Backdrop Glow Map Mask */}
-        <div className="absolute inset-0 w-full h-full scale-105 opacity-10 blur-xs pointer-events-none">
-          <img src="/banner6.png" alt="Route Map Guide" className="w-full h-full object-cover" />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-orange-600/5 via-slate-950/90 to-slate-950" />
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-orange-500/10 rounded-full blur-[140px] pointer-events-none" />
+      <path
+        d="M23.5 18.7c-.4-.2-2.4-1.2-2.8-1.3-.4-.1-.6-.2-.9.2-.3.4-1 1.3-1.2 1.5-.2.3-.5.3-.9.1-.4-.2-1.6-.6-3-1.9-1.1-1-1.9-2.2-2.1-2.6-.2-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.2.3-.4.4-.7.1-.3 0-.5 0-.7-.1-.2-.9-2.2-1.2-3-.3-.7-.7-.6-.9-.6h-.8c-.3 0-.7.1-1 .5-.3.4-1.3 1.3-1.3 3.2s1.3 3.7 1.5 4c.2.3 2.5 3.8 6 5.3.8.4 1.6.6 2.1.8.9.3 1.7.2 2.3.1.7-.1 2.4-1 2.7-2 .3-1 .3-1.8.2-2-.1-.2-.4-.3-.8-.5Z"
+        fill="white"
+      />
+    </svg>
+  );
+}
 
-        <div className="relative z-10 mx-auto max-w-7xl px-4 pt-16 md:pt-24 text-center">
-          <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-xs font-black uppercase tracking-widest text-emerald-400">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            Verified Industrial Cab Operator
-          </span>
+/* =========================================================
+   METADATA
+========================================================= */
 
-          <h1 className="mt-6 text-4xl font-black tracking-tight sm:text-6xl text-white">
-            Premium Taxi Service in Korba
-          </h1>
+export const metadata: Metadata = {
+  title:
+    "Korba Taxi Service | Korba to Raipur, Bilaspur & Airport Cab | Khatu Rides Travels",
 
-          <p className="mt-4 max-w-3xl mx-auto text-base sm:text-lg leading-relaxed text-slate-400">
-            Reliable on-time transit for BALCO, NTPC, Gevra, and Kusmunda industrial belts. Book executive Hatchbacks, Sedans, Ertigas, or VIP Innova Crystas with certified local drivers.
-          </p>
-        </div>
+  description:
+    "Book a taxi from Korba to Raipur, Bilaspur, Raigarh, Ambikapur and other destinations. One-way, round-trip, airport transfer and outstation cab service by Khatu Rides Travels.",
 
-        {/* 👑 FARE CALCULATOR - FLOATING DIRECTLY UNDER HERO */}
-        <div className="relative z-20 mx-auto max-w-5xl px-4 mt-10">
-          <div className="rounded-3xl border border-white/5 bg-white/[0.02] backdrop-blur-xl p-4 sm:p-6 shadow-2xl shadow-black/50">
-            <h3 className="text-sm font-black text-center text-orange-500 uppercase tracking-widest mb-4">
-              Calculate Real-Time Korba Outstation Slabs
-            </h3>
-            <FareCalculator 
-              onFareCalculated={(data) => {
-                setPopupData(data);
-                setSelectedVehicleType("sedan");
-                setShowPopup(true);
-                setShowUserForm(false);
-                setPaymentSplitMode({});
-              }}
-            />
+  keywords: [
+    "Korba taxi service",
+    "Korba cab service",
+    "taxi booking Korba",
+    "cab booking Korba",
+    "Korba to Raipur taxi",
+    "Korba to Bilaspur taxi",
+    "Korba to Raigarh taxi",
+    "Korba to Ambikapur taxi",
+    "Korba airport taxi",
+    "Korba outstation cab",
+    "Korba one way taxi",
+    "Korba round trip cab",
+  ],
+
+  alternates: {
+    canonical: `${SITE_URL}/cabs/korba`,
+  },
+
+  openGraph: {
+    title: "Korba Taxi Service | Khatu Rides Travels",
+
+    description:
+      "Book one-way, round-trip, airport and outstation cabs from Korba.",
+
+    url: `${SITE_URL}/cabs/korba`,
+
+    siteName: "Khatu Rides Travels",
+
+    type: "website",
+
+    images: [
+      {
+        url: `${SITE_URL}/logo.png`,
+        width: 1200,
+        height: 630,
+        alt: "Khatu Rides Travels Korba Taxi Service",
+      },
+    ],
+  },
+
+  twitter: {
+    card: "summary_large_image",
+
+    title: "Korba Taxi Service | Khatu Rides Travels",
+
+    description:
+      "Book a reliable cab from Korba to Raipur, Bilaspur, Raigarh, Ambikapur and more.",
+
+    images: [`${SITE_URL}/logo.png`],
+  },
+
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
+
+/* =========================================================
+   PAGE
+========================================================= */
+
+export default function KorbaCabPage() {
+  /* =======================================================
+     LOCAL BUSINESS SCHEMA
+  ======================================================= */
+
+  const businessSchema = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+
+    name: "Khatu Rides Travels Co.",
+
+    url: `${SITE_URL}/cabs/korba`,
+
+    telephone: `+91-${PHONE}`,
+
+    image: `${SITE_URL}/logo.png`,
+
+    priceRange: "₹₹",
+
+    areaServed: [
+      {
+        "@type": "City",
+        name: "Korba",
+      },
+      {
+        "@type": "AdministrativeArea",
+        name: "Chhattisgarh",
+      },
+    ],
+
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "Korba",
+      addressRegion: "Chhattisgarh",
+      addressCountry: "IN",
+    },
+
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: 22.3623189,
+      longitude: 82.6976777,
+    },
+  };
+
+  /* =======================================================
+     SERVICE SCHEMA
+  ======================================================= */
+
+  const serviceSchema = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+
+    name: "Korba Taxi and Cab Service",
+
+    serviceType: "Taxi Service",
+
+    provider: {
+      "@type": "LocalBusiness",
+      name: "Khatu Rides Travels Co.",
+      telephone: `+91-${PHONE}`,
+      url: SITE_URL,
+    },
+
+    areaServed: {
+      "@type": "City",
+      name: "Korba",
+    },
+  };
+
+  /* =======================================================
+     BREADCRUMB SCHEMA
+  ======================================================= */
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: SITE_URL,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Korba Cab Service",
+        item: `${SITE_URL}/cabs/korba`,
+      },
+    ],
+  };
+
+  return (
+    <>
+      {/* =====================================================
+          STRUCTURED DATA
+      ===================================================== */}
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(businessSchema),
+        }}
+      />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(serviceSchema),
+        }}
+      />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbSchema),
+        }}
+      />
+
+      {/* =====================================================
+          PAGE
+      ===================================================== */}
+
+      <main className="min-h-screen overflow-x-hidden bg-[#F8FAFC] text-[#071A3A]">
+
+        {/* ===================================================
+            HEADER
+        =================================================== */}
+
+        <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-xl">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+            <div className="flex min-h-[82px] items-center justify-between gap-4">
+
+              {/* LOGO */}
+
+              <Link
+                href="/"
+                className="shrink-0"
+                aria-label="Khatu Rides Travels Home"
+              >
+                <img
+                  src="/logo.png"
+                  alt="Khatu Rides Travels"
+                  className="h-[58px] w-auto object-contain sm:h-[68px]"
+                />
+              </Link>
+
+              {/* DESKTOP NAV */}
+
+              <nav className="hidden items-center gap-7 lg:flex">
+
+                <Link
+                  href="/"
+                  className="text-sm font-bold text-slate-700 transition hover:text-[#063B8F]"
+                >
+                  Home
+                </Link>
+
+                <Link
+                  href="/#popular-routes"
+                  className="text-sm font-bold text-slate-700 transition hover:text-[#063B8F]"
+                >
+                  Popular Routes
+                </Link>
+
+                <Link
+                  href="/#tour-packages"
+                  className="text-sm font-bold text-slate-700 transition hover:text-[#063B8F]"
+                >
+                  Tour Packages
+                </Link>
+
+                <Link
+                  href="/#fleet"
+                  className="text-sm font-bold text-slate-700 transition hover:text-[#063B8F]"
+                >
+                  Fleet
+                </Link>
+
+                <Link
+                  href="/#services"
+                  className="text-sm font-bold text-slate-700 transition hover:text-[#063B8F]"
+                >
+                  Services
+                </Link>
+
+              </nav>
+
+              {/* DESKTOP CTAs */}
+
+              <div className="flex items-center gap-2">
+
+                <a
+                  href={`tel:+91${PHONE}`}
+                  className="hidden min-h-11 items-center gap-2 rounded-xl bg-[#063B8F] px-5 text-sm font-black text-white shadow-lg shadow-blue-900/20 transition hover:-translate-y-0.5 hover:bg-[#052E70] sm:flex"
+                >
+                  <Phone size={17} fill="currentColor" />
+                  Call Now
+                </a>
+
+                <a
+                  href={whatsappUrl(DEFAULT_WHATSAPP_MESSAGE)}
+                  className="hidden min-h-11 items-center gap-2 rounded-xl bg-[#00E676] px-5 text-sm font-black text-white shadow-[0_0_22px_rgba(0,230,118,.22)] transition hover:-translate-y-0.5 hover:bg-[#00D968] sm:flex"
+                >
+                  <WhatsAppIcon size={20} />
+                  WhatsApp
+                </a>
+
+                <Link
+                  href="/fare-calculator"
+                  className="hidden min-h-11 items-center gap-2 rounded-xl bg-[#F5B800] px-5 text-sm font-black text-[#071A3A] shadow-lg transition hover:-translate-y-0.5 hover:bg-[#FFD02A] md:flex"
+                >
+                  Fare Calculator
+                </Link>
+
+              </div>
+
+            </div>
+
+            {/* =================================================
+                MOBILE HINDI BOOKING LINE
+            ================================================= */}
+
+            <div className="border-t border-slate-100 py-3 text-center lg:hidden">
+
+              <p
+                className="text-[22px] font-black leading-7 text-[#071A3A] sm:text-base"
+                style={{
+                  fontFamily:
+                    '"Noto Sans Devanagari", "Nirmala UI", "Mangal", sans-serif',
+                }}
+              >
+                कोरबा से कहीं के लिए भी टैक्सी बुक करने के लिए संपर्क करें{" "}
+                <a
+                  href={`tel:+91${PHONE}`}
+                  className="font-black text-[#E11D2E] underline decoration-2 underline-offset-2"
+                >
+                  9244137353
+                </a>
+              </p>
+
+            </div>
+
           </div>
-        </div>
-      </section>
-
-      
-       {/* 👑 5. DYNAMIC REVIEWS SLIDER */}
-              <ReviewsCarousel />
-
-      {/* 📊 SERVICES DOCK SECTION */}
-      <section className="relative z-10 mx-auto max-w-7xl px-4 py-16">
-        <header className="text-center mb-10">
-          <span className="text-[10px] font-black uppercase tracking-widest text-orange-500 block mb-1">
-            Operational Pillars
-          </span>
-          <h2 className="text-3xl font-black tracking-tight text-white">
-            Professional Travel Core
-          </h2>
         </header>
 
-        <div className="grid gap-6 md:grid-cols-4">
-          <Feature
-            icon={<Factory size={28} />}
-            title="Industrial Travel"
-            text="Specialized routine corporate runs covering NTPC, BALCO, and SECL coal mines."
-          />
-          <Feature
-            icon={<Car size={28} />}
-            title="One-Way Corridor"
-            text="Pay strictly for the drop distance. Dedicated outstation lines to Raipur, Bilaspur & Champa."
-          />
-          <Feature
-            icon={<Building2 size={28} />}
-            title="Corporate Fleet"
-            text="Clean air-conditioned sedans and spacious MUVs ready for executive business delegates."
-          />
-          <Feature
-            icon={<Phone size={28} />}
-            title="24/7 Dispatch Control"
-            text="Continuous track monitoring and immediate dynamic chauffeur dispatch at any hour."
-          />
-        </div>
-      </section>
+        {/* ===================================================
+            HERO
+        =================================================== */}
 
-      {/* 🚗 HIGH-END GLASSMORPHIC FLEET CONFIGURATOR */}
-      <section className="bg-slate-900/40 py-16 border-y border-slate-900">
-        <div className="mx-auto max-w-7xl px-4">
-          <header className="text-center mb-12">
-            <span className="text-[10px] font-black uppercase tracking-widest text-orange-500 block mb-1">
-              Transparent Fleet Pricing
-            </span>
-            <h2 className="text-3xl font-black tracking-tight text-white">
-              Choose Your Korba Car Rental Category
-            </h2>
-          </header>
+        <section className="relative overflow-hidden bg-[#071A3A]">
 
-          <div className="grid gap-8 md:grid-cols-3">
-            {vehicles.map((vehicle) => (
-              <article
-                key={vehicle.name}
-                className="group relative overflow-hidden rounded-3xl border border-white/5 bg-white/[0.02] p-6 flex flex-col justify-between shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:border-orange-500/50 hover:bg-white/[0.04] transition-all duration-300 cursor-pointer"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-black text-white">{vehicle.name}</h3>
-                    <span className="inline-block rounded-xl bg-orange-500/10 border border-orange-500/25 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-orange-500">
-                      {vehicle.type}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(245,184,0,0.18),transparent_30%),radial-gradient(circle_at_85%_80%,rgba(6,59,143,0.38),transparent_35%)]" />
+
+          <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-11 lg:px-8 lg:py-14">
+
+            <div className="grid items-center gap-9 lg:grid-cols-[1.05fr_.95fr] lg:gap-12">
+
+              {/* HERO COPY */}
+
+              <div>
+
+                <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-amber-300/30 bg-amber-300/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-[#FFD75A]">
+                  <MapPin size={14} fill="currentColor" />
+                  Korba Local Cab Service
+                </div>
+
+                <h1 className="max-w-3xl text-[42px] font-black leading-[0.98] tracking-[-0.04em] text-white sm:text-5xl lg:text-[66px]">
+
+                  Korba Taxi
+
+                  <span className="block text-[#F5B800]">
+                    Booking Service
+                  </span>
+
+                  <span className="block">
+                    For Every Journey
+                  </span>
+
+                </h1>
+
+                <p className="mt-5 max-w-xl text-base font-medium leading-7 text-slate-300 sm:text-lg">
+                  Book one-way taxis, round-trip cabs, airport transfers and
+                  outstation vehicles from Korba with direct phone and
+                  WhatsApp assistance.
+                </p>
+
+                {/* HERO CTAs */}
+
+                <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+
+                  {/* CALL */}
+
+                  <TrackedCallButton
+                    href={`tel:+91${PHONE}`}
+                    className="group relative flex min-h-[68px] items-center justify-center gap-3 overflow-hidden rounded-2xl border-2 border-white/20 bg-[#FF1726] px-7 text-white shadow-[0_0_0_1px_rgba(255,23,38,.35),0_12px_30px_rgba(255,23,38,.35),0_0_45px_rgba(255,23,38,.22)] transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:bg-[#FF0717] hover:shadow-[0_0_0_2px_rgba(255,255,255,.2),0_18px_45px_rgba(255,23,38,.45),0_0_65px_rgba(255,23,38,.3)]"
+                  >
+
+                    <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+
+                    <span className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-white text-[#FF1726] shadow-lg">
+                      <Phone size={23} fill="currentColor" />
                     </span>
+
+                    <span className="relative text-left">
+
+                      <span className="block text-[10px] font-black uppercase tracking-[0.18em] text-white/80">
+                        Instant Booking
+                      </span>
+
+                      <span className="block text-[18px] font-black uppercase leading-6">
+                        CALL NOW
+                      </span>
+
+                      <span className="block text-[12px] font-bold text-white">
+                        {PHONE_DISPLAY}
+                      </span>
+
+                    </span>
+
+                  </TrackedCallButton>
+
+                  {/* WHATSAPP */}
+
+                  <TrackedWhatsAppButton
+                    href={whatsappUrl(DEFAULT_WHATSAPP_MESSAGE)}
+                    className="group relative flex min-h-[68px] items-center justify-center gap-3 overflow-hidden rounded-2xl border-2 border-white/20 bg-[#00E676] px-7 text-white shadow-[0_0_0_1px_rgba(0,230,118,.35),0_12px_30px_rgba(0,230,118,.30),0_0_45px_rgba(0,230,118,.20)] transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:bg-[#00D968] hover:shadow-[0_0_0_2px_rgba(255,255,255,.2),0_18px_45px_rgba(0,230,118,.42),0_0_65px_rgba(0,230,118,.28)]"
+                  >
+
+                    <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+
+                    <span className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-white text-[#00B95C] shadow-lg">
+                      <WhatsAppIcon size={24} />
+                    </span>
+
+                    <span className="relative text-left">
+
+                      <span className="block text-[10px] font-black uppercase tracking-[0.18em] text-white/80">
+                        Quick Enquiry
+                      </span>
+
+                      <span className="block text-[18px] font-black uppercase leading-6">
+                        WHATSAPP
+                      </span>
+
+                      <span className="block text-[12px] font-bold text-white">
+                        Get Booking Details
+                      </span>
+
+                    </span>
+
+                  </TrackedWhatsAppButton>
+
+                </div>
+
+                {/* TRUST POINTS */}
+
+                <div className="mt-6 flex flex-wrap gap-x-5 gap-y-3 text-[11px] font-bold text-slate-300">
+
+                  <span className="inline-flex items-center gap-2">
+                    <CheckCircle2
+                      size={14}
+                      className="text-[#F5B800]"
+                    />
+                    Direct Booking
+                  </span>
+
+                  <span className="inline-flex items-center gap-2">
+                    <CheckCircle2
+                      size={14}
+                      className="text-[#F5B800]"
+                    />
+                    AC Cabs
+                  </span>
+
+                  <span className="inline-flex items-center gap-2">
+                    <CheckCircle2
+                      size={14}
+                      className="text-[#F5B800]"
+                    />
+                    Outstation Travel
+                  </span>
+
+                </div>
+
+              </div>
+
+              {/* HERO VISUAL */}
+
+              <div className="relative mx-auto w-full max-w-[560px]">
+
+                <div className="absolute -inset-8 rounded-full bg-[#F5B800]/10 blur-3xl" />
+
+                <div className="relative overflow-hidden rounded-[30px] border border-white/10 bg-white/5 p-3 shadow-2xl backdrop-blur-sm">
+
+                  <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-b from-slate-200 to-slate-300">
+
+                
+
+                    <img
+                      src="/hero/01.png"
+                      alt="Khatu Rides Travels cab service in Korba"
+                      className="h-[320px] w-full object-cover sm:h-[300px]"
+                    />
+
+                    
+
                   </div>
 
-                  <div className="relative h-40 w-full flex items-center justify-center rounded-2xl bg-slate-950/50 border border-white/[0.02] my-4 overflow-hidden">
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        {/* ===================================================
+            POPULAR ROUTES
+        =================================================== */}
+
+        <section
+          id="popular-routes"
+          className="bg-white py-12 sm:py-16 lg:py-20"
+        >
+
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+            <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+
+              <div>
+
+                <div className="mb-3 inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-[#063B8F]">
+                  <span className="h-2 w-2 rounded-full bg-[#F5B800]" />
+                  High Intent Routes
+                </div>
+
+                <h2 className="text-3xl font-black tracking-tight text-[#071A3A] sm:text-4xl">
+                  Korba Se Starts — Popular Routes
+                </h2>
+
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
+                  Popular destinations from Korba with direct route pages for
+                  cab booking information and enquiry.
+                </p>
+
+              </div>
+
+              <a
+                href={`tel:+91${PHONE}`}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#FF1726] px-5 text-xs font-black uppercase tracking-wider text-white shadow-[0_0_25px_rgba(255,23,38,.22)] transition hover:-translate-y-0.5 hover:bg-[#E90012]"
+              >
+                <Phone size={15} fill="currentColor" />
+                Book by Call
+              </a>
+
+            </div>
+
+            {/* ROUTE GRID */}
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+
+              {ROUTES.map((route, index) => (
+
+                <article
+                  key={route.slug}
+                  className="group overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_10px_35px_rgba(15,23,42,.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(15,23,42,.11)]"
+                >
+
+                  <div className="relative h-3 bg-[#071A3A]">
+
+                    <div className="absolute inset-y-0 left-0 w-[42%] bg-[#F5B800]" />
+
+                  </div>
+
+                  <div className="p-5">
+
+                    <div className="flex items-center justify-between gap-3">
+
+                      <span className="rounded-full bg-[#FFF4C7] px-3 py-1 text-[9px] font-black uppercase tracking-wider text-[#8A6200]">
+                        {route.badge}
+                      </span>
+
+                      <span className="text-[10px] font-black text-slate-400">
+                        #{String(index + 1).padStart(2, "0")}
+                      </span>
+
+                    </div>
+
+                    <div className="mt-6 flex items-center gap-2">
+
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-[#063B8F]">
+                        <MapPin size={17} fill="currentColor" />
+                      </div>
+
+                      <div className="min-w-0">
+
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          From Korba
+                        </p>
+
+                        <h3 className="truncate text-xl font-black text-[#071A3A]">
+                          {route.to}
+                        </h3>
+
+                      </div>
+
+                    </div>
+
+                    <div className="mt-5 grid grid-cols-2 gap-2">
+
+                      <div className="rounded-xl bg-slate-50 p-3">
+
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                          Distance
+                        </p>
+
+                        <p className="mt-1 text-xs font-black text-slate-700">
+                          {route.distance}
+                        </p>
+
+                      </div>
+
+                      <div className="rounded-xl bg-slate-50 p-3">
+
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                          Service
+                        </p>
+
+                        <p className="mt-1 text-xs font-black text-slate-700">
+                          {route.type}
+                        </p>
+
+                      </div>
+
+                    </div>
+
+                    <Link
+                      href={`/routes/${route.slug}`}
+                      className="mt-4 flex min-h-11 items-center justify-between rounded-xl bg-[#071A3A] px-4 text-[11px] font-black uppercase tracking-wider text-white transition group-hover:bg-[#063B8F]"
+                    >
+                      View Route & Book
+                      <ArrowRight size={15} />
+                    </Link>
+
+                  </div>
+
+                </article>
+
+              ))}
+
+            </div>
+
+          </div>
+
+        </section>
+
+        {/* ===================================================
+            AIRPORT / RAILWAY
+        =================================================== */}
+
+        <section className="bg-[#F3F6FA] py-12 sm:py-16 lg:py-20">
+
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+            <div className="max-w-2xl">
+
+              <div className="mb-3 inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-[#063B8F]">
+                <Plane size={14} />
+                Airport & Railway Transfer
+              </div>
+
+              <h2 className="text-3xl font-black tracking-tight text-[#071A3A] sm:text-4xl">
+                Korba Airport & Railway Cab Service
+              </h2>
+
+              <p className="mt-3 text-sm leading-6 text-slate-500 sm:text-base">
+                Pre-book your pickup or drop cab from Korba for scheduled
+                flights, railway journeys and important travel plans.
+              </p>
+
+            </div>
+
+            <div className="mt-8 grid gap-5 md:grid-cols-3">
+
+              {TRANSFERS.map((item) => {
+
+                const Icon = item.icon;
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="group rounded-[26px] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+                  >
+
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FFF4C7] text-[#063B8F]">
+                      <Icon size={22} />
+                    </div>
+
+                    <h3 className="mt-5 text-lg font-black text-[#071A3A]">
+                      {item.title}
+                    </h3>
+
+                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                      {item.description}
+                    </p>
+
+                    <div className="mt-5 inline-flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#063B8F]">
+                      Book Transfer
+                      <ChevronRight size={15} />
+                    </div>
+
+                  </Link>
+                );
+
+              })}
+
+            </div>
+
+          </div>
+
+        </section>
+
+        {/* ===================================================
+            SERVICES
+        =================================================== */}
+
+        <section
+          id="services"
+          className="bg-white py-12 sm:py-16 lg:py-20"
+        >
+
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+            <div className="text-center">
+
+              <div className="mb-3 inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-[#063B8F]">
+                <span className="h-2 w-2 rounded-full bg-[#F5B800]" />
+                Our Cab Services
+              </div>
+
+              <h2 className="text-3xl font-black tracking-tight text-[#071A3A] sm:text-4xl">
+                Taxi Service For Every Journey
+              </h2>
+
+              <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
+                From local transfers to long-distance outstation journeys,
+                choose a cab service according to your travel requirement.
+              </p>
+
+            </div>
+
+            <div className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+              {SERVICES.map((service) => {
+
+                const Icon = service.icon;
+
+                return (
+                  <div
+                    key={service.title}
+                    className="group rounded-[24px] border border-slate-200 bg-white p-6 transition hover:-translate-y-1 hover:border-blue-100 hover:shadow-[0_15px_45px_rgba(15,23,42,.08)]"
+                  >
+
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#071A3A] text-[#F5B800] transition group-hover:bg-[#063B8F]">
+                      <Icon size={21} />
+                    </div>
+
+                    <h3 className="mt-5 text-lg font-black text-[#071A3A]">
+                      {service.title}
+                    </h3>
+
+                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                      {service.text}
+                    </p>
+
+                  </div>
+                );
+
+              })}
+
+            </div>
+
+          </div>
+
+        </section>
+
+        {/* ===================================================
+            FLEET
+        =================================================== */}
+
+        <section
+          id="fleet"
+          className="bg-[#F3F6FA] py-12 sm:py-16 lg:py-20"
+        >
+
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+            <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+
+              <div>
+
+                <div className="mb-3 text-[11px] font-black uppercase tracking-[0.18em] text-[#063B8F]">
+                  Choose Your Cab
+                </div>
+
+                <h2 className="text-3xl font-black tracking-tight text-[#071A3A] sm:text-4xl">
+                  Comfortable Fleet For Korba Trips
+                </h2>
+
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
+                  Choose a sedan, MUV or premium SUV according to passenger
+                  count, luggage and journey requirements.
+                </p>
+
+              </div>
+
+              <a
+                href={`tel:+91${PHONE}`}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#063B8F] px-5 text-xs font-black uppercase tracking-wider text-white shadow-lg transition hover:bg-[#052E70]"
+              >
+                <Phone size={15} fill="currentColor" />
+                Ask For Cab
+              </a>
+
+            </div>
+
+            <div className="mt-9 grid gap-6 lg:grid-cols-3">
+
+              {FLEET.map((vehicle) => (
+
+                <article
+                  key={vehicle.name}
+                  className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_12px_40px_rgba(15,23,42,.07)]"
+                >
+
+                  <div className="relative h-[230px] overflow-hidden bg-gradient-to-b from-slate-100 to-slate-200">
+
                     <img
                       src={vehicle.image}
-                      alt={`${vehicle.name} - Khatu Rides Korba`}
-                      className="max-h-28 object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.4)] group-hover:scale-110 transition-all duration-300"
+                      alt={`${vehicle.name} cab available in Korba`}
+                      className="h-full w-full object-contain p-4 transition duration-500 hover:scale-105"
                     />
-                  </div>
 
-                  <ul className="grid grid-cols-2 gap-2 mt-4">
-                    {vehicle.specs.map((spec, index) => (
-                      <li key={index} className="flex items-center gap-1 text-[11px] text-slate-400">
-                        <span className="h-1 w-1 rounded-full bg-orange-500" />
-                        <span>{spec}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-white/[0.04] flex items-center justify-between">
-                  <div>
-                    <span className="text-[8px] block text-slate-500 font-black uppercase tracking-widest">Base Dynamic Rate</span>
-                    <span className="text-lg font-black text-orange-500">{vehicle.price}</span>
-                  </div>
-                  <TrackedWhatsAppButton
-                    href="https://wa.me/919244137353"
-                    className="rounded-xl bg-white/5 hover:bg-orange-600 hover:text-white px-4 py-2 text-[10px] font-black uppercase tracking-wider transition-all"
-                  >
-                    Select Model
-                  </TrackedWhatsAppButton>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 🗺️ HIGH-INTENT HIGHWAY CROWS-NEST MICRO-ROUTES */}
-      <section className="mx-auto max-w-7xl px-4 py-16">
-        <header className="mb-10 text-center md:text-left">
-          <span className="text-[10px] font-black uppercase tracking-widest text-orange-500 block mb-1">
-            Regional Grid Nodes
-          </span>
-          <h2 className="text-3xl font-black tracking-tight text-white">
-            Hyper-Local Korba Intercity Corridors
-          </h2>
-          <p className="text-slate-400 text-xs mt-1">
-            Dynamic oneway and roundtrip links connecting local micro areas directly to high-traffic destinations.
-          </p>
-        </header>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          {MICRO_ROUTES.map((route, idx) => (
-            <article
-              key={idx}
-              className="group rounded-2xl border border-white/5 bg-white/[0.01] p-5 flex items-center justify-between hover:border-orange-500/30 hover:bg-white/[0.03] transition-all duration-300"
-            >
-              <div className="space-y-1 max-w-[70%]">
-                <span className="inline-block rounded-lg bg-orange-500/10 px-2 py-0.5 text-[8px] font-black uppercase tracking-wider text-orange-500">
-                  {route.tag}
-                </span>
-                <h4 className="text-xs font-black text-white flex items-center gap-1.5 flex-wrap">
-                  <span className="capitalize">{route.from}</span>
-                  <span className="text-orange-500 font-bold">→</span>
-                  <span className="capitalize">{route.to}</span>
-                </h4>
-                <p className="text-[10px] text-slate-500">
-                  Distance-optimized multi-lane outstation corridor. Flat pricing standards.
-                </p>
-              </div>
-
-              <div className="text-right">
-                <span className="text-[10px] block font-black text-slate-400">{route.dist}</span>
-                <TrackedWhatsAppButton
-                  href="https://wa.me/919244137353"
-                  className="mt-2 inline-block rounded-xl bg-white/5 group-hover:bg-orange-600 group-hover:text-white px-3 py-1.5 text-[9px] font-black uppercase tracking-widest transition-all"
-                >
-                  Quote
-                </TrackedWhatsAppButton>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      {/* 🏙️ SUB-URBAN AREAS SERVICED GRID */}
-      <section className="bg-slate-900/40 py-16 border-t border-slate-900">
-        <div className="mx-auto max-w-7xl px-4">
-          <header className="text-center mb-10">
-            <span className="text-[10px] font-black uppercase tracking-widest text-orange-500 block mb-1">
-              Local Service Coverage Map
-            </span>
-            <h2 className="text-3xl font-black tracking-tight text-white">
-              Areas We Serve in Korba (Energy Capital)
-            </h2>
-          </header>
-
-          <div className="grid gap-4 grid-cols-2 md:grid-cols-5">
-            {[
-              "BALCO Nagar Township",
-              "NTPC Jamnipali Sector",
-              "Gevra Mega Project",
-              "Dipka Mining Area",
-              "Kusmunda SECL Colony",
-              "Darri Block",
-              "Transport Nagar Hub",
-              "CSEB Colony Blocks",
-              "Korba City Core",
-              "Urga Bypass Point",
-            ].map((area) => (
-              <div
-                key={area}
-                className="rounded-2xl border border-white/5 bg-slate-950 p-4 text-center text-xs font-black text-slate-300 hover:border-orange-500/40 hover:text-white transition cursor-default"
-              >
-                {area}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ⭐ WHY CHOOSE KHATU RIDES */}
-      <section className="mx-auto max-w-7xl px-4 py-16">
-        <h2 className="text-3xl font-black tracking-tight text-white text-center mb-10">
-          Why Choose Khatu Rides Travels in Korba?
-        </h2>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          {[
-            "Clean & Air-Conditioned Sanitized Fleet",
-            "Vetted Professional Drivers with Highway Expertise",
-            "Completely Transparent Flat Slabs & Zero Hidden Costs",
-            "Reliable Feeder Runs to Champa Junction Railway Station",
-            "Safe Long-Distance Outstation Lines Across State Borders",
-            "Round-the-clock Dedicated Dispatch & Route Supervision Desk",
-          ].map((item) => (
-            <div
-              key={item}
-              className="flex items-center gap-3.5 rounded-2xl border border-white/5 bg-white/[0.01] p-5 hover:border-orange-500/20 transition"
-            >
-              <CheckCircle2 className="text-orange-500 shrink-0" size={18} />
-              <span className="text-xs font-bold text-slate-300">{item}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section className="bg-slate-900/40 py-16 border-t border-slate-900">
-        <div className="mx-auto max-w-5xl px-4">
-          <h2 className="text-3xl font-black tracking-tight text-white text-center mb-10">
-            Frequently Asked Questions
-          </h2>
-
-          <div className="space-y-6">
-            <Faq
-              q="Do you provide Korba to Raipur Airport taxi service?"
-              a="Yes, Khatu Rides Travels provides dynamic executive pickups from NTPC Jamnipali, BALCO, and other regions directly to Swami Vivekananda Airport Raipur (RPR)."
-            />
-            <Faq
-              q="Can I book a quick drop from Korba to Champa Railway Station?"
-              a="Yes, we run high-frequency feeder lines connecting Transport Nagar and CSEB Colony directly to Champa Junction with flat upfront pricing."
-            />
-            <Faq
-              q="Do you provide specialized corporate cabs for BALCO and NTPC visitors?"
-              a="Absolutely. We specialize in outstation corporate car rental contracts and industrial travel packages across SECL networks, Gevra, and Kusmunda mines."
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* MOBILE STICKY PANEL */}
-      <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden pointer-events-none">
-        <div className="grid grid-cols-2 gap-3 bg-slate-950/90 backdrop-blur-lg border border-white/10 p-2.5 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.5)] pointer-events-auto">
-          
-          <TrackedWhatsAppButton 
-            href="https://wa.me/919244137353" 
-            className="relative flex h-12 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-xs font-black uppercase text-white shadow-[0_4px_20px_rgba(16,185,129,0.3)] transition-all active:scale-95 animate-pulse overflow-hidden"
-          >
-            <span className="absolute inset-0 bg-white/10 animate-ping rounded-xl opacity-20 pointer-events-none" />
-            <span className="text-sm">💬</span>
-            <span>WhatsApp</span>
-          </TrackedWhatsAppButton>
-
-          <TrackedCallButton 
-            href="tel:9244137353" 
-            className="group flex h-12 items-center justify-center gap-1.5 rounded-xl bg-orange-600 text-xs font-black uppercase text-white shadow-[0_4px_20px_rgba(249,115,22,0.3)] transition-all active:scale-95"
-          >
-            <span className="text-sm animate-[wiggle_1s_ease-in-out_infinite]">
-              📞
-            </span>
-            <span>Call Desk</span>
-          </TrackedCallButton>
-
-        </div>
-      </div>
-
-      {/* POPUP DRAWER */}
-      <AnimatePresence>
-        {showPopup && popupData && (
-          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-950/60 p-2 sm:p-4 backdrop-blur-xs overflow-y-auto">
-            <motion.div 
-              initial={{ y: 30, opacity: 0 }} 
-              animate={{ y: 0, opacity: 1 }} 
-              exit={{ y: 30, opacity: 0 }} 
-              className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden my-auto flex flex-col max-h-[95vh] text-left"
-            >
-              <div className="bg-slate-100 px-5 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-slate-700">
-                <div>Route: <span className="text-slate-950 font-black text-sm block sm:inline">{popupData.pickup.split(",")[0]} - {popupData.drop.split(",")[0]}</span></div>
-                <div className="flex gap-4">
-                  <div>Trip: <span className="text-slate-950 font-black uppercase bg-orange-100 px-2 py-0.5 rounded text-[11px] text-orange-700">{popupData.bookingType}</span></div>
-                  <div>Date: <span className="text-slate-950 font-black">{convertToIndianDate(popupData.pickupDate)}</span></div>
-                  <div>Time: <span className="text-slate-950 font-black">{formatTimeToAMPM(popupData.pickupTime)}</span></div>
-                </div>
-                <button type="button" onClick={() => setShowPopup(false)} className="text-slate-400 hover:text-slate-900 font-black text-sm transition-colors">✕ Close</button>
-              </div>
-
-              <div className="bg-slate-900 text-white px-4 py-2.5 text-[10px] sm:text-xs grid grid-cols-3 gap-1 text-center font-black uppercase tracking-wider">
-                <div>₹ Pre-Fixed Pricing</div>
-                <div className="border-x border-white/20">🛡️ Driver Allowance Inc.</div>
-                <div>🎧 24x7 Custom Support</div>
-              </div>
-
-              <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4 bg-slate-50/40">
-                {!showUserForm ? (
-                  <div className="flex flex-col gap-4">
-                    {popupData.fareOptions.map((opt) => {
-                      if (!["sedan", "ertiga", "crysta"].includes(opt.vehicleType)) return null;
-                      
-                      const dynamicLimitKms = getDynamicKmsLimitDisplay(opt);
-                      const extraRatePerKm = opt.vehicleType === "sedan" ? 11 : opt.vehicleType === "ertiga" ? 17 : 20.7;
-
-                      return (
-                        <div key={opt.id} className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-xs hover:shadow-md transition flex flex-col">
-                          <div className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black text-[10px] sm:text-xs py-2 px-4 uppercase tracking-wider text-center shadow-xs">
-                            🔥 Make Online Advance Payment and Get Upto 10% Discount On Your Booking Instantly
-                          </div>
-
-                          <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-                            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full sm:w-auto text-center sm:text-left">
-                              <img src={VEHICLES[opt.vehicleType]?.image} alt={opt.vehicleLabel} className="w-32 h-20 sm:w-36 sm:h-24 object-contain flex-shrink-0 mx-auto sm:mx-0" />
-                              <div>
-                                <h4 className="text-lg font-black text-slate-900">{opt.vehicleLabel}</h4>
-                                <p className="text-xs text-slate-400 mt-0.5 font-medium">or equivalent | {opt.vehicleType === "sedan" ? "4" : "6"}+1 Seater AC Cab</p>
-                                
-                                <div className="mt-2.5 flex flex-wrap gap-1.5 justify-center sm:justify-start text-[10px] font-bold">
-                                  <span className="bg-slate-100 text-slate-500 border border-slate-200/50 px-2 py-0.5 rounded">👤 Allowance Included</span>
-                                  <span className="bg-orange-50 text-orange-700 border border-orange-200/60 px-2 py-0.5 rounded">
-                                    📦 Kms Limit: {dynamicLimitKms} KM
-                                  </span>
-                                  <span className="bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-2 py-0.5 rounded">
-                                    ⚡ Extra Run: ₹{extraRatePerKm}/KM
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="text-center sm:text-right flex flex-col items-center sm:items-end justify-center min-w-full sm:min-w-[220px] border-t pt-3 sm:pt-0 sm:border-none border-slate-100 w-full sm:w-auto">
-                              <div className="mb-2 text-center sm:text-right">
-                                <span className="text-[10px] font-black text-slate-400 block uppercase tracking-wider">Estimated Total Fare:</span>
-                                <div className="text-3xl font-black text-slate-950 tracking-tight">₹{opt.finalFare.toLocaleString("en-IN")}</div>
-                              </div>
-                              
-                              <span className="text-[10px] text-slate-400 font-semibold block mb-3">Includes dynamic toll policies</span>
-                              
-                              <div className="flex flex-col gap-2 w-full sm:w-auto min-w-[200px]">
-                                <button
-                                  type="button"
-                                  onClick={() => handleWhatsAppManualRedirect(opt)}
-                                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-widest py-3 px-4 rounded-xl shadow-md transition-all text-center w-full flex items-center justify-center gap-1.5"
-                                >
-                                  💬 Book On WhatsApp
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedVehicleType(opt.vehicleType);
-                                    setPaymentSplitMode((p) => ({ ...p, [opt.id]: "half" }));
-                                    setShowUserForm(true);
-                                  }}
-                                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold text-xs uppercase tracking-wider py-2.5 px-4 rounded-xl shadow-xs transition-all text-center w-full"
-                                >
-                                  Book Online
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="w-full bg-slate-900 border-t border-slate-800 py-2 px-4 text-center sm:text-left flex items-center justify-center sm:justify-start gap-1.5 shadow-inner">
-                            <span className="text-[10px] sm:text-[11px] text-orange-500">🛡️</span>
-                            <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-300 uppercase tracking-wide">
-                              100% PAYABLE AMOUNT ON SCREEN. <span className="text-orange-400">NO ANY HIDDEN CHARGES</span>
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="max-w-md mx-auto bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-md text-left w-full">
-                    <div className="text-center mb-5">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-orange-600 bg-orange-50 px-2.5 py-1 rounded">Secure Form</span>
-                      <h4 className="text-base font-black text-slate-900 mt-2">Enter Details to Complete Booking</h4>
+                    <div className="absolute left-4 top-4 rounded-full bg-[#071A3A] px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-white">
+                      {vehicle.type}
                     </div>
 
-                    <div className="space-y-4">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-black text-slate-700 uppercase tracking-wider">Customer Full Name</label>
-                        <input 
-                          type="text" 
-                          placeholder="Type customer name..." 
-                          value={customerName} 
-                          onChange={(e) => setCustomerName(e.target.value)} 
-                          className="w-full border border-slate-300 rounded-xl px-4 py-2.5 bg-white text-sm font-bold focus:outline-none focus:border-orange-500 transition shadow-xs"
-                        />
+                  </div>
+
+                  <div className="p-6">
+
+                    <h3 className="text-xl font-black text-[#071A3A]">
+                      {vehicle.name}
+                    </h3>
+
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+
+                      <div className="rounded-xl bg-slate-50 p-3">
+
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                          Seating
+                        </p>
+
+                        <p className="mt-1 text-xs font-black text-slate-700">
+                          {vehicle.passengers}
+                        </p>
+
                       </div>
 
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-black text-slate-700 uppercase tracking-wider">Mobile Number (For Driver SMS)</label>
-                        <input 
-                          type="tel" 
-                          maxLength={10} 
-                          placeholder="Enter 10-digit phone number..." 
-                          value={customerPhone} 
-                          onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, ""))} 
-                          className="w-full border border-slate-300 rounded-xl px-4 py-2.5 bg-white text-sm font-bold focus:outline-none focus:border-orange-500 transition shadow-xs"
-                        />
+                      <div className="rounded-xl bg-slate-50 p-3">
+
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                          Luggage
+                        </p>
+
+                        <p className="mt-1 text-xs font-black text-slate-700">
+                          {vehicle.luggage}
+                        </p>
+
                       </div>
 
-                      {selectedOption && (
-                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mt-2">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Split Booking Matrix</span>
-                          <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-white p-1">
-                            <button type="button" onClick={() => setPaymentSplitMode((p) => ({ ...p, [selectedOption.id]: "half" }))} className={`rounded-lg py-2 text-center text-[11px] font-black uppercase tracking-wide ${currentSelectedMode === "half" ? "bg-orange-600 text-white shadow-xs" : "text-slate-500"}`}>
-                              50% Advance
-                            </button>
-                            <button type="button" onClick={() => setPaymentSplitMode((p) => ({ ...p, [selectedOption.id]: "full" }))} className={`rounded-lg py-2 text-center text-[11px] font-black uppercase tracking-wide ${currentSelectedMode === "full" ? "bg-slate-900 text-white shadow-xs" : "text-slate-500"}`}>
-                              Full Pay
-                            </button>
-                          </div>
-                          
-                          <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-200/60">
-                            <div>
-                              <span className="text-[10px] font-black text-slate-400 block uppercase">Payable Now</span>
-                              <span className="text-xl font-black text-slate-900">₹{displayPayNowNumber.toLocaleString("en-IN")}</span>
-                            </div>
-                            <span className="text-[10px] font-bold text-slate-500 bg-white px-2 py-1 rounded border border-slate-200">{selectedOption.vehicleLabel}</span>
-                          </div>
-                        </div>
-                      )}
+                    </div>
 
-                      <div className="grid grid-cols-2 gap-2 pt-2">
-                        <button type="button" onClick={() => setShowUserForm(false)} className="w-full border border-slate-300 bg-slate-100 text-slate-700 font-bold text-xs uppercase py-3.5 rounded-xl transition">
-                          ↩ Back
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => selectedOption && handleOnlinePaymentCheckout(selectedOption)}
-                          disabled={paymentLoadingId !== null}
-                          className="w-full bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-widest py-3.5 rounded-xl transition shadow-lg shadow-orange-600/20 disabled:opacity-50"
+                    <p className="mt-4 text-sm leading-6 text-slate-500">
+                      {vehicle.description}
+                    </p>
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+
+                      {vehicle.bestFor.map((tag) => (
+
+                        <span
+                          key={tag}
+                          className="rounded-full bg-amber-50 px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-amber-700"
                         >
-                          {paymentLoadingId ? "Syncing..." : "Book Online"}
-                        </button>
-                      </div>
+                          {tag}
+                        </span>
+
+                      ))}
+
                     </div>
+
+                    <TrackedWhatsAppButton
+                      href={whatsappUrl(
+                        `Namaste Khatu Rides Travels, I want to enquire about booking a ${vehicle.name} from Korba. Please share availability and booking details.`
+                      )}
+                      className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#00E676] px-5 text-xs font-black uppercase tracking-wider text-white shadow-[0_0_20px_rgba(0,230,118,.18)] transition hover:bg-[#00D968]"
+                    >
+                      <WhatsAppIcon size={19} />
+                      Enquire For This Cab
+                    </TrackedWhatsAppButton>
+
                   </div>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
-      {/* SUCCESS RECEIPT */}
-      <AnimatePresence>
-        {successReceipt && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/70 p-3 backdrop-blur-xs">
-            <motion.div initial={{ y: 20 }} animate={{ y: 0 }} className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
-              <div className="bg-emerald-50 px-5 py-5 text-center border-b border-emerald-100">
-                <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100 text-xl text-emerald-700">✓</div>
-                <h3 className="text-lg font-black text-slate-950">Allocation Confirmed</h3>
-                <p className="text-xs text-slate-500 mt-1">Your route details have been securely recorded in Firebase.</p>
+                </article>
+
+              ))}
+
+            </div>
+
+          </div>
+
+        </section>
+
+        {/* ===================================================
+            LOCAL COVERAGE
+        =================================================== */}
+
+        <section className="bg-[#071A3A] py-12 text-white sm:py-16 lg:py-20">
+
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+            <div className="grid gap-10 lg:grid-cols-[.85fr_1.15fr] lg:items-center">
+
+              <div>
+
+                <div className="mb-3 text-[11px] font-black uppercase tracking-[0.18em] text-[#F5B800]">
+                  Local Pickup Coverage
+                </div>
+
+                <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
+                  Cab Pickup Across Korba
+                </h2>
+
+                <p className="mt-4 max-w-xl text-sm leading-7 text-slate-300 sm:text-base">
+                  Cab booking enquiries are accepted from Korba city and
+                  surrounding residential, industrial and township areas.
+                </p>
+
+                <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+
+                  <TrackedCallButton
+                    href={`tel:+91${PHONE}`}
+                    className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#FF1726] px-6 text-xs font-black uppercase tracking-wider text-white shadow-[0_0_30px_rgba(255,23,38,.28)] transition hover:bg-[#E90012]"
+                  >
+                    <Phone size={16} fill="currentColor" />
+                    Call {PHONE_DISPLAY}
+                  </TrackedCallButton>
+
+                  <TrackedWhatsAppButton
+                    href={whatsappUrl(DEFAULT_WHATSAPP_MESSAGE)}
+                    className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#00E676] px-6 text-xs font-black uppercase tracking-wider text-white shadow-[0_0_30px_rgba(0,230,118,.25)] transition hover:bg-[#00D968]"
+                  >
+                    <WhatsAppIcon size={19} />
+                    WhatsApp Us
+                  </TrackedWhatsAppButton>
+
+                </div>
+
               </div>
-              <div className="p-5 space-y-4 text-left">
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs space-y-2 text-slate-700">
-                  <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Invoice Summary</div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-900">Invoice ID:</span> <span>{successReceipt.invoiceId}</span></div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-900">Vehicle:</span> <span>{successReceipt.vehicle}</span></div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-900">Pickup:</span> <span className="truncate max-w-[180px]">{successReceipt.pickup}</span></div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-900">Drop Point:</span> <span className="truncate max-w-[180px]">{successReceipt.drop}</span></div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-900">Timeline:</span> <span>{successReceipt.date} at {successReceipt.time}</span></div>
-                  <div className="flex justify-between pt-2 border-t border-slate-200 font-black text-slate-950 text-sm">
-                    <span>Amount Paid ({successReceipt.paymentMode}):</span> <span>₹{successReceipt.amount.toLocaleString("en-IN")}</span>
+
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+
+                {LOCAL_AREAS.map((area) => (
+
+                  <div
+                    key={area}
+                    className="flex min-h-[74px] items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3"
+                  >
+
+                    <MapPin
+                      size={17}
+                      className="shrink-0 text-[#F5B800]"
+                      fill="currentColor"
+                    />
+
+                    <span className="text-xs font-bold leading-5 text-slate-200">
+                      {area}
+                    </span>
+
                   </div>
-                </div>
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => setSuccessReceipt(null)} className="w-full h-11 bg-slate-950 text-xs font-black uppercase tracking-wider text-white rounded-xl shadow">
-                    Close Panel
-                  </button>
-                </div>
+
+                ))}
+
               </div>
-            </motion.div>
+
+            </div>
+
           </div>
-        )}
-      </AnimatePresence>
-    </main>
-  );
-}
 
-function Feature({
-  icon,
-  title,
-  text,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div className="rounded-3xl border border-white/5 bg-white/[0.01] p-6 hover:border-orange-500/20 transition-all">
-      <div className="text-orange-500">{icon}</div>
-      <h3 className="mt-4 text-lg font-black text-white">{title}</h3>
-      <p className="mt-2 text-xs leading-relaxed text-slate-400">{text}</p>
-    </div>
-  );
-}
+        </section>
 
-function Faq({
-  q,
-  a,
-}: {
-  q: string;
-  a: string;
-}) {
-  return (
-    <div className="p-6 rounded-2xl bg-white/[0.01] border border-white/5">
-      <h3 className="text-base font-black text-white">{q}</h3>
-      <p className="mt-2 text-xs leading-relaxed text-slate-400">{a}</p>
-    </div>
+        {/* ===================================================
+            WHY KHATU RIDES
+        =================================================== */}
+
+        <section className="bg-white py-12 sm:py-16 lg:py-20">
+
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+            <div className="text-center">
+
+              <div className="mb-3 text-[11px] font-black uppercase tracking-[0.18em] text-[#063B8F]">
+                Why Book With Us
+              </div>
+
+              <h2 className="text-3xl font-black tracking-tight text-[#071A3A] sm:text-4xl">
+                Simple Booking. Comfortable Journey.
+              </h2>
+
+            </div>
+
+            <div className="mt-9 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+
+              {[
+                {
+                  icon: ShieldCheck,
+                  title: "Reliable Service",
+                  text: "Practical cab options according to your travel requirement.",
+                },
+                {
+                  icon: Phone,
+                  title: "Direct Support",
+                  text: "Contact the booking team directly by phone or WhatsApp.",
+                },
+                {
+                  icon: Navigation,
+                  title: "Route Expertise",
+                  text: "Coverage across major routes and destinations from Korba.",
+                },
+                {
+                  icon: Star,
+                  title: "Customer Focus",
+                  text: "Focused on communication, convenience and comfortable travel.",
+                },
+              ].map((item) => {
+
+                const Icon = item.icon;
+
+                return (
+                  <div
+                    key={item.title}
+                    className="rounded-[24px] border border-slate-200 bg-white p-6 text-center shadow-sm"
+                  >
+
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FFF4C7] text-[#063B8F]">
+                      <Icon size={21} />
+                    </div>
+
+                    <h3 className="mt-4 text-base font-black text-[#071A3A]">
+                      {item.title}
+                    </h3>
+
+                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                      {item.text}
+                    </p>
+
+                  </div>
+                );
+
+              })}
+
+            </div>
+
+          </div>
+
+        </section>
+
+        {/* ===================================================
+            REVIEWS
+        =================================================== */}
+
+        <section className="bg-[#F3F6FA] py-12 sm:py-16">
+
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+            <div className="mb-8 text-center">
+
+              <div className="mb-3 text-[11px] font-black uppercase tracking-[0.18em] text-[#063B8F]">
+                Customer Experience
+              </div>
+
+              <h2 className="text-3xl font-black tracking-tight text-[#071A3A] sm:text-4xl">
+                What Our Customers Say
+              </h2>
+
+            </div>
+
+            <ReviewsCarousel />
+
+          </div>
+
+        </section>
+
+        {/* ===================================================
+            SEO CONTENT
+        =================================================== */}
+
+        <section className="bg-white py-12 sm:py-16 lg:py-20">
+
+          <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+
+            <div className="rounded-[30px] border border-slate-200 bg-slate-50 p-6 sm:p-9 lg:p-10">
+
+              <div className="mb-4 text-[11px] font-black uppercase tracking-[0.18em] text-[#063B8F]">
+                Korba Taxi Service
+              </div>
+
+              <h2 className="text-2xl font-black tracking-tight text-[#071A3A] sm:text-3xl">
+                Korba Taxi Service & Outstation Cab Booking
+              </h2>
+
+              <div className="mt-6 space-y-5 text-sm leading-7 text-slate-600 sm:text-base">
+
+                <p>
+                  Khatu Rides Travels provides cab booking assistance from
+                  Korba for local travel, one-way journeys, round trips,
+                  airport transfers, railway station transfers and outstation
+                  travel. Customers can contact the booking team directly by
+                  phone or WhatsApp and share their pickup, destination and
+                  travel requirements.
+                </p>
+
+                <p>
+                  Popular routes from Korba include Raipur, Bilaspur, Raigarh,
+                  Ambikapur, Champa, Janjgir and Katghora. For longer journeys,
+                  customers can choose a suitable sedan, MUV or premium SUV
+                  depending on passenger count, luggage and travel requirements.
+                </p>
+
+                <p>
+                  Korba to Raipur taxi booking can be used for city travel,
+                  business trips, airport transfers and railway connections.
+                  Korba to Bilaspur taxi service is suitable for railway,
+                  business and regional travel requirements. Customers
+                  travelling towards Raigarh, Ambikapur and other destinations
+                  can enquire about one-way or round-trip cab options.
+                </p>
+
+                <p>
+                  Airport and railway journeys are often time-sensitive.
+                  Advance booking allows the pickup location and expected
+                  travel schedule to be discussed before the journey.
+                </p>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        {/* ===================================================
+            FAQ
+        =================================================== */}
+
+        <section className="bg-[#F3F6FA] py-12 sm:py-16 lg:py-20">
+
+          <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+
+            <div className="text-center">
+
+              <div className="mb-3 text-[11px] font-black uppercase tracking-[0.18em] text-[#063B8F]">
+                Frequently Asked Questions
+              </div>
+
+              <h2 className="text-3xl font-black tracking-tight text-[#071A3A] sm:text-4xl">
+                Korba Cab Booking FAQs
+              </h2>
+
+            </div>
+
+            <div className="mt-8 space-y-3">
+
+              {FAQS.map((faq, index) => (
+
+                <details
+                  key={faq.question}
+                  open={index === 0}
+                  className="group rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm"
+                >
+
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-black text-[#071A3A]">
+
+                    {faq.question}
+
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[#063B8F] transition group-open:rotate-90">
+                      <ChevronRight size={16} />
+                    </span>
+
+                  </summary>
+
+                  <p className="pt-4 text-sm leading-7 text-slate-500">
+                    {faq.answer}
+                  </p>
+
+                </details>
+
+              ))}
+
+            </div>
+
+          </div>
+
+        </section>
+
+        {/* ===================================================
+            FINAL CTA
+        =================================================== */}
+
+        <section className="relative overflow-hidden bg-[#071A3A] py-14 sm:py-16">
+
+          <div className="absolute -left-20 -top-20 h-72 w-72 rounded-full bg-[#F5B800]/10 blur-3xl" />
+
+          <div className="absolute -bottom-20 -right-20 h-72 w-72 rounded-full bg-[#063B8F]/40 blur-3xl" />
+
+          <div className="relative mx-auto max-w-5xl px-4 text-center sm:px-6">
+
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F5B800] text-[#071A3A] shadow-xl">
+              <Car size={25} />
+            </div>
+
+            <h2 className="mt-5 text-3xl font-black tracking-tight text-white sm:text-5xl">
+              Need a Taxi From Korba?
+            </h2>
+
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">
+              Share your pickup location, destination and travel date.
+              Contact Khatu Rides Travels directly for booking assistance.
+            </p>
+
+            <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+
+              {/* FINAL CALL */}
+
+              <TrackedCallButton
+                href={`tel:+91${PHONE}`}
+                className="group relative flex min-h-[64px] items-center justify-center gap-3 overflow-hidden rounded-2xl border-2 border-white/15 bg-[#FF1726] px-8 text-base font-black text-white shadow-[0_0_35px_rgba(255,23,38,.30)] transition-all hover:-translate-y-1 hover:bg-[#FF0717] hover:shadow-[0_0_55px_rgba(255,23,38,.42)]"
+              >
+
+                <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+
+                <Phone
+                  size={21}
+                  fill="currentColor"
+                  className="relative"
+                />
+
+                <span className="relative">
+                  CALL NOW — {PHONE_DISPLAY}
+                </span>
+
+              </TrackedCallButton>
+
+              {/* FINAL WHATSAPP */}
+
+              <TrackedWhatsAppButton
+                href={whatsappUrl(DEFAULT_WHATSAPP_MESSAGE)}
+                className="group relative flex min-h-[64px] items-center justify-center gap-3 overflow-hidden rounded-2xl border-2 border-white/15 bg-[#00E676] px-8 text-base font-black text-white shadow-[0_0_35px_rgba(0,230,118,.28)] transition-all hover:-translate-y-1 hover:bg-[#00D968] hover:shadow-[0_0_55px_rgba(0,230,118,.40)]"
+              >
+
+                <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+
+                <WhatsAppIcon
+                  size={22}
+                />
+
+                <span className="relative">
+                  WHATSAPP ENQUIRY
+                </span>
+
+              </TrackedWhatsAppButton>
+
+            </div>
+
+          </div>
+
+        </section>
+
+      </main>
+
+      {/* =====================================================
+          FOOTER
+      ===================================================== */}
+
+      <Footer />
+
+      {/* =====================================================
+          MOBILE FLOATING ACTION
+      ===================================================== */}
+
+      <div className="fixed bottom-5 right-4 z-[80] sm:hidden">
+
+        <details className="group relative">
+
+          {/* FLOATING TOGGLE */}
+
+         <summary className="flex h-14 w-14 cursor-pointer list-none items-center justify-center rounded-full border-2 border-white bg-[#FF1726] text-white shadow-[0_10px_30px_rgba(255,23,38,.45),0_0_35px_rgba(255,23,38,.25)] transition-all duration-300 hover:scale-105 hover:bg-[#E90012] group-open:rotate-45">
+  <Phone
+    size={25}
+    strokeWidth={2.8}
+    fill="currentColor"
+  />
+</summary>
+
+          {/* ACTIONS */}
+
+          <div className="absolute bottom-[68px] right-0 flex  flex-col gap-3">
+
+            {/* FLOAT CALL */}
+
+            <TrackedCallButton
+              href={`tel:+91${PHONE}`}
+              className="flex min-h-[70px] items-center gap-4 rounded-2xl border-2 border-white/20 bg-[#FF1726] px-5 text-white shadow-[0_10px_35px_rgba(255,23,38,.40),0_0_35px_rgba(255,23,38,.20)]"
+            >
+
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-[#FF1726] shadow-lg">
+                <Phone
+                  size={23}
+                  fill="currentColor"
+                />
+              </span>
+
+              
+
+            </TrackedCallButton>
+
+            {/* FLOAT WHATSAPP */}
+
+            <TrackedWhatsAppButton
+              href={whatsappUrl(DEFAULT_WHATSAPP_MESSAGE)}
+              className="flex min-h-[70px] items-center gap-4 rounded-2xl border-2 border-white/20 bg-[#00E676] px-5 text-white shadow-[0_10px_35px_rgba(0,230,118,.38),0_0_35px_rgba(0,230,118,.20)]"
+            >
+
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-[#00B95C] shadow-lg">
+                <WhatsAppIcon size={24} />
+              </span>
+
+              
+
+            </TrackedWhatsAppButton>
+
+          </div>
+
+        </details>
+
+      </div>
+    </>
   );
 }

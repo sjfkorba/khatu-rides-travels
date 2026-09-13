@@ -1,870 +1,1567 @@
-// app/cabs/bilaspur/page.tsx
-"use client";
-
-import React, { useState, useEffect, } from "react";
-import Script from "next/script";
-import { AnimatePresence, motion } from "framer-motion";
+import type { Metadata } from "next";
+import Link from "next/link";
 import {
+  ArrowRight,
   Car,
-  Plane,
   CheckCircle2,
-  Building2,
+  ChevronRight,
+  Clock3,
+  MapPin,
+  Navigation,
   Phone,
+  Plane,
+  ShieldCheck,
+  Star,
+  TrainFront,
+  Users,
 } from "lucide-react";
+
 import TrackedWhatsAppButton from "@/components/TrackedWhatsAppButton";
 import TrackedCallButton from "@/components/TrackedCallButton";
-import FareCalculator from "@/components/FareCalculator";
-import {
-  calculateFare,
-  VEHICLES,
-  type BookingType,
-  type VehicleType,
-  type ServiceType,
-} from "@/lib/fareCalculator";
-
-// Firebase initialization
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, collection, addDoc, serverTimestamp, Firestore } from "firebase/firestore";
 import ReviewsCarousel from "@/components/ReviewsCarousel";
+import Footer from "@/components/Footer";
 
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-};
+/* =========================================================
+   BRAND / CONTACT
+========================================================= */
 
-let db: Firestore | null = null;
-if (typeof window !== "undefined") {
-  try {
-    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-    db = getFirestore(app);
-  } catch (error) {
-    console.error("Firebase initialization failed:", error);
-  }
+const SITE_URL = "https://www.khaturidescg.in";
+
+const PHONE = "9244137353";
+const PHONE_DISPLAY = "+91 92441 37353";
+const WHATSAPP = "919244137353";
+
+const whatsappUrl = (message: string) =>
+  `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(message)}`;
+
+const DEFAULT_WHATSAPP_MESSAGE =
+  "Namaste Khatu Rides Travels, mujhe Bilaspur se taxi book karni hai. Please booking availability aur fare details share karein.";
+
+/* =========================================================
+   WHATSAPP ICON
+========================================================= */
+
+function WhatsAppIcon({ size = 22 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M16.03 3C8.86 3 3.05 8.8 3.05 15.96c0 2.28.6 4.5 1.73 6.47L3 29l6.77-1.74a12.9 12.9 0 0 0 6.26 1.61h.01c7.16 0 12.96-5.81 12.96-12.96C29 8.79 23.19 3 16.03 3Z"
+        fill="currentColor"
+      />
+      <path
+        d="M22.77 18.66c-.37-.18-2.2-1.08-2.54-1.2-.34-.13-.59-.18-.84.18-.25.37-.96 1.2-1.18 1.45-.22.25-.44.28-.81.1-.37-.19-1.56-.57-2.97-1.82-1.1-.98-1.84-2.2-2.06-2.57-.22-.37-.02-.57.16-.75.16-.16.37-.43.55-.65.18-.22.24-.37.37-.62.12-.25.06-.47-.03-.65-.1-.18-.84-2.02-1.15-2.76-.3-.73-.61-.63-.84-.64h-.72c-.25 0-.65.09-.99.47-.34.37-1.3 1.27-1.3 3.1 0 1.83 1.33 3.6 1.51 3.84.18.25 2.62 4 6.34 5.61.89.39 1.58.62 2.12.8.89.28 1.7.24 2.34.15.71-.11 2.2-.9 2.51-1.77.31-.87.31-1.61.22-1.77-.09-.15-.34-.25-.71-.43Z"
+        fill="white"
+      />
+    </svg>
+  );
 }
 
-type FareOption = {
-  id: string;
-  vehicleType: VehicleType;
-  vehicleLabel: string;
-  vehicleImage: string;
-  finalFare: number;
-  strikeFare?: number;
-  fareText: string;
-  billedDistance: number;
-  durationMinutes: number;
-  allowedKmsLimit?: number; 
-  discountPercent?: number;
-};
+/* =========================================================
+   POPULAR BILASPUR ROUTES
+   Only verified project route URLs are used.
+========================================================= */
 
-type PopupData = {
-  fareOptions: FareOption[];
-  pickup: string;
-  drop: string;
-  bookingType: BookingType;
-  serviceType: ServiceType;
-  pickupDate: string;
-  pickupTime: string;
-  returnDate?: string;
-  returnTime?: string;
-};
+const ROUTES = [
+  {
+    from: "Bilaspur",
+    to: "Raipur",
+    slug: "bilaspur-to-raipur-taxi",
+    distance: "Approx. 125 KM",
+    type: "One Way Cab",
+    badge: "Most Booked",
+    description:
+      "Comfortable one-way and round-trip cab service between Bilaspur and Raipur.",
+  },
+  {
+    from: "Bilaspur",
+    to: "Korba",
+    slug: "bilaspur-to-korba-taxi",
+    distance: "Approx. 90 KM",
+    type: "One Way Cab",
+    badge: "Very High Demand",
+    description:
+      "Direct Bilaspur to Korba taxi for business, family and regional travel.",
+  },
+  {
+    from: "Bilaspur",
+    to: "Raipur Airport",
+    slug: "bilaspur-to-raipur-airport-cab",
+    distance: "Airport Transfer",
+    type: "Airport Cab",
+    badge: "Airport",
+    description:
+      "Pre-book a cab from Bilaspur to Swami Vivekananda Airport, Raipur.",
+  },
+];
 
-type SuccessReceipt = {
-  invoiceId: string;
-  pickup: string;
-  drop: string;
-  date: string;
-  time: string;
-  vehicle: string;
-  amount: number;
-  paymentMode: "50% ADVANCE" | "FULL PAYMENT";
-};
+/* =========================================================
+   QUICK SERVICE CARDS
+========================================================= */
 
-const vehicles = [
+const SERVICES = [
+  {
+    icon: Car,
+    title: "One Way Taxi",
+    text: "Bilaspur se kisi bhi selected destination ke liye one-way cab booking.",
+  },
+  {
+    icon: Navigation,
+    title: "Round Trip Cab",
+    text: "Same-day ya multi-day return journey ke liye comfortable round-trip cab.",
+  },
+  {
+    icon: Plane,
+    title: "Airport Cab",
+    text: "Bilaspur se Raipur Airport ke liye advance airport transfer booking.",
+  },
+  {
+    icon: TrainFront,
+    title: "Railway Transfer",
+    text: "Bilaspur Junction aur nearby railway connections ke liye pickup-drop assistance.",
+  },
+  {
+    icon: Users,
+    title: "Family Travel",
+    text: "Family aur group travel ke liye spacious Ertiga aur Innova Crysta options.",
+  },
+  {
+    icon: Clock3,
+    title: "Flexible Booking",
+    text: "Early morning, late evening aur scheduled outstation journeys ke liye booking support.",
+  },
+];
+
+/* =========================================================
+   FLEET
+========================================================= */
+
+const FLEET = [
   {
     name: "Maruti Suzuki Dzire",
-    type: "Premium Sedan (AC)",
-    price: "₹11/km onwards",
+    type: "Premium Sedan • AC",
     image: "/dezire.png",
-    specs: ["4 Passengers", "2 Bags", "Climate Control", "Zero Cancel Rate"]
+    capacity: "4 Passengers",
+    luggage: "2 Bags",
+    price: "₹11/km onwards",
+    description:
+      "Best suited for couples, small families and business travel.",
   },
   {
     name: "Maruti Suzuki Ertiga",
-    type: "Comfortable MUV (6+1 Seater)",
-    price: "₹13/km onwards",
+    type: "Comfort MUV • 6+1",
     image: "/ertiga.png",
-    specs: ["6 Passengers", "4 Bags", "Dual AC System", "Best for Families"]
+    capacity: "6 Passengers",
+    luggage: "4 Bags",
+    price: "₹13/km onwards",
+    description:
+      "Spacious option for families, groups and longer outstation trips.",
   },
   {
     name: "Toyota Innova Crysta",
-    type: "Luxury Executive SUV",
-    price: "₹20/km onwards",
+    type: "Premium SUV",
     image: "/crysta.png",
-    specs: ["7 Passengers", "Heavy Luggage", "Captain Seats", "VIP Protocol Standard"]
+    capacity: "7 Passengers",
+    luggage: "Heavy Luggage",
+    price: "₹20/km onwards",
+    description:
+      "Premium choice for executive travel, families and comfortable long journeys.",
   },
 ];
 
-const MICRO_ROUTES = [
-  { from: "Uslapur Station, Bilaspur", to: "Raipur Airport (RPR)", dist: "135 KMs", tag: "Airport Transfer" },
-  { from: "Vyapar Vihar, Bilaspur", to: "BALCO, Korba", dist: "105 KMs", tag: "Industrial Link" },
-  { from: "Sarkanda, Bilaspur", to: "Swami Vivekananda Airport", dist: "130 KMs", tag: "Frequent Run" },
-  { from: "Tifra Bypass, Bilaspur", to: "Raigarh Industrial Belt", dist: "165 KMs", tag: "Corporate Loop" },
-  { from: "Sakri Outer, Bilaspur", to: "Ambikapur Surguja", dist: "235 KMs", tag: "Mountain Track" },
-  { from: "High Court Road, Bodri", to: "Tatibandh, Raipur", dist: "115 KMs", tag: "Legal/Business Run" },
-  { from: "Bilaspur Junction (Station)", to: "Katghora Outer", dist: "120 KMs", tag: "Feeder Route" },
-  { from: "Mangla, Bilaspur", to: "Jharsuguda Odisha", dist: "245 KMs", tag: "Interstate Link" },
-  { from: "Bilasa Airport (PPR)", to: "Janjgir Champa", dist: "65 KMs", tag: "Regional Link" },
-  { from: "Nyayadhani, Bilaspur", to: "Ratanpur Temple", dist: "30 KMs", tag: "Spiritual Tour" }
+/* =========================================================
+   LOCAL BILASPUR AREAS
+========================================================= */
+
+const LOCAL_AREAS = [
+  "Bilaspur City",
+  "Sarkanda",
+  "Mangla",
+  "Telipara",
+  "Torwa",
+  "Vyapar Vihar",
+  "Rajkishore Nagar",
+  "Mopka",
+  "Sakri",
+  "Juna Bilaspur",
+  "Link Road",
+  "Civil Lines",
 ];
 
-export default function TaxiServiceInBilaspurPage() {
-  const [popupData, setPopupData] = useState<PopupData | null>(null);
-  const [showPopup, setShowPopup] = useState(false);
-  const [successReceipt, setSuccessReceipt] = useState<SuccessReceipt | null>(null);
-  const [paymentLoadingId, setPaymentLoadingId] = useState<string | null>(null);
-  const [selectedVehicleType, setSelectedVehicleType] = useState<VehicleType>("sedan");
-  const [paymentSplitMode, setPaymentSplitMode] = useState<Record<string, "full" | "half">>({});
+/* =========================================================
+   WHY CHOOSE US
+========================================================= */
 
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [showUserForm, setShowUserForm] = useState(false);
+const WHY_US = [
+  {
+    title: "Direct Booking Support",
+    text: "Phone ya WhatsApp par directly booking requirement share karke cab arrange kar sakte hain.",
+  },
+  {
+    title: "One Way & Round Trip",
+    text: "Bilaspur se one-way drop ke saath return journey ke liye bhi cab options available.",
+  },
+  {
+    title: "Airport & Railway Travel",
+    text: "Time-sensitive airport aur railway journeys ke liye advance pickup planning.",
+  },
+  {
+    title: "Multiple Vehicle Options",
+    text: "Sedan, MUV aur premium SUV options passenger count aur luggage ke according.",
+  },
+  {
+    title: "Transparent Enquiry",
+    text: "Booking se pehle route, vehicle aur fare requirements discuss ki ja sakti hain.",
+  },
+  {
+    title: "Bilaspur Focused Service",
+    text: "Bilaspur city aur surrounding areas se Chhattisgarh ke major destinations ke liye cab support.",
+  },
+];
 
-  const convertToIndianDate = (dateString: string) => {
-    if (!dateString) return "--/--/----";
-    const [year, month, day] = dateString.split("-");
-    return `${day}/${month}/${year}`;
-  };
+/* =========================================================
+   FAQS
+========================================================= */
 
-  const formatTimeToAMPM = (timeString: string) => {
-    if (!timeString) return "--:-- --";
-    let [hours, minutes] = timeString.split(":").map(Number);
-    const ampm = hours >= 12 ? "PM" : "AM";
-    hours = hours % 12 || 12;
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${ampm}`;
-  };
+const FAQS = [
+  {
+    q: "Bilaspur se taxi kaise book karein?",
+    a: `Bilaspur se taxi book karne ke liye ${PHONE_DISPLAY} par call karein ya WhatsApp par pickup location, destination, date aur passengers ki details share karein.`,
+  },
+  {
+    q: "Kya Bilaspur se Raipur ke liye one-way taxi milti hai?",
+    a: "Haan. Bilaspur se Raipur ke liye one-way cab booking available hai. Journey requirement ke according sedan, MUV ya premium vehicle option enquire kiya ja sakta hai.",
+  },
+  {
+    q: "Bilaspur se Korba taxi available hai?",
+    a: "Haan. Bilaspur to Korba ek high-demand intercity route hai aur one-way cab booking ke liye direct enquiry ki ja sakti hai.",
+  },
+  {
+    q: "Kya Bilaspur se Raipur Airport cab book kar sakte hain?",
+    a: "Haan. Bilaspur se Swami Vivekananda Airport, Raipur ke liye airport transfer cab advance me book ki ja sakti hai.",
+  },
+  {
+    q: "Bilaspur se outstation taxi milti hai?",
+    a: "Haan. Bilaspur se Chhattisgarh aur nearby destinations ke liye one-way aur round-trip outstation cab requirements ke liye booking support available hai.",
+  },
+  {
+    q: "Family ke liye kaunsi car suitable hai?",
+    a: "Small family ya 1–4 passengers ke liye sedan suitable ho sakti hai. Larger family/group ke liye Ertiga ya Innova Crysta jaise spacious options enquire kiye ja sakte hain.",
+  },
+];
 
-  const getDynamicKmsLimitDisplay = (opt: FareOption): number => {
-    if (!popupData || popupData.bookingType !== "roundtrip" || !popupData.returnDate || !popupData.returnTime) {
-      return opt.billedDistance; 
-    }
-    try {
-      const start = new Date(`${popupData.pickupDate}T${popupData.pickupTime}`);
-      const end = new Date(`${popupData.returnDate}T${popupData.returnTime}`);
-      const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-      const days = Math.max(1, Math.ceil(hours / 24));
-      
-      const calculatedLimit = days * 250;
-      return calculatedLimit > opt.billedDistance ? calculatedLimit : opt.billedDistance;
-    } catch (e) {
-      return opt.billedDistance;
-    }
-  };
+/* =========================================================
+   METADATA
+========================================================= */
 
-  const handleOnlinePaymentCheckout = async (option: FareOption) => {
-    if (!popupData) return;
-    if (!customerName.trim() || !customerPhone.trim() || customerPhone.length < 10) {
-      alert("⚠️ Kripya sahi Naam aur 10-digit Mobile Number darj karein!");
-      return;
-    }
+export const metadata: Metadata = {
+  title:
+    "Bilaspur Taxi Service | Bilaspur to Raipur, Korba & Airport Cab | Khatu Rides Travels",
 
-    setPaymentLoadingId(option.id);
-    const mode = paymentSplitMode[option.id] || "full";
-    const totalFareValue = option.finalFare; 
-    const processAmount = mode === "half" ? Math.round(totalFareValue / 2) : totalFareValue;
+  description:
+    "Book taxi from Bilaspur for Raipur, Korba, Raipur Airport and other destinations. One-way taxi, round-trip cab, airport transfer and outstation cab booking by Khatu Rides Travels.",
 
-    try {
-      const res = await fetch("/api/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: processAmount, pickup: popupData.pickup, drop: popupData.drop, vehicleLabel: option.vehicleLabel }),
-      });
-      const orderData = await res.json();
-      if (!res.ok) throw new Error(orderData.error || "Order generation error");
+  keywords: [
+    "Bilaspur taxi service",
+    "Bilaspur cab service",
+    "taxi booking Bilaspur",
+    "cab booking Bilaspur",
+    "taxi service in Bilaspur",
+    "Bilaspur to Raipur taxi",
+    "Bilaspur to Raipur cab",
+    "Bilaspur to Korba taxi",
+    "Bilaspur to Korba cab",
+    "Bilaspur to Raipur Airport cab",
+    "Bilaspur airport taxi",
+    "Bilaspur outstation cab",
+    "Bilaspur one way taxi",
+    "Bilaspur round trip cab",
+  ],
 
-      const paymentObject = new (window as any).Razorpay({
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
-        amount: orderData.amount,
-        currency: "INR",
-        name: "Khatu Rides Travels Co.",
-        description: `${option.vehicleLabel} Route Allocation`,
-        order_id: orderData.orderId,
-        prefill: { name: customerName, contact: customerPhone },
-        theme: { color: "#ea580c" },
-        handler: async (response: any) => {
-          const verifyRes = await fetch("/api/verify-booking", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              razorpayOrderId: response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature,
-              pickup: popupData.pickup,
-              drop: popupData.drop,
-              bookingType: popupData.bookingType,
-              pickupDate: popupData.pickupDate,
-              pickupTime: popupData.pickupTime,
-              vehicleLabel: option.vehicleLabel,
-              amount: processAmount,
-            }),
-          });
-          const verifyData = await verifyRes.json();
-          
-          if (verifyRes.ok && verifyData.success) {
-            const finalInvoiceId = verifyData.invoiceId || `KR-${Math.floor(100000 + Math.random() * 900000)}`;
+  alternates: {
+    canonical: `${SITE_URL}/cabs/bilaspur`,
+  },
 
-            if (db) {
-              await addDoc(collection(db, "bookings"), {
-                invoiceId: finalInvoiceId,
-                customerName: customerName,
-                customerPhone: customerPhone,
-                pickup: popupData.pickup,
-                drop: popupData.drop,
-                bookingType: popupData.bookingType,
-                serviceType: popupData.serviceType,
-                pickupDate: popupData.pickupDate,
-                pickupTime: popupData.pickupTime,
-                returnDate: popupData.returnDate || null,
-                vehicleLabel: option.vehicleLabel,
-                amountPaid: processAmount,
-                paymentMode: mode === "half" ? "50% ADVANCE" : "FULL PAYMENT",
-                razorpayPaymentId: response.razorpay_payment_id,
-                createdAt: serverTimestamp()
-              });
-            }
+  openGraph: {
+    title:
+      "Bilaspur Taxi Service | Bilaspur to Raipur, Korba & Airport Cab",
+    description:
+      "Book one-way, round-trip, airport and outstation cabs from Bilaspur with Khatu Rides Travels.",
+    url: `${SITE_URL}/cabs/bilaspur`,
+    siteName: "Khatu Rides Travels",
+    locale: "en_IN",
+    type: "website",
+    images: [
+      {
+        url: `${SITE_URL}/logo.png`,
+        width: 1200,
+        height: 630,
+        alt: "Khatu Rides Travels Bilaspur Taxi Service",
+      },
+    ],
+  },
 
-            setShowPopup(false);
-            setShowUserForm(false);
-            setSuccessReceipt({
-              invoiceId: finalInvoiceId,
-              pickup: popupData.pickup,
-              drop: popupData.drop,
-              date: convertToIndianDate(popupData.pickupDate),
-              time: formatTimeToAMPM(popupData.pickupTime),
-              vehicle: option.vehicleLabel,
-              amount: processAmount,
-              paymentMode: mode === "half" ? "50% ADVANCE" : "FULL PAYMENT",
-            });
-          }
-        },
-      });
-      paymentObject.open();
-    } catch (error: any) {
-      alert(error.message || "Payment interface failed");
-    } finally {
-      setPaymentLoadingId(null);
-    }
-  };
+  twitter: {
+    card: "summary_large_image",
+    title:
+      "Bilaspur Taxi Service | Khatu Rides Travels",
+    description:
+      "Book a taxi from Bilaspur to Raipur, Korba, Raipur Airport and other destinations.",
+    images: [`${SITE_URL}/logo.png`],
+  },
 
-  const handleWhatsAppManualRedirect = (option: FareOption) => {
-    if (!popupData) return;
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
 
-    const textPayload = `Hello Khatu Rides Travels Co., 
+/* =========================================================
+   PAGE
+========================================================= */
 
-I would like to book an outstation cab package shortly. The route manifest parameters are listed below:
+export default function BilaspurCabPage() {
+  /* =======================================================
+     LOCAL BUSINESS SCHEMA
+  ======================================================= */
 
-*ROUTE MANIFEST CARD:*
-• From : ${popupData.pickup}
-• To: ${popupData.drop}
-• Vehicle Segment : ${option.vehicleLabel}
-• Trip Type : ${popupData.bookingType.toUpperCase()}
-• Date & Time: ${convertToIndianDate(popupData.pickupDate)} at ${formatTimeToAMPM(popupData.pickupTime)}
-
-*PRICING ESTIMATION SHEET:*
-• Total Fare: Rs. ${option.finalFare.toLocaleString("en-IN")}.00 (All-Inclusive)
-
-Please register this vehicle booking manually in the control panel desk. Thank you!`;
-
-    const cleanFormattedUrl = `https://wa.me/919244137353?text=${encodeURIComponent(textPayload)}`;
-    window.open(cleanFormattedUrl, "_blank");
-  };
-
-  const bilaspurSchema = {
+  const businessSchema = {
     "@context": "https://schema.org",
-    "@type": "Product",
-    "name": "Khatu Rides Bilaspur Taxi Service Desk",
-    "image": "https://www.khaturidescg.in/dezire.png",
-    "description": "Premium outstation car rental and airport transfer service in Bilaspur, Chhattisgarh.",
-    "brand": {
-      "@type": "Brand",
-      "name": "Khatu Rides Travels Co."
+    "@type": "LocalBusiness",
+    name: "Khatu Rides Travels Co.",
+    url: `${SITE_URL}/cabs/bilaspur`,
+    telephone: `+91-${PHONE}`,
+    image: `${SITE_URL}/logo.png`,
+    priceRange: "₹₹",
+
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "Bilaspur",
+      addressRegion: "Chhattisgarh",
+      addressCountry: "IN",
     },
-    "offers": {
-      "@type": "AggregateOffer",
-      "priceCurrency": "INR",
-      "lowPrice": "1499",
-      "highPrice": "4500",
-      "offerCount": "25"
-    },
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": "4.9",
-      "bestRating": "5",
-      "ratingCount": "210"
-    }
+
+    areaServed: [
+      {
+        "@type": "City",
+        name: "Bilaspur",
+      },
+      {
+        "@type": "AdministrativeArea",
+        name: "Chhattisgarh",
+      },
+    ],
+
+    serviceType: [
+      "Taxi Service",
+      "Cab Booking",
+      "One Way Taxi",
+      "Round Trip Cab",
+      "Airport Transfer",
+      "Outstation Cab",
+    ],
   };
 
-  const selectedOption = popupData?.fareOptions.find((item) => item.vehicleType === selectedVehicleType);
-  const totalPricingBase = selectedOption ? selectedOption.finalFare : 0;
-  const currentSelectedMode = selectedOption && paymentSplitMode[selectedOption.id] ? paymentSplitMode[selectedOption.id] : "full";
-  const displayPayNowNumber = currentSelectedMode === "half" ? Math.round(totalPricingBase / 2) : totalPricingBase;
+  /* =======================================================
+     SERVICE SCHEMA
+  ======================================================= */
+
+  const serviceSchema = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    name: "Bilaspur Taxi Service",
+    serviceType: "Taxi and Cab Booking Service",
+    provider: {
+      "@type": "LocalBusiness",
+      name: "Khatu Rides Travels Co.",
+      telephone: `+91-${PHONE}`,
+      url: SITE_URL,
+    },
+    areaServed: {
+      "@type": "City",
+      name: "Bilaspur",
+    },
+    description:
+      "Taxi and cab booking service from Bilaspur for one-way, round-trip, airport transfer and outstation travel.",
+  };
+
+  /* =======================================================
+     BREADCRUMB SCHEMA
+  ======================================================= */
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: SITE_URL,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Bilaspur Taxi Service",
+        item: `${SITE_URL}/cabs/bilaspur`,
+      },
+    ],
+  };
 
   return (
-    <main className="bg-slate-950 text-slate-100 min-h-screen">
-      <Script id="razorpay-checkout-js" src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
+    <>
+      {/* =====================================================
+          STRUCTURED DATA
+      ===================================================== */}
+
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(bilaspurSchema) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(businessSchema),
+        }}
       />
 
-      {/* HERO SECTION */}
-      <section className="relative overflow-hidden bg-slate-950 border-b border-slate-900 pb-12">
-        <div className="absolute inset-0 w-full h-full scale-105 opacity-10 blur-xs pointer-events-none">
-          <img src="/banner6.png" alt="Route Map Guide" className="w-full h-full object-cover" />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-orange-600/5 via-slate-950/90 to-slate-950" />
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-orange-500/10 rounded-full blur-[140px] pointer-events-none" />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(serviceSchema),
+        }}
+      />
 
-        <div className="relative z-10 mx-auto max-w-7xl px-4 pt-16 md:pt-24 text-center">
-          <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-xs font-black uppercase tracking-widest text-emerald-400">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            Verified Regional Taxi Provider
-          </span>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbSchema),
+        }}
+      />
 
-          <h1 className="mt-6 text-4xl font-black tracking-tight sm:text-6xl text-white">
-            Premium Taxi Service in Bilaspur
-          </h1>
+      {/* =====================================================
+          PAGE
+      ===================================================== */}
 
-          <p className="mt-4 max-w-3xl mx-auto text-base sm:text-lg leading-relaxed text-slate-400">
-            Looking for reliable, transparent, and on-time car rental in Bilaspur? Book premium sedans, executive Ertigas, or luxury Crystas with professional local drivers at flat rates.
-          </p>
-        </div>
+      <main className="min-h-screen overflow-hidden bg-white text-slate-900">
 
-        {/* 👑 PROPS 'onFareCalculated' DYNAMICALLY ALLOCATED */}
-        <div className="relative z-20 mx-auto max-w-5xl px-4 mt-10">
-          <div className="rounded-3xl border border-white/5 bg-white/[0.02] backdrop-blur-xl p-4 sm:p-6 shadow-2xl shadow-black/50">
-            <h3 className="text-sm font-black text-center text-orange-500 uppercase tracking-widest mb-4">
-              Calculate Real-Time Bilaspur Outstation Slabs
-            </h3>
-            <FareCalculator 
-              onFareCalculated={(data) => {
-                setPopupData(data);
-                setSelectedVehicleType("sedan");
-                setShowPopup(true);
-                setShowUserForm(false);
-                setPaymentSplitMode({});
-              }}
-            />
+        {/* ===================================================
+            HEADER
+        =================================================== */}
+
+        <header className="relative z-50 border-b border-slate-200 bg-white">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+            <div className="flex min-h-[78px] items-center justify-between gap-4">
+
+              {/* LOGO */}
+
+              <Link
+                href="/"
+                className="flex shrink-0 items-center"
+                aria-label="Khatu Rides Travels Home"
+              >
+                <img
+                  src="/logo.png"
+                  alt="Khatu Rides Travels"
+                  className="h-14 w-auto object-contain sm:h-16"
+                />
+              </Link>
+
+              {/* DESKTOP NAV */}
+
+              <nav className="hidden items-center gap-1 lg:flex">
+                <Link
+                  href="/"
+                  className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 hover:text-[#063B8F]"
+                >
+                  Home
+                </Link>
+
+                <Link
+                  href="/#popular-routes"
+                  className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 hover:text-[#063B8F]"
+                >
+                  Popular Routes
+                </Link>
+
+                <Link
+                  href="/#tour-packages"
+                  className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 hover:text-[#063B8F]"
+                >
+                  Tour Packages
+                </Link>
+
+                <Link
+                  href="/#fleet"
+                  className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 hover:text-[#063B8F]"
+                >
+                  Fleet
+                </Link>
+
+                <Link
+                  href="/fare-calculator"
+                  className="ml-1 flex items-center gap-2 rounded-xl bg-[#FFC400] px-4 py-2.5 text-sm font-black text-[#071A3A] shadow-sm transition hover:-translate-y-0.5 hover:bg-[#FFD23F]"
+                >
+                  <Navigation size={16} />
+                  Fare Calculator
+                </Link>
+              </nav>
+
+              {/* DESKTOP CALL */}
+
+              <TrackedCallButton
+                href={`tel:+91${PHONE}`}
+                className="hidden items-center gap-3 rounded-2xl bg-[#063B8F] px-5 py-3 text-white shadow-[0_10px_25px_rgba(6,59,143,.20)] transition hover:-translate-y-0.5 hover:bg-[#052F73] sm:flex"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15">
+                  <Phone size={18} fill="currentColor" />
+                </span>
+
+                <span className="text-left">
+                  <span className="block text-[9px] font-black uppercase tracking-[0.15em] text-blue-100">
+                    Call for Booking
+                  </span>
+
+                  <span className="block text-sm font-black">
+                    {PHONE_DISPLAY}
+                  </span>
+                </span>
+              </TrackedCallButton>
+            </div>
+
+            {/* MOBILE BOOKING LINE */}
+
+            <div className="border-t border-slate-100 py-3 sm:hidden">
+              <div className="flex items-center justify-center gap-2 text-center">
+                <Phone
+                  size={24}
+                  className="shrink-0 text-[#FF1726]"
+                  fill="currentColor"
+                />
+
+                <p className="text-[22px] font-black leading-7 text-[#071A3A]">
+                  बिलासपुर से कहीं के लिए भी टैक्सी बुक करने के लिए संपर्क करें{" "}
+                  <a
+                    href={`tel:+91${PHONE}`}
+                    className="text-[#FF1726]"
+                  >
+                    9244137353
+                  </a>
+                </p>
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
-
-      
-
-       {/* 👑 5. DYNAMIC REVIEWS SLIDER */}
-              <ReviewsCarousel />
-
-      {/* SERVICES DOCK SECTION */}
-      <section className="relative z-10 mx-auto max-w-7xl px-4 py-16">
-        <header className="text-center mb-10">
-          <span className="text-[10px] font-black uppercase tracking-widest text-orange-500 block mb-1">
-            Operational Pillars
-          </span>
-          <h2 className="text-3xl font-black tracking-tight text-white">
-            Professional Travel Core
-          </h2>
         </header>
 
-        <div className="grid gap-6 md:grid-cols-4">
-          <Feature
-            icon={<Plane size={28} />}
-            title="Airport Transfers"
-            text="On-time drops from Bilaspur, Uslapur, & Sarkanda straight to Swami Vivekananda Airport Raipur."
-          />
-          <Feature
-            icon={<Car size={28} />}
-            title="One-Way Corridor"
-            text="Pay strictly for the drop distance. Affordable one-way outstation taxi routes to Korba & Raigarh."
-          />
-          <Feature
-            icon={<Building2 size={28} />}
-            title="Corporate Fleet"
-            text="Executive rides tailored for judicial professionals near High Court Bilaspur & business hubs."
-          />
-          <Feature
-            icon={<Phone size={28} />}
-            title="24/7 Dispatch Control"
-            text="Continuous track monitoring and immediate dynamic chauffeur dispatch at any hour."
-          />
-        </div>
-      </section>
+        {/* ===================================================
+            HERO
+        =================================================== */}
 
-      {/* FLEET CONFIGURATOR */}
-      <section className="bg-slate-900/40 py-16 border-y border-slate-900">
-        <div className="mx-auto max-w-7xl px-4">
-          <header className="text-center mb-12">
-            <span className="text-[10px] font-black uppercase tracking-widest text-orange-500 block mb-1">
-              Transparent Fleet Pricing
-            </span>
-            <h2 className="text-3xl font-black tracking-tight text-white">
-              Choose Your Bilaspur Car Rental Category
-            </h2>
-          </header>
+        <section className="relative overflow-hidden bg-[#071A3A]">
 
-          <div className="grid gap-8 md:grid-cols-3">
-            {vehicles.map((vehicle) => (
-              <article
-                key={vehicle.name}
-                className="group relative overflow-hidden rounded-3xl border border-white/5 bg-white/[0.02] p-6 flex flex-col justify-between shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:border-orange-500/50 hover:bg-white/[0.04] transition-all duration-300 cursor-pointer"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-black text-white">{vehicle.name}</h3>
-                    <span className="inline-block rounded-xl bg-orange-500/10 border border-orange-500/25 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-orange-500">
-                      {vehicle.type}
-                    </span>
-                  </div>
+          {/* BACKGROUND GLOW */}
 
-                  <div className="relative h-40 w-full flex items-center justify-center rounded-2xl bg-slate-950/50 border border-white/[0.02] my-4 overflow-hidden">
-                    <img
-                      src={vehicle.image}
-                      alt={`${vehicle.name} - Khatu Rides Bilaspur`}
-                      className="max-h-28 object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.4)] group-hover:scale-110 transition-all duration-300"
-                    />
-                  </div>
+          <div className="pointer-events-none absolute -right-40 -top-40 h-[420px] w-[420px] rounded-full bg-[#FFC400]/15 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-40 -left-40 h-[420px] w-[420px] rounded-full bg-[#063B8F]/50 blur-3xl" />
 
-                  <ul className="grid grid-cols-2 gap-2 mt-4">
-                    {vehicle.specs.map((spec, index) => (
-                      <li key={index} className="flex items-center gap-1 text-[11px] text-slate-400">
-                        <span className="h-1 w-1 rounded-full bg-orange-500" />
-                        <span>{spec}</span>
-                      </li>
-                    ))}
-                  </ul>
+          <div className="relative mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8 lg:py-14">
+
+            {/* BREADCRUMB */}
+
+            <div className="mb-5 flex items-center gap-2 text-[10px] font-bold text-blue-200 sm:text-xs">
+              <Link href="/" className="hover:text-white">
+                Home
+              </Link>
+
+              <ChevronRight size={12} />
+
+              <span>Bilaspur Taxi Service</span>
+            </div>
+
+            <div className="grid items-center gap-8 lg:grid-cols-[1.02fr_.98fr] lg:gap-12">
+
+              {/* HERO COPY */}
+
+              <div>
+
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-2 text-[9px] font-black uppercase tracking-[0.16em] text-[#FFC400] backdrop-blur">
+                  <span className="h-2 w-2 rounded-full bg-[#FFC400]" />
+                  Bilaspur Cab Booking
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-white/[0.04] flex items-center justify-between">
-                  <div>
-                    <span className="text-[8px] block text-slate-500 font-black uppercase tracking-widest">Base Dynamic Rate</span>
-                    <span className="text-lg font-black text-orange-500">{vehicle.price}</span>
-                  </div>
-                  <TrackedWhatsAppButton
-                    href="https://wa.me/919244137353"
-                    className="rounded-xl bg-white/5 hover:bg-orange-600 hover:text-white px-4 py-2 text-[10px] font-black uppercase tracking-wider transition-all"
+                <h1 className="mt-5 max-w-3xl text-4xl font-black leading-[1.02] tracking-tight text-white sm:text-5xl lg:text-6xl">
+                  Bilaspur Taxi
+                  <span className="block text-[#FFC400]">
+                    Service
+                  </span>
+                </h1>
+
+                <p className="mt-5 max-w-2xl text-sm font-medium leading-6 text-slate-300 sm:text-base sm:leading-7">
+                  Bilaspur se Raipur, Korba, Raipur Airport aur
+                  Chhattisgarh ke other destinations ke liye reliable
+                  one-way, round-trip aur outstation cab booking.
+                </p>
+
+                {/* TRUST POINTS */}
+
+                <div className="mt-6 grid max-w-xl grid-cols-2 gap-2 sm:grid-cols-4">
+                  {[
+                    "One Way",
+                    "Round Trip",
+                    "Airport Cab",
+                    "Outstation",
+                  ].map((item) => (
+                    <div
+                      key={item}
+                      className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-3"
+                    >
+                      <CheckCircle2
+                        size={15}
+                        className="shrink-0 text-[#FFC400]"
+                      />
+
+                      <span className="text-[9px] font-black text-white sm:text-[10px]">
+                        {item}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* CTA */}
+
+                <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+
+                  <TrackedCallButton
+                    href={`tel:+91${PHONE}`}
+                    className="group flex min-h-[58px] items-center justify-center gap-3 rounded-2xl border-2 border-white bg-[#FF1726] px-6 text-white shadow-[0_15px_35px_rgba(255,23,38,.30)] transition hover:-translate-y-1 hover:bg-[#E90012]"
                   >
-                    Select Model
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#FF1726]">
+                      <Phone size={20} fill="currentColor" />
+                    </span>
+
+                    <span className="text-left">
+                      <span className="block text-[9px] font-black uppercase tracking-wider text-red-100">
+                        Fast Booking
+                      </span>
+                      <span className="block text-base font-black">
+                        Call Now
+                      </span>
+                    </span>
+
+                    <ArrowRight
+                      size={17}
+                      className="transition group-hover:translate-x-1"
+                    />
+                  </TrackedCallButton>
+
+                  <TrackedWhatsAppButton
+                    href={whatsappUrl(DEFAULT_WHATSAPP_MESSAGE)}
+                    className="group flex min-h-[58px] items-center justify-center gap-3 rounded-2xl border-2 border-white/20 bg-[#00E676] px-6 text-white shadow-[0_15px_35px_rgba(0,230,118,.25)] transition hover:-translate-y-1 hover:bg-[#00D467]"
+                  >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
+                      <WhatsAppIcon size={23} />
+                    </span>
+
+                    <span className="text-left">
+                      <span className="block text-[9px] font-black uppercase tracking-wider text-green-50">
+                        Chat & Enquire
+                      </span>
+                      <span className="block text-base font-black">
+                        WhatsApp
+                      </span>
+                    </span>
+
+                    <ArrowRight
+                      size={17}
+                      className="transition group-hover:translate-x-1"
+                    />
                   </TrackedWhatsAppButton>
                 </div>
-              </article>
-            ))}
+
+                <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-slate-400">
+                  <ShieldCheck
+                    size={15}
+                    className="text-[#FFC400]"
+                  />
+                  Direct booking support • Route & vehicle enquiry
+                </div>
+              </div>
+
+              {/* HERO IMAGE */}
+
+              <div className="relative">
+
+                <div className="relative overflow-hidden rounded-[30px] border border-white/10 bg-white/5 p-2 shadow-2xl">
+                  <div className="relative overflow-hidden rounded-[24px]">
+
+                    <img
+                      src="/hero/01.png"
+                      alt="Khatu Rides Travels Bilaspur taxi service"
+                      className="h-[245px] w-full object-cover sm:h-[330px] lg:h-[400px]"
+                    />
+
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#071A3A]/75 via-transparent to-transparent" />
+
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <div className="rounded-2xl border border-white/15 bg-[#071A3A]/85 p-4 backdrop-blur-xl">
+                        <div className="flex items-center justify-between gap-4">
+
+                          <div>
+                            <p className="text-[9px] font-black uppercase tracking-[0.18em] text-[#FFC400]">
+                              Starting Point
+                            </p>
+
+                            <p className="mt-1 text-lg font-black text-white">
+                              Bilaspur, Chhattisgarh
+                            </p>
+                          </div>
+
+                          <div className="hidden h-10 w-10 items-center justify-center rounded-xl bg-[#FFC400] text-[#071A3A] sm:flex">
+                            <MapPin size={19} fill="currentColor" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* FLOAT BADGE */}
+
+                <div className="absolute -bottom-4 -right-3 hidden rounded-2xl border border-white/20 bg-white p-4 shadow-2xl sm:block">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FFC400] text-[#071A3A]">
+                      <Car size={21} />
+                    </div>
+
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">
+                        Cab Booking
+                      </p>
+
+                      <p className="text-sm font-black text-[#071A3A]">
+                        Local & Outstation
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* MICRO-ROUTES */}
-      <section className="mx-auto max-w-7xl px-4 py-16">
-        <header className="mb-10 text-center md:text-left">
-          <span className="text-[10px] font-black uppercase tracking-widest text-orange-500 block mb-1">
-            Regional Grid Nodes
-          </span>
-          <h2 className="text-3xl font-black tracking-tight text-white">
-            Hyper-Local Bilaspur Intercity Corridors
-          </h2>
-          <p className="text-slate-400 text-xs mt-1">
-            Dynamic oneway and roundtrip links connecting local micro areas directly to high-traffic destinations.
-          </p>
-        </header>
+        {/* ===================================================
+            HIGH INTENT ROUTES
+        =================================================== */}
 
-        <div className="grid gap-4 md:grid-cols-2">
-          {MICRO_ROUTES.map((route, idx) => (
-            <article
-              key={idx}
-              className="group rounded-2xl border border-white/5 bg-white/[0.01] p-5 flex items-center justify-between hover:border-orange-500/30 hover:bg-white/[0.03] transition-all duration-300"
-            >
-              <div className="space-y-1 max-w-[70%]">
-                <span className="inline-block rounded-lg bg-orange-500/10 px-2 py-0.5 text-[8px] font-black uppercase tracking-wider text-orange-500">
-                  {route.tag}
-                </span>
-                <h4 className="text-xs font-black text-white flex items-center gap-1.5 flex-wrap">
-                  <span className="capitalize">{route.from}</span>
-                  <span className="text-orange-500 font-bold">→</span>
-                  <span className="capitalize">{route.to}</span>
-                </h4>
-                <p className="text-[10px] text-slate-500">
-                  Distance-optimized multi-lane outstation corridor. Flat pricing standards.
+        <section className="bg-[#F4F7FB] py-12 sm:py-16 lg:py-20">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+
+              <div>
+                <div className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#063B8F]">
+                  High Intent Cab Routes
+                </div>
+
+                <h2 className="text-3xl font-black tracking-tight text-[#071A3A] sm:text-4xl">
+                  Bilaspur Se Starts
+                </h2>
+
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+                  Bilaspur se frequently searched aur high-intent
+                  destinations ke liye direct cab booking.
                 </p>
               </div>
 
-              <div className="text-right">
-                <span className="text-[10px] block font-black text-slate-400">{route.dist}</span>
-                <TrackedWhatsAppButton
-                  href="https://wa.me/919244137353"
-                  className="mt-2 inline-block rounded-xl bg-white/5 group-hover:bg-orange-600 group-hover:text-white px-3 py-1.5 text-[9px] font-black uppercase tracking-widest transition-all"
+              <Link
+                href="/routes"
+                className="inline-flex items-center gap-2 text-sm font-black text-[#063B8F] hover:text-[#FF1726]"
+              >
+                View All Routes
+                <ArrowRight size={16} />
+              </Link>
+            </div>
+
+            <div className="mt-8 grid gap-5 md:grid-cols-3">
+
+              {ROUTES.map((route, index) => (
+                <Link
+                  key={route.slug}
+                  href={`/routes/${route.slug}`}
+                  className="group relative overflow-hidden rounded-[26px] border border-slate-200 bg-white p-5 shadow-[0_12px_35px_rgba(15,23,42,.06)] transition duration-300 hover:-translate-y-1 hover:border-[#063B8F]/20 hover:shadow-[0_20px_45px_rgba(15,23,42,.10)]"
                 >
-                  Quote
-                </TrackedWhatsAppButton>
+
+                  <div className="flex items-center justify-between gap-3">
+
+                    <span className="rounded-full bg-[#FFF4C2] px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#8A6400]">
+                      {route.badge}
+                    </span>
+
+                    <span className="text-[10px] font-black text-slate-400">
+                      0{index + 1}
+                    </span>
+                  </div>
+
+                  <div className="mt-6 flex items-center gap-3">
+
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#071A3A] text-[#FFC400]">
+                      <MapPin size={21} fill="currentColor" />
+                    </div>
+
+                    <div className="min-w-0">
+                      <h3 className="text-lg font-black text-[#071A3A]">
+                        {route.from} → {route.to}
+                      </h3>
+
+                      <p className="mt-1 text-[10px] font-bold text-slate-400">
+                        {route.type} • {route.distance}
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="mt-5 text-xs leading-5 text-slate-500">
+                    {route.description}
+                  </p>
+
+                  <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
+
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#063B8F]">
+                      Check Route
+                    </span>
+
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#071A3A] text-white transition group-hover:bg-[#063B8F]">
+                      <ArrowRight size={15} />
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* EXTRA HIGH INTENT TEXT LINKS */}
+
+            <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
+                <span className="mr-1 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  Popular searches:
+                </span>
+
+                <Link
+                  href="/routes/bilaspur-to-raipur-taxi"
+                  className="rounded-full bg-slate-100 px-3 py-2 text-[10px] font-bold text-[#063B8F] hover:bg-[#FFF4C2]"
+                >
+                  Bilaspur to Raipur Taxi
+                </Link>
+
+                <Link
+                  href="/routes/bilaspur-to-korba-taxi"
+                  className="rounded-full bg-slate-100 px-3 py-2 text-[10px] font-bold text-[#063B8F] hover:bg-[#FFF4C2]"
+                >
+                  Bilaspur to Korba Taxi
+                </Link>
+
+                <Link
+                  href="/routes/bilaspur-to-raipur-airport-cab"
+                  className="rounded-full bg-slate-100 px-3 py-2 text-[10px] font-bold text-[#063B8F] hover:bg-[#FFF4C2]"
+                >
+                  Bilaspur to Raipur Airport Cab
+                </Link>
+
+                <Link
+                  href="/fare-calculator"
+                  className="rounded-full bg-[#FFC400] px-3 py-2 text-[10px] font-black text-[#071A3A] hover:bg-[#FFD23F]"
+                >
+                  Calculate Fare
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===================================================
+            AIRPORT / RAILWAY
+        =================================================== */}
+
+        <section className="bg-white py-12 sm:py-16 lg:py-20">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+            <div className="grid gap-6 lg:grid-cols-2">
+
+              {/* AIRPORT */}
+
+              <div className="relative overflow-hidden rounded-[30px] bg-[#071A3A] p-6 text-white sm:p-8">
+
+                <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-[#FFC400]/15 blur-3xl" />
+
+                <div className="relative">
+
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FFC400] text-[#071A3A]">
+                    <Plane size={22} />
+                  </div>
+
+                  <p className="mt-5 text-[10px] font-black uppercase tracking-[0.2em] text-[#FFC400]">
+                    Airport Transfer
+                  </p>
+
+                  <h2 className="mt-2 text-2xl font-black sm:text-3xl">
+                    Bilaspur to Raipur Airport Cab
+                  </h2>
+
+                  <p className="mt-3 max-w-xl text-sm leading-6 text-slate-300">
+                    Bilaspur se Swami Vivekananda Airport, Raipur ke liye
+                    advance cab booking. Flight schedule ke according
+                    pickup planning ke liye booking team se contact karein.
+                  </p>
+
+                  <Link
+                    href="/routes/bilaspur-to-raipur-airport-cab"
+                    className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#FFC400] px-5 py-3 text-xs font-black text-[#071A3A] transition hover:bg-[#FFD23F]"
+                  >
+                    Airport Cab Details
+                    <ArrowRight size={15} />
+                  </Link>
+                </div>
+              </div>
+
+              {/* RAILWAY */}
+
+              <div className="rounded-[30px] border border-slate-200 bg-[#F5F7FA] p-6 sm:p-8">
+
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#063B8F] text-white">
+                  <TrainFront size={22} />
+                </div>
+
+                <p className="mt-5 text-[10px] font-black uppercase tracking-[0.2em] text-[#063B8F]">
+                  Railway Travel
+                </p>
+
+                <h2 className="mt-2 text-2xl font-black text-[#071A3A] sm:text-3xl">
+                  Bilaspur Railway Pickup & Drop
+                </h2>
+
+                <p className="mt-3 text-sm leading-6 text-slate-500">
+                  Bilaspur Junction aur nearby railway travel requirements
+                  ke liye scheduled pickup/drop cab enquiry. Train timing
+                  aur passenger details booking ke waqt share karein.
+                </p>
+
+                <div className="mt-6 grid grid-cols-2 gap-3">
+                  {[
+                    "Scheduled Pickup",
+                    "Family Travel",
+                    "Luggage Friendly",
+                    "Outstation Link",
+                  ].map((item) => (
+                    <div
+                      key={item}
+                      className="flex items-center gap-2 rounded-xl bg-white px-3 py-3 shadow-sm"
+                    >
+                      <CheckCircle2
+                        size={15}
+                        className="text-[#063B8F]"
+                      />
+                      <span className="text-[10px] font-black text-slate-600">
+                        {item}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===================================================
+            SERVICES
+        =================================================== */}
+
+        <section className="bg-[#F4F7FB] py-12 sm:py-16 lg:py-20">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+            <div className="text-center">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[#063B8F]">
+                Cab Services in Bilaspur
+              </div>
+
+              <h2 className="mt-2 text-3xl font-black tracking-tight text-[#071A3A] sm:text-4xl">
+                One Booking. Multiple Travel Needs.
+              </h2>
+
+              <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-500">
+                Local travel se lekar long-distance outstation journey tak,
+                Bilaspur se different cab requirements ke liye booking support.
+              </p>
+            </div>
+
+            <div className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+              {SERVICES.map((service) => {
+                const Icon = service.icon;
+
+                return (
+                  <div
+                    key={service.title}
+                    className="group rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,.04)] transition hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(15,23,42,.08)]"
+                  >
+                    <div className="flex items-start gap-4">
+
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#071A3A] text-[#FFC400] transition group-hover:bg-[#063B8F]">
+                        <Icon size={21} />
+                      </div>
+
+                      <div>
+                        <h3 className="text-base font-black text-[#071A3A]">
+                          {service.title}
+                        </h3>
+
+                        <p className="mt-2 text-xs leading-5 text-slate-500">
+                          {service.text}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* ===================================================
+            LOCAL BILASPUR COVERAGE
+        =================================================== */}
+
+        <section className="bg-white py-12 sm:py-16 lg:py-20">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+
+            <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-[0_18px_55px_rgba(15,23,42,.07)] sm:p-9 lg:p-10">
+
+              <div className="grid gap-8 lg:grid-cols-[.75fr_1.25fr] lg:items-center">
+
+                <div>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FFC400] text-[#071A3A]">
+                    <MapPin size={22} fill="currentColor" />
+                  </div>
+
+                  <div className="mt-5 text-[10px] font-black uppercase tracking-[0.2em] text-[#063B8F]">
+                    Local Coverage
+                  </div>
+
+                  <h2 className="mt-2 text-3xl font-black tracking-tight text-[#071A3A]">
+                    Taxi Service Across Bilaspur
+                  </h2>
+
+                  <p className="mt-3 text-sm leading-6 text-slate-500">
+                    Bilaspur city aur surrounding residential, commercial
+                    aur major local areas se cab pickup requirements ke liye
+                    booking enquiry ki ja sakti hai.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+
+                  {LOCAL_AREAS.map((area) => (
+                    <div
+                      key={area}
+                      className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3"
+                    >
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#FFC400]" />
+
+                      <span className="text-[10px] font-bold leading-4 text-slate-600">
+                        {area}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===================================================
+            FLEET
+        =================================================== */}
+
+        <section className="bg-[#F4F7FB] py-12 sm:py-16 lg:py-20">
+          <div
+            id="fleet"
+            className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"
+          >
+
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[#063B8F]">
+                  Our Fleet
+                </div>
+
+                <h2 className="mt-2 text-3xl font-black tracking-tight text-[#071A3A] sm:text-4xl">
+                  Choose Your Ride
+                </h2>
+
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+                  Passenger count, luggage aur journey type ke according
+                  suitable vehicle option enquire karein.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-8 grid gap-5 md:grid-cols-3">
+
+              {FLEET.map((vehicle) => (
+                <div
+                  key={vehicle.name}
+                  className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_12px_35px_rgba(15,23,42,.06)]"
+                >
+
+                  <div className="relative h-[205px] overflow-hidden bg-slate-100">
+
+                    <img
+                      src={vehicle.image}
+                      alt={`${vehicle.name} cab in Bilaspur`}
+                      className="h-full w-full object-contain p-4 transition duration-500 hover:scale-105"
+                    />
+
+                    <div className="absolute left-4 top-4 rounded-full bg-[#071A3A] px-3 py-1.5 text-[9px] font-black text-white">
+                      {vehicle.type}
+                    </div>
+                  </div>
+
+                  <div className="p-5">
+
+                    <h3 className="text-lg font-black text-[#071A3A]">
+                      {vehicle.name}
+                    </h3>
+
+                    <p className="mt-2 text-xs leading-5 text-slate-500">
+                      {vehicle.description}
+                    </p>
+
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                      <div className="rounded-xl bg-slate-50 px-3 py-2">
+                        <p className="text-[8px] font-black uppercase tracking-wider text-slate-400">
+                          Capacity
+                        </p>
+                        <p className="mt-1 text-[10px] font-black text-slate-700">
+                          {vehicle.capacity}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl bg-slate-50 px-3 py-2">
+                        <p className="text-[8px] font-black uppercase tracking-wider text-slate-400">
+                          Luggage
+                        </p>
+                        <p className="mt-1 text-[10px] font-black text-slate-700">
+                          {vehicle.luggage}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
+                      <span className="text-sm font-black text-[#063B8F]">
+                        {vehicle.price}
+                      </span>
+
+                      <TrackedWhatsAppButton
+                        href={whatsappUrl(
+                          `Namaste Khatu Rides Travels, mujhe Bilaspur se cab book karni hai. Vehicle enquiry: ${vehicle.name}. Please share availability and fare.`
+                        )}
+                        className="flex items-center gap-2 rounded-xl bg-[#00E676] px-3 py-2 text-[9px] font-black text-white transition hover:bg-[#00D467]"
+                      >
+                        <WhatsAppIcon size={15} />
+                        Enquire
+                      </TrackedWhatsAppButton>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ===================================================
+            WHY US
+        =================================================== */}
+
+        <section className="bg-[#071A3A] py-12 text-white sm:py-16 lg:py-20">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+            <div className="grid gap-10 lg:grid-cols-[.85fr_1.15fr]">
+
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[#FFC400]">
+                  Why Khatu Rides
+                </div>
+
+                <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+                  Bilaspur Se Travel,
+                  <span className="block text-[#FFC400]">
+                    Simple & Direct.
+                  </span>
+                </h2>
+
+                <p className="mt-4 max-w-lg text-sm leading-6 text-slate-300">
+                  Booking ke liye complicated process ki jagah direct
+                  phone aur WhatsApp support. Pickup, destination,
+                  passengers aur vehicle requirement share karke enquiry karein.
+                </p>
+
+                <TrackedCallButton
+                  href={`tel:+91${PHONE}`}
+                  className="mt-7 inline-flex items-center gap-3 rounded-2xl border-2 border-white bg-[#FF1726] px-5 py-3.5 text-sm font-black text-white shadow-[0_12px_30px_rgba(255,23,38,.25)] transition hover:-translate-y-1 hover:bg-[#E90012]"
+                >
+                  <Phone size={18} fill="currentColor" />
+                  Call {PHONE_DISPLAY}
+                  <ArrowRight size={16} />
+                </TrackedCallButton>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+
+                {WHY_US.map((item, index) => (
+                  <div
+                    key={item.title}
+                    className="rounded-[22px] border border-white/10 bg-white/[0.06] p-5 backdrop-blur"
+                  >
+                    <div className="flex items-start gap-3">
+
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FFC400] text-[#071A3A]">
+                        <span className="text-xs font-black">
+                          0{index + 1}
+                        </span>
+                      </div>
+
+                      <div>
+                        <h3 className="text-sm font-black text-white">
+                          {item.title}
+                        </h3>
+
+                        <p className="mt-2 text-[11px] leading-5 text-slate-400">
+                          {item.text}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===================================================
+            REVIEWS
+        =================================================== */}
+
+        <section className="bg-white py-12 sm:py-16 lg:py-20">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+            <div className="mb-8 text-center">
+
+              <div className="inline-flex items-center gap-2 rounded-full bg-[#FFF4C2] px-3 py-2 text-[9px] font-black uppercase tracking-[0.18em] text-[#8A6400]">
+                <Star size={13} fill="currentColor" />
+                Customer Experience
+              </div>
+
+              <h2 className="mt-3 text-3xl font-black tracking-tight text-[#071A3A] sm:text-4xl">
+                What Our Customers Say
+              </h2>
+
+              <p className="mx-auto mt-2 max-w-xl text-sm text-slate-500">
+                Real customer feedback and travel experiences from Khatu Rides.
+              </p>
+            </div>
+
+            <ReviewsCarousel />
+          </div>
+        </section>
+
+        {/* ===================================================
+            SEO CONTENT
+        =================================================== */}
+
+        <section className="bg-[#F4F7FB] py-12 sm:py-16 lg:py-20">
+          <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+
+            <article className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,.05)] sm:p-9 lg:p-10">
+
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[#063B8F]">
+                Bilaspur Taxi Service
+              </div>
+
+              <h2 className="mt-3 text-2xl font-black tracking-tight text-[#071A3A] sm:text-3xl">
+                Bilaspur Taxi Service & Outstation Cab Booking
+              </h2>
+
+              <div className="mt-6 space-y-5 text-sm leading-7 text-slate-600 sm:text-base">
+
+                <p>
+                  Khatu Rides Travels provides taxi and cab booking assistance
+                  from Bilaspur for local travel, one-way journeys, round trips,
+                  airport transfers and outstation travel. Customers can contact
+                  the booking team directly by phone or WhatsApp and share their
+                  pickup location, destination, travel date and passenger
+                  requirements.
+                </p>
+
+                <p>
+                  Bilaspur se Raipur taxi aur Bilaspur to Korba taxi important
+                  intercity travel requirements ke liye book ki ja sakti hai.
+                  Business travel, family journeys, personal travel aur regional
+                  connectivity ke liye suitable vehicle options enquire kiye ja
+                  sakte hain.
+                </p>
+
+                <p>
+                  Bilaspur to Raipur Airport cab booking un customers ke liye
+                  useful hai jinko Raipur ke Swami Vivekananda Airport tak
+                  scheduled road transfer chahiye. Airport journey ke liye
+                  advance booking me pickup location aur flight-related timing
+                  requirements discuss ki ja sakti hain.
+                </p>
+
+                <p>
+                  Bilaspur taxi service ke through Sarkanda, Mangla, Telipara,
+                  Torwa, Vyapar Vihar, Rajkishore Nagar, Mopka, Sakri aur
+                  surrounding areas se pickup requirements ke liye enquiry ki
+                  ja sakti hai. Local pickup ke saath Chhattisgarh ke other
+                  destinations ke liye outstation cab requirements bhi share
+                  ki ja sakti hain.
+                </p>
+
+                <p>
+                  Vehicle selection passenger count aur luggage ke according
+                  kiya ja sakta hai. Small groups ke liye sedan, family aur
+                  larger groups ke liye MUV, aur premium long-distance travel
+                  ke liye Innova Crysta jaise options enquire kiye ja sakte hain.
+                </p>
+
+                <p>
+                  Bilaspur se taxi book karne ke liye{" "}
+                  <a
+                    href={`tel:+91${PHONE}`}
+                    className="font-black text-[#063B8F] hover:text-[#FF1726]"
+                  >
+                    {PHONE_DISPLAY}
+                  </a>{" "}
+                  par call karein ya WhatsApp par apni journey details share
+                  karein.
+                </p>
               </div>
             </article>
-          ))}
-        </div>
-      </section>
-
-      {/* SUB-URBAN AREAS */}
-      <section className="bg-slate-900/40 py-16 border-t border-slate-900">
-        <div className="mx-auto max-w-7xl px-4">
-          <header className="text-center mb-10">
-            <span className="text-[10px] font-black uppercase tracking-widest text-orange-500 block mb-1">
-              Local Service Coverage Map
-            </span>
-            <h2 className="text-3xl font-black tracking-tight text-white">
-              Areas We Serve in Bilaspur (Nyayadhani)
-            </h2>
-          </header>
-
-          <div className="grid gap-4 grid-cols-2 md:grid-cols-5">
-            {[
-              "Vyapar Vihar Core",
-              "Sarkanda Sector",
-              "Mangla Residential",
-              "Tifra Industrial Bypass",
-              "Link Road Terminal",
-              "Bus Stand Hub",
-              "Railway Station Area",
-              "Uslapur Railway Hub",
-              "High Court Road, Bodri",
-              "Bilasa Airport Area (PPR)",
-            ].map((area) => (
-              <div
-                key={area}
-                className="rounded-2xl border border-white/5 bg-slate-950 p-4 text-center text-xs font-black text-slate-300 hover:border-orange-500/40 hover:text-white transition cursor-default"
-              >
-                {area}
-              </div>
-            ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* WHY CHOOSE KHATU RIDES */}
-      <section className="mx-auto max-w-7xl px-4 py-16">
-        <h2 className="text-3xl font-black tracking-tight text-white text-center mb-10">
-          Why Choose Khatu Rides Travels in Bilaspur?
-        </h2>
+        {/* ===================================================
+            FAQ
+        =================================================== */}
 
-        <div className="grid gap-4 md:grid-cols-2">
-          {[
-            "Clean & Air-Conditioned Sanitized Fleet",
-            "Vetted Professional Drivers with Highway Expertise",
-            "Completely Transparent Flat Slabs & Zero Hidden Costs",
-            "Emergency Medical or Timely Raipur Airport Transfer Drops",
-            "Safe Interstate Border Crossings (Jharsuguda Core & Beyond)",
-            "Round-the-clock Dedicated Dispatch & Route Supervision Desk",
-          ].map((item) => (
-            <div
-              key={item}
-              className="flex items-center gap-3.5 rounded-2xl border border-white/5 bg-white/[0.01] p-5 hover:border-orange-500/20 transition"
-            >
-              <CheckCircle2 className="text-orange-500 shrink-0" size={18} />
-              <span className="text-xs font-bold text-slate-300">{item}</span>
+        <section className="bg-white py-12 sm:py-16 lg:py-20">
+          <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+
+            <div className="text-center">
+
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[#063B8F]">
+                Frequently Asked Questions
+              </div>
+
+              <h2 className="mt-2 text-3xl font-black tracking-tight text-[#071A3A] sm:text-4xl">
+                Bilaspur Cab Booking FAQs
+              </h2>
+
+              <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-500">
+                Bilaspur taxi booking se related common questions.
+              </p>
             </div>
-          ))}
-        </div>
-      </section>
 
-      {/* FAQ */}
-      <section className="bg-slate-900/40 py-16 border-t border-slate-900">
-        <div className="mx-auto max-w-5xl px-4">
-          <h2 className="text-3xl font-black tracking-tight text-white text-center mb-10">
-            Frequently Asked Questions
-          </h2>
+            <div className="mt-8 space-y-3">
 
-          <div className="space-y-6">
-            <Faq
-              q="Do you provide immediate airport taxi service from Bilaspur?"
-              a="Yes, Khatu Rides Travels provides dynamic executive pickups from Vyapar Vihar, Sarkanda, and other regions directly to Raipur Airport (Swami Vivekananda Airport RPR)."
-            />
-            <Faq
-              q="Can I hire a one-way outstation cab to Korba or Ambikapur?"
-              a="Absolutely. We specialize in one-way cab rentals from Bilaspur to Korba, Ambikapur, Raigarh, and Jagdalpur, ensuring you pay purely for the drop distance with zero hidden taxes."
-            />
-            <Faq
-              q="Do you serve commuters arriving at Uslapur Railway Station?"
-              a="Yes, we have dedicated sedan and MUV clusters deployed near Uslapur station and Bilaspur Junction to ensure immediate on-time pickup service for travelers."
-            />
+              {FAQS.map((faq) => (
+                <details
+                  key={faq.q}
+                  className="group rounded-2xl border border-slate-200 bg-slate-50 p-5 open:bg-white open:shadow-[0_10px_30px_rgba(15,23,42,.05)]"
+                >
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-5 text-sm font-black text-[#071A3A]">
+                    <span>{faq.q}</span>
+
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#071A3A] text-white transition group-open:rotate-45">
+                      <span className="text-xl font-light leading-none">
+                        +
+                      </span>
+                    </span>
+                  </summary>
+
+                  <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-6 text-slate-500 sm:text-sm">
+                    {faq.a}
+                  </p>
+                </details>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* MOBILE STICKY PANEL */}
-      <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden pointer-events-none">
-        <div className="grid grid-cols-2 gap-3 bg-slate-955/90 backdrop-blur-lg border border-white/10 p-2.5 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.5)] pointer-events-auto">
-          
-          <TrackedWhatsAppButton 
-            href="https://wa.me/919244137353" 
-            className="relative flex h-12 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-xs font-black uppercase text-white shadow-[0_4px_20px_rgba(16,185,129,0.3)] transition-all active:scale-95 animate-pulse overflow-hidden"
-          >
-            <span className="absolute inset-0 bg-white/10 animate-ping rounded-xl opacity-20 pointer-events-none" />
-            <span className="text-sm">💬</span>
-            <span>WhatsApp</span>
-          </TrackedWhatsAppButton>
+        {/* ===================================================
+            FINAL CTA
+        =================================================== */}
 
-          <TrackedCallButton 
-            href="tel:9244137353" 
-            className="group flex h-12 items-center justify-center gap-1.5 rounded-xl bg-orange-600 text-xs font-black uppercase text-white shadow-[0_4px_20px_rgba(249,115,22,0.3)] transition-all active:scale-95"
-          >
-            <span className="text-sm animate-[wiggle_1s_ease-in-out_infinite]">
-              📞
-            </span>
-            <span>Call Desk</span>
-          </TrackedCallButton>
+        <section className="bg-[#F4F7FB] px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
 
-        </div>
-      </div>
+          <div className="mx-auto max-w-7xl overflow-hidden rounded-[32px] bg-[#071A3A] px-6 py-9 shadow-2xl sm:px-10 sm:py-12 lg:px-14">
 
-      {/* POPUP DRAWER */}
-      <AnimatePresence>
-        {showPopup && popupData && (
-          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-950/60 p-2 sm:p-4 backdrop-blur-xs overflow-y-auto">
-            <motion.div 
-              initial={{ y: 30, opacity: 0 }} 
-              animate={{ y: 0, opacity: 1 }} 
-              exit={{ y: 30, opacity: 0 }} 
-              className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden my-auto flex flex-col max-h-[95vh] text-left"
+            <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto]">
+
+              <div>
+
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-2 text-[9px] font-black uppercase tracking-[0.18em] text-[#FFC400]">
+                  <span className="h-2 w-2 rounded-full bg-[#FFC400]" />
+                  Bilaspur Cab Booking
+                </div>
+
+                <h2 className="mt-4 max-w-3xl text-3xl font-black tracking-tight text-white sm:text-4xl">
+                  Bilaspur Se Cab Book Karni Hai?
+                </h2>
+
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
+                  Pickup, destination, date aur passengers ki details share
+                  karein. Booking requirement ke liye directly call ya
+                  WhatsApp par enquiry karein.
+                </p>
+
+                <div className="mt-4 flex flex-wrap items-center gap-3 text-[10px] font-bold text-slate-400">
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 size={14} className="text-[#FFC400]" />
+                    One Way
+                  </span>
+
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 size={14} className="text-[#FFC400]" />
+                    Round Trip
+                  </span>
+
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 size={14} className="text-[#FFC400]" />
+                    Airport
+                  </span>
+
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 size={14} className="text-[#FFC400]" />
+                    Outstation
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+
+                <TrackedCallButton
+                  href={`tel:+91${PHONE}`}
+                  className="flex min-h-[56px] items-center justify-center gap-3 rounded-2xl border-2 border-white bg-[#FF1726] px-6 text-sm font-black text-white shadow-[0_12px_30px_rgba(255,23,38,.30)] transition hover:bg-[#E90012]"
+                >
+                  <Phone size={18} fill="currentColor" />
+                  Call Now
+                  <ArrowRight size={16} />
+                </TrackedCallButton>
+
+                <TrackedWhatsAppButton
+                  href={whatsappUrl(DEFAULT_WHATSAPP_MESSAGE)}
+                  className="flex min-h-[56px] items-center justify-center gap-3 rounded-2xl border-2 border-white/20 bg-[#00E676] px-6 text-sm font-black text-white shadow-[0_12px_30px_rgba(0,230,118,.25)] transition hover:bg-[#00D467]"
+                >
+                  <WhatsAppIcon size={20} />
+                  WhatsApp
+                  <ArrowRight size={16} />
+                </TrackedWhatsAppButton>
+
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {/* =====================================================
+          FOOTER
+      ===================================================== */}
+
+      <Footer />
+
+      {/* =====================================================
+          MOBILE FLOATING ACTION
+      ===================================================== */}
+
+      <div className="fixed bottom-5 right-4 z-[80] sm:hidden">
+
+        <details className="group relative">
+
+          {/* =================================================
+              RED PHONE TOGGLE
+          ================================================= */}
+
+          <summary className="flex h-14 w-14 cursor-pointer list-none items-center justify-center rounded-full border-2 border-white bg-[#FF1726] text-white shadow-[0_10px_30px_rgba(255,23,38,.45),0_0_35px_rgba(255,23,38,.25)] transition-all duration-300 hover:scale-105 hover:bg-[#E90012]">
+            <Phone
+              size={25}
+              strokeWidth={2.8}
+              fill="currentColor"
+            />
+          </summary>
+
+          {/* =================================================
+              EXPANDED ACTIONS
+          ================================================= */}
+
+          <div className="absolute bottom-[68px] right-0 flex flex-col gap-3">
+
+            {/* CALL */}
+
+            <TrackedCallButton
+              href={`tel:+91${PHONE}`}
+              className="flex min-h-[70px] min-w-[210px] items-center gap-4 rounded-2xl border-2 border-white/20 bg-[#FF1726] px-4 text-white shadow-[0_10px_35px_rgba(255,23,38,.40),0_0_35px_rgba(255,23,38,.20)]"
             >
-              <div className="bg-slate-100 px-5 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-slate-700">
-                <div>Route: <span className="text-slate-950 font-black text-sm block sm:inline">{popupData.pickup.split(",")[0]} - {popupData.drop.split(",")[0]}</span></div>
-                <div className="flex gap-4">
-                  <div>Trip: <span className="text-slate-950 font-black uppercase bg-orange-100 px-2 py-0.5 rounded text-[11px] text-orange-700">{popupData.bookingType}</span></div>
-                  <div>Date: <span className="text-slate-950 font-black">{convertToIndianDate(popupData.pickupDate)}</span></div>
-                  <div>Time: <span className="text-slate-950 font-black">{formatTimeToAMPM(popupData.pickupTime)}</span></div>
-                </div>
-                <button type="button" onClick={() => setShowPopup(false)} className="text-slate-400 hover:text-slate-900 font-black text-sm transition-colors">✕ Close</button>
-              </div>
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-[#FF1726] shadow-lg">
+                <Phone
+                  size={23}
+                  fill="currentColor"
+                />
+              </span>
 
-              <div className="bg-slate-900 text-white px-4 py-2.5 text-[10px] sm:text-xs grid grid-cols-3 gap-1 text-center font-black uppercase tracking-wider">
-                <div>₹ Pre-Fixed Pricing</div>
-                <div className="border-x border-white/20">🛡️ Driver Allowance Inc.</div>
-                <div>🎧 24x7 Custom Support</div>
-              </div>
+              <span className="text-left">
+                <span className="block text-[9px] font-black uppercase tracking-[0.15em] text-red-100">
+                  Direct Booking
+                </span>
 
-              <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4 bg-slate-50/40">
-                {!showUserForm ? (
-                  <div className="flex flex-col gap-4">
-                    {popupData.fareOptions.map((opt) => {
-                      if (!["sedan", "ertiga", "crysta"].includes(opt.vehicleType)) return null;
-                      
-                      const dynamicLimitKms = getDynamicKmsLimitDisplay(opt);
-                      const extraRatePerKm = opt.vehicleType === "sedan" ? 11 : opt.vehicleType === "ertiga" ? 17 : 20.7;
+                <span className="mt-0.5 block text-base font-black">
+                  Call Now
+                </span>
 
-                      return (
-                        <div key={opt.id} className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-xs hover:shadow-md transition flex flex-col">
-                          <div className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black text-[10px] sm:text-xs py-2 px-4 uppercase tracking-wider text-center shadow-xs">
-                            🔥 Make Online Advance Payment and Get Upto 10% Discount On Your Booking Instantly
-                          </div>
+                <span className="block text-[10px] font-bold text-red-100">
+                  {PHONE_DISPLAY}
+                </span>
+              </span>
+            </TrackedCallButton>
 
-                          <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-                            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full sm:w-auto text-center sm:text-left">
-                              <img src={VEHICLES[opt.vehicleType]?.image} alt={opt.vehicleLabel} className="w-32 h-20 sm:w-36 sm:h-24 object-contain flex-shrink-0 mx-auto sm:mx-0" />
-                              <div>
-                                <h4 className="text-lg font-black text-slate-900">{opt.vehicleLabel}</h4>
-                                <p className="text-xs text-slate-400 mt-0.5 font-medium">or equivalent | {opt.vehicleType === "sedan" ? "4" : "6"}+1 Seater AC Cab</p>
-                                
-                                <div className="mt-2.5 flex flex-wrap gap-1.5 justify-center sm:justify-start text-[10px] font-bold">
-                                  <span className="bg-slate-100 text-slate-500 border border-slate-200/50 px-2 py-0.5 rounded">👤 Allowance Included</span>
-                                  <span className="bg-orange-50 text-orange-700 border border-orange-200/60 px-2 py-0.5 rounded">
-                                    📦 Kms Limit: {dynamicLimitKms} KM
-                                  </span>
-                                  <span className="bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-2 py-0.5 rounded">
-                                    ⚡ Extra Run: ₹{extraRatePerKm}/KM
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="text-center sm:text-right flex flex-col items-center sm:items-end justify-center min-w-full sm:min-w-[220px] border-t pt-3 sm:pt-0 sm:border-none border-slate-100 w-full sm:w-auto">
-                              <div className="mb-2 text-center sm:text-right">
-                                <span className="text-[10px] font-black text-slate-400 block uppercase tracking-wider">Estimated Total Fare:</span>
-                                <div className="text-3xl font-black text-slate-950 tracking-tight">₹{opt.finalFare.toLocaleString("en-IN")}</div>
-                              </div>
-                              
-                              <span className="text-[10px] text-slate-400 font-semibold block mb-3">Includes dynamic toll policies</span>
-                              
-                              <div className="flex flex-col gap-2 w-full sm:w-auto min-w-[200px]">
-                                <button
-                                  type="button"
-                                  onClick={() => handleWhatsAppManualRedirect(opt)}
-                                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-widest py-3 px-4 rounded-xl shadow-md transition-all text-center w-full flex items-center justify-center gap-1.5"
-                                >
-                                  💬 Book On WhatsApp
-                                </button>
+            {/* WHATSAPP */}
 
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedVehicleType(opt.vehicleType);
-                                    setPaymentSplitMode((p) => ({ ...p, [opt.id]: "half" }));
-                                    setShowUserForm(true);
-                                  }}
-                                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold text-xs uppercase tracking-wider py-2.5 px-4 rounded-xl shadow-xs transition-all text-center w-full"
-                                >
-                                  Book Online
-                                </button>
-                              </div>
-                            </div>
-                          </div>
+            <TrackedWhatsAppButton
+              href={whatsappUrl(DEFAULT_WHATSAPP_MESSAGE)}
+              className="flex min-h-[70px] min-w-[210px] items-center gap-4 rounded-2xl border-2 border-white/20 bg-[#00E676] px-4 text-white shadow-[0_10px_35px_rgba(0,230,118,.38),0_0_35px_rgba(0,230,118,.20)]"
+            >
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20 shadow-lg">
+                <WhatsAppIcon size={25} />
+              </span>
 
-                          <div className="w-full bg-slate-900 border-t border-slate-800 py-2 px-4 text-center sm:text-left flex items-center justify-center sm:justify-start gap-1.5 shadow-inner">
-                            <span className="text-[10px] sm:text-[11px] text-orange-500">🛡️</span>
-                            <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-300 uppercase tracking-wide">
-                              100% PAYABLE AMOUNT ON SCREEN. <span className="text-orange-400">NO ANY HIDDEN CHARGES</span>
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="max-w-md mx-auto bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-md text-left w-full">
-                    <div className="text-center mb-5">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-orange-600 bg-orange-50 px-2.5 py-1 rounded">Secure Form</span>
-                      <h4 className="text-base font-black text-slate-900 mt-2">Enter Details to Complete Booking</h4>
-                    </div>
+              <span className="text-left">
+                <span className="block text-[9px] font-black uppercase tracking-[0.15em] text-green-50">
+                  Quick Enquiry
+                </span>
 
-                    <div className="space-y-4">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-black text-slate-700 uppercase tracking-wider">Customer Full Name</label>
-                        <input 
-                          type="text" 
-                          placeholder="Type customer name..." 
-                          value={customerName} 
-                          onChange={(e) => setCustomerName(e.target.value)} 
-                          className="w-full border border-slate-300 rounded-xl px-4 py-2.5 bg-white text-sm font-bold focus:outline-none focus:border-orange-500 transition shadow-xs"
-                        />
-                      </div>
+                <span className="mt-0.5 block text-base font-black">
+                  WhatsApp
+                </span>
 
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-black text-slate-700 uppercase tracking-wider">Mobile Number (For Driver SMS)</label>
-                        <input 
-                          type="tel" 
-                          maxLength={10} 
-                          placeholder="Enter 10-digit phone number..." 
-                          value={customerPhone} 
-                          onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, ""))} 
-                          className="w-full border border-slate-300 rounded-xl px-4 py-2.5 bg-white text-sm font-bold focus:outline-none focus:border-orange-500 transition shadow-xs"
-                        />
-                      </div>
-
-                      {selectedOption && (
-                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mt-2">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Split Booking Matrix</span>
-                          <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-white p-1">
-                            <button type="button" onClick={() => setPaymentSplitMode((p) => ({ ...p, [selectedOption.id]: "half" }))} className={`rounded-lg py-2 text-center text-[11px] font-black uppercase tracking-wide ${currentSelectedMode === "half" ? "bg-orange-600 text-white shadow-xs" : "text-slate-500"}`}>
-                              50% Advance
-                            </button>
-                            <button type="button" onClick={() => setPaymentSplitMode((p) => ({ ...p, [selectedOption.id]: "full" }))} className={`rounded-lg py-2 text-center text-[11px] font-black uppercase tracking-wide ${currentSelectedMode === "full" ? "bg-slate-900 text-white shadow-xs" : "text-slate-500"}`}>
-                              Full Pay
-                            </button>
-                          </div>
-                          
-                          <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-200/60">
-                            <div>
-                              <span className="text-[10px] font-black text-slate-400 block uppercase">Payable Now</span>
-                              <span className="text-xl font-black text-slate-900">₹{displayPayNowNumber.toLocaleString("en-IN")}</span>
-                            </div>
-                            <span className="text-[10px] font-bold text-slate-500 bg-white px-2 py-1 rounded border border-slate-200">{selectedOption.vehicleLabel}</span>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="grid grid-cols-2 gap-2 pt-2">
-                        <button type="button" onClick={() => setShowUserForm(false)} className="w-full border border-slate-300 bg-slate-100 text-slate-700 font-bold text-xs uppercase py-3.5 rounded-xl transition">
-                          ↩ Back
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => selectedOption && handleOnlinePaymentCheckout(selectedOption)}
-                          disabled={paymentLoadingId !== null}
-                          className="w-full bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-widest py-3.5 rounded-xl transition shadow-lg shadow-orange-600/20 disabled:opacity-50"
-                        >
-                          {paymentLoadingId ? "Syncing..." : "Book Online"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </motion.div>
+                <span className="block text-[10px] font-bold text-green-50">
+                  Chat for Booking
+                </span>
+              </span>
+            </TrackedWhatsAppButton>
           </div>
-        )}
-      </AnimatePresence>
-
-      {/* SUCCESS RECEIPT */}
-      <AnimatePresence>
-        {successReceipt && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/70 p-3 backdrop-blur-xs">
-            <motion.div initial={{ y: 20 }} animate={{ y: 0 }} className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
-              <div className="bg-emerald-50 px-5 py-5 text-center border-b border-emerald-100">
-                <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100 text-xl text-emerald-700">✓</div>
-                <h3 className="text-lg font-black text-slate-950">Allocation Confirmed</h3>
-                <p className="text-xs text-slate-500 mt-1">Your route details have been securely recorded in Firebase.</p>
-              </div>
-              <div className="p-5 space-y-4 text-left">
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs space-y-2 text-slate-700">
-                  <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Invoice Summary</div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-900">Invoice ID:</span> <span>{successReceipt.invoiceId}</span></div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-900">Vehicle:</span> <span>{successReceipt.vehicle}</span></div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-900">Pickup:</span> <span className="truncate max-w-[180px]">{successReceipt.pickup}</span></div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-900">Drop Point:</span> <span className="truncate max-w-[180px]">{successReceipt.drop}</span></div>
-                  <div className="flex justify-between"><span className="font-bold text-slate-900">Timeline:</span> <span>{successReceipt.date} at {successReceipt.time}</span></div>
-                  <div className="flex justify-between pt-2 border-t border-slate-200 font-black text-slate-950 text-sm">
-                    <span>Amount Paid ({successReceipt.paymentMode}):</span> <span>₹{successReceipt.amount.toLocaleString("en-IN")}</span>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => setSuccessReceipt(null)} className="w-full h-11 bg-slate-950 text-xs font-black uppercase tracking-wider text-white rounded-xl shadow">
-                    Close Panel
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-    </main>
-  );
-}
-
-function Feature({
-  icon,
-  title,
-  text,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div className="rounded-3xl border border-white/5 bg-white/[0.01] p-6 hover:border-orange-500/20 transition-all">
-      <div className="text-orange-500">{icon}</div>
-      <h3 className="mt-4 text-lg font-black text-white">{title}</h3>
-      <p className="mt-2 text-xs leading-relaxed text-slate-400">{text}</p>
-    </div>
-  );
-}
-
-function Faq({
-  q,
-  a,
-}: {
-  q: string;
-  a: string;
-}) {
-  return (
-    <div className="p-6 rounded-2xl bg-white/[0.01] border border-white/5">
-      <h3 className="text-base font-black text-white">{q}</h3>
-      <p className="mt-2 text-xs leading-relaxed text-slate-400">{a}</p>
-    </div>
+        </details>
+      </div>
+    </>
   );
 }
