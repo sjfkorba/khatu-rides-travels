@@ -694,6 +694,15 @@ export default function SeoSection() {
 
               <a
                 href={`tel:${SEO_PHONE}`}
+                onClick={(e) => {
+                      e.preventDefault();
+                      const telUrl = `tel:${SEO_PHONE}`;
+                      if (typeof window !== "undefined" && typeof (window as any).gtag_report_conversion === "function") {
+                        (window as any).gtag_report_conversion(telUrl);
+                      } else {
+                        window.location.href = telUrl;
+                      }
+                    }}
                 aria-label="Call Khatu Rides Travels for booking"
                 className="flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-6 py-4 text-[9px] font-black uppercase tracking-wider text-white shadow-lg transition hover:bg-slate-800 active:scale-[.98]"
               >
