@@ -54,7 +54,7 @@ const QUICK_INTENTS = [
 const SLIDE_COPY = [
   {
     label: "ONE WAY CAB",
-    lines: ["BOOK YOUR CAB.", "TRAVEL WITH", "CONFIDENCE."],
+    lines: ["ONE WAY CABS.", "NO HIDDEN CHARGES", ","],
   },
   {
     label: "AIRPORT TRANSFER",

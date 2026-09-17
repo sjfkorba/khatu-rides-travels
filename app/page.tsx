@@ -13,6 +13,7 @@ import FinalCTA from "@/components/landing/FinalCTA";
 import Footer from "@/components/landing/Footer";
 import MobileActionBar from "@/components/landing/MobileActionBar";
 import ImageCarousel from "@/components/ImageCarousel";
+import EnquiryForm from "@/components/landing/EnquiryForm";
 
 export default function HomePage() {
   return (
@@ -20,6 +21,7 @@ export default function HomePage() {
       <Navbar />
       <Hero />
       <QuickServices />
+      <EnquiryForm/>
       <ImageCarousel/>
       <PopularRoutes />
       <TourPackages />

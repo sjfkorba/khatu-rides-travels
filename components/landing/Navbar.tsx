@@ -10,11 +10,11 @@ const WHATSAPP_URL = "https://wa.me/919244137353";
 
 const links = [
   { label: "Home", href: "/" },
-  { label: "Cab Booking", href: "/#home" },
-  { label: "Popular Routes", href: "/#routes" },
-  { label: "Tour Packages", href: "/#tours" },
-  { label: "Fleet", href: "/#fleet" },
-  { label: "Services", href: "/#services" },
+  { label: "About", href: "/about-us" },
+  { label: "Contact", href: "/contact-us" },
+  { label: "Blog", href: "/blog" },
+  { label: "Fleet", href: "/fleet" },
+  { label: "Services", href: "/services" },
   { label: "Fare Calculator", href: "/fare-calculator" },
 ];
 
@@ -55,7 +55,7 @@ export default function Navbar() {
           className="flex shrink-0 items-center"
         >
           <Image
-            src="/logo.png"
+            src="/nav_logo.png"
             alt="Khatu Rides Travels Co."
             width={190}
             height={58}
