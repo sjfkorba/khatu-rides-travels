@@ -58,8 +58,10 @@ const C = {
   navy: [5, 24, 52] as RGB,
   navy2: [7, 32, 68] as RGB,
   blue: [7, 67, 150] as RGB,
+  blueLight: [237, 245, 255] as RGB,
 
   amber: [245, 180, 0] as RGB,
+  amberDark: [165, 112, 0] as RGB,
   amberLight: [255, 249, 231] as RGB,
 
   green: [18, 145, 83] as RGB,
@@ -93,12 +95,9 @@ const MARGIN = 10;
 const CONTENT_W = PAGE_W - MARGIN * 2;
 
 /*
- * Bottom reserved area.
- *
- * Everything is intentionally designed to finish
- * above this line so that there is ONLY ONE PAGE.
+ * Main single-page content normally finishes above this area.
  */
-const CONTENT_BOTTOM = 284;
+const CONTENT_BOTTOM = 283;
 
 /* ============================================================
    HELPERS
@@ -118,10 +117,7 @@ function clean(
   value: unknown,
   fallback = "-"
 ): string {
-  if (
-    value === undefined ||
-    value === null
-  ) {
+  if (value === undefined || value === null) {
     return fallback;
   }
 
@@ -142,14 +138,9 @@ function clean(
 function money(
   value: number | string | undefined
 ): string {
-  return `INR ${new Intl.NumberFormat(
-    "en-IN",
-    {
-      maximumFractionDigits: 0,
-    }
-  ).format(
-    Math.round(num(value))
-  )}`;
+  return `INR ${new Intl.NumberFormat("en-IN", {
+    maximumFractionDigits: 0,
+  }).format(Math.round(num(value)))}`;
 }
 
 function dateText(
@@ -157,26 +148,17 @@ function dateText(
 ): string {
   if (!value) return "-";
 
-  const date = new Date(
-    `${value}T00:00:00`
-  );
+  const date = new Date(`${value}T00:00:00`);
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
+  if (Number.isNaN(date.getTime())) {
     return clean(value);
   }
 
-  return date.toLocaleDateString(
-    "en-IN",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    }
-  );
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 /* ============================================================
@@ -200,11 +182,9 @@ function text(
   y: number,
   options: TextOptions = {}
 ) {
-  const size =
-    options.size ?? 8;
+  const size = options.size ?? 8;
 
-  const color =
-    options.color ?? C.slate800;
+  const color = options.color ?? C.slate800;
 
   doc.setFontSize(size);
 
@@ -224,8 +204,7 @@ function text(
     x,
     y,
     {
-      align:
-        options.align ?? "left",
+      align: options.align ?? "left",
     }
   );
 }
@@ -268,7 +247,7 @@ function wrapped(
     options.size ?? 7;
 
   const lineHeight =
-    options.lineHeight ?? 3.5;
+    options.lineHeight ?? 3.8;
 
   const allLines =
     lines(
@@ -293,8 +272,7 @@ function wrapped(
         doc,
         line,
         x,
-        y +
-          index * lineHeight,
+        y + index * lineHeight,
         {
           size,
           color:
@@ -384,7 +362,7 @@ function card(
   );
 
   doc.setLineWidth(
-    0.25
+    0.3
   );
 
   doc.roundedRect(
@@ -392,8 +370,8 @@ function card(
     y,
     w,
     h,
-    2.5,
-    2.5,
+    2.8,
+    2.8,
     "FD"
   );
 }
@@ -414,7 +392,7 @@ function label(
     x,
     y,
     {
-      size: 5.1,
+      size: 6.2,
       color: C.slate500,
       bold: true,
     }
@@ -441,7 +419,7 @@ function statusColors(
     case "Partially Paid":
       return {
         bg: C.amberLight,
-        text: [165, 112, 0],
+        text: C.amberDark,
       };
 
     case "Cancelled":
@@ -458,7 +436,7 @@ function statusColors(
 
     default:
       return {
-        bg: [237, 245, 255],
+        bg: C.blueLight,
         text: C.blue,
       };
   }
@@ -469,9 +447,11 @@ function statusColors(
 ============================================================ */
 
 function footer(
-  doc: jsPDF
+  doc: jsPDF,
+  pageNumber = 1,
+  totalPages = 1
 ) {
-  const y = 288;
+  const y = 289;
 
   doc.setDrawColor(
     C.slate200[0],
@@ -480,14 +460,14 @@ function footer(
   );
 
   doc.setLineWidth(
-    0.2
+    0.25
   );
 
   doc.line(
     MARGIN,
-    y - 3,
+    y - 4,
     PAGE_W - MARGIN,
-    y - 3
+    y - 4
   );
 
   text(
@@ -496,7 +476,7 @@ function footer(
     MARGIN,
     y,
     {
-      size: 5,
+      size: 6,
       color: C.slate500,
       bold: true,
     }
@@ -508,7 +488,7 @@ function footer(
     PAGE_W / 2,
     y,
     {
-      size: 5,
+      size: 6,
       color: C.slate500,
       align: "center",
     }
@@ -516,12 +496,220 @@ function footer(
 
   text(
     doc,
-    "Page 1 of 1",
+    `Page ${pageNumber} of ${totalPages}`,
     PAGE_W - MARGIN,
     y,
     {
-      size: 5,
+      size: 6,
       color: C.slate500,
+      align: "right",
+    }
+  );
+}
+
+/* ============================================================
+   PAGE BACKGROUND
+============================================================ */
+
+function drawPageBackground(
+  doc: jsPDF
+) {
+  doc.setFillColor(
+    C.slate50[0],
+    C.slate50[1],
+    C.slate50[2]
+  );
+
+  doc.rect(
+    0,
+    0,
+    PAGE_W,
+    PAGE_H,
+    "F"
+  );
+}
+
+/* ============================================================
+   HEADER
+============================================================ */
+
+async function drawHeader(
+  doc: jsPDF,
+  bookingNo: string,
+  bookingDate: string
+) {
+  const headerH = 43;
+
+  doc.setFillColor(
+    C.navy[0],
+    C.navy[1],
+    C.navy[2]
+  );
+
+  doc.rect(
+    0,
+    0,
+    PAGE_W,
+    headerH,
+    "F"
+  );
+
+  /*
+   * Decorative blue glow.
+   */
+  doc.setFillColor(
+    C.blue[0],
+    C.blue[1],
+    C.blue[2]
+  );
+
+  doc.circle(
+    207,
+    0,
+    28,
+    "F"
+  );
+
+  /*
+   * Amber accent line.
+   */
+  doc.setFillColor(
+    C.amber[0],
+    C.amber[1],
+    C.amber[2]
+  );
+
+  doc.rect(
+    0,
+    headerH - 1,
+    PAGE_W,
+    1,
+    "F"
+  );
+
+  /*
+   * Logo.
+   */
+  const logo =
+    await getLogo();
+
+  if (logo) {
+    try {
+      doc.addImage(
+        logo,
+        "PNG",
+        MARGIN,
+        7,
+        28,
+        18,
+        undefined,
+        "FAST"
+      );
+    } catch {
+      // Logo failure should never break PDF generation.
+    }
+  }
+
+  /*
+   * Company.
+   */
+  text(
+    doc,
+    "KHATU RIDES",
+    MARGIN + 32,
+    13,
+    {
+      size: 12.5,
+      color: C.white,
+      bold: true,
+    }
+  );
+
+  text(
+    doc,
+    "TRAVELS CO.",
+    MARGIN + 32,
+    19,
+    {
+      size: 7,
+      color: C.amber,
+      bold: true,
+    }
+  );
+
+  text(
+    doc,
+    "TRAVEL  |  TAXI  |  TOURS  |  CORPORATE MOBILITY",
+    MARGIN + 32,
+    25,
+    {
+      size: 5.3,
+      color: [190, 210, 235],
+      bold: true,
+    }
+  );
+
+  text(
+    doc,
+    "Korba, Chhattisgarh",
+    MARGIN + 32,
+    31,
+    {
+      size: 5.8,
+      color: [180, 200, 225],
+    }
+  );
+
+  /*
+   * Header right.
+   */
+  text(
+    doc,
+    "ADVANCE BOOKING",
+    PAGE_W - MARGIN,
+    12,
+    {
+      size: 9,
+      color: C.white,
+      bold: true,
+      align: "right",
+    }
+  );
+
+  text(
+    doc,
+    "BOOKING CONFIRMATION",
+    PAGE_W - MARGIN,
+    18,
+    {
+      size: 6,
+      color: C.amber,
+      bold: true,
+      align: "right",
+    }
+  );
+
+  text(
+    doc,
+    bookingNo,
+    PAGE_W - MARGIN,
+    26,
+    {
+      size: 7.2,
+      color: C.white,
+      bold: true,
+      align: "right",
+    }
+  );
+
+  text(
+    doc,
+    `Booking Date: ${bookingDate}`,
+    PAGE_W - MARGIN,
+    32,
+    {
+      size: 5.8,
+      color: [190, 210, 235],
       align: "right",
     }
   );
@@ -655,9 +843,9 @@ export async function generateAdvanceBookingPdf(
         num(
           vehicle.quantity
         ) *
-          num(
-            vehicle.ratePerVehicle
-          ),
+        num(
+          vehicle.ratePerVehicle
+        ),
       0
     );
 
@@ -685,208 +873,23 @@ export async function generateAdvanceBookingPdf(
     Math.max(
       0,
       totalAmount -
-        advanceAmount
+      advanceAmount
     );
 
   /* ==========================================================
      BACKGROUND
   ========================================================== */
 
-  doc.setFillColor(
-    C.slate50[0],
-    C.slate50[1],
-    C.slate50[2]
-  );
-
-  doc.rect(
-    0,
-    0,
-    PAGE_W,
-    PAGE_H,
-    "F"
-  );
+  drawPageBackground(doc);
 
   /* ==========================================================
      HEADER
   ========================================================== */
 
-  const headerH = 43;
-
-  doc.setFillColor(
-    C.navy[0],
-    C.navy[1],
-    C.navy[2]
-  );
-
-  doc.rect(
-    0,
-    0,
-    PAGE_W,
-    headerH,
-    "F"
-  );
-
-  /*
-   * Decorative blue area.
-   */
-  doc.setFillColor(
-    C.blue[0],
-    C.blue[1],
-    C.blue[2]
-  );
-
-  doc.circle(
-    207,
-    0,
-    28,
-    "F"
-  );
-
-  /*
-   * Amber bottom line.
-   */
-  doc.setFillColor(
-    C.amber[0],
-    C.amber[1],
-    C.amber[2]
-  );
-
-  doc.rect(
-    0,
-    headerH - 1,
-    PAGE_W,
-    1,
-    "F"
-  );
-
-  /* ==========================================================
-     LOGO
-  ========================================================== */
-
-  const logo =
-    await getLogo();
-
-  if (logo) {
-    try {
-      doc.addImage(
-        logo,
-        "PNG",
-        MARGIN,
-        7,
-        27,
-        17,
-        undefined,
-        "FAST"
-      );
-    } catch {
-      // Logo failure must never break invoice generation.
-    }
-  }
-
-  /* ==========================================================
-     COMPANY
-  ========================================================== */
-
-  text(
-    doc,
-    "KHATU RIDES",
-    MARGIN + 31,
-    13,
-    {
-      size: 12,
-      color: C.white,
-      bold: true,
-    }
-  );
-
-  text(
-    doc,
-    "TRAVELS CO.",
-    MARGIN + 31,
-    18,
-    {
-      size: 6.4,
-      color: C.amber,
-      bold: true,
-    }
-  );
-
-  text(
-    doc,
-    "TRAVEL  |  TAXI  |  TOURS  |  CORPORATE MOBILITY",
-    MARGIN + 31,
-    23.5,
-    {
-      size: 4.8,
-      color: [190, 210, 235],
-      bold: true,
-    }
-  );
-
-  text(
-    doc,
-    "Korba, Chhattisgarh",
-    MARGIN + 31,
-    29,
-    {
-      size: 5.3,
-      color: [180, 200, 225],
-    }
-  );
-
-  /* ==========================================================
-     HEADER RIGHT
-  ========================================================== */
-
-  text(
-    doc,
-    "ADVANCE BOOKING",
-    PAGE_W - MARGIN,
-    12,
-    {
-      size: 8.2,
-      color: C.white,
-      bold: true,
-      align: "right",
-    }
-  );
-
-  text(
-    doc,
-    "BOOKING CONFIRMATION",
-    PAGE_W - MARGIN,
-    17,
-    {
-      size: 5,
-      color: C.amber,
-      bold: true,
-      align: "right",
-    }
-  );
-
-  text(
+  await drawHeader(
     doc,
     bookingNo,
-    PAGE_W - MARGIN,
-    25,
-    {
-      size: 6.6,
-      color: C.white,
-      bold: true,
-      align: "right",
-    }
-  );
-
-  text(
-    doc,
-    `Booking Date: ${bookingDate}`,
-    PAGE_W - MARGIN,
-    31,
-    {
-      size: 5.2,
-      color: [190, 210, 235],
-      align: "right",
-    }
+    bookingDate
   );
 
   /* ==========================================================
@@ -908,7 +911,7 @@ export async function generateAdvanceBookingPdf(
     MARGIN,
     y,
     CONTENT_W,
-    8,
+    9,
     2.5,
     2.5,
     "F"
@@ -918,9 +921,9 @@ export async function generateAdvanceBookingPdf(
     doc,
     status.toUpperCase(),
     MARGIN + 5,
-    y + 5.3,
+    y + 6,
     {
-      size: 5.3,
+      size: 6.2,
       color: sc.text,
       bold: true,
     }
@@ -930,16 +933,16 @@ export async function generateAdvanceBookingPdf(
     doc,
     bookingType,
     PAGE_W - MARGIN - 5,
-    y + 5.3,
+    y + 6,
     {
-      size: 5.3,
+      size: 6.2,
       color: C.slate600,
       bold: true,
       align: "right",
     }
   );
 
-  y += 11;
+  y += 12;
 
   /* ==========================================================
      CUSTOMER + JOURNEY
@@ -951,9 +954,11 @@ export async function generateAdvanceBookingPdf(
     (CONTENT_W - gap) /
     2;
 
-  const infoH = 43;
+  const infoH = 45;
 
-  /* Customer */
+  /*
+   * Customer card.
+   */
 
   card(
     doc,
@@ -974,9 +979,9 @@ export async function generateAdvanceBookingPdf(
     doc,
     customerName,
     MARGIN + 6,
-    y + 15.5,
+    y + 16,
     {
-      size: 9.5,
+      size: 11,
       color: C.slate950,
       bold: true,
     }
@@ -986,16 +991,16 @@ export async function generateAdvanceBookingPdf(
     doc,
     "Mobile",
     MARGIN + 6,
-    y + 23
+    y + 25
   );
 
   text(
     doc,
     `+91 ${customerMobile}`,
     MARGIN + 6,
-    y + 30,
+    y + 33,
     {
-      size: 6.8,
+      size: 8.5,
       color: C.blue,
       bold: true,
     }
@@ -1005,22 +1010,24 @@ export async function generateAdvanceBookingPdf(
     doc,
     "Booking Type",
     MARGIN + 6,
-    y + 37
+    y + 41
   );
 
   text(
     doc,
     bookingType,
-    MARGIN + 30,
-    y + 37,
+    MARGIN + 31,
+    y + 41,
     {
-      size: 5.8,
+      size: 7,
       color: C.slate700,
       bold: true,
     }
   );
 
-  /* Journey */
+  /*
+   * Journey card.
+   */
 
   const journeyX =
     MARGIN +
@@ -1046,16 +1053,16 @@ export async function generateAdvanceBookingPdf(
     doc,
     "Journey Date",
     journeyX + 6,
-    y + 15
+    y + 16
   );
 
   text(
     doc,
     journeyDate,
-    journeyX + 34,
-    y + 15,
+    journeyX + 35,
+    y + 16,
     {
-      size: 6.4,
+      size: 8,
       color: C.slate950,
       bold: true,
     }
@@ -1065,25 +1072,26 @@ export async function generateAdvanceBookingPdf(
     doc,
     "Pickup",
     journeyX + 6,
-    y + 23
+    y + 25
   );
 
   const pickupLines =
     lines(
       doc,
       pickup,
-      half - 40,
-      6,
+      half - 43,
+      7.5,
       true
     ).slice(0, 1);
 
   text(
     doc,
-    pickupLines[0] || pickup,
-    journeyX + 34,
-    y + 23,
+    pickupLines[0] ||
+      pickup,
+    journeyX + 35,
+    y + 25,
     {
-      size: 6,
+      size: 7.5,
       color: C.slate950,
       bold: true,
     }
@@ -1093,15 +1101,15 @@ export async function generateAdvanceBookingPdf(
     doc,
     "Destination",
     journeyX + 6,
-    y + 31
+    y + 34
   );
 
   const destinationLines =
     lines(
       doc,
       destination,
-      half - 40,
-      6,
+      half - 43,
+      7.5,
       true
     ).slice(0, 1);
 
@@ -1109,10 +1117,10 @@ export async function generateAdvanceBookingPdf(
     doc,
     destinationLines[0] ||
       destination,
-    journeyX + 34,
-    y + 31,
+    journeyX + 35,
+    y + 34,
     {
-      size: 6,
+      size: 7.5,
       color: C.slate950,
       bold: true,
     }
@@ -1122,16 +1130,16 @@ export async function generateAdvanceBookingPdf(
     doc,
     "Reporting",
     journeyX + 6,
-    y + 39
+    y + 42
   );
 
   text(
     doc,
     pickupTime,
-    journeyX + 34,
-    y + 39,
+    journeyX + 35,
+    y + 42,
     {
-      size: 6,
+      size: 7.5,
       color: C.slate700,
       bold: true,
     }
@@ -1150,7 +1158,7 @@ export async function generateAdvanceBookingPdf(
     MARGIN,
     y,
     {
-      size: 5.3,
+      size: 6.3,
       color: C.slate500,
       bold: true,
     }
@@ -1160,9 +1168,9 @@ export async function generateAdvanceBookingPdf(
     doc,
     "Booked Vehicles",
     MARGIN,
-    y + 6,
+    y + 7,
     {
-      size: 9.5,
+      size: 11,
       color: C.slate950,
       bold: true,
     }
@@ -1176,27 +1184,27 @@ export async function generateAdvanceBookingPdf(
         : "s"
     }`,
     PAGE_W - MARGIN,
-    y + 5,
+    y + 6,
     {
-      size: 5.5,
+      size: 6.5,
       color: C.blue,
       bold: true,
       align: "right",
     }
   );
 
-  y += 10;
+  y += 11;
 
   /* ==========================================================
-     TABLE
+     VEHICLE TABLE
   ========================================================== */
 
   const tableX = MARGIN;
 
-  const vehicleW = 72;
+  const vehicleW = 67;
   const variantW = 42;
-  const qtyW = 16;
-  const rateW = 32;
+  const qtyW = 17;
+  const rateW = 33;
 
   const amountW =
     CONTENT_W -
@@ -1205,7 +1213,11 @@ export async function generateAdvanceBookingPdf(
     qtyW -
     rateW;
 
-  const tableHeaderH = 8;
+  const tableHeaderH = 9;
+
+  /*
+   * Header.
+   */
 
   doc.setFillColor(
     C.navy[0],
@@ -1227,9 +1239,9 @@ export async function generateAdvanceBookingPdf(
     doc,
     "VEHICLE",
     tableX + 4,
-    y + 5.3,
+    y + 6,
     {
-      size: 5,
+      size: 5.8,
       color: C.white,
       bold: true,
     }
@@ -1241,9 +1253,9 @@ export async function generateAdvanceBookingPdf(
     tableX +
       vehicleW +
       4,
-    y + 5.3,
+    y + 6,
     {
-      size: 5,
+      size: 5.8,
       color: C.white,
       bold: true,
     }
@@ -1257,9 +1269,9 @@ export async function generateAdvanceBookingPdf(
       variantW +
       qtyW -
       3,
-    y + 5.3,
+    y + 6,
     {
-      size: 5,
+      size: 5.8,
       color: C.white,
       bold: true,
       align: "right",
@@ -1275,9 +1287,9 @@ export async function generateAdvanceBookingPdf(
       qtyW +
       rateW -
       3,
-    y + 5.3,
+    y + 6,
     {
-      size: 5,
+      size: 5.8,
       color: C.white,
       bold: true,
       align: "right",
@@ -1290,9 +1302,9 @@ export async function generateAdvanceBookingPdf(
     tableX +
       CONTENT_W -
       4,
-    y + 5.3,
+    y + 6,
     {
-      size: 5,
+      size: 5.8,
       color: C.white,
       bold: true,
       align: "right",
@@ -1306,19 +1318,38 @@ export async function generateAdvanceBookingPdf(
      VEHICLE ROWS
   ========================================================== */
 
+  const rowCount =
+    vehicles.length;
+
   /*
-   * Single-page rule:
+   * Normal bookings are designed for
+   * maximum readability.
    *
-   * Rows are intentionally compact.
-   *
-   * No addPage() anywhere in this generator.
+   * Very large bookings automatically
+   * continue to a second page rather
+   * than making the text microscopic.
    */
 
-  const normalRowH = 10;
+  const maxRowsFirstPage = 9;
 
-  const compactRowH = 9;
+  const firstPageVehicles =
+    vehicles.slice(
+      0,
+      maxRowsFirstPage
+    );
 
-  vehicles.forEach(
+  const remainingVehicles =
+    vehicles.slice(
+      maxRowsFirstPage
+    );
+
+  const normalRowH =
+    10;
+
+  const compactRowH =
+    9;
+
+  firstPageVehicles.forEach(
     (
       vehicle,
       index
@@ -1349,7 +1380,7 @@ export async function generateAdvanceBookingPdf(
         );
 
       const rowH =
-        vehicles.length > 8
+        rowCount > 7
           ? compactRowH
           : normalRowH;
 
@@ -1390,21 +1421,29 @@ export async function generateAdvanceBookingPdf(
         y + rowH
       );
 
+      /*
+       * Vehicle.
+       */
+
       text(
         doc,
         vehicleName,
         tableX + 4,
-        y + 6.2,
+        y + 6.5,
         {
           size:
-            vehicles.length > 8
-              ? 5.8
-              : 6.3,
+            rowCount > 7
+              ? 7
+              : 7.5,
           color:
             C.slate950,
           bold: true,
         }
       );
+
+      /*
+       * Variant.
+       */
 
       text(
         doc,
@@ -1412,20 +1451,26 @@ export async function generateAdvanceBookingPdf(
         tableX +
           vehicleW +
           4,
-        y + 6.2,
+        y + 6.5,
         {
           size:
-            vehicles.length > 8
-              ? 5.5
-              : 5.8,
+            rowCount > 7
+              ? 6.5
+              : 7,
           color:
             variant
               ? C.blue
               : C.slate400,
           bold:
-            Boolean(variant),
+            Boolean(
+              variant
+            ),
         }
       );
+
+      /*
+       * Quantity.
+       */
 
       text(
         doc,
@@ -1435,14 +1480,19 @@ export async function generateAdvanceBookingPdf(
           variantW +
           qtyW -
           3,
-        y + 6.2,
+        y + 6.5,
         {
-          size: 6,
-          color: C.slate800,
+          size: 7,
+          color:
+            C.slate800,
           bold: true,
           align: "right",
         }
       );
+
+      /*
+       * Rate.
+       */
 
       text(
         doc,
@@ -1453,17 +1503,22 @@ export async function generateAdvanceBookingPdf(
           qtyW +
           rateW -
           3,
-        y + 6.2,
+        y + 6.5,
         {
           size:
-            vehicles.length > 8
-              ? 5.5
-              : 5.8,
-          color: C.slate800,
+            rowCount > 7
+              ? 6.5
+              : 7,
+          color:
+            C.slate800,
           bold: true,
           align: "right",
         }
       );
+
+      /*
+       * Amount.
+       */
 
       text(
         doc,
@@ -1471,13 +1526,14 @@ export async function generateAdvanceBookingPdf(
         tableX +
           CONTENT_W -
           4,
-        y + 6.2,
+        y + 6.5,
         {
           size:
-            vehicles.length > 8
-              ? 5.8
-              : 6.3,
-          color: C.blue,
+            rowCount > 7
+              ? 7
+              : 7.5,
+          color:
+            C.blue,
           bold: true,
           align: "right",
         }
@@ -1504,7 +1560,7 @@ export async function generateAdvanceBookingPdf(
       tableX,
       y,
       CONTENT_W,
-      10,
+      12,
       "F"
     );
 
@@ -1512,14 +1568,54 @@ export async function generateAdvanceBookingPdf(
       doc,
       "No vehicle details available.",
       tableX + 4,
-      y + 6,
+      y + 7.5,
       {
-        size: 6,
+        size: 7,
         color: C.slate500,
       }
     );
 
-    y += 10;
+    y += 12;
+  }
+
+  /* ==========================================================
+     MORE VEHICLES NOTICE
+  ========================================================== */
+
+  if (
+    remainingVehicles.length > 0
+  ) {
+    doc.setFillColor(
+      C.blueLight[0],
+      C.blueLight[1],
+      C.blueLight[2]
+    );
+
+    doc.rect(
+      tableX,
+      y,
+      CONTENT_W,
+      9,
+      "F"
+    );
+
+    text(
+      doc,
+      `${remainingVehicles.length} additional vehicle line${
+        remainingVehicles.length === 1
+          ? ""
+          : "s"
+      } shown on the next page.`,
+      tableX + 4,
+      y + 6,
+      {
+        size: 6.5,
+        color: C.blue,
+        bold: true,
+      }
+    );
+
+    y += 9;
   }
 
   /* ==========================================================
@@ -1536,7 +1632,7 @@ export async function generateAdvanceBookingPdf(
     tableX,
     y,
     CONTENT_W,
-    11,
+    13,
     "F"
   );
 
@@ -1544,9 +1640,9 @@ export async function generateAdvanceBookingPdf(
     doc,
     "TOTAL BOOKING AMOUNT",
     tableX + 4,
-    y + 7,
+    y + 8.5,
     {
-      size: 6,
+      size: 7,
       color: C.slate700,
       bold: true,
     }
@@ -1558,16 +1654,16 @@ export async function generateAdvanceBookingPdf(
     tableX +
       CONTENT_W -
       4,
-    y + 7,
+    y + 8.5,
     {
-      size: 8.5,
+      size: 11,
       color: C.slate950,
       bold: true,
       align: "right",
     }
   );
 
-  y += 18;
+  y += 20;
 
   /* ==========================================================
      PAYMENT SUMMARY
@@ -1579,7 +1675,7 @@ export async function generateAdvanceBookingPdf(
     MARGIN,
     y,
     {
-      size: 5.3,
+      size: 6.3,
       color: C.slate500,
       bold: true,
     }
@@ -1589,27 +1685,29 @@ export async function generateAdvanceBookingPdf(
     doc,
     "Booking Payment",
     MARGIN,
-    y + 6,
+    y + 7,
     {
-      size: 9.5,
+      size: 11,
       color: C.slate950,
       bold: true,
     }
   );
 
-  y += 10;
+  y += 11;
 
-  const paymentH = 35;
+  const paymentH = 37;
 
   const paymentLeftW =
-    115;
+    112;
 
   const paymentRightW =
     CONTENT_W -
     paymentLeftW -
     5;
 
-  /* Left payment card */
+  /* ----------------------------------------------------------
+     LEFT PAYMENT CARD
+  ---------------------------------------------------------- */
 
   card(
     doc,
@@ -1630,9 +1728,9 @@ export async function generateAdvanceBookingPdf(
     doc,
     money(totalAmount),
     MARGIN + 6,
-    y + 15,
+    y + 16,
     {
-      size: 7.2,
+      size: 9,
       color: C.slate950,
       bold: true,
     }
@@ -1642,22 +1740,24 @@ export async function generateAdvanceBookingPdf(
     doc,
     "Advance Received",
     MARGIN + 6,
-    y + 23
+    y + 25
   );
 
   text(
     doc,
     money(advanceAmount),
     MARGIN + 6,
-    y + 30,
+    y + 33,
     {
-      size: 7.2,
+      size: 9,
       color: C.green,
       bold: true,
     }
   );
 
-  /* Right balance card */
+  /* ----------------------------------------------------------
+     RIGHT BALANCE CARD
+  ---------------------------------------------------------- */
 
   const balanceX =
     MARGIN +
@@ -1680,20 +1780,25 @@ export async function generateAdvanceBookingPdf(
     "F"
   );
 
-  label(
+  text(
     doc,
-    "Balance Due",
+    "BALANCE DUE",
     balanceX + 6,
-    y + 8
+    y + 9,
+    {
+      size: 6.5,
+      color: [180, 200, 225],
+      bold: true,
+    }
   );
 
   text(
     doc,
     money(balanceAmount),
     balanceX + 6,
-    y + 18,
+    y + 21,
     {
-      size: 10,
+      size: 13,
       color: C.amber,
       bold: true,
     }
@@ -1707,19 +1812,15 @@ export async function generateAdvanceBookingPdf(
         : "s"
     } reserved`,
     balanceX + 6,
-    y + 28,
+    y + 31,
     {
-      size: 5.3,
-      color: [
-        180,
-        200,
-        225,
-      ],
+      size: 6.2,
+      color: [200, 215, 235],
     }
   );
 
   y +=
-    paymentH + 8;
+    paymentH + 9;
 
   /* ==========================================================
      NOTES + TERMS
@@ -1728,12 +1829,15 @@ export async function generateAdvanceBookingPdf(
   const lowerGap = 4;
 
   const lowerW =
-    (CONTENT_W - lowerGap) /
+    (CONTENT_W -
+      lowerGap) /
     2;
 
-  const lowerH = 36;
+  const lowerH = 38;
 
-  /* Notes */
+  /* ----------------------------------------------------------
+     NOTES
+  ---------------------------------------------------------- */
 
   card(
     doc,
@@ -1757,13 +1861,13 @@ export async function generateAdvanceBookingPdf(
       doc,
       remarks,
       MARGIN + 6,
-      y + 14,
+      y + 15,
       lowerW - 12,
       {
-        size: 5.8,
+        size: 6.5,
         color: C.slate700,
-        lineHeight: 3,
-        maxLines: 7,
+        lineHeight: 3.6,
+        maxLines: 6,
       }
     );
   } else {
@@ -1771,15 +1875,17 @@ export async function generateAdvanceBookingPdf(
       doc,
       "No special instructions added.",
       MARGIN + 6,
-      y + 15,
+      y + 16,
       {
-        size: 5.8,
+        size: 6.5,
         color: C.slate600,
       }
     );
   }
 
-  /* Terms */
+  /* ----------------------------------------------------------
+     TERMS
+  ---------------------------------------------------------- */
 
   const termsX =
     MARGIN +
@@ -1809,7 +1915,7 @@ export async function generateAdvanceBookingPdf(
   ];
 
   let termY =
-    y + 13.5;
+    y + 14;
 
   terms.forEach(
     (
@@ -1822,7 +1928,7 @@ export async function generateAdvanceBookingPdf(
         termsX + 6,
         termY,
         {
-          size: 4.7,
+          size: 6,
           color: C.blue,
           bold: true,
         }
@@ -1832,39 +1938,40 @@ export async function generateAdvanceBookingPdf(
         lines(
           doc,
           item,
-          lowerW - 18,
-          4.7,
+          lowerW - 19,
+          6,
           false
         ).slice(0, 1);
 
       text(
         doc,
-        termLines[0] || item,
+        termLines[0] ||
+          item,
         termsX + 11,
         termY,
         {
-          size: 4.7,
+          size: 6,
           color: C.slate600,
         }
       );
 
-      termY += 5;
+      termY += 5.8;
     }
   );
 
   y +=
-    lowerH + 7;
+    lowerH + 8;
 
   /* ==========================================================
      IMPORTANT NOTICE
   ========================================================== */
 
-  const noticeH = 20;
+  const noticeH = 22;
 
   doc.setFillColor(
-    239,
-    246,
-    255
+    C.blueLight[0],
+    C.blueLight[1],
+    C.blueLight[2]
   );
 
   doc.setDrawColor(
@@ -1874,7 +1981,7 @@ export async function generateAdvanceBookingPdf(
   );
 
   doc.setLineWidth(
-    0.25
+    0.3
   );
 
   doc.roundedRect(
@@ -1898,57 +2005,495 @@ export async function generateAdvanceBookingPdf(
     doc,
     "This is a computer-generated advance booking document issued for travel-service confirmation and record purposes. It is not a tax invoice unless separately issued as such. Vehicle allocation and applicable charges remain subject to confirmed booking terms.",
     MARGIN + 6,
-    y + 13,
+    y + 14,
     CONTENT_W - 12,
     {
-      size: 5,
+      size: 6.2,
       color: C.slate600,
-      lineHeight: 2.8,
+      lineHeight: 3.2,
       maxLines: 2,
     }
   );
 
   /* ==========================================================
-     FOOTER
+     FOOTER - FIRST PAGE
   ========================================================== */
 
-  footer(doc);
+  const totalPages =
+    remainingVehicles.length > 0
+      ? 2
+      : 1;
+
+  footer(
+    doc,
+    1,
+    totalPages
+  );
 
   /* ==========================================================
-     SINGLE PAGE ASSERTION
+     SECOND PAGE
   ========================================================== */
 
-  /*
-   * Intentionally NO doc.addPage() exists anywhere
-   * in this generator.
-   *
-   * Therefore:
-   *
-   * doc.getNumberOfPages() === 1
-   *
-   * for every generated document.
-   */
-
   if (
-    doc.getNumberOfPages() !== 1
+    remainingVehicles.length > 0
   ) {
+    doc.addPage();
+
+    drawPageBackground(doc);
+
     /*
-     * Safety fallback.
-     *
-     * Normally this can never execute because this generator
-     * never calls addPage().
+     * Second page header.
      */
-    while (
-      doc.getNumberOfPages() > 1
-    ) {
-      doc.deletePage(
-        doc.getNumberOfPages()
-      );
-    }
+
+    doc.setFillColor(
+      C.navy[0],
+      C.navy[1],
+      C.navy[2]
+    );
+
+    doc.rect(
+      0,
+      0,
+      PAGE_W,
+      36,
+      "F"
+    );
+
+    doc.setFillColor(
+      C.amber[0],
+      C.amber[1],
+      C.amber[2]
+    );
+
+    doc.rect(
+      0,
+      35,
+      PAGE_W,
+      1,
+      "F"
+    );
+
+    text(
+      doc,
+      "KHATU RIDES",
+      MARGIN,
+      13,
+      {
+        size: 13,
+        color: C.white,
+        bold: true,
+      }
+    );
+
+    text(
+      doc,
+      "TRAVELS CO.",
+      MARGIN,
+      20,
+      {
+        size: 7,
+        color: C.amber,
+        bold: true,
+      }
+    );
+
+    text(
+      doc,
+      "ADVANCE BOOKING - VEHICLE DETAILS",
+      PAGE_W - MARGIN,
+      14,
+      {
+        size: 8,
+        color: C.white,
+        bold: true,
+        align: "right",
+      }
+    );
+
+    text(
+      doc,
+      bookingNo,
+      PAGE_W - MARGIN,
+      22,
+      {
+        size: 7,
+        color: [190, 210, 235],
+        bold: true,
+        align: "right",
+      }
+    );
+
+    let page2Y = 47;
+
+    text(
+      doc,
+      "ADDITIONAL VEHICLE RESERVATION",
+      MARGIN,
+      page2Y,
+      {
+        size: 7,
+        color: C.slate500,
+        bold: true,
+      }
+    );
+
+    text(
+      doc,
+      "Remaining Booked Vehicles",
+      MARGIN,
+      page2Y + 9,
+      {
+        size: 13,
+        color: C.slate950,
+        bold: true,
+      }
+    );
+
+    page2Y += 15;
+
+    /*
+     * Second page table.
+     */
+
+    const tableHeaderH2 = 10;
+
+    doc.setFillColor(
+      C.navy[0],
+      C.navy[1],
+      C.navy[2]
+    );
+
+    doc.roundedRect(
+      MARGIN,
+      page2Y,
+      CONTENT_W,
+      tableHeaderH2,
+      2,
+      2,
+      "F"
+    );
+
+    text(
+      doc,
+      "VEHICLE",
+      MARGIN + 4,
+      page2Y + 6.5,
+      {
+        size: 6,
+        color: C.white,
+        bold: true,
+      }
+    );
+
+    text(
+      doc,
+      "VARIANT",
+      MARGIN +
+        vehicleW +
+        4,
+      page2Y + 6.5,
+      {
+        size: 6,
+        color: C.white,
+        bold: true,
+      }
+    );
+
+    text(
+      doc,
+      "QTY",
+      MARGIN +
+        vehicleW +
+        variantW +
+        qtyW -
+        3,
+      page2Y + 6.5,
+      {
+        size: 6,
+        color: C.white,
+        bold: true,
+        align: "right",
+      }
+    );
+
+    text(
+      doc,
+      "RATE",
+      MARGIN +
+        vehicleW +
+        variantW +
+        qtyW +
+        rateW -
+        3,
+      page2Y + 6.5,
+      {
+        size: 6,
+        color: C.white,
+        bold: true,
+        align: "right",
+      }
+    );
+
+    text(
+      doc,
+      "AMOUNT",
+      MARGIN +
+        CONTENT_W -
+        4,
+      page2Y + 6.5,
+      {
+        size: 6,
+        color: C.white,
+        bold: true,
+        align: "right",
+      }
+    );
+
+    page2Y +=
+      tableHeaderH2;
+
+    remainingVehicles.forEach(
+      (
+        vehicle,
+        index
+      ) => {
+        const quantity =
+          num(
+            vehicle.quantity
+          );
+
+        const rate =
+          num(
+            vehicle.ratePerVehicle
+          );
+
+        const lineTotal =
+          quantity * rate;
+
+        const vehicleName =
+          clean(
+            vehicle.vehicleType,
+            "Vehicle"
+          );
+
+        const variant =
+          clean(
+            vehicle.variant,
+            ""
+          );
+
+        const rowH =
+          10;
+
+        const rowColor =
+          index % 2 === 0
+            ? C.white
+            : C.slate50;
+
+        doc.setFillColor(
+          rowColor[0],
+          rowColor[1],
+          rowColor[2]
+        );
+
+        doc.rect(
+          MARGIN,
+          page2Y,
+          CONTENT_W,
+          rowH,
+          "F"
+        );
+
+        doc.setDrawColor(
+          C.slate200[0],
+          C.slate200[1],
+          C.slate200[2]
+        );
+
+        doc.setLineWidth(
+          0.15
+        );
+
+        doc.line(
+          MARGIN,
+          page2Y + rowH,
+          MARGIN +
+            CONTENT_W,
+          page2Y + rowH
+        );
+
+        text(
+          doc,
+          vehicleName,
+          MARGIN + 4,
+          page2Y + 6.5,
+          {
+            size: 7.5,
+            color:
+              C.slate950,
+            bold: true,
+          }
+        );
+
+        text(
+          doc,
+          variant || "-",
+          MARGIN +
+            vehicleW +
+            4,
+          page2Y + 6.5,
+          {
+            size: 7,
+            color:
+              variant
+                ? C.blue
+                : C.slate400,
+            bold:
+              Boolean(
+                variant
+              ),
+          }
+        );
+
+        text(
+          doc,
+          String(quantity),
+          MARGIN +
+            vehicleW +
+            variantW +
+            qtyW -
+            3,
+          page2Y + 6.5,
+          {
+            size: 7,
+            color:
+              C.slate800,
+            bold: true,
+            align: "right",
+          }
+        );
+
+        text(
+          doc,
+          money(rate),
+          MARGIN +
+            vehicleW +
+            variantW +
+            qtyW +
+            rateW -
+            3,
+          page2Y + 6.5,
+          {
+            size: 7,
+            color:
+              C.slate800,
+            bold: true,
+            align: "right",
+          }
+        );
+
+        text(
+          doc,
+          money(lineTotal),
+          MARGIN +
+            CONTENT_W -
+            4,
+          page2Y + 6.5,
+          {
+            size: 7.5,
+            color:
+              C.blue,
+            bold: true,
+            align: "right",
+          }
+        );
+
+        page2Y += rowH;
+      }
+    );
+
+    /*
+     * Page 2 summary.
+     */
+
+    page2Y += 12;
+
+    card(
+      doc,
+      MARGIN,
+      page2Y,
+      CONTENT_W,
+      45
+    );
+
+    label(
+      doc,
+      "Booking Summary",
+      MARGIN + 7,
+      page2Y + 8
+    );
+
+    text(
+      doc,
+      `Booking Number: ${bookingNo}`,
+      MARGIN + 7,
+      page2Y + 18,
+      {
+        size: 8,
+        color: C.slate950,
+        bold: true,
+      }
+    );
+
+    text(
+      doc,
+      `Customer: ${customerName}`,
+      MARGIN + 7,
+      page2Y + 27,
+      {
+        size: 8,
+        color: C.slate700,
+        bold: true,
+      }
+    );
+
+    text(
+      doc,
+      `Journey: ${journeyDate}  |  ${pickup} -> ${destination}`,
+      MARGIN + 7,
+      page2Y + 36,
+      {
+        size: 7,
+        color: C.slate700,
+      }
+    );
+
+    footer(
+      doc,
+      2,
+      totalPages
+    );
   }
 
   /* ==========================================================
-     RETURN PDF BLOB
+     SAFETY
+  ========================================================== */
+
+  /*
+   * No empty pages.
+   */
+
+  while (
+    doc.getNumberOfPages() >
+    totalPages
+  ) {
+    doc.deletePage(
+      doc.getNumberOfPages()
+    );
+  }
+
+  /* ==========================================================
+     RETURN BLOB
   ========================================================== */
 
   return doc.output(
