@@ -12,7 +12,7 @@ const links = [
   { label: "Home", href: "/" },
   { label: "About", href: "/about-us" },
   { label: "Contact", href: "/contact-us" },
-  { label: "Blog", href: "/blog" },
+  { label: "Travel Invoice", href: "/my-invoices" },
   { label: "Fleet", href: "/fleet" },
   { label: "Services", href: "/services" },
   { label: "Fare Calculator", href: "/fare-calculator" },
