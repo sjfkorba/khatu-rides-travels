@@ -3,14 +3,20 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+
 import {
   collection,
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
+  orderBy,
+  query,
   serverTimestamp,
   updateDoc,
+  addDoc,
 } from "firebase/firestore";
+
 import { db } from "@/lib/firebase";
 
 import {
@@ -18,7 +24,6 @@ import {
   CalendarDays,
   Car,
   CheckCircle2,
-  Clock3,
   Download,
   FileText,
   Loader2,
@@ -31,12 +36,19 @@ import {
   User,
   WalletCards,
   MessageCircle,
+  Plus,
+  Receipt,
+  X,
 } from "lucide-react";
 
 import {
   generateAdvanceBookingPdf,
   downloadAdvanceBookingPdf,
 } from "@/lib/generateAdvanceBookingPdf";
+
+import {
+  downloadPaymentReceiptPdf,
+} from "@/lib/generatePaymentReceiptPdf";
 
 /* ============================================================
    TYPES
@@ -48,6 +60,23 @@ type VehicleItem = {
   quantity: number;
   ratePerVehicle: number;
   total: number;
+};
+
+type PaymentMode =
+  | "Cash"
+  | "UPI"
+  | "Bank Transfer"
+  | "Card"
+  | "Other";
+
+type Payment = {
+  id: string;
+  amount: number;
+  paymentDate: string;
+  paymentMode: PaymentMode;
+  transactionId?: string;
+  note?: string;
+  createdAt?: unknown;
 };
 
 type AdvanceBooking = {
@@ -68,8 +97,12 @@ type AdvanceBooking = {
 
   totalVehicles: number;
   totalAmount: number;
+
   advanceAmount: number;
+  paidAmount?: number;
   balanceAmount: number;
+
+  paymentStatus?: string;
 
   status: string;
   remarks?: string;
@@ -87,6 +120,14 @@ const PHONE = "9244137353";
 const PHONE_DISPLAY = "+91 92441 37353";
 const WHATSAPP = "919244137353";
 
+const PAYMENT_MODES: PaymentMode[] = [
+  "Cash",
+  "UPI",
+  "Bank Transfer",
+  "Card",
+  "Other",
+];
+
 /* ============================================================
    PAGE
 ============================================================ */
@@ -100,26 +141,60 @@ export default function AdvanceBookingDetailPage() {
     : params?.id;
 
   /* ==========================================================
-     STATE
+     BOOKING STATE
   ========================================================== */
 
   const [booking, setBooking] =
     useState<AdvanceBooking | null>(null);
 
+  const [payments, setPayments] =
+    useState<Payment[]>([]);
+
   const [loading, setLoading] = useState(true);
+  const [paymentsLoading, setPaymentsLoading] =
+    useState(true);
+
   const [error, setError] = useState("");
 
-  const [deleting, setDeleting] = useState(false);
+  /* ==========================================================
+     GENERAL ACTION STATE
+  ========================================================== */
 
-  const [advanceInput, setAdvanceInput] = useState("");
-  const [updatingAdvance, setUpdatingAdvance] =
-    useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const [updatingStatus, setUpdatingStatus] =
     useState(false);
 
   const [pdfLoading, setPdfLoading] =
     useState(false);
+
+  /* ==========================================================
+     PAYMENT MODAL
+  ========================================================== */
+
+  const [showPaymentModal, setShowPaymentModal] =
+    useState(false);
+
+  const [savingPayment, setSavingPayment] =
+    useState(false);
+
+  const [deletingPaymentId, setDeletingPaymentId] =
+    useState<string | null>(null);
+
+  const [paymentAmount, setPaymentAmount] =
+    useState("");
+
+  const [paymentDate, setPaymentDate] =
+    useState("");
+
+  const [paymentMode, setPaymentMode] =
+    useState<PaymentMode>("UPI");
+
+  const [transactionId, setTransactionId] =
+    useState("");
+
+  const [paymentNote, setPaymentNote] =
+    useState("");
 
   /* ==========================================================
      LOAD BOOKING
@@ -162,15 +237,14 @@ export default function AdvanceBookingDetailPage() {
         const normalizedVehicles: VehicleItem[] =
           Array.isArray(raw.vehicles)
             ? raw.vehicles.map((vehicle) => ({
-                vehicleType:
-                  String(
-                    vehicle?.vehicleType || "Vehicle"
-                  ),
+                vehicleType: String(
+                  vehicle?.vehicleType ||
+                    "Vehicle"
+                ),
 
-                variant:
-                  vehicle?.variant
-                    ? String(vehicle.variant)
-                    : "",
+                variant: vehicle?.variant
+                  ? String(vehicle.variant)
+                  : "",
 
                 quantity: Math.max(
                   Number(vehicle?.quantity || 0),
@@ -211,10 +285,6 @@ export default function AdvanceBookingDetailPage() {
             0
           );
 
-        /*
-         * Prefer stored amount when available,
-         * otherwise calculate from vehicle lines.
-         */
         const storedTotal =
           Number(raw.totalAmount || 0);
 
@@ -228,62 +298,45 @@ export default function AdvanceBookingDetailPage() {
           0
         );
 
-        const balanceAmount = Math.max(
-          totalAmount - advanceAmount,
-          0
-        );
-
         const normalizedBooking: AdvanceBooking = {
-          bookingNumber:
-            String(
-              raw.bookingNumber ||
-                bookingId
-            ),
+          bookingNumber: String(
+            raw.bookingNumber ||
+              bookingId
+          ),
 
-          bookingType:
-            String(
-              raw.bookingType ||
-                "Advance Booking"
-            ),
+          bookingType: String(
+            raw.bookingType ||
+              "Advance Booking"
+          ),
 
-          bookingDate:
-            String(
-              raw.bookingDate || ""
-            ),
+          bookingDate: String(
+            raw.bookingDate || ""
+          ),
 
-          journeyDate:
-            String(
-              raw.journeyDate || ""
-            ),
+          journeyDate: String(
+            raw.journeyDate || ""
+          ),
 
-          pickupTime:
-            raw.pickupTime
-              ? String(raw.pickupTime)
-              : "",
+          pickupTime: raw.pickupTime
+            ? String(raw.pickupTime)
+            : "",
 
-          customerName:
-            String(
-              raw.customerName ||
-                "Customer"
-            ),
+          customerName: String(
+            raw.customerName ||
+              "Customer"
+          ),
 
-          customerMobile:
-            String(
-              raw.customerMobile ||
-                ""
-            ),
+          customerMobile: String(
+            raw.customerMobile || ""
+          ),
 
-          pickupLocation:
-            String(
-              raw.pickupLocation ||
-                ""
-            ),
+          pickupLocation: String(
+            raw.pickupLocation || ""
+          ),
 
-          dropLocation:
-            String(
-              raw.dropLocation ||
-                ""
-            ),
+          dropLocation: String(
+            raw.dropLocation || ""
+          ),
 
           vehicles:
             normalizedVehicles,
@@ -298,23 +351,41 @@ export default function AdvanceBookingDetailPage() {
 
           advanceAmount,
 
-          balanceAmount,
-
-          status:
-            String(
-              raw.status ||
-                "Pending"
+          paidAmount:
+            Number(
+              raw.paidAmount ||
+                0
             ),
 
-          remarks:
-            raw.remarks
-              ? String(raw.remarks)
+          balanceAmount:
+            Math.max(
+              Number(
+                raw.balanceAmount ??
+                  totalAmount -
+                    advanceAmount
+              ),
+              0
+            ),
+
+          paymentStatus:
+            raw.paymentStatus
+              ? String(
+                  raw.paymentStatus
+                )
               : "",
 
-          source:
-            raw.source
-              ? String(raw.source)
-              : "admin",
+          status: String(
+            raw.status ||
+              "Pending"
+          ),
+
+          remarks: raw.remarks
+            ? String(raw.remarks)
+            : "",
+
+          source: raw.source
+            ? String(raw.source)
+            : "admin",
 
           createdAt:
             raw.createdAt,
@@ -325,10 +396,6 @@ export default function AdvanceBookingDetailPage() {
 
         setBooking(
           normalizedBooking
-        );
-
-        setAdvanceInput(
-          String(advanceAmount)
         );
       } catch (err) {
         console.error(
@@ -353,6 +420,105 @@ export default function AdvanceBookingDetailPage() {
     return () => {
       mounted = false;
     };
+  }, [bookingId]);
+
+  /* ==========================================================
+     LOAD PAYMENTS
+  ========================================================== */
+
+  async function loadPayments() {
+    if (!bookingId) return;
+
+    try {
+      setPaymentsLoading(true);
+
+      const paymentsRef =
+        collection(
+          db,
+          "advance_bookings",
+          bookingId,
+          "payments"
+        );
+
+      let snapshot;
+
+      try {
+        snapshot = await getDocs(
+          query(
+            paymentsRef,
+            orderBy(
+              "paymentDate",
+              "desc"
+            )
+          )
+        );
+      } catch {
+        snapshot =
+          await getDocs(paymentsRef);
+      }
+
+      const list: Payment[] =
+        snapshot.docs.map(
+          (paymentDoc) => {
+            const data =
+              paymentDoc.data();
+
+            return {
+              id: paymentDoc.id,
+
+              amount: Number(
+                data.amount || 0
+              ),
+
+              paymentDate: String(
+                data.paymentDate || ""
+              ),
+
+              paymentMode:
+                PAYMENT_MODES.includes(
+                  data.paymentMode
+                )
+                  ? data.paymentMode
+                  : "Other",
+
+              transactionId:
+                data.transactionId
+                  ? String(
+                      data.transactionId
+                    )
+                  : "",
+
+              note: data.note
+                ? String(data.note)
+                : "",
+
+              createdAt:
+                data.createdAt,
+            };
+          }
+        );
+
+      list.sort((a, b) =>
+        String(
+          b.paymentDate
+        ).localeCompare(
+          String(a.paymentDate)
+        )
+      );
+
+      setPayments(list);
+    } catch (err) {
+      console.error(
+        "Failed to load payments:",
+        err
+      );
+    } finally {
+      setPaymentsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadPayments();
   }, [bookingId]);
 
   /* ==========================================================
@@ -385,13 +551,53 @@ export default function AdvanceBookingDetailPage() {
       );
     }, [booking]);
 
-  /*
-   * The stored booking amount is authoritative
-   * when it exists. Otherwise use calculated total.
-   */
   const displayTotal = booking
-    ? Number(booking.totalAmount || calculatedTotal)
+    ? Number(
+        booking.totalAmount ||
+          calculatedTotal
+      )
     : 0;
+
+  /*
+   * Existing advance amount is treated as
+   * already received ONLY when no payment
+   * history exists.
+   *
+   * Once payment records exist,
+   * payment history becomes authoritative.
+   */
+
+  const totalPaid = useMemo(() => {
+    if (payments.length > 0) {
+      return payments.reduce(
+        (sum, payment) =>
+          sum +
+          Number(
+            payment.amount || 0
+          ),
+        0
+      );
+    }
+
+    return Number(
+      booking?.advanceAmount || 0
+    );
+  }, [payments, booking]);
+
+  const balanceDue = Math.max(
+    displayTotal - totalPaid,
+    0
+  );
+
+  const paymentPercentage =
+    displayTotal > 0
+      ? Math.min(
+          (totalPaid /
+            displayTotal) *
+            100,
+          100
+        )
+      : 0;
 
   /* ==========================================================
      FORMATTERS
@@ -407,7 +613,9 @@ export default function AdvanceBookingDetailPage() {
         currency: "INR",
         maximumFractionDigits: 0,
       }
-    ).format(Number(amount || 0));
+    ).format(
+      Number(amount || 0)
+    );
   }
 
   function formatDate(
@@ -437,6 +645,12 @@ export default function AdvanceBookingDetailPage() {
     );
   }
 
+  function getToday() {
+    return new Date()
+      .toISOString()
+      .split("T")[0];
+  }
+
   function getStatusClass(
     status: string
   ) {
@@ -462,9 +676,465 @@ export default function AdvanceBookingDetailPage() {
   }
 
   /* ==========================================================
+     OPEN PAYMENT MODAL
+  ========================================================== */
+
+  function openPaymentModal() {
+    setPaymentAmount(
+      balanceDue > 0
+        ? String(balanceDue)
+        : ""
+    );
+
+    setPaymentDate(
+      getToday()
+    );
+
+    setPaymentMode("UPI");
+    setTransactionId("");
+    setPaymentNote("");
+
+    setShowPaymentModal(true);
+  }
+
+  function closePaymentModal() {
+    if (savingPayment) return;
+
+    setShowPaymentModal(false);
+  }
+
+  /* ==========================================================
+     SAVE PAYMENT
+  ========================================================== */
+
+  async function savePayment() {
+    if (!booking || !bookingId) return;
+
+    const amount =
+      Number(
+        paymentAmount
+          .replace(/,/g, "")
+          .trim()
+      );
+
+    if (
+      !Number.isFinite(amount) ||
+      amount <= 0
+    ) {
+      alert(
+        "Please enter a valid payment amount."
+      );
+      return;
+    }
+
+    if (amount > balanceDue) {
+      alert(
+        `Payment cannot be greater than the current balance of ${formatCurrency(
+          balanceDue
+        )}.`
+      );
+      return;
+    }
+
+    if (!paymentDate) {
+      alert(
+        "Please select payment date."
+      );
+      return;
+    }
+
+    if (
+      paymentMode === "UPI" ||
+      paymentMode ===
+        "Bank Transfer"
+    ) {
+      if (
+        !transactionId.trim()
+      ) {
+        const proceed =
+          window.confirm(
+            "Transaction / UTR number is empty. Do you want to continue?"
+          );
+
+        if (!proceed) return;
+      }
+    }
+
+    try {
+      setSavingPayment(true);
+
+      const paymentsRef =
+        collection(
+          db,
+          "advance_bookings",
+          bookingId,
+          "payments"
+        );
+
+      await addDoc(
+        paymentsRef,
+        {
+          amount,
+          paymentDate,
+          paymentMode,
+          transactionId:
+            transactionId.trim(),
+          note:
+            paymentNote.trim(),
+          createdAt:
+            serverTimestamp(),
+        }
+      );
+
+      /*
+       * Recalculate totals from payment
+       * history after save.
+       */
+
+      const newPaid =
+        totalPaid + amount;
+
+      const newBalance =
+        Math.max(
+          displayTotal -
+            newPaid,
+          0
+        );
+
+      let newStatus =
+        booking.status;
+
+      if (
+        booking.status !==
+          "Cancelled" &&
+        booking.status !==
+          "Completed"
+      ) {
+        if (
+          newBalance === 0 &&
+          displayTotal > 0
+        ) {
+          newStatus =
+            "Confirmed";
+        } else if (
+          newPaid > 0
+        ) {
+          newStatus =
+            "Partially Paid";
+        } else {
+          newStatus =
+            "Pending";
+        }
+      }
+
+      await updateDoc(
+        doc(
+          db,
+          "advance_bookings",
+          bookingId
+        ),
+        {
+          paidAmount:
+            newPaid,
+
+          balanceAmount:
+            newBalance,
+
+          paymentStatus:
+            newBalance === 0
+              ? "Paid"
+              : newPaid > 0
+              ? "Partially Paid"
+              : "Unpaid",
+
+          status:
+            newStatus,
+
+          updatedAt:
+            serverTimestamp(),
+        }
+      );
+
+      setBooking(
+        (previous) =>
+          previous
+            ? {
+                ...previous,
+
+                paidAmount:
+                  newPaid,
+
+                advanceAmount:
+                  newPaid,
+
+                balanceAmount:
+                  newBalance,
+
+                paymentStatus:
+                  newBalance === 0
+                    ? "Paid"
+                    : "Partially Paid",
+
+                status:
+                  newStatus,
+              }
+            : previous
+      );
+
+      await loadPayments();
+
+      setShowPaymentModal(false);
+
+      alert(
+        "Payment added successfully."
+      );
+    } catch (err) {
+      console.error(
+        "Failed to save payment:",
+        err
+      );
+
+      alert(
+        "Payment save nahi ho saka. Please try again."
+      );
+    } finally {
+      setSavingPayment(false);
+    }
+  }
+
+  /* ==========================================================
+     DELETE PAYMENT
+  ========================================================== */
+
+  async function deletePayment(
+    payment: Payment
+  ) {
+    if (!booking || !bookingId) return;
+
+    const confirmed =
+      window.confirm(
+        `Delete payment of ${formatCurrency(
+          payment.amount
+        )}?`
+      );
+
+    if (!confirmed) return;
+
+    try {
+      setDeletingPaymentId(
+        payment.id
+      );
+
+      await deleteDoc(
+        doc(
+          db,
+          "advance_bookings",
+          bookingId,
+          "payments",
+          payment.id
+        )
+      );
+
+      /*
+       * Recalculate payment history
+       */
+
+      const paymentsRef =
+        collection(
+          db,
+          "advance_bookings",
+          bookingId,
+          "payments"
+        );
+
+      const snapshot =
+        await getDocs(
+          paymentsRef
+        );
+
+      const newPaid =
+        snapshot.docs.reduce(
+          (sum, paymentDoc) =>
+            sum +
+            Number(
+              paymentDoc.data()
+                .amount || 0
+            ),
+          0
+        );
+
+      const newBalance =
+        Math.max(
+          displayTotal -
+            newPaid,
+          0
+        );
+
+      let newStatus =
+        booking.status;
+
+      if (
+        booking.status !==
+          "Cancelled" &&
+        booking.status !==
+          "Completed"
+      ) {
+        if (
+          newBalance === 0 &&
+          displayTotal > 0
+        ) {
+          newStatus =
+            "Confirmed";
+        } else if (
+          newPaid > 0
+        ) {
+          newStatus =
+            "Partially Paid";
+        } else {
+          newStatus =
+            "Pending";
+        }
+      }
+
+      await updateDoc(
+        doc(
+          db,
+          "advance_bookings",
+          bookingId
+        ),
+        {
+          paidAmount:
+            newPaid,
+
+          advanceAmount:
+            newPaid,
+
+          balanceAmount:
+            newBalance,
+
+          paymentStatus:
+            newBalance === 0
+              ? "Paid"
+              : newPaid > 0
+              ? "Partially Paid"
+              : "Unpaid",
+
+          status:
+            newStatus,
+
+          updatedAt:
+            serverTimestamp(),
+        }
+      );
+
+      setBooking(
+        (previous) =>
+          previous
+            ? {
+                ...previous,
+
+                paidAmount:
+                  newPaid,
+
+                advanceAmount:
+                  newPaid,
+
+                balanceAmount:
+                  newBalance,
+
+                paymentStatus:
+                  newBalance === 0
+                    ? "Paid"
+                    : newPaid > 0
+                    ? "Partially Paid"
+                    : "Unpaid",
+
+                status:
+                  newStatus,
+              }
+            : previous
+      );
+
+      await loadPayments();
+    } catch (err) {
+      console.error(
+        "Failed to delete payment:",
+        err
+      );
+
+      alert(
+        "Payment delete nahi ho saka."
+      );
+    } finally {
+      setDeletingPaymentId(
+        null
+      );
+    }
+  }
+
+  /* ==========================================================
+     PAYMENT RECEIPT
+  ========================================================== */
+
+  function downloadReceipt(
+    payment: Payment
+  ) {
+    if (!booking) return;
+
+    downloadPaymentReceiptPdf({
+      bookingNumber:
+        booking.bookingNumber,
+
+      bookingType:
+        booking.bookingType,
+
+      customerName:
+        booking.customerName,
+
+      customerMobile:
+        booking.customerMobile,
+
+      paymentId:
+        payment.id,
+
+      paymentDate:
+        payment.paymentDate,
+
+      paymentMode:
+        payment.paymentMode,
+
+      transactionId:
+        payment.transactionId,
+
+      amount:
+        payment.amount,
+
+      totalAmount:
+        displayTotal,
+
+      paidAmount:
+        totalPaid,
+
+      balanceAmount:
+        balanceDue,
+
+      note:
+        payment.note,
+    });
+  }
+
+  /* ==========================================================
+     FINAL INVOICE
+  ========================================================== */
+
+  function openFinalInvoice() {
+    router.push(
+      `/admin/advance-bookings/${bookingId}/invoice`
+    );
+  }
+
+  /* ==========================================================
      PDF DATA
-     
-     Single source of truth for all PDF actions.
   ========================================================== */
 
   function getPdfData() {
@@ -540,14 +1210,10 @@ export default function AdvanceBookingDetailPage() {
         displayTotal,
 
       advanceAmount:
-        Number(
-          booking.advanceAmount || 0
-        ),
+        totalPaid,
 
       balanceAmount:
-        Number(
-          booking.balanceAmount || 0
-        ),
+        balanceDue,
 
       status:
         booking.status,
@@ -569,9 +1235,6 @@ export default function AdvanceBookingDetailPage() {
     try {
       setPdfLoading(true);
 
-      /*
-       * Generate actual PDF Blob.
-       */
       const blob =
         await generateAdvanceBookingPdf(
           getPdfData()
@@ -589,9 +1252,6 @@ export default function AdvanceBookingDetailPage() {
       pdfUrl =
         URL.createObjectURL(blob);
 
-      /*
-       * Open generated PDF in a new tab.
-       */
       const printWindow =
         window.open(
           pdfUrl,
@@ -600,50 +1260,39 @@ export default function AdvanceBookingDetailPage() {
 
       if (!printWindow) {
         alert(
-          "Print window blocked. Please allow pop-ups for this website and try again."
+          "Print window blocked. Please allow pop-ups for this website."
         );
 
         return;
       }
 
-      /*
-       * PDF viewer needs some time to load.
-       * We intentionally do not immediately revoke
-       * the Blob URL.
-       */
       window.setTimeout(() => {
         try {
           printWindow.focus();
           printWindow.print();
-        } catch (printError) {
+        } catch (error) {
           console.error(
-            "Print command failed:",
-            printError
+            "Print failed:",
+            error
           );
         }
       }, 1500);
 
-      /*
-       * Keep Blob URL alive long enough for
-       * browser PDF viewer.
-       */
       window.setTimeout(() => {
         try {
           URL.revokeObjectURL(
             pdfUrl
           );
-        } catch {
-          // Ignore cleanup error.
-        }
+        } catch {}
       }, 120000);
     } catch (err) {
       console.error(
-        "Advance booking PDF print failed:",
+        "PDF print failed:",
         err
       );
 
       alert(
-        "PDF generate nahi ho saka. Please try again."
+        "PDF generate nahi ho saka."
       );
     } finally {
       setPdfLoading(false);
@@ -660,35 +1309,17 @@ export default function AdvanceBookingDetailPage() {
     try {
       setPdfLoading(true);
 
-      const pdfData =
-        getPdfData();
-
-      const blob =
-        await downloadAdvanceBookingPdf(
-          pdfData
-        );
-
-      /*
-       * Generator should return Blob.
-       * We don't require it for the download,
-       * but checking makes failures easier to detect.
-       */
-      if (
-        blob &&
-        blob.size === 0
-      ) {
-        throw new Error(
-          "Downloaded PDF is empty."
-        );
-      }
+      await downloadAdvanceBookingPdf(
+        getPdfData()
+      );
     } catch (err) {
       console.error(
-        "Advance booking PDF download failed:",
+        "PDF download failed:",
         err
       );
 
       alert(
-        "PDF download nahi ho saka. Please try again."
+        "PDF download nahi ho saka."
       );
     } finally {
       setPdfLoading(false);
@@ -737,9 +1368,6 @@ export default function AdvanceBookingDetailPage() {
           }
         );
 
-      /*
-       * Native mobile/browser file sharing.
-       */
       if (
         typeof navigator !==
           "undefined" &&
@@ -764,10 +1392,6 @@ export default function AdvanceBookingDetailPage() {
         return;
       }
 
-      /*
-       * Desktop fallback:
-       * Download actual PDF.
-       */
       const url =
         URL.createObjectURL(blob);
 
@@ -792,12 +1416,9 @@ export default function AdvanceBookingDetailPage() {
       }, 1000);
 
       alert(
-        "Direct file sharing is not supported by this browser. PDF has been downloaded instead."
+        "Direct sharing is not supported. PDF downloaded instead."
       );
     } catch (err) {
-      /*
-       * User cancelled native share.
-       */
       if (
         err instanceof DOMException &&
         err.name === "AbortError"
@@ -806,157 +1427,15 @@ export default function AdvanceBookingDetailPage() {
       }
 
       console.error(
-        "Advance booking PDF share failed:",
+        "PDF share failed:",
         err
       );
 
       alert(
-        "PDF share nahi ho saka. Please download the PDF instead."
+        "PDF share nahi ho saka."
       );
     } finally {
       setPdfLoading(false);
-    }
-  }
-
-  /* ==========================================================
-     UPDATE ADVANCE
-  ========================================================== */
-
-  async function updateAdvance() {
-    if (!booking || !bookingId) return;
-
-    const cleaned =
-      advanceInput
-        .replace(/,/g, "")
-        .trim();
-
-    const advance =
-      Number(cleaned || 0);
-
-    if (
-      !Number.isFinite(
-        advance
-      ) ||
-      advance < 0
-    ) {
-      alert(
-        "Please enter a valid advance amount."
-      );
-      return;
-    }
-
-    if (
-      advance >
-      displayTotal
-    ) {
-      alert(
-        "Advance amount cannot be greater than total booking amount."
-      );
-      return;
-    }
-
-    try {
-      setUpdatingAdvance(
-        true
-      );
-
-      const balance =
-        Math.max(
-          displayTotal -
-            advance,
-          0
-        );
-
-      /*
-       * Automatically update payment status,
-       * but don't override Cancelled/Completed
-       * unnecessarily.
-       */
-      let newStatus =
-        booking.status;
-
-      if (
-        booking.status !==
-          "Cancelled" &&
-        booking.status !==
-          "Completed"
-      ) {
-        if (
-          advance ===
-          displayTotal
-        ) {
-          newStatus =
-            "Confirmed";
-        } else if (
-          advance > 0
-        ) {
-          newStatus =
-            "Partially Paid";
-        } else {
-          newStatus =
-            "Pending";
-        }
-      }
-
-      await updateDoc(
-        doc(
-          db,
-          "advance_bookings",
-          bookingId
-        ),
-        {
-          advanceAmount:
-            advance,
-
-          balanceAmount:
-            balance,
-
-          status:
-            newStatus,
-
-          updatedAt:
-            serverTimestamp(),
-        }
-      );
-
-      setBooking(
-        (previous) =>
-          previous
-            ? {
-                ...previous,
-
-                advanceAmount:
-                  advance,
-
-                balanceAmount:
-                  balance,
-
-                status:
-                  newStatus,
-              }
-            : previous
-      );
-
-      setAdvanceInput(
-        String(advance)
-      );
-
-      alert(
-        "Advance amount updated successfully."
-      );
-    } catch (err) {
-      console.error(
-        "Failed to update advance:",
-        err
-      );
-
-      alert(
-        "Failed to update advance amount."
-      );
-    } finally {
-      setUpdatingAdvance(
-        false
-      );
     }
   }
 
@@ -973,9 +1452,7 @@ export default function AdvanceBookingDetailPage() {
     if (!newStatus) return;
 
     try {
-      setUpdatingStatus(
-        true
-      );
+      setUpdatingStatus(true);
 
       await updateDoc(
         doc(
@@ -1004,7 +1481,7 @@ export default function AdvanceBookingDetailPage() {
       );
     } catch (err) {
       console.error(
-        "Failed to update booking status:",
+        "Failed to update status:",
         err
       );
 
@@ -1012,9 +1489,7 @@ export default function AdvanceBookingDetailPage() {
         "Failed to update booking status."
       );
     } finally {
-      setUpdatingStatus(
-        false
-      );
+      setUpdatingStatus(false);
     }
   }
 
@@ -1085,7 +1560,7 @@ export default function AdvanceBookingDetailPage() {
     const message =
       `Hello ${booking.customerName},
 
-Your advance booking with Khatu Rides Travels Co. has been recorded.
+Your booking with Khatu Rides Travels Co.
 
 Booking No: ${booking.bookingNumber}
 Booking Type: ${booking.bookingType}
@@ -1096,6 +1571,7 @@ Journey Date: ${formatDate(
 
 Pickup: ${booking.pickupLocation}
 Destination: ${booking.dropLocation}
+
 Reporting Time: ${
         booking.pickupTime ||
         "As discussed"
@@ -1108,12 +1584,12 @@ Total Booking Amount: ${formatCurrency(
         displayTotal
       )}
 
-Advance Received: ${formatCurrency(
-        booking.advanceAmount
+Total Paid: ${formatCurrency(
+        totalPaid
       )}
 
 Balance Amount: ${formatCurrency(
-        booking.balanceAmount
+        balanceDue
       )}
 
 Status: ${booking.status}
@@ -1162,10 +1638,7 @@ www.khaturidescg.in`;
      ERROR
   ========================================================== */
 
-  if (
-    error ||
-    !booking
-  ) {
+  if (error || !booking) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
         <div className="w-full max-w-md rounded-[30px] bg-white p-8 text-center shadow-xl">
@@ -1184,11 +1657,9 @@ www.khaturidescg.in`;
 
           <Link
             href="/admin/advance-bookings"
-            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-xs font-black text-white transition hover:bg-slate-800"
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-xs font-black text-white"
           >
-            <ArrowLeft
-              size={15}
-            />
+            <ArrowLeft size={15} />
             Back to Advance Bookings
           </Link>
         </div>
@@ -1247,19 +1718,15 @@ www.khaturidescg.in`;
               <div>
                 <Link
                   href="/admin/advance-bookings"
-                  className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-slate-600 transition hover:text-slate-950"
+                  className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-slate-950"
                 >
-                  <ArrowLeft
-                    size={17}
-                  />
+                  <ArrowLeft size={17} />
                   Back to Advance Bookings
                 </Link>
 
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400 text-slate-950 shadow-lg">
-                    <FileText
-                      size={22}
-                    />
+                    <FileText size={22} />
                   </div>
 
                   <div>
@@ -1278,15 +1745,28 @@ www.khaturidescg.in`;
 
               <div className="flex flex-wrap gap-2">
 
+                {/* EDIT */}
+
                 <Link
                   href={`/admin/advance-bookings/${bookingId}/edit`}
-                  className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-xs font-black text-slate-800 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50"
+                  className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-xs font-black text-slate-800 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50"
                 >
-                  <Pencil
-                    size={15}
-                  />
+                  <Pencil size={15} />
                   Edit
                 </Link>
+
+                {/* FINAL INVOICE */}
+
+                <button
+                  type="button"
+                  onClick={
+                    openFinalInvoice
+                  }
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#063B8F] px-4 py-3 text-xs font-black text-white shadow-lg hover:bg-[#052f72]"
+                >
+                  <Receipt size={15} />
+                  Final Invoice
+                </button>
 
                 {/* PRINT */}
 
@@ -1294,7 +1774,7 @@ www.khaturidescg.in`;
                   type="button"
                   onClick={openPrint}
                   disabled={pdfLoading}
-                  className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-xs font-black text-white shadow-lg transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-xs font-black text-white shadow-lg hover:bg-slate-800 disabled:opacity-60"
                 >
                   {pdfLoading ? (
                     <Loader2
@@ -1302,9 +1782,7 @@ www.khaturidescg.in`;
                       className="animate-spin"
                     />
                   ) : (
-                    <Printer
-                      size={15}
-                    />
+                    <Printer size={15} />
                   )}
 
                   Print Invoice
@@ -1316,19 +1794,9 @@ www.khaturidescg.in`;
                   type="button"
                   onClick={downloadPdf}
                   disabled={pdfLoading}
-                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-xs font-black text-white shadow-lg transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-xs font-black text-white shadow-lg hover:bg-emerald-700 disabled:opacity-60"
                 >
-                  {pdfLoading ? (
-                    <Loader2
-                      size={15}
-                      className="animate-spin"
-                    />
-                  ) : (
-                    <Download
-                      size={15}
-                    />
-                  )}
-
+                  <Download size={15} />
                   Download PDF
                 </button>
 
@@ -1338,12 +1806,9 @@ www.khaturidescg.in`;
                   type="button"
                   onClick={sharePdf}
                   disabled={pdfLoading}
-                  className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-4 py-3 text-xs font-black text-white shadow-lg transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-4 py-3 text-xs font-black text-white shadow-lg hover:bg-blue-800 disabled:opacity-60"
                 >
-                  <Share2
-                    size={15}
-                  />
-
+                  <Share2 size={15} />
                   Share PDF
                 </button>
 
@@ -1353,19 +1818,9 @@ www.khaturidescg.in`;
                   type="button"
                   onClick={deleteBooking}
                   disabled={deleting}
-                  className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-4 py-3 text-xs font-black text-red-600 transition hover:bg-red-100 disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-4 py-3 text-xs font-black text-red-600 hover:bg-red-100 disabled:opacity-60"
                 >
-                  {deleting ? (
-                    <Loader2
-                      size={15}
-                      className="animate-spin"
-                    />
-                  ) : (
-                    <Trash2
-                      size={15}
-                    />
-                  )}
-
+                  <Trash2 size={15} />
                   Delete
                 </button>
               </div>
@@ -1373,14 +1828,12 @@ www.khaturidescg.in`;
           </div>
 
           {/* ==================================================
-              INVOICE / SCREEN DOCUMENT
+              DOCUMENT
           ================================================== */}
 
           <div className="print-shadow-none overflow-hidden rounded-[30px] bg-white shadow-xl">
 
-            {/* ==================================================
-                HEADER
-            ================================================== */}
+            {/* HEADER */}
 
             <div className="relative overflow-hidden bg-[#061936] px-6 py-7 text-white md:px-9 md:py-9">
 
@@ -1438,9 +1891,7 @@ www.khaturidescg.in`;
               </div>
             </div>
 
-            {/* ==================================================
-                BOOKING SUMMARY
-            ================================================== */}
+            {/* BOOKING SUMMARY */}
 
             <div className="border-b border-slate-200 bg-slate-50 px-6 py-5 md:px-9">
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -1490,24 +1941,20 @@ www.khaturidescg.in`;
                     Vehicles
                   </p>
                 </div>
+
               </div>
             </div>
 
-            {/* ==================================================
-                CUSTOMER + JOURNEY
-            ================================================== */}
+            {/* CUSTOMER + JOURNEY */}
 
             <div className="grid border-b border-slate-200 md:grid-cols-2">
 
-              {/* CUSTOMER */}
-
               <div className="border-b border-slate-200 p-6 md:border-b-0 md:border-r md:px-9 md:py-7">
+
                 <div className="flex items-center gap-3">
 
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
-                    <User
-                      size={18}
-                    />
+                    <User size={18} />
                   </div>
 
                   <div>
@@ -1519,9 +1966,11 @@ www.khaturidescg.in`;
                       Customer Details
                     </h3>
                   </div>
+
                 </div>
 
                 <div className="mt-5">
+
                   <p className="text-lg font-black text-slate-950">
                     {booking.customerName}
                   </p>
@@ -1530,30 +1979,22 @@ www.khaturidescg.in`;
                     href={`tel:+91${booking.customerMobile}`}
                     className="no-print mt-2 inline-flex items-center gap-2 text-xs font-bold text-blue-700"
                   >
-                    <Phone
-                      size={13}
-                    />
+                    <Phone size={13} />
+
                     +91{" "}
                     {booking.customerMobile}
                   </a>
 
-                  <p className="hidden print:block mt-2 text-xs font-bold text-slate-600">
-                    +91{" "}
-                    {booking.customerMobile}
-                  </p>
                 </div>
-              </div>
 
-              {/* JOURNEY */}
+              </div>
 
               <div className="p-6 md:px-9 md:py-7">
 
                 <div className="flex items-center gap-3">
 
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
-                    <MapPin
-                      size={18}
-                    />
+                    <MapPin size={18} />
                   </div>
 
                   <div>
@@ -1565,6 +2006,7 @@ www.khaturidescg.in`;
                       Travel Details
                     </h3>
                   </div>
+
                 </div>
 
                 <div className="mt-5 space-y-4">
@@ -1603,11 +2045,10 @@ www.khaturidescg.in`;
 
                 </div>
               </div>
+
             </div>
 
-            {/* ==================================================
-                VEHICLES
-            ================================================== */}
+            {/* VEHICLES */}
 
             <div className="print-break-inside p-6 md:px-9 md:py-8">
 
@@ -1616,9 +2057,7 @@ www.khaturidescg.in`;
                 <div className="flex items-center gap-3">
 
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-800">
-                    <Car
-                      size={18}
-                    />
+                    <Car size={18} />
                   </div>
 
                   <div>
@@ -1630,17 +2069,16 @@ www.khaturidescg.in`;
                       Booked Vehicles
                     </h3>
                   </div>
+
                 </div>
 
                 <span className="rounded-full bg-blue-50 px-3 py-1.5 text-[9px] font-black text-blue-700">
-                  {calculatedVehicleCount}{" "}
-                  Vehicles
+                  {calculatedVehicleCount} Vehicles
                 </span>
+
               </div>
 
               <div className="overflow-hidden rounded-2xl border border-slate-200">
-
-                {/* TABLE HEADER */}
 
                 <div className="hidden grid-cols-[1fr_110px_130px_140px] bg-slate-50 px-4 py-3 md:grid">
 
@@ -1667,8 +2105,7 @@ www.khaturidescg.in`;
                   {booking.vehicles.length ===
                   0 ? (
                     <div className="px-4 py-8 text-center text-xs font-bold text-slate-400">
-                      No vehicle details
-                      available.
+                      No vehicle details available.
                     </div>
                   ) : (
                     booking.vehicles.map(
@@ -1763,9 +2200,8 @@ www.khaturidescg.in`;
 
                 </div>
 
-                {/* TOTAL */}
-
                 <div className="border-t-2 border-slate-200 bg-slate-50 px-4 py-4">
+
                   <div className="flex items-center justify-between">
 
                     <p className="text-sm font-black text-slate-700">
@@ -1779,170 +2215,397 @@ www.khaturidescg.in`;
                     </p>
 
                   </div>
+
                 </div>
 
               </div>
             </div>
 
             {/* ==================================================
-                PAYMENT
+                PAYMENT MANAGEMENT
             ================================================== */}
 
-            <div className="border-t border-slate-200 bg-slate-50 px-6 py-6 md:px-9 md:py-8">
+            <div className="border-t border-slate-200 bg-slate-50 px-6 py-7 md:px-9 md:py-9">
 
-              <div className="grid gap-5 md:grid-cols-[1fr_360px]">
+              <div className="flex flex-col gap-6">
 
-                {/* SUMMARY */}
+                {/* PAYMENT HEADER */}
 
-                <div>
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 
                   <div className="flex items-center gap-3">
 
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-                      <WalletCards
-                        size={18}
-                      />
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                      <WalletCards size={20} />
                     </div>
 
                     <div>
                       <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">
-                        Payment
+                        Payment Management
                       </p>
 
-                      <h3 className="text-base font-black text-slate-950">
-                        Payment Summary
+                      <h3 className="text-lg font-black text-slate-950">
+                        Booking Payments
                       </h3>
                     </div>
 
                   </div>
 
-                  <div className="mt-5 space-y-3">
+                  <button
+                    type="button"
+                    onClick={
+                      openPaymentModal
+                    }
+                    disabled={
+                      balanceDue <= 0
+                    }
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 text-xs font-black text-white shadow-lg transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
+                  >
+                    <Plus size={17} />
+                    Add Payment
+                  </button>
 
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-500">
-                        Total Booking
-                      </span>
-
-                      <span className="text-sm font-black text-slate-950">
-                        {formatCurrency(
-                          displayTotal
-                        )}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-500">
-                        Advance Received
-                      </span>
-
-                      <span className="text-sm font-black text-emerald-600">
-                        −{" "}
-                        {formatCurrency(
-                          booking.advanceAmount
-                        )}
-                      </span>
-                    </div>
-
-                    <div className="border-t border-slate-200 pt-3">
-
-                      <div className="flex items-center justify-between">
-
-                        <span className="text-sm font-black text-slate-700">
-                          Balance Due
-                        </span>
-
-                        <span className="text-2xl font-black text-red-600">
-                          {formatCurrency(
-                            booking.balanceAmount
-                          )}
-                        </span>
-
-                      </div>
-                    </div>
-
-                  </div>
                 </div>
 
-                {/* UPDATE ADVANCE */}
+                {/* SUMMARY CARDS */}
 
-                <div className="no-print rounded-2xl border border-slate-200 bg-white p-5">
+                <div className="grid gap-3 sm:grid-cols-3">
 
-                  <p className="text-xs font-black text-slate-950">
-                    Update Advance Payment
-                  </p>
+                  <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
 
-                  <p className="mt-1 text-[9px] leading-4 text-slate-500">
-                    Enter the amount received
-                    from the customer.
-                  </p>
+                    <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">
+                      Total Booking
+                    </p>
 
-                  <div className="mt-4 flex gap-2">
+                    <p className="mt-2 text-2xl font-black text-slate-950">
+                      {formatCurrency(
+                        displayTotal
+                      )}
+                    </p>
 
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      value={advanceInput}
-                      onChange={(e) =>
-                        setAdvanceInput(
-                          e.target.value.replace(
-                            /[^\d.]/g,
-                            ""
-                          )
-                        )
-                      }
-                      onKeyDown={(e) => {
-                        if (
-                          e.key ===
-                          "Enter"
-                        ) {
-                          updateAdvance();
-                        }
+                  </div>
+
+                  <div className="rounded-2xl bg-emerald-50 p-5 ring-1 ring-emerald-100">
+
+                    <p className="text-[9px] font-black uppercase tracking-wider text-emerald-600">
+                      Total Paid
+                    </p>
+
+                    <p className="mt-2 text-2xl font-black text-emerald-700">
+                      {formatCurrency(
+                        totalPaid
+                      )}
+                    </p>
+
+                  </div>
+
+                  <div className="rounded-2xl bg-red-50 p-5 ring-1 ring-red-100">
+
+                    <p className="text-[9px] font-black uppercase tracking-wider text-red-500">
+                      Balance Due
+                    </p>
+
+                    <p className="mt-2 text-2xl font-black text-red-600">
+                      {formatCurrency(
+                        balanceDue
+                      )}
+                    </p>
+
+                  </div>
+
+                </div>
+
+                {/* PROGRESS */}
+
+                <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-100">
+
+                  <div className="mb-2 flex items-center justify-between">
+
+                    <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">
+                      Payment Progress
+                    </span>
+
+                    <span className="text-xs font-black text-slate-700">
+                      {Math.round(
+                        paymentPercentage
+                      )}
+                      %
+                    </span>
+
+                  </div>
+
+                  <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+
+                    <div
+                      className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                      style={{
+                        width: `${paymentPercentage}%`,
                       }}
-                      className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-3 text-sm font-black outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                      placeholder="₹ Advance"
                     />
 
-                    <button
-                      type="button"
-                      onClick={
-                        updateAdvance
-                      }
-                      disabled={
-                        updatingAdvance
-                      }
-                      className="inline-flex min-w-[85px] items-center justify-center rounded-xl bg-blue-700 px-4 py-3 text-xs font-black text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {updatingAdvance ? (
-                        <Loader2
-                          size={15}
-                          className="animate-spin"
-                        />
-                      ) : (
-                        "Update"
-                      )}
-                    </button>
-
-                  </div>
-
-                  <div className="mt-3 flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
-                    <span className="text-[9px] font-bold text-slate-500">
-                      Current Balance
-                    </span>
-
-                    <span className="text-xs font-black text-red-600">
-                      {formatCurrency(
-                        booking.balanceAmount
-                      )}
-                    </span>
                   </div>
 
                 </div>
+
+                {/* PAYMENT HISTORY */}
+
+                <div>
+
+                  <div className="mb-4 flex items-center justify-between">
+
+                    <div>
+                      <h4 className="text-sm font-black text-slate-950">
+                        Payment History
+                      </h4>
+
+                      <p className="mt-1 text-[9px] text-slate-400">
+                        All payments received for this booking
+                      </p>
+                    </div>
+
+                    {payments.length > 0 && (
+                      <span className="rounded-full bg-slate-200 px-3 py-1 text-[9px] font-black text-slate-600">
+                        {payments.length}{" "}
+                        Payment
+                        {payments.length !==
+                        1
+                          ? "s"
+                          : ""}
+                      </span>
+                    )}
+
+                  </div>
+
+                  {paymentsLoading ? (
+                    <div className="flex items-center justify-center rounded-2xl bg-white py-10">
+
+                      <Loader2
+                        size={22}
+                        className="animate-spin text-blue-700"
+                      />
+
+                    </div>
+                  ) : payments.length ===
+                    0 ? (
+
+                    <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-5 py-10 text-center">
+
+                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                        <WalletCards size={22} />
+                      </div>
+
+                      <p className="mt-4 text-sm font-black text-slate-700">
+                        No payment history yet
+                      </p>
+
+                      <p className="mt-1 text-xs text-slate-400">
+                        Add the first payment received from the customer.
+                      </p>
+
+                      <button
+                        type="button"
+                        onClick={
+                          openPaymentModal
+                        }
+                        disabled={
+                          balanceDue <= 0
+                        }
+                        className="mt-5 inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-xs font-black text-white disabled:bg-slate-300"
+                      >
+                        <Plus size={15} />
+                        Add First Payment
+                      </button>
+
+                    </div>
+
+                  ) : (
+
+                    <div className="space-y-3">
+
+                      {payments.map(
+                        (
+                          payment,
+                          index
+                        ) => (
+
+                          <div
+                            key={
+                              payment.id
+                            }
+                            className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100"
+                          >
+
+                            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+
+                              <div className="flex min-w-0 items-start gap-3">
+
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                                  <CheckCircle2
+                                    size={18}
+                                  />
+                                </div>
+
+                                <div className="min-w-0">
+
+                                  <div className="flex flex-wrap items-center gap-2">
+
+                                    <p className="text-lg font-black text-slate-950">
+                                      {formatCurrency(
+                                        payment.amount
+                                      )}
+                                    </p>
+
+                                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[8px] font-black text-emerald-700">
+                                      RECEIVED
+                                    </span>
+
+                                  </div>
+
+                                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-semibold text-slate-500">
+
+                                    <span>
+                                      {formatDate(
+                                        payment.paymentDate
+                                      )}
+                                    </span>
+
+                                    <span>
+                                      •
+                                    </span>
+
+                                    <span>
+                                      {payment.paymentMode}
+                                    </span>
+
+                                    {payment.transactionId && (
+                                      <>
+                                        <span>
+                                          •
+                                        </span>
+
+                                        <span className="break-all">
+                                          Ref:{" "}
+                                          {
+                                            payment.transactionId
+                                          }
+                                        </span>
+                                      </>
+                                    )}
+
+                                  </div>
+
+                                  {payment.note && (
+                                    <p className="mt-2 text-[10px] leading-4 text-slate-400">
+                                      {payment.note}
+                                    </p>
+                                  )}
+
+                                </div>
+
+                              </div>
+
+                              <div className="flex flex-wrap gap-2 md:justify-end">
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    downloadReceipt(
+                                      payment
+                                    )
+                                  }
+                                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-blue-50 px-3 text-[10px] font-black text-blue-700 hover:bg-blue-100"
+                                >
+                                  <Receipt size={14} />
+                                  Receipt
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    deletePayment(
+                                      payment
+                                    )
+                                  }
+                                  disabled={
+                                    deletingPaymentId ===
+                                    payment.id
+                                  }
+                                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-red-50 px-3 text-[10px] font-black text-red-600 hover:bg-red-100 disabled:opacity-50"
+                                >
+                                  {deletingPaymentId ===
+                                  payment.id ? (
+                                    <Loader2
+                                      size={14}
+                                      className="animate-spin"
+                                    />
+                                  ) : (
+                                    <Trash2
+                                      size={14}
+                                    />
+                                  )}
+
+                                  Delete
+                                </button>
+
+                              </div>
+
+                            </div>
+
+                            <div className="mt-4 border-t border-slate-100 pt-3">
+
+                              <div className="flex items-center justify-between">
+
+                                <span className="text-[9px] font-bold text-slate-400">
+                                  Payment #{payments.length - index}
+                                </span>
+
+                                <span className="text-[10px] font-black text-red-600">
+                                  Balance after payment:{" "}
+                                  {formatCurrency(
+                                    Math.max(
+                                      displayTotal -
+                                        payments
+                                          .slice(
+                                            0,
+                                            index +
+                                              1
+                                          )
+                                          .reduce(
+                                            (
+                                              sum,
+                                              item
+                                            ) =>
+                                              sum +
+                                              Number(
+                                                item.amount ||
+                                                  0
+                                              ),
+                                            0
+                                          ),
+                                      0
+                                    )
+                                  )}
+                                </span>
+
+                              </div>
+
+                            </div>
+
+                          </div>
+
+                        )
+                      )}
+
+                    </div>
+                  )}
+
+                </div>
+
               </div>
+
             </div>
 
-            {/* ==================================================
-                REMARKS
-            ================================================== */}
+            {/* REMARKS */}
 
             {booking.remarks && (
               <div className="border-t border-slate-200 px-6 py-6 md:px-9">
@@ -1959,12 +2622,11 @@ www.khaturidescg.in`;
                   </p>
 
                 </div>
+
               </div>
             )}
 
-            {/* ==================================================
-                FOOTER
-            ================================================== */}
+            {/* FOOTER */}
 
             <div className="border-t border-slate-200 px-6 py-6 md:px-9">
 
@@ -1994,16 +2656,16 @@ www.khaturidescg.in`;
               </div>
 
               <p className="mt-5 text-center text-[8px] font-medium leading-4 text-slate-400">
-                This document represents the
-                booking details recorded by
-                Khatu Rides Travels Co. Final
-                vehicle allocation and
-                operational details remain
-                subject to booking terms,
-                availability and confirmation.
+                This document represents the booking
+                details recorded by Khatu Rides Travels
+                Co. Final vehicle allocation and
+                operational details remain subject to
+                booking terms, availability and
+                confirmation.
               </p>
 
             </div>
+
           </div>
 
           {/* ====================================================
@@ -2024,8 +2686,7 @@ www.khaturidescg.in`;
                   </p>
 
                   <p className="mt-1 text-[9px] text-slate-500">
-                    Change the current advance
-                    booking status.
+                    Change the current advance booking status.
                   </p>
                 </div>
 
@@ -2050,7 +2711,7 @@ www.khaturidescg.in`;
                     disabled={
                       updatingStatus
                     }
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-black outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:opacity-60"
+                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-black outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                   >
                     <option value="Confirmed">
                       Confirmed
@@ -2074,18 +2735,18 @@ www.khaturidescg.in`;
                   </select>
 
                 </div>
+
               </div>
+
             </div>
 
             {/* CUSTOMER ACTIONS */}
 
             <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">
 
-              {/* CALL */}
-
               <a
                 href={`tel:+91${booking.customerMobile}`}
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-red-500 px-5 text-xs font-black text-white shadow-lg transition hover:bg-red-600"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-red-500 px-5 text-xs font-black text-white shadow-lg hover:bg-red-600"
               >
                 <Phone
                   size={16}
@@ -2094,14 +2755,12 @@ www.khaturidescg.in`;
                 Call Customer
               </a>
 
-              {/* WHATSAPP */}
-
               <button
                 type="button"
                 onClick={
                   openCustomerWhatsApp
                 }
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 text-xs font-black text-white shadow-lg transition hover:bg-[#1ebe5d]"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 text-xs font-black text-white shadow-lg hover:bg-[#1ebe5d]"
               >
                 <MessageCircle
                   size={16}
@@ -2110,71 +2769,26 @@ www.khaturidescg.in`;
                 WhatsApp Customer
               </button>
 
-              {/* DOWNLOAD */}
-
               <button
                 type="button"
                 onClick={
-                  downloadPdf
+                  openFinalInvoice
                 }
-                disabled={
-                  pdfLoading
-                }
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 text-xs font-black text-white shadow-lg transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#063B8F] px-5 text-xs font-black text-white shadow-lg hover:bg-[#052f72]"
               >
-                {pdfLoading ? (
-                  <Loader2
-                    size={16}
-                    className="animate-spin"
-                  />
-                ) : (
-                  <Download
-                    size={16}
-                  />
-                )}
-
-                Download PDF
-              </button>
-
-              {/* PRINT */}
-
-              <button
-                type="button"
-                onClick={
-                  openPrint
-                }
-                disabled={
-                  pdfLoading
-                }
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 text-xs font-black text-white shadow-lg transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {pdfLoading ? (
-                  <Loader2
-                    size={16}
-                    className="animate-spin"
-                  />
-                ) : (
-                  <Printer
-                    size={16}
-                  />
-                )}
-
-                Print PDF
+                <Receipt size={16} />
+                Final Invoice
               </button>
 
             </div>
+
           </div>
 
-          {/* ====================================================
-              QUICK DATA CHECK
-          ==================================================== */}
+          {/* QUICK DATA */}
 
           <div className="no-print mt-4 grid grid-cols-2 gap-3 pb-8 sm:grid-cols-4">
 
-            {/* JOURNEY */}
-
             <div className="rounded-2xl bg-white p-4 shadow-sm">
-
               <CalendarDays
                 size={17}
                 className="text-blue-700"
@@ -2189,13 +2803,9 @@ www.khaturidescg.in`;
                   booking.journeyDate
                 )}
               </p>
-
             </div>
 
-            {/* VEHICLES */}
-
             <div className="rounded-2xl bg-white p-4 shadow-sm">
-
               <Car
                 size={17}
                 className="text-amber-600"
@@ -2208,35 +2818,27 @@ www.khaturidescg.in`;
               <p className="mt-1 text-xs font-black text-slate-900">
                 {calculatedVehicleCount}
               </p>
-
             </div>
 
-            {/* ADVANCE */}
-
             <div className="rounded-2xl bg-white p-4 shadow-sm">
-
               <CheckCircle2
                 size={17}
                 className="text-emerald-600"
               />
 
               <p className="mt-3 text-[8px] font-black uppercase tracking-wider text-slate-400">
-                Advance
+                Paid
               </p>
 
               <p className="mt-1 text-xs font-black text-emerald-600">
                 {formatCurrency(
-                  booking.advanceAmount
+                  totalPaid
                 )}
               </p>
-
             </div>
 
-            {/* BALANCE */}
-
             <div className="rounded-2xl bg-white p-4 shadow-sm">
-
-              <Clock3
+              <WalletCards
                 size={17}
                 className="text-red-600"
               />
@@ -2247,16 +2849,300 @@ www.khaturidescg.in`;
 
               <p className="mt-1 text-xs font-black text-red-600">
                 {formatCurrency(
-                  booking.balanceAmount
+                  balanceDue
                 )}
               </p>
-
             </div>
 
           </div>
 
         </div>
       </main>
+
+      {/* ======================================================
+          ADD PAYMENT MODAL
+      ====================================================== */}
+
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/60 p-0 backdrop-blur-sm sm:items-center sm:p-5">
+
+          <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-[28px] bg-white shadow-2xl sm:max-w-lg sm:rounded-[28px]">
+
+            {/* MODAL HEADER */}
+
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white px-5 py-5 sm:px-6">
+
+              <div className="flex items-center gap-3">
+
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                  <WalletCards size={20} />
+                </div>
+
+                <div>
+                  <h2 className="text-lg font-black text-slate-950">
+                    Add Payment
+                  </h2>
+
+                  <p className="mt-1 text-[9px] font-semibold text-slate-400">
+                    Booking {booking.bookingNumber}
+                  </p>
+                </div>
+
+              </div>
+
+              <button
+                type="button"
+                onClick={
+                  closePaymentModal
+                }
+                disabled={
+                  savingPayment
+                }
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"
+              >
+                <X size={18} />
+              </button>
+
+            </div>
+
+            <div className="space-y-5 p-5 sm:p-6">
+
+              {/* BALANCE INFO */}
+
+              <div className="grid grid-cols-2 gap-3">
+
+                <div className="rounded-2xl bg-slate-50 p-4">
+                  <p className="text-[8px] font-black uppercase tracking-wider text-slate-400">
+                    Total
+                  </p>
+
+                  <p className="mt-1 text-lg font-black text-slate-950">
+                    {formatCurrency(
+                      displayTotal
+                    )}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl bg-red-50 p-4">
+                  <p className="text-[8px] font-black uppercase tracking-wider text-red-500">
+                    Balance
+                  </p>
+
+                  <p className="mt-1 text-lg font-black text-red-600">
+                    {formatCurrency(
+                      balanceDue
+                    )}
+                  </p>
+                </div>
+
+              </div>
+
+              {/* AMOUNT */}
+
+              <div>
+                <label className="mb-2 block text-xs font-black text-slate-800">
+                  Payment Amount
+                </label>
+
+                <div className="relative">
+
+                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg font-black text-slate-400">
+                    ₹
+                  </span>
+
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={
+                      paymentAmount
+                    }
+                    onChange={(e) =>
+                      setPaymentAmount(
+                        e.target.value.replace(
+                          /[^\d.]/g,
+                          ""
+                        )
+                      )
+                    }
+                    className="w-full rounded-2xl border border-slate-200 py-4 pl-10 pr-4 text-lg font-black text-slate-950 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-50"
+                    placeholder="5000"
+                  />
+
+                </div>
+
+                {balanceDue > 0 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPaymentAmount(
+                        String(
+                          balanceDue
+                        )
+                      )
+                    }
+                    className="mt-2 text-[9px] font-black text-emerald-600 hover:text-emerald-700"
+                  >
+                    Pay full balance
+                  </button>
+                )}
+
+              </div>
+
+              {/* DATE */}
+
+              <div>
+                <label className="mb-2 block text-xs font-black text-slate-800">
+                  Payment Date
+                </label>
+
+                <input
+                  type="date"
+                  value={
+                    paymentDate
+                  }
+                  onChange={(e) =>
+                    setPaymentDate(
+                      e.target.value
+                    )
+                  }
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-4 text-sm font-bold text-slate-900 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-50"
+                />
+              </div>
+
+              {/* PAYMENT MODE */}
+
+              <div>
+                <label className="mb-2 block text-xs font-black text-slate-800">
+                  Payment Mode
+                </label>
+
+                <div className="grid grid-cols-2 gap-2">
+
+                  {PAYMENT_MODES.map(
+                    (mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() =>
+                          setPaymentMode(
+                            mode
+                          )
+                        }
+                        className={`rounded-xl border px-3 py-3 text-xs font-black transition ${
+                          paymentMode ===
+                          mode
+                            ? "border-emerald-500 bg-emerald-50 text-emerald-700 ring-2 ring-emerald-100"
+                            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        {mode}
+                      </button>
+                    )
+                  )}
+
+                </div>
+              </div>
+
+              {/* TRANSACTION */}
+
+              <div>
+                <label className="mb-2 block text-xs font-black text-slate-800">
+                  Transaction / UTR
+                  <span className="ml-1 text-[9px] font-semibold text-slate-400">
+                    (optional for Cash)
+                  </span>
+                </label>
+
+                <input
+                  type="text"
+                  value={
+                    transactionId
+                  }
+                  onChange={(e) =>
+                    setTransactionId(
+                      e.target.value
+                    )
+                  }
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-4 text-sm font-bold text-slate-900 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-50"
+                  placeholder="Enter UTR / transaction reference"
+                />
+              </div>
+
+              {/* NOTE */}
+
+              <div>
+                <label className="mb-2 block text-xs font-black text-slate-800">
+                  Note
+                </label>
+
+                <textarea
+                  value={
+                    paymentNote
+                  }
+                  onChange={(e) =>
+                    setPaymentNote(
+                      e.target.value
+                    )
+                  }
+                  rows={3}
+                  className="w-full resize-none rounded-2xl border border-slate-200 px-4 py-4 text-sm font-medium text-slate-900 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-50"
+                  placeholder="Optional payment note..."
+                />
+              </div>
+
+              {/* ACTIONS */}
+
+              <div className="flex gap-3 pt-2">
+
+                <button
+                  type="button"
+                  onClick={
+                    closePaymentModal
+                  }
+                  disabled={
+                    savingPayment
+                  }
+                  className="min-h-12 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-xs font-black text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={
+                    savePayment
+                  }
+                  disabled={
+                    savingPayment ||
+                    !paymentAmount ||
+                    balanceDue <= 0
+                  }
+                  className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-xs font-black text-white shadow-lg hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
+                >
+                  {savingPayment ? (
+                    <>
+                      <Loader2
+                        size={16}
+                        className="animate-spin"
+                      />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2
+                        size={16}
+                      />
+                      Save Payment
+                    </>
+                  )}
+                </button>
+
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
