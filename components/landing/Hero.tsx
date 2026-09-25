@@ -1,664 +1,504 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { HERO_SLIDES, PHONE, PHONE_DISPLAY, WHATSAPP } from "./data";
+import { useEffect, useState, useMemo } from "react";
+import { PHONE, PHONE_DISPLAY, WHATSAPP } from "./data";
 import Icon from "./Icons";
 
-const QUICK_INTENTS = [
+// Real dispatch routes with natural load ratios for Chhattisgarh & neighbouring hubs
+const LIVE_ROUTES = [
   {
-    title: "One Way",
-    short: "ONE WAY",
-    subtitle: "City to City",
-    icon: "route",
-    href: "#routes",
+    from: "Korba",
+    to: "Raipur",
+    maxDayTarget: 24,
+    curveWeight: 1.1,
+    distance: "215 Km",
+    travelTime: "4h 15m",
+    fleet: "Dzire / Ertiga",
   },
   {
-    title: "Round Trip",
-    short: "ROUND TRIP",
-    subtitle: "Dedicated Cab",
-    icon: "route",
-    href: "#routes",
+    from: "Raipur",
+    to: "Korba",
+    maxDayTarget: 22,
+    curveWeight: 1.05,
+    distance: "215 Km",
+    travelTime: "4h 15m",
+    fleet: "Innova Crysta",
   },
   {
-    title: "Airport",
-    short: "AIRPORT",
-    subtitle: "Pickup & Drop",
-    icon: "plane",
-    href: "#airport",
+    from: "Raipur",
+    to: "Bilaspur",
+    maxDayTarget: 25,
+    curveWeight: 1.2,
+    distance: "115 Km",
+    travelTime: "2h 10m",
+    fleet: "AC Sedan",
   },
   {
-    title: "Outstation",
-    short: "OUTSTATION",
-    subtitle: "Long Distance",
-    icon: "car",
-    href: "#services",
+    from: "Bilaspur",
+    to: "Korba",
+    maxDayTarget: 20,
+    curveWeight: 0.95,
+    distance: "95 Km",
+    travelTime: "1h 50m",
+    fleet: "Commercial AC",
   },
   {
-    title: "Tours",
-    short: "TOURS",
-    subtitle: "Spiritual & Holiday",
-    icon: "temple",
-    href: "#tours",
-  },
-];
-
-/*
-|--------------------------------------------------------------------------
-| FIXED SLIDE COPY
-|--------------------------------------------------------------------------
-| Every slide uses exactly 3 visual headline rows.
-| This keeps the hero geometry stable while slides change.
-|--------------------------------------------------------------------------
-*/
-
-const SLIDE_COPY = [
-  {
-    label: "ONE WAY CAB",
-    lines: ["ONE WAY CABS.", "NO HIDDEN CHARGES", ","],
+    from: "Korba",
+    to: "Raigarh",
+    maxDayTarget: 18,
+    curveWeight: 0.9,
+    distance: "128 Km",
+    travelTime: "2h 45m",
+    fleet: "AC Hatch / Sedan",
   },
   {
-    label: "AIRPORT TRANSFER",
-    lines: ["REACH ON TIME.", "TRAVEL", "WITHOUT STRESS."],
+    from: "Raipur",
+    to: "Jharsuguda",
+    maxDayTarget: 16,
+    curveWeight: 0.85,
+    distance: "320 Km",
+    travelTime: "6h 00m",
+    fleet: "SUV Special",
   },
   {
-    label: "OUTSTATION CAB",
-    lines: ["GO FARTHER.", "TRAVEL", "COMFORTABLY."],
+    from: "Ambikapur",
+    to: "Raipur",
+    maxDayTarget: 17,
+    curveWeight: 0.88,
+    distance: "340 Km",
+    travelTime: "6h 40m",
+    fleet: "Express Cab",
   },
   {
-    label: "SPIRITUAL JOURNEY",
-    lines: ["YOUR JOURNEY.", "OUR", "RESPONSIBILITY."],
+    from: "Jharsuguda",
+    to: "Raipur",
+    maxDayTarget: 15,
+    curveWeight: 0.82,
+    distance: "320 Km",
+    travelTime: "6h 00m",
+    fleet: "Airport Drop",
   },
   {
-    label: "CORPORATE TRAVEL",
-    lines: ["BUSINESS TRAVEL.", "DONE", "RIGHT."],
+    from: "Korba",
+    to: "Jagdalpur",
+    maxDayTarget: 14,
+    curveWeight: 0.78,
+    distance: "510 Km",
+    travelTime: "9h 30m",
+    fleet: "Intercity Fleet",
   },
 ];
 
 export default function Hero() {
-  const [index, setIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-  const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState("");
+  const [currentDate, setCurrentDate] = useState("");
+  const [elapsedMinutes, setElapsedMinutes] = useState(0);
 
   useEffect(() => {
-    if (isPaused || HERO_SLIDES.length <= 1) return;
+    const updateTime = () => {
+      const now = new Date();
+      setCurrentDate(
+        now.toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      );
+      setCurrentTime(
+        now.toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: true,
+        })
+      );
+      setElapsedMinutes(now.getHours() * 60 + now.getMinutes());
+    };
 
-    const timer = window.setInterval(() => {
-      setIndex((current) => (current + 1) % HERO_SLIDES.length);
-    }, 7000);
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
-    return () => window.clearInterval(timer);
-  }, [isPaused]);
+  // Monotonic Calculation: 0 se 25 tak time ke sath strictly increase hoga
+  const routeBookings = useMemo(() => {
+    const totalDayMinutes = 1440;
+    return LIVE_ROUTES.map((route) => {
+      const dayProgress = Math.min(1, Math.max(0, elapsedMinutes / totalDayMinutes));
+      const curvedProgress = Math.pow(dayProgress, 0.94) * route.curveWeight;
+      const count = Math.min(25, Math.floor(Math.min(1, curvedProgress) * route.maxDayTarget));
 
-  const slide = HERO_SLIDES[index] ?? HERO_SLIDES[0];
+      return {
+        ...route,
+        count,
+        availableSlots: Math.max(1, 26 - count),
+        status: count >= 16 ? "Peak Demand" : "Filling Fast",
+      };
+    });
+  }, [elapsedMinutes]);
 
-  const copy =
-    SLIDE_COPY[index % SLIDE_COPY.length] ?? SLIDE_COPY[0];
+  const telUrl = `tel:${PHONE}`;
+  const whatsappUrl = `https://wa.me/${WHATSAPP}?text=Hello%20Khatu%20Rides%2C%20I%20want%20to%20reserve%20a%20cab%20urgently.`;
 
-  if (!slide) return null;
-
-  const whatsappUrl =
-    `https://wa.me/${WHATSAPP}` +
-    `?text=Hello%20Khatu%20Rides%2C%20I%20want%20to%20book%20a%20cab.`;
-
-  return (
-    <section
-      id="home"
-      className="relative isolate overflow-hidden bg-[#020B1A] text-white"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-    >
-      {/* =================================================================
-          PREMIUM BLUE BACKGROUND
-      ================================================================== */}
-
-      <div className="absolute inset-0 -z-30 overflow-hidden">
-        <img
-          src="/splash-bg.png"
-          alt=""
-          aria-hidden="true"
-          className="h-full w-full scale-110 object-cover opacity-[0.11] blur-[7px]"
-        />
-
-        {/* Deep base */}
-        <div className="absolute inset-0 bg-[#020B1A]/95" />
-
-        {/* Main blue glow */}
-        <div className="absolute right-[-80px] top-[-80px] h-[520px] w-[520px] rounded-full bg-blue-600/[0.16] blur-[125px]" />
-
-        {/* Cyan secondary glow */}
-        <div className="absolute right-[28%] top-[30%] h-[300px] w-[300px] rounded-full bg-cyan-400/[0.065] blur-[100px]" />
-
-        {/* Bottom blue depth */}
-        <div className="absolute -bottom-[190px] -left-[140px] h-[440px] w-[440px] rounded-full bg-blue-700/[0.11] blur-[110px]" />
-
-        {/* Cinematic horizontal gradient */}
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,9,24,.99)_0%,rgba(2,12,28,.95)_35%,rgba(2,13,30,.64)_68%,rgba(2,13,30,.78)_100%)]" />
-
-        {/* Bottom fade */}
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,9,24,.04),rgba(2,9,24,0)_55%,rgba(2,9,24,.94)_100%)]" />
-      </div>
-
-      {/* Subtle premium grid */}
-      <div className="pointer-events-none absolute inset-0 -z-10 opacity-[0.022] [background-image:linear-gradient(rgba(255,255,255,.8)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.8)_1px,transparent_1px)] [background-size:72px_72px]" />
-
-      {/* =================================================================
-          DESKTOP HERO
-      ================================================================== */}
-
-      <div className="relative mx-auto hidden max-w-[1480px] px-6 py-4 lg:block xl:px-8">
-        <div className="grid h-[400px] items-center lg:grid-cols-[.98fr_1.02fr] xl:h-[415px]">
-          {/* =============================================================
-              DESKTOP LEFT CONTENT
-          ============================================================== */}
-
-          <div className="relative z-30 max-w-[680px]">
-            {/* 24×7 status */}
-            <div className="inline-flex h-[27px] items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-3 backdrop-blur-xl">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
-                <span className="relative h-2 w-2 rounded-full bg-emerald-400" />
-              </span>
-
-              <span className="text-[8px] font-black uppercase tracking-[0.2em] text-emerald-300">
-                24×7 Booking Support
-              </span>
-            </div>
-
-            {/* Slide category */}
-            <div className="mt-3 flex h-[16px] items-center gap-2.5">
-              <span className="h-px w-7 bg-amber-400" />
-
-              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-amber-300">
-                {copy.label}
-              </span>
-            </div>
-
-            {/* =========================================================
-                FIXED DESKTOP HEADLINE
-            ========================================================== */}
-
-            <div className="mt-2.5 h-[170px] overflow-hidden">
-              <h1 className="text-[57px] font-black leading-[0.89] tracking-[-0.06em] xl:text-[66px]">
-                <span className="block h-[56px] whitespace-nowrap">
-                  {copy.lines[0]}
-                </span>
-
-                <span className="block h-[56px] whitespace-nowrap bg-gradient-to-r from-[#FFE89B] via-[#FFC21A] to-[#FFAC00] bg-clip-text text-transparent">
-                  {copy.lines[1]}
-                </span>
-
-                <span className="block h-[56px] whitespace-nowrap">
-                  {copy.lines[2]}
-                </span>
-              </h1>
-            </div>
-
-            {/* Short service descriptor */}
-            <div className="flex h-[17px] items-center">
-              <p className="text-[10px] font-medium text-white/45">
-                One-way&nbsp; • &nbsp;Airport&nbsp; • &nbsp;Outstation&nbsp; •
-                &nbsp;Local&nbsp; • &nbsp;Tours
-              </p>
-            </div>
-
-            {/* =========================================================
-                INLINE TRUST
-            ========================================================== */}
-
-            <div className="mt-2 flex h-[18px] items-center gap-4">
-              <span className="flex items-center gap-1.5">
-                <span className="text-[14px] text-amber-400">★</span>
-
-                <b className="text-[9px] font-black">4.9/5</b>
-
-                <span className="text-[8px] font-bold text-white/35">
-                  Rating
-                </span>
-              </span>
-
-              <span className="h-3 w-px bg-white/15" />
-
-              <span className="flex items-center gap-1.5 text-[8px] font-bold text-white/50">
-                <Icon name="shield" size={12} />
-                Safe & Reliable
-              </span>
-
-              <span className="h-3 w-px bg-white/15" />
-
-              <span className="flex items-center gap-1.5 text-[8px] font-bold text-white/50">
-                <Icon name="clock" size={12} />
-                24×7
-              </span>
-            </div>
-
-            {/* =========================================================
-                DESKTOP CTA
-                PRIMARY = DEEP BLUE
-            ========================================================== */}
-
-            <div className="mt-3 flex h-[56px] items-center gap-2.5">
-              {/* -------------------------------------------------------
-                  CALL NOW
-              -------------------------------------------------------- */}
-
-              <a
-                href={`tel:${PHONE}`}
-                aria-label={`Call Khatu Rides at ${PHONE_DISPLAY}`}
-                onClick={(e) => {
+  const handleCall = (e: React.MouseEvent) => {
     e.preventDefault();
-    const telUrl = `tel:${PHONE}`;
     if (typeof window !== "undefined" && typeof (window as any).gtag_report_conversion === "function") {
       (window as any).gtag_report_conversion(telUrl);
     } else {
       window.location.href = telUrl;
     }
-  }}
-                className="group relative flex h-[56px] min-w-[205px] items-center justify-center gap-2.5 overflow-hidden rounded-[16px] border border-blue-300/20 bg-[#063B8F] px-5 text-white shadow-[0_12px_35px_rgba(6,59,143,.38)] transition-all duration-300 hover:-translate-y-1 hover:bg-[#084CA8] hover:shadow-[0_16px_45px_rgba(6,59,143,.5)] active:scale-[.98]"
+  };
+
+  return (
+    <section className="relative overflow-hidden bg-[#0A1120] text-white">
+      {/* -------------------------------------------------------------
+          1. TOP HINDI MARQUEE (EXACT 15px BOLD FONT)
+      -------------------------------------------------------------- */}
+      <div className="relative z-40 border-b border-sky-400/30 bg-[#14305A] shadow-[0_4px_20px_rgba(20,48,90,0.45)]">
+        <div className="flex h-12 items-center overflow-hidden">
+          <div className="flex shrink-0 animate-marquee items-center gap-10 text-[15px] font-black tracking-wide text-white">
+            <span className="inline-flex items-center gap-2.5">
+              <span className="rounded-full bg-sky-400 px-2.5 py-0.5 text-[10px] font-black uppercase text-slate-950">
+                विशेष सूचना
+              </span>
+              कोरबा से रायपुर और रायपुर से कोरबा के लिए शेयर वन-वे टैक्सी बुक 4 दिन पहले करें। किराया मात्र{" "}
+              <span className="inline-block rounded-md bg-white px-2 py-0.5 text-[14px] font-black text-[#DC2626] shadow-sm">
+                ₹1200/- प्रति सीट
+              </span>{" "}
+              से शुरू। कोरबा से रायपुर सुबह 6:00 AM और रायपुर से कोरबा शाम 6:30 PM।
+            </span>
+            <span className="h-2 w-2 rounded-full bg-sky-400" />
+            <span className="inline-flex items-center gap-2.5">
+              <span className="rounded-full bg-emerald-400 px-2.5 py-0.5 text-[10px] font-black uppercase text-slate-950">
+                डेली सीट
+              </span>
+              कोरबा से बिलासपुर और बिलासपुर से कोरबा के लिए शेयर वन-वे टैक्सी बुक कीजिए 4 दिन पहले। शुरुआती किराया{" "}
+              <span className="inline-block rounded-md bg-white px-2 py-0.5 text-[14px] font-black text-[#DC2626] shadow-sm">
+                ₹800 प्रति सीट
+              </span>
+              । कोरबा से बिलासपुर समय सुबह 8:00 AM और बिलासपुर से कोरबा शाम 4:00 PM।
+            </span>
+            <span className="h-2 w-2 rounded-full bg-sky-400" />
+            <span className="inline-flex items-center gap-2.5">
+              <span className="rounded-full bg-sky-400 px-2.5 py-0.5 text-[10px] font-black uppercase text-slate-950">
+                विशेष सूचना
+              </span>
+              कोरबा से रायपुर और रायपुर से कोरबा के लिए शेयर वन-वे टैक्सी बुक 4 दिन पहले करें। किराया मात्र{" "}
+              <span className="inline-block rounded-md bg-white px-2 py-0.5 text-[14px] font-black text-[#DC2626] shadow-sm">
+                ₹1200/- प्रति सीट
+              </span>{" "}
+              से शुरू। कोरबा से रायपुर सुबह 6:00 AM और रायपुर से कोरबा शाम 6:30 PM।
+            </span>
+            <span className="h-2 w-2 rounded-full bg-sky-400" />
+            <span className="inline-flex items-center gap-2.5">
+              <span className="rounded-full bg-emerald-400 px-2.5 py-0.5 text-[10px] font-black uppercase text-slate-950">
+                डेली सीट
+              </span>
+              कोरबा से बिलासपुर और बिलासपुर से कोरबा के लिए शेयर वन-वे टैक्सी बुक कीजिए 4 दिन पहले। शुरुआती किराया{" "}
+              <span className="inline-block rounded-md bg-white px-2 py-0.5 text-[14px] font-black text-[#DC2626] shadow-sm">
+                ₹800 प्रति सीट
+              </span>
+              । कोरबा से बिलासपुर समय सुबह 8:00 AM और बिलासपुर से कोरबा शाम 4:00 PM।
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* -------------------------------------------------------------
+          LUXURY AMBIENCE & RADIAL GLOWS
+      -------------------------------------------------------------- */}
+      <div className="pointer-events-none absolute -top-24 left-1/4 h-[500px] w-[500px] rounded-full bg-blue-600/20 blur-[140px]" />
+      <div className="pointer-events-none absolute right-[-50px] top-1/3 h-[450px] w-[450px] rounded-full bg-amber-500/15 blur-[150px]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:24px_24px]" />
+
+      {/* -------------------------------------------------------------
+          MAIN HERO WORKSPACE
+      -------------------------------------------------------------- */}
+      <div className="relative mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <div className="grid items-start gap-8 lg:grid-cols-12 lg:gap-10">
+          
+          {/* LEFT: SEO POSITIONING & TRUST ACTIONS */}
+          <div className="space-y-5 lg:col-span-7">
+            
+            {/* State Trust Capsule */}
+            <div className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-3.5 py-1.5 backdrop-blur-xl">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-80" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-amber-400" />
+              </span>
+              <span className="text-xs font-black uppercase tracking-wider text-amber-300">
+                Chhattisgarh’s Leading Intercity Cab Network
+              </span>
+            </div>
+
+            {/* High-Impact Main Heading */}
+            <div>
+              <h1 className="text-4xl font-black uppercase leading-[0.98] tracking-tight text-white sm:text-6xl lg:text-[62px]">
+                KORBA ⇄ RAIPUR <br />
+                <span className="bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
+                  ONE WAY SPECIAL TAXI
+                </span> <br />
+                ALL CG INTERCITY CABS
+              </h1>
+
+              <p className="mt-3.5 max-w-2xl text-base font-semibold leading-relaxed text-slate-300 sm:text-lg">
+                Affordable daily one-way AC cab service between{" "}
+                <span className="font-extrabold text-white">Korba and Raipur</span> at guaranteed lowest fares. 
+                24×7 confirmed pickup across{" "}
+                <span className="font-extrabold text-amber-300">
+                  Bilaspur, Raigarh, Ambikapur, Jagdalpur & Jharsuguda
+                </span>
+                . Pay strictly for single-side travel with zero return fare.
+              </p>
+            </div>
+
+            {/* Chhattisgarh City Badges Rail */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mr-1">
+                Active Hubs:
+              </span>
+              {["Korba", "Raipur", "Bilaspur", "Raigarh", "Ambikapur", "Jagdalpur", "Jharsuguda"].map((city) => (
+                <span
+                  key={city}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-black uppercase tracking-wide border ${
+                    city === "Korba" || city === "Raipur"
+                      ? "border-amber-400/50 bg-amber-400/15 text-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.15)]"
+                      : "border-white/10 bg-white/[0.04] text-slate-300"
+                  }`}
+                >
+                  {city === "Korba" || city === "Raipur" ? `★ ${city}` : city}
+                </span>
+              ))}
+            </div>
+
+            {/* -------------------------------------------------------------
+                METRIC CARDS + ACTIONS IN ONE PERFECT ROW (FIXED SIZING)
+            -------------------------------------------------------------- */}
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              
+              {/* Metric Card 1: Korba-Raipur */}
+              <div className="h-[74px] min-w-[108px] flex-1 rounded-2xl border border-white/10 bg-white/[0.05] p-2.5 backdrop-blur-md flex flex-col justify-between">
+                <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                  Korba-Raipur
+                </span>
+                <span className="text-sm font-black text-white leading-tight">
+                  Daily Drops
+                </span>
+                <span className="block text-[8px] font-bold text-amber-400">
+                  Fastest 3.5h Travel
+                </span>
+              </div>
+
+              {/* Metric Card 2: Return Toll */}
+              <div className="h-[74px] min-w-[105px] flex-1 rounded-2xl border border-white/10 bg-white/[0.05] p-2.5 backdrop-blur-md flex flex-col justify-between">
+                <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                  Return Toll
+                </span>
+                <span className="text-sm font-black text-emerald-400 leading-tight">
+                  ₹0 Extra
+                </span>
+                <span className="block text-[8px] font-bold text-slate-400">
+                  Pure CG One-Way
+                </span>
+              </div>
+
+              {/* Metric Card 3: Statewide Trust */}
+              <div className="h-[74px] min-w-[108px] flex-1 rounded-2xl border border-white/10 bg-white/[0.05] p-2.5 backdrop-blur-md flex flex-col justify-between">
+                <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                  Statewide Trust
+                </span>
+                <span className="text-sm font-black text-amber-300 leading-tight">
+                  ★ 4.9/5
+                </span>
+                <span className="block text-[8px] font-bold text-slate-400">
+                  Verified Drivers
+                </span>
+              </div>
+
+              {/* Call Button (Fixed text fit & no vertical cutoff) */}
+              <a
+                href={telUrl}
+                onClick={handleCall}
+                className="group relative flex h-[74px] min-w-[185px] flex-[1.4] items-center justify-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 px-4 text-black shadow-[0_8px_25px_rgba(245,158,11,0.35)] transition-all hover:scale-[1.02] active:scale-95"
               >
-                {/* Shine */}
-                <span className="absolute inset-y-0 -left-24 w-14 -skew-x-[20deg] bg-white/20 blur-md transition-all duration-700 group-hover:left-[120%]" />
-
-                {/* Icon */}
-                <span className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-white/10">
-                  <Icon name="phone" size={18} />
-                </span>
-
-                {/* Text */}
-                <span className="relative text-left">
-                  <b className="block text-[14px] font-black uppercase leading-none tracking-[0.08em]">
-                    Call Now
-                    
-                  </b>
-
-                  <small className="mt-1 block text-[8px] font-bold uppercase tracking-[0.12em] text-white/65">
-                    Book Your Cab
-                  </small>
-                </span>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black text-amber-400 transition-transform group-hover:rotate-12">
+                  <Icon name="phone" size={19} />
+                </div>
+                <div className="text-left flex flex-col justify-center">
+                  <span className="block text-[9px] font-black uppercase tracking-wider text-black/75 leading-tight">
+                    Book Korba / Raipur
+                  </span>
+                  <span className="block text-sm font-black tracking-tight text-black leading-snug sm:text-base whitespace-nowrap">
+                    Call: {PHONE_DISPLAY}
+                  </span>
+                </div>
               </a>
 
-              {/* -------------------------------------------------------
-                  WHATSAPP
-              -------------------------------------------------------- */}
-
+              {/* WhatsApp Button (Fixed text fit & no vertical cutoff) */}
               <a
                 href={whatsappUrl}
                 target="_blank"
                 rel="noreferrer"
-                aria-label="Book Khatu Rides through WhatsApp"
-                className="flex h-[56px] min-w-[195px] items-center justify-center gap-2.5 rounded-[16px] border border-emerald-400/25 bg-emerald-500/[0.08] px-5 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:bg-emerald-500/[0.15] active:scale-[.98]"
+                className="group flex h-[74px] min-w-[165px] flex-[1.2] items-center justify-center gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 text-emerald-400 backdrop-blur-md transition-all hover:bg-emerald-500/20 active:scale-95"
               >
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-300">
-                  <Icon name="whatsapp" size={18} />
-                </span>
-
-                <span className="text-left">
-                  <b className="block text-[12px] font-black uppercase leading-none tracking-[0.08em]">
-                    WhatsApp
-                  </b>
-
-                  <small className="mt-1 block text-[8px] font-bold uppercase tracking-[0.12em] text-emerald-300/65">
-                    Quick Booking
-                  </small>
-                </span>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-black transition-transform group-hover:scale-110">
+                  <Icon name="whatsapp" size={20} />
+                </div>
+                <div className="text-left flex flex-col justify-center">
+                  <span className="block text-[9px] font-black uppercase tracking-wider text-emerald-300/70 leading-tight">
+                    Instant Quote
+                  </span>
+                  <span className="block text-sm font-black tracking-tight text-white leading-snug whitespace-nowrap">
+                    WhatsApp Booking
+                  </span>
+                </div>
               </a>
+
             </div>
 
-            {/* Phone micro line */}
-            <div className="mt-1.5 flex h-[12px] items-center gap-1.5 text-[7px] text-white/30">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-
-              <span>Need a cab now?</span>
-
-              <a
-                href={`tel:${PHONE}`}
-                className="font-black text-white/55 transition hover:text-amber-300"
-              >
-                {PHONE_DISPLAY}
-              </a>
+            {/* Quick Guarantees Footer */}
+            <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-slate-400 pt-1">
+              <span>✔ Raipur Airport Drop Available</span>
+              <span>✔ Chhattisgarh State Permit AC Cabs</span>
+              <span>✔ No Hidden Toll/Night Charges</span>
             </div>
           </div>
 
-          {/* =============================================================
-              DESKTOP RIGHT VISUAL
-          ============================================================== */}
+          {/* RIGHT: FLUTTER APP GLASS CARD LIFTED TO TOP LEVEL */}
+          <div className="lg:col-span-5 lg:-mt-4 xl:-mt-7">
+            <div className="relative mx-auto max-w-[430px] rounded-[36px] border border-white/15 bg-white/[0.07] p-5 shadow-[0_25px_60px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
+              
+              {/* Flutter App Top Header */}
+              <div className="relative overflow-hidden rounded-[24px] border border-white/10 bg-gradient-to-br from-blue-600/30 via-indigo-600/20 to-transparent p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-400 ring-4 ring-emerald-400/20 animate-pulse" />
+                    <span className="text-[11px] font-black uppercase tracking-wider text-emerald-300">
+                      Live Dispatch Board
+                    </span>
+                  </div>
+                  <span className="rounded-full bg-black/40 px-2.5 py-0.5 text-[10px] font-extrabold text-slate-300 border border-white/10">
+                    {currentDate || "Today"}
+                  </span>
+                </div>
 
-          <div className="relative h-[400px] xl:h-[415px]">
-            {/* Main blue spotlight */}
-            <div className="absolute left-[53%] top-[52%] h-[380px] w-[380px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-600/[0.14] blur-[95px]" />
-
-            {/* Outer ring */}
-            <div className="absolute left-[53%] top-[52%] h-[350px] w-[350px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-blue-300/[0.065]" />
-
-            {/* Inner ring */}
-            <div className="absolute left-[53%] top-[52%] h-[270px] w-[270px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-blue-300/[0.045]" />
-
-            {/* Travel / Explore / Believe */}
-            <div className="absolute right-[2%] top-[1%] z-20 rotate-[-6deg] text-right">
-              <div className="text-[27px] font-semibold italic leading-[0.82] text-white/50">
-                Travel
+                <div className="mt-3 flex items-end justify-between">
+                  <div>
+                    <h2 className="text-xl font-black tracking-tight text-white sm:text-2xl">
+                      Today's Booking Status
+                    </h2>
+                    <p className="mt-0.5 text-[11px] font-semibold text-slate-300">
+                      Cumulative confirmed trips (0 to 25 Max cap)
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-right">
+                    <span className="block font-mono text-xs font-black text-amber-300">
+                      {currentTime || "--:--"}
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              <div className="text-[27px] font-semibold italic leading-[0.82] text-white/60">
-                Explore
+              {/* VERTICAL AUTO SLIDER CONTAINER */}
+              <div className="relative mt-4 h-[310px] overflow-hidden rounded-[24px] border border-white/10 bg-black/30 p-2.5">
+                {/* Visual Depth Masks */}
+                <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-10 bg-gradient-to-b from-[#0e1626] via-[#0e1626]/80 to-transparent" />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-10 bg-gradient-to-t from-[#0e1626] via-[#0e1626]/80 to-transparent" />
+
+                {/* Vertical Continuous Flow */}
+                <div className="animate-vertical-infinite space-y-2.5">
+                  {[...routeBookings, ...routeBookings].map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="group flex items-center justify-between rounded-[20px] border border-white/10 bg-white/[0.06] p-3 transition-all duration-300 hover:border-amber-400/60 hover:bg-white/[0.1]"
+                    >
+                      {/* Left: Origin, Destination & Specs */}
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-400/10 text-amber-300 border border-amber-400/20">
+                          <Icon name="car" size={17} />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5 text-xs font-black text-white sm:text-[13px]">
+                            <span>{item.from}</span>
+                            <span className="text-amber-400 font-bold">➔</span>
+                            <span>{item.to}</span>
+                          </div>
+                          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[10px] font-bold text-slate-400">
+                            <span>{item.distance}</span>
+                            <span>•</span>
+                            <span>{item.travelTime}</span>
+                            <span>•</span>
+                            <span className="text-slate-300">{item.fleet}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right: Monotonic Counters */}
+                      <div className="text-right">
+                        <span className="inline-flex items-center rounded-lg bg-amber-400/20 border border-amber-400/30 px-2.5 py-0.5 text-xs font-black text-amber-300">
+                          {item.count} Booked
+                        </span>
+                        <div className="mt-0.5 flex items-center justify-end gap-1 text-[9px] font-bold">
+                          <span className={item.count >= 16 ? "text-amber-400" : "text-emerald-400"}>
+                            {item.status}
+                          </span>
+                          <span className="text-slate-600">•</span>
+                          <span className="text-slate-400">{item.availableSlots} Left</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <div className="text-[30px] font-black italic leading-[0.82] text-amber-300">
-                Believe
+              {/* Card Footer */}
+              <div className="mt-3.5 flex items-center justify-between px-2 text-[11px] font-bold text-slate-400">
+                <span className="inline-flex items-center gap-1.5 text-emerald-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  SMS & Driver Details Allocated
+                </span>
+                <span className="font-extrabold text-amber-400">Zero Advance</span>
               </div>
             </div>
-
-            {/* Vehicle */}
-            <img
-              src="/splash-car.png"
-              alt="Khatu Rides cab"
-              className="absolute bottom-0 left-1/2 z-10 w-[108%] -translate-x-1/2 object-contain drop-shadow-[0_32px_42px_rgba(0,0,0,.68)]"
-            />
           </div>
+
         </div>
-
-        {/* =============================================================
-            DESKTOP QUICK SERVICE BAR
-        ============================================================== */}
-
-        <div className="relative z-50 mt-1 overflow-hidden rounded-[21px] border border-white/10 bg-white/[0.97] p-1.5 shadow-[0_18px_55px_rgba(0,0,0,.32)]">
-          <div className="grid grid-cols-5 gap-1">
-            {QUICK_INTENTS.map((item, i) => (
-              <a
-                key={item.title}
-                href={item.href}
-                className={`group flex h-[52px] items-center gap-2 rounded-2xl px-3 transition-all hover:bg-amber-50 ${
-                  i === 0 ? "bg-amber-50/80" : ""
-                }`}
-              >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 transition group-hover:bg-amber-400 group-hover:text-slate-950">
-                  <Icon name={item.icon as any} size={15} />
-                </span>
-
-                <span>
-                  <b className="block text-[10px] font-black text-slate-950">
-                    {item.title}
-                  </b>
-
-                  <small className="text-[8px] font-bold text-slate-500">
-                    {item.subtitle}
-                  </small>
-                </span>
-
-                <span className="ml-auto text-slate-300 transition group-hover:translate-x-1 group-hover:text-amber-500">
-                  <Icon name="arrow" size={12} />
-                </span>
-              </a>
-            ))}
-          </div>
-        </div>
-
-        {/* Desktop slide dots */}
-        {HERO_SLIDES.length > 1 && (
-          <div className="mt-2 flex h-2 items-center justify-center gap-1.5">
-            {HERO_SLIDES.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setIndex(i)}
-                aria-label={`Hero slide ${i + 1}`}
-                aria-current={i === index}
-                className={
-                  i === index
-                    ? "h-1.5 w-7 rounded-full bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,.45)]"
-                    : "h-1.5 w-1.5 rounded-full bg-white/20 hover:bg-white/40"
-                }
-              />
-            ))}
-          </div>
-        )}
       </div>
 
-      {/* =================================================================
-          MOBILE HERO
-          FIXED 390px COMPOSITION
-      ================================================================== */}
-
-      <div className="relative flex h-[390px] min-h-[390px] max-h-[390px] flex-col px-4 pt-3 lg:hidden">
-        {/* Mobile blue glows */}
-        <div className="pointer-events-none absolute right-[-100px] top-[20%] h-[270px] w-[270px] rounded-full bg-blue-600/[0.17] blur-[75px]" />
-
-        <div className="pointer-events-none absolute left-[-110px] bottom-[-70px] h-[220px] w-[220px] rounded-full bg-cyan-500/[0.06] blur-[70px]" />
-
-        {/* =============================================================
-            MOBILE TOP ROW
-        ============================================================== */}
-
-        <div className="relative z-30 flex h-[23px] shrink-0 items-center justify-between">
-          <div className="flex h-[23px] items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-400/[0.07] px-2.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_9px_rgba(52,211,153,.8)]" />
-
-            <span className="text-[7px] font-black uppercase tracking-[0.14em] text-emerald-300">
-              24×7 Booking
-            </span>
-          </div>
-
-          <span className="max-w-[150px] truncate text-[7px] font-black uppercase tracking-[0.14em] text-amber-300/80">
-            {copy.label}
-          </span>
-        </div>
-
-        {/* =============================================================
-            MOBILE HEADLINE
-            FIXED 3 ROWS
-        ============================================================== */}
-
-        <div className="relative z-30 mt-2.5 h-[94px] shrink-0 overflow-visible">
-          <h1 className="font-black leading-[0.9] tracking-[-0.055em]">
-            {/* Row 1 */}
-            <span className="block h-[31px] whitespace-nowrap text-[clamp(29px,8.8vw,36px)]">
-              {copy.lines[0]}
-            </span>
-
-            {/* Row 2 */}
-            <span className="block h-[31px] whitespace-nowrap text-[clamp(29px,8.8vw,36px)]">
-              <span className="bg-gradient-to-r from-[#FFE89B] via-[#FFC21A] to-[#FFAC00] bg-clip-text text-transparent">
-                {copy.lines[1]}
-              </span>
-            </span>
-
-            {/* Row 3 */}
-            <span
-              className={`block h-[31px] whitespace-nowrap ${
-                copy.lines[2].length >= 14
-                  ? "text-[clamp(25px,7.7vw,32px)]"
-                  : "text-[clamp(29px,8.8vw,36px)]"
-              }`}
-            >
-              {copy.lines[2]}
-            </span>
-          </h1>
-        </div>
-
-        {/* =============================================================
-            MOBILE CAR ZONE
-            20% SMALLER THAN PREVIOUS VERSION
-        ============================================================== */}
-
-        <div className="relative z-10 min-h-0 flex-1 overflow-visible">
-          {/* Spotlight */}
-          <div className="absolute left-1/2 top-[51%] h-[205px] w-[205px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-500/[0.13] blur-[62px]" />
-
-          {/* Ring */}
-          <div className="absolute left-1/2 top-[51%] h-[195px] w-[195px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-blue-300/[0.05]" />
-
-          {/* =========================================================
-              VEHICLE
-              Previous: 104%
-              Current: 83%
-              Approximately 20% smaller
-          ========================================================== */}
-
-          <img
-            src="/splash-car.png"
-            alt="Khatu Rides cab"
-            className="absolute left-1/2 top-[52%] z-10 w-[83%] max-w-[400px] -translate-x-1/2 -translate-y-1/2 object-contain drop-shadow-[0_22px_30px_rgba(0,0,0,.68)]"
-          />
-        </div>
-
-        {/* =============================================================
-            MOBILE TRUST
-        ============================================================== */}
-
-        <div className="relative z-30 mb-1.5 flex h-[17px] shrink-0 items-center justify-center gap-2.5">
-          <span className="flex items-center gap-1 text-[8px] font-black">
-            <span className="text-[12px] text-amber-400">★</span>
-            4.9/5
-          </span>
-
-          <span className="h-2.5 w-px bg-white/15" />
-
-          <span className="text-[7px] font-bold text-white/45">
-            Safe & Reliable
-          </span>
-
-          <span className="h-2.5 w-px bg-white/15" />
-
-          <span className="text-[7px] font-bold text-white/45">
-            24×7 Support
-          </span>
-        </div>
-
-        {/* =============================================================
-            MOBILE PRIMARY CALL CTA
-            DEEP BLUE + WHITE + BIG BOLD TEXT
-        ============================================================== */}
-
-        <div className="relative z-40 shrink-0 pb-1">
-          <a
-            href={`tel:${PHONE}`}
-            aria-label={`Call Khatu Rides at ${PHONE_DISPLAY}`}
-            className="group relative flex h-[50px] w-full items-center justify-center gap-2.5 overflow-hidden rounded-[15px] border border-blue-300/20 bg-[#063B8F] text-white shadow-[0_10px_30px_rgba(6,59,143,.42)] active:scale-[.98]"
-          >
-            {/* Shine */}
-            <span className="absolute inset-y-0 -left-20 w-12 -skew-x-[20deg] bg-white/20 blur-md" />
-
-            {/* Icon */}
-            <span className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-white/10">
-              <Icon name="phone" size={17} />
-            </span>
-
-            {/* Bigger CTA text */}
-            <span className="relative text-[13px] font-black uppercase leading-none tracking-[0.07em]">
-              Call Now — Book Your Cab
-            </span>
-          </a>
-
-          {/* WhatsApp */}
-          <a
-            href={whatsappUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-0.5 flex h-[19px] items-center justify-center gap-1.5 text-[7px] font-black uppercase tracking-[0.12em] text-emerald-300/75"
-          >
-            <Icon name="whatsapp" size={11} />
-            WhatsApp Booking
-          </a>
-        </div>
-
-        {/* =============================================================
-            MOBILE SERVICE RAIL
-        ============================================================== */}
-
-        <div className="relative z-50 -mx-4 h-[30px] shrink-0 overflow-x-auto border-t border-white/[0.06] bg-[#061426]/80 px-3 py-1 backdrop-blur-xl scrollbar-none">
-          <div className="flex h-full w-max items-center gap-1.5">
-            {QUICK_INTENTS.map((item) => (
-              <a
-                key={item.title}
-                href={item.href}
-                className="flex h-[22px] items-center gap-1.5 rounded-full border border-white/[0.07] bg-white/[0.04] px-2.5"
-              >
-                <Icon name={item.icon as any} size={9} />
-
-                <span className="text-[6.5px] font-black uppercase tracking-[0.08em] text-white/55">
-                  {item.short}
-                </span>
-              </a>
-            ))}
-          </div>
-        </div>
-
-        {/* Mobile dots */}
-        {HERO_SLIDES.length > 1 && (
-          <div className="absolute bottom-[-8px] left-1/2 z-50 flex -translate-x-1/2 gap-1">
-            {HERO_SLIDES.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setIndex(i)}
-                aria-label={`Hero slide ${i + 1}`}
-                aria-current={i === index}
-                className={
-                  i === index
-                    ? "h-1 w-6 rounded-full bg-amber-400"
-                    : "h-1 w-1 rounded-full bg-white/25"
-                }
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* =================================================================
-          MOBILE FLOATING BOOKING BUTTON
-      ================================================================== */}
-
-      <div className="fixed bottom-3 right-3 z-[100] lg:hidden">
-        {/* Floating actions */}
-        <div
-          className={`absolute bottom-[61px] right-0 flex flex-col items-end gap-2 transition-all duration-300 ${
-            mobileActionsOpen
-              ? "pointer-events-auto translate-y-0 opacity-100"
-              : "pointer-events-none translate-y-3 opacity-0"
-          }`}
-        >
-          {/* Floating Call */}
-          <a
-            href={`tel:${PHONE}`}
-            className="flex items-center gap-2 rounded-full border border-blue-300/20 bg-[#063B8F] px-4 py-2.5 text-[9px] font-black uppercase tracking-wider text-white shadow-[0_10px_30px_rgba(6,59,143,.45)]"
-          >
-            <Icon name="phone" size={14} />
-            Call Now
-          </a>
-
-          {/* Floating WhatsApp */}
-          <a
-            href={whatsappUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-2 rounded-full bg-[#16A34A] px-4 py-2.5 text-[9px] font-black uppercase tracking-wider text-white shadow-[0_10px_30px_rgba(0,0,0,.35)]"
-          >
-            <Icon name="whatsapp" size={14} />
-            WhatsApp
-          </a>
-        </div>
-
-        {/* Main floating button */}
-        <button
-          type="button"
-          onClick={() => setMobileActionsOpen((value) => !value)}
-          aria-label={
-            mobileActionsOpen
-              ? "Close booking actions"
-              : "Open booking actions"
+      {/* -------------------------------------------------------------
+          KEYFRAME ANIMATIONS: READABLE & ULTRA SMOOTH MOTION
+      -------------------------------------------------------------- */}
+      <style jsx global>{`
+        @keyframes marquee {
+          0% {
+            transform: translateX(0%);
           }
-          className={`flex h-[50px] w-[50px] items-center justify-center rounded-full shadow-[0_12px_35px_rgba(0,0,0,.45)] transition-all duration-300 ${
-            mobileActionsOpen
-              ? "rotate-45 bg-white text-[#06101F]"
-              : "bg-[#063B8F] text-white"
-          }`}
-        >
-          {mobileActionsOpen ? (
-            <span className="text-[25px] font-light leading-none">×</span>
-          ) : (
-            <Icon name="phone" size={18} />
-          )}
-        </button>
-      </div>
+          100% {
+            transform: translateX(-50%);
+          }
+        }
+        .animate-marquee {
+          animation: marquee 80s linear infinite;
+        }
+        .animate-marquee:hover {
+          animation-play-state: paused;
+        }
+
+        @keyframes verticalInfinite {
+          0% {
+            transform: translateY(0%);
+          }
+          100% {
+            transform: translateY(-50%);
+          }
+        }
+        .animate-vertical-infinite {
+          animation: verticalInfinite 65s linear infinite;
+        }
+        .animate-vertical-infinite:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
     </section>
   );
 }
