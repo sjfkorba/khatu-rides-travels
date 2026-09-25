@@ -325,11 +325,9 @@ export default function Hero() {
                   <Icon name="phone" size={19} />
                 </div>
                 <div className="text-left flex flex-col justify-center">
-                  <span className="block text-[9px] font-black uppercase tracking-wider text-black/75 leading-tight">
-                    Book Korba / Raipur
-                  </span>
+                 
                   <span className="block text-sm font-black tracking-tight text-black leading-snug sm:text-base whitespace-nowrap">
-                    Call: {PHONE_DISPLAY}
+                    BOOK NOW
                   </span>
                 </div>
               </a>
