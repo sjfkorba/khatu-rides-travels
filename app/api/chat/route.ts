@@ -1,149 +1,65 @@
 // app/api/chat/route.ts
 import { NextResponse } from "next/server";
-import { calculateFare, VehicleType } from "@/lib/fareCalculator";
+
+const SUPPORT_PHONE = "+91 92441 37353";
 
 export async function POST(req: Request) {
   try {
-    const { messages, currentStep, bookingData } = await req.json();
+    const { messages, instruction } = await req.json();
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json({ error: "Gemini API Key missing" }, { status: 500 });
     }
 
-    // Safeguard setup against undefined context
-    const currentBookingState = bookingData || {};
-    let calculatedDynamicAmount = currentBookingState.finalAmount || 0;
-    let rawFlatFare = 0;
-    let isDryZoneDetected = false;
-    let isShortLead = false;
-
-    let mappedVehicleKey: VehicleType = "sedan";
-    const currentVehicleStr = (currentBookingState.vehicle || "").toLowerCase();
-    if (currentVehicleStr.includes("ertiga")) mappedVehicleKey = "ertiga";
-    else if (currentVehicleStr.includes("crysta")) mappedVehicleKey = "crysta";
-
-    // 👑 NATIVE PARALLEL DIRECT GOOGLE MAPS ROUTING ENTRY
-    if (currentBookingState.pickup && currentBookingState.drop && currentBookingState.vehicle && currentStep === "fare_show" && !currentBookingState.finalAmount) {
-      try {
-        const mapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
-        const requestBody = {
-          origin: { address: currentBookingState.pickup },
-          destination: { address: currentBookingState.drop },
-          travelMode: "DRIVE",
-          routingPreference: "TRAFFIC_UNAWARE",
-          computeAlternativeRoutes: false,
-          languageCode: "en-IN",
-          units: "METRIC",
-        };
-
-        const mapsResponse = await fetch(
-          "https://routes.googleapis.com/directions/v2:computeRoutes",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Goog-Api-Key": mapsApiKey || "",
-              "X-Goog-FieldMask": "routes.distanceMeters,routes.travelAdvisory.tollInfo",
-            },
-            body: JSON.stringify(requestBody),
-          }
-        );
-
-        let liveKm = 150; 
-        let liveGoogleToll = 0;
-
-        if (mapsResponse.ok) {
-          const mapsData = await mapsResponse.json();
-          const route = mapsData?.routes?.[0];
-          if (route?.distanceMeters) {
-            liveKm = Math.round(route.distanceMeters / 1000);
-          }
-          if (route?.travelAdvisory?.tollInfo?.estimatedPrice) {
-            const priceList = route.travelAdvisory.tollInfo.estimatedPrice;
-            const inrPrice = priceList.find((p: any) => p.currencyCode === "INR");
-            if (inrPrice) {
-              liveGoogleToll = Math.round(Number(inrPrice.units || 0));
-            }
-          }
-        }
-
-        const calculatorOutput = calculateFare({
-          distance: liveKm,
-          vehicleType: mappedVehicleKey,
-          bookingType: currentBookingState.tripType === "Round Trip" ? "roundtrip" : "oneway",
-          serviceType: "outstation"
-        });
-
-        const dropLower = currentBookingState.drop.toLowerCase();
-        isShortLead = liveKm <= 200;
-        isDryZoneDetected = dropLower.includes("chirmiri") || dropLower.includes("ambikapur") || dropLower.includes("mainpat");
-
-        if (isShortLead) {
-          const shortLeadIncrement = 600;
-          if (isDryZoneDetected && currentBookingState.tripType !== "Round Trip") {
-            calculatedDynamicAmount = Math.round((calculatorOutput.finalFare + shortLeadIncrement) * 1.5) + liveGoogleToll;
-          } else {
-            calculatedDynamicAmount = calculatorOutput.finalFare + shortLeadIncrement + liveGoogleToll;
-          }
-        } else {
-          // Outstation Cushion protection adds dynamically over genuine calculation
-          calculatedDynamicAmount = calculatorOutput.finalFare + 2200 + liveGoogleToll;
-        }
-
-        rawFlatFare = Math.round(calculatedDynamicAmount * 1.15); 
-      } catch (err) {
-        console.error("Native matrix extraction error:", err);
-        calculatedDynamicAmount = 5500;
-        rawFlatFare = 6400;
-      }
-    }
-
-    if (!rawFlatFare && calculatedDynamicAmount) {
-      rawFlatFare = Math.round(calculatedDynamicAmount * 1.15);
-    }
-
-    const chosenLang = currentBookingState.language || "Hindi";
-    const advance20Percent = Math.round(calculatedDynamicAmount * 0.20);
-    
-    const languageInstruction = chosenLang === "English" 
-      ? `STRICT LANGUAGE RULE: Respond ONLY in clean professional English.`
-      : `STRICT LANGUAGE RULE: Respond in warm regional Hinglish language.`;
-
+    // Comprehensive Guardrails & Context for Sakha AI
     const systemInstruction = `
-      You are "Sakha", the professional AI Assistant for "Khatu Rides Travels Co." (Chhattisgarh).
-      Your response must be point-to-point (maximum 1-2 sentences), highly polished, and clear.
+      You are "Sakha", the polite and helpful regional AI assistant for "Khatu Rides Travels Co." (serving Chhattisgarh - Raipur, Korba, Bilaspur, Raigarh, Ambikapur, Jagdalpur, etc.).
 
-      ${languageInstruction}
+      ${instruction || ""}
 
-      🚨 STATE METRICS MAP:
-      Current Step: ${currentStep}
-      Live Parameters: Trip Type: ${currentBookingState.tripType}, Vehicle: ${currentBookingState.vehicle}, Pickup: ${currentBookingState.pickup}, Drop: ${currentBookingState.drop}, Date: ${currentBookingState.dateTime}
+      🚨 CRITICAL BUSINESS RULES:
+      1. TONE & LANGUAGE:
+         - Respond in warm, respectful Hinglish (Hindi written in Roman English script) with polite phrases like "Hii", "Dear Customer", or "Sir/Ma'am".
+         - Keep replies extremely concise, crystal-clear, and practical (maximum 2 to 3 short sentences).
 
-      🚨 STAGE FLOW SEQUENCE VALIDATION:
-      - 'pickup_loc': Ask for Drop Destination City.
-      - 'drop_loc': Ask to select Trip Type ('One-way' or 'Round Trip').
-      - 'triptype': Ask to select Vehicle Type ('Sedan (Dzire)', 'Ertiga (SUV)', or 'Innova Crysta').
-      - 'vehicle': Inform that pricing calculations are complete and click enter to reveal the bill summary invoice.
-      - 'fare_show': Show calculation layout exactly formatted as:
-          "Bhaiya, aapke liye special discounted fare calculate ho gaya hai! Regular rate Rs. ${rawFlatFare} tha, par aapko special price Rs. ${calculatedDynamicAmount}.00 (All-Inclusive) padega. Niche ticket check karein. Booking lock karne ke liye kripya 'CONFIRM' reply karein."
-      - 'datetime': Strictly ask for date and time: "Great decision! Kripya apni Pickup Date aur Time batayein taaki verification box open kiya ja sake."
+      2. STRICT ZERO-FARE RULE (NO PRICE QUOTES):
+         - NEVER quote any numerical price, estimate, rate per km, or total rupees (e.g., do not say ₹1500, ₹12/km, etc.).
+         - If the user asks about taxi fare, discount, or package price, politely explain:
+           "Bhaiya, exact fare humari operations team confirm karti hai route aur live availability ke hisab se. Aap apna contact details form me submit kijiye, ya instant confirmed rate ke liye turant humare helpline par call karein: ${SUPPORT_PHONE}."
 
-      🚨 FINAL TICKET GENERATION:
-      - If currentStep is 'final': Output a beautifully formatted professional ticket booking summary with Name (${currentBookingState.custName}), Pickup, Drop, Vehicle, Total Fare (Rs. ${calculatedDynamicAmount}.00), and Advance Paid (Rs. ${advance20Percent}.00). Add a warm thank you note.
+      3. WHAT YOU CAN ANSWER:
+         - Cab types available (AC Sedan like Dzire/Etios, SUV Ertiga, Luxury Innova Crysta).
+         - Available services: Share One Way Cab, Dedicated One Way, Local Hourly Rentals, and Outstation trips.
+         - Luggage policy: Ample boot space for standard luggage; carrier available on request for SUVs.
+         - Night travel / AC: All cabs are 100% commercial permit AC vehicles with verified drivers available 24x7.
+         - Doorstep pickup & Raipur Airport pickup/drop facility.
 
-      Always append this token format at the very end of text output only when confirm block hits:
-      [TRIGGER_CHECKOUT: {"vehicle": "${currentBookingState.vehicle}", "amount": ${advance20Percent}, "pickup": "${currentBookingState.pickup}", "drop": "${currentBookingState.drop}"}]
+      4. ALWAYS GUIDE TOWARDS BOOKING / CALL:
+         - At the end of every helpful response, encourage them to fill their journey details in the chat or call directly at ${SUPPORT_PHONE}.
     `;
 
+    // Filter and sanitize conversation messages
+    const formattedHistory = Array.isArray(messages)
+      ? messages
+          .filter((m: any) => m && m.content)
+          .map((m: any) => ({
+            role: m.role === "assistant" ? "model" : "user",
+            parts: [{ text: m.content }],
+          }))
+      : [];
+
     const geminiPayload = {
-      contents: [
-        { role: "user", parts: [{ text: systemInstruction }] },
-        ...messages.map((m: any) => ({
-          role: m.role === "assistant" ? "model" : "user",
-          parts: [{ text: m.content }]
-        }))
-      ]
+      systemInstruction: {
+        parts: [{ text: systemInstruction }],
+      },
+      contents: formattedHistory.length > 0 ? formattedHistory : [
+        { role: "user", parts: [{ text: "Hello Sakha" }] }
+      ],
+      generationConfig: {
+        temperature: 0.4,
+        maxOutputTokens: 250,
+      },
     };
 
     const response = await fetch(
@@ -155,12 +71,27 @@ export async function POST(req: Request) {
       }
     );
 
+    if (!response.ok) {
+      const errBody = await response.text();
+      console.error("Gemini API Error Body:", errBody);
+      return NextResponse.json({
+        reply: `Namaste! Humari dispatch team aapse jald connect karegi. Fast support ke liye call karein: ${SUPPORT_PHONE}`,
+      });
+    }
+
     const data = await response.json();
-    const replyText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "Bhaiya, please refresh data parameters.";
+    const replyText =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      `Bhaiya, aapki query note kar li gayi hai. Direct confirmation ke liye kripya call karein: ${SUPPORT_PHONE}`;
 
     return NextResponse.json({ reply: replyText });
   } catch (error) {
-    console.error("Sakha True API Error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    console.error("Sakha Chat API Error:", error);
+    return NextResponse.json(
+      {
+        reply: `Khatu Rides helpline par direct sampark karein: ${SUPPORT_PHONE}`,
+      },
+      { status: 500 }
+    );
   }
 }

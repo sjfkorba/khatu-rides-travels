@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import Image from "next/image";
 import { PHONE, PHONE_DISPLAY, WHATSAPP } from "./data";
 import Icon from "./Icons";
 
@@ -120,7 +121,6 @@ export default function Hero() {
     return () => clearInterval(interval);
   }, []);
 
-  // Monotonic Calculation: 0 se 25 tak time ke sath strictly increase hoga
   const routeBookings = useMemo(() => {
     const totalDayMinutes = 1440;
     return LIVE_ROUTES.map((route) => {
@@ -132,7 +132,7 @@ export default function Hero() {
         ...route,
         count,
         availableSlots: Math.max(1, 26 - count),
-        status: count >= 16 ? "Peak Demand" : "Filling Fast",
+        status: count >= 16 ? "High Demand" : "Filling Fast",
       };
     });
   }, [elapsedMinutes]);
@@ -150,298 +150,236 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative overflow-hidden bg-[#0A1120] text-white">
+    <section className="relative min-h-[94vh] overflow-hidden bg-[#050B17] text-white">
       {/* -------------------------------------------------------------
-          1. TOP HINDI MARQUEE (EXACT 15px BOLD FONT)
+          1. BACKGROUND IMAGE + COLOR-RICH CINEMATIC OVERLAYS
       -------------------------------------------------------------- */}
-      <div className="relative z-40 border-b border-sky-400/30 bg-[#14305A] shadow-[0_4px_20px_rgba(20,48,90,0.45)]">
-        <div className="flex h-12 items-center overflow-hidden">
-          <div className="flex shrink-0 animate-marquee items-center gap-10 text-[15px] font-black tracking-wide text-white">
+      <div className="absolute inset-0 z-0">
+        <Image
+          src="/hero/main image.png"
+          alt="Khatu Rides Chhattisgarh Fleet"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-[center_right] sm:object-center"
+        />
+
+        {/* Ambient Color Washes (Replaces the flat black feel) */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#050D1A]/95 via-[#081528]/80 to-[#0A1628]/35" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050B17] via-transparent to-[#050D1A]/50" />
+        
+        {/* Subtle Radial Glows for Sunlight & Reflections */}
+        <div className="pointer-events-none absolute -left-20 top-20 h-96 w-96 rounded-full bg-amber-500/15 blur-[120px]" />
+        <div className="pointer-events-none absolute right-1/4 top-10 h-80 w-80 rounded-full bg-sky-500/15 blur-[140px]" />
+        <div className="pointer-events-none absolute bottom-10 right-10 h-96 w-96 rounded-full bg-orange-600/10 blur-[150px]" />
+      </div>
+
+      {/* -------------------------------------------------------------
+          2. TOP HINDI MARQUEE TICKER (LUXURY DEEP BLUE)
+      -------------------------------------------------------------- */}
+      <div className="relative z-30 border-b border-sky-400/25 bg-[#081933]/75 backdrop-blur-xl">
+        <div className="flex h-11 items-center overflow-hidden">
+          <div className="flex shrink-0 animate-marquee items-center gap-12 text-[14px] font-black tracking-wide text-white">
             <span className="inline-flex items-center gap-2.5">
-              <span className="rounded-full bg-sky-400 px-2.5 py-0.5 text-[10px] font-black uppercase text-slate-950">
+              <span className="rounded-full bg-amber-400 px-2.5 py-0.5 text-[10px] font-black uppercase text-slate-950 shadow-sm">
                 विशेष सूचना
               </span>
               कोरबा से रायपुर और रायपुर से कोरबा के लिए शेयर वन-वे टैक्सी बुक 4 दिन पहले करें। किराया मात्र{" "}
-              <span className="inline-block rounded-md bg-white px-2 py-0.5 text-[14px] font-black text-[#DC2626] shadow-sm">
-                ₹1200/- प्रति सीट
+              <span className="inline-block rounded-md bg-white px-2 py-0.5 text-[13px] font-black text-rose-600 shadow-md">
+                ₹1499/- प्रति सीट
               </span>{" "}
-              से शुरू। कोरबा से रायपुर सुबह 6:00 AM और रायपुर से कोरबा शाम 6:30 PM।
+              से शुरू। कोरबा से सुबह 6:00 AM | रायपुर से शाम 6:30 PM।
             </span>
+
             <span className="h-2 w-2 rounded-full bg-sky-400" />
+
             <span className="inline-flex items-center gap-2.5">
-              <span className="rounded-full bg-emerald-400 px-2.5 py-0.5 text-[10px] font-black uppercase text-slate-950">
+              <span className="rounded-full bg-emerald-400 px-2.5 py-0.5 text-[10px] font-black uppercase text-slate-950 shadow-sm">
                 डेली सीट
               </span>
-              कोरबा से बिलासपुर और बिलासपुर से कोरबा के लिए शेयर वन-वे टैक्सी बुक कीजिए 4 दिन पहले। शुरुआती किराया{" "}
-              <span className="inline-block rounded-md bg-white px-2 py-0.5 text-[14px] font-black text-[#DC2626] shadow-sm">
-                ₹800 प्रति सीट
-              </span>
-              । कोरबा से बिलासपुर समय सुबह 8:00 AM और बिलासपुर से कोरबा शाम 4:00 PM।
-            </span>
-            <span className="h-2 w-2 rounded-full bg-sky-400" />
-            <span className="inline-flex items-center gap-2.5">
-              <span className="rounded-full bg-sky-400 px-2.5 py-0.5 text-[10px] font-black uppercase text-slate-950">
-                विशेष सूचना
-              </span>
-              कोरबा से रायपुर और रायपुर से कोरबा के लिए शेयर वन-वे टैक्सी बुक 4 दिन पहले करें। किराया मात्र{" "}
-              <span className="inline-block rounded-md bg-white px-2 py-0.5 text-[14px] font-black text-[#DC2626] shadow-sm">
-                ₹1200/- प्रति सीट
+              कोरबा से बिलासपुर और बिलासपुर से कोरबा वन-वे शेयर टैक्सी। शुरुआती किराया{" "}
+              <span className="inline-block rounded-md bg-white px-2 py-0.5 text-[13px] font-black text-rose-600 shadow-md">
+                ₹899/- प्रति सीट
               </span>{" "}
-              से शुरू। कोरबा से रायपुर सुबह 6:00 AM और रायपुर से कोरबा शाम 6:30 PM।
-            </span>
-            <span className="h-2 w-2 rounded-full bg-sky-400" />
-            <span className="inline-flex items-center gap-2.5">
-              <span className="rounded-full bg-emerald-400 px-2.5 py-0.5 text-[10px] font-black uppercase text-slate-950">
-                डेली सीट
-              </span>
-              कोरबा से बिलासपुर और बिलासपुर से कोरबा के लिए शेयर वन-वे टैक्सी बुक कीजिए 4 दिन पहले। शुरुआती किराया{" "}
-              <span className="inline-block rounded-md bg-white px-2 py-0.5 text-[14px] font-black text-[#DC2626] shadow-sm">
-                ₹800 प्रति सीट
-              </span>
-              । कोरबा से बिलासपुर समय सुबह 8:00 AM और बिलासपुर से कोरबा शाम 4:00 PM।
+              । कोरबा सुबह 8:00 AM | बिलासपुर शाम 4:00 PM।
             </span>
           </div>
         </div>
       </div>
 
       {/* -------------------------------------------------------------
-          LUXURY AMBIENCE & RADIAL GLOWS
+          3. MAIN HERO CONTENT AREA
       -------------------------------------------------------------- */}
-      <div className="pointer-events-none absolute -top-24 left-1/4 h-[500px] w-[500px] rounded-full bg-blue-600/20 blur-[140px]" />
-      <div className="pointer-events-none absolute right-[-50px] top-1/3 h-[450px] w-[450px] rounded-full bg-amber-500/15 blur-[150px]" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:24px_24px]" />
-
-      {/* -------------------------------------------------------------
-          MAIN HERO WORKSPACE
-      -------------------------------------------------------------- */}
-      <div className="relative mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        <div className="grid items-start gap-8 lg:grid-cols-12 lg:gap-10">
+      <div className="relative z-20 mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+        <div className="grid items-center gap-10 lg:grid-cols-12">
           
-          {/* LEFT: SEO POSITIONING & TRUST ACTIONS */}
-          <div className="space-y-5 lg:col-span-7">
+          {/* LEFT COLUMN: HERO CONTENT */}
+          <div className="space-y-6 lg:col-span-7">
             
-            {/* State Trust Capsule */}
-            <div className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-3.5 py-1.5 backdrop-blur-xl">
-              <span className="relative flex h-2.5 w-2.5">
+            {/* Live Capsule */}
+            <div className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/40 bg-amber-400/10 px-4 py-1.5 backdrop-blur-md shadow-[0_0_20px_rgba(251,191,36,0.15)]">
+              <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-80" />
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-amber-400" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-400" />
               </span>
-              <span className="text-xs font-black uppercase tracking-wider text-amber-300">
-                Chhattisgarh’s Leading Intercity Cab Network
+              <span className="text-[11px] font-black uppercase tracking-wider text-amber-300">
+                Live Dispatch Desk • 0 Return Charge
               </span>
             </div>
 
-            {/* High-Impact Main Heading */}
+            {/* Main Headline */}
             <div>
-              <h1 className="text-4xl font-black uppercase leading-[0.98] tracking-tight text-white sm:text-6xl lg:text-[62px]">
-                KORBA ⇄ RAIPUR <br />
-                <span className="bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
-                  ONE WAY SPECIAL TAXI
-                </span> <br />
-                ALL CG INTERCITY CABS
-              </h1>
-
-              <p className="mt-3.5 max-w-2xl text-base font-semibold leading-relaxed text-slate-300 sm:text-lg">
-                Affordable daily one-way AC cab service between{" "}
-                <span className="font-extrabold text-white">Korba and Raipur</span> at guaranteed lowest fares. 
-                24×7 confirmed pickup across{" "}
-                <span className="font-extrabold text-amber-300">
-                  Bilaspur, Raigarh, Ambikapur, Jagdalpur & Jharsuguda
+              <h1 className="text-4xl font-black uppercase leading-[1.02] tracking-tight text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.8)] sm:text-6xl lg:text-[58px]">
+                KORBA <span className="text-amber-400">⇄</span> RAIPUR <br />
+                <span className="bg-gradient-to-r from-amber-300 via-yellow-300 to-amber-500 bg-clip-text text-transparent drop-shadow-sm">
+                  ONE-WAY SPECIAL CABS
                 </span>
-                . Pay strictly for single-side travel with zero return fare.
+              </h1>
+              <p className="mt-3.5 text-lg font-bold text-slate-100 sm:text-xl drop-shadow-sm">
+                Direct Airport & Intercity Drops across CG State.
+              </p>
+              <p className="mt-1 text-sm font-medium text-slate-300 drop-shadow-sm">
+                Pay strictly for one direction with instant verified driver allocation.
               </p>
             </div>
 
-            {/* Chhattisgarh City Badges Rail */}
-            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mr-1">
+            {/* City Tags Quick Rail */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-amber-300/80">
                 Active Hubs:
               </span>
-              {["Korba", "Raipur", "Bilaspur", "Raigarh", "Ambikapur", "Jagdalpur", "Jharsuguda"].map((city) => (
+              {["Korba", "Raipur", "Bilaspur", "Raigarh", "Ambikapur", "Jagdalpur"].map((city) => (
                 <span
                   key={city}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-black uppercase tracking-wide border ${
+                  className={`rounded-lg px-2.5 py-1 text-xs font-bold uppercase backdrop-blur-md transition-all ${
                     city === "Korba" || city === "Raipur"
-                      ? "border-amber-400/50 bg-amber-400/15 text-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.15)]"
-                      : "border-white/10 bg-white/[0.04] text-slate-300"
+                      ? "border border-amber-400/50 bg-amber-400/20 text-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.2)]"
+                      : "border border-white/15 bg-slate-900/40 text-slate-200"
                   }`}
                 >
-                  {city === "Korba" || city === "Raipur" ? `★ ${city}` : city}
+                  {city}
                 </span>
               ))}
             </div>
 
-            {/* -------------------------------------------------------------
-                METRIC CARDS + ACTIONS IN ONE PERFECT ROW (FIXED SIZING)
-            -------------------------------------------------------------- */}
-            <div className="flex flex-wrap items-center gap-3 pt-2">
-              
-              {/* Metric Card 1: Korba-Raipur */}
-              <div className="h-[74px] min-w-[108px] flex-1 rounded-2xl border border-white/10 bg-white/[0.05] p-2.5 backdrop-blur-md flex flex-col justify-between">
-                <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                  Korba-Raipur
-                </span>
-                <span className="text-sm font-black text-white leading-tight">
-                  Daily Drops
-                </span>
-                <span className="block text-[8px] font-bold text-amber-400">
-                  Fastest 3.5h Travel
-                </span>
-              </div>
-
-              {/* Metric Card 2: Return Toll */}
-              <div className="h-[74px] min-w-[105px] flex-1 rounded-2xl border border-white/10 bg-white/[0.05] p-2.5 backdrop-blur-md flex flex-col justify-between">
-                <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                  Return Toll
-                </span>
-                <span className="text-sm font-black text-emerald-400 leading-tight">
-                  ₹0 Extra
-                </span>
-                <span className="block text-[8px] font-bold text-slate-400">
-                  Pure CG One-Way
-                </span>
-              </div>
-
-              {/* Metric Card 3: Statewide Trust */}
-              <div className="h-[74px] min-w-[108px] flex-1 rounded-2xl border border-white/10 bg-white/[0.05] p-2.5 backdrop-blur-md flex flex-col justify-between">
-                <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                  Statewide Trust
-                </span>
-                <span className="text-sm font-black text-amber-300 leading-tight">
-                  ★ 4.9/5
-                </span>
-                <span className="block text-[8px] font-bold text-slate-400">
-                  Verified Drivers
-                </span>
-              </div>
-
-              {/* Call Button (Fixed text fit & no vertical cutoff) */}
+            {/* CTA Button Row */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center pt-2">
+              {/* Call CTA */}
               <a
                 href={telUrl}
                 onClick={handleCall}
-                className="group relative flex h-[74px] min-w-[185px] flex-[1.4] items-center justify-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 px-4 text-black shadow-[0_8px_25px_rgba(245,158,11,0.35)] transition-all hover:scale-[1.02] active:scale-95"
+                className="group relative flex h-14 items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 px-6 font-black text-black shadow-[0_10px_35px_rgba(245,158,11,0.4)] transition-all hover:scale-[1.02] active:scale-95"
               >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black text-amber-400 transition-transform group-hover:rotate-12">
-                  <Icon name="phone" size={19} />
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-black text-amber-400 transition-transform group-hover:rotate-12">
+                  <Icon name="phone" size={18} />
                 </div>
-                <div className="text-left flex flex-col justify-center">
-                 
-                  <span className="block text-sm font-black tracking-tight text-black leading-snug sm:text-base whitespace-nowrap">
-                    BOOK NOW
+                <div className="text-left leading-tight">
+                  <span className="block text-[10px] font-black uppercase tracking-wider opacity-85">
+                    Call 24/7 Dispatch
+                  </span>
+                  <span className="text-base font-extrabold tracking-tight">
+                    {PHONE_DISPLAY || "Call Dispatch Desk"}
                   </span>
                 </div>
               </a>
 
-              {/* WhatsApp Button (Fixed text fit & no vertical cutoff) */}
+              {/* WhatsApp CTA */}
               <a
                 href={whatsappUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="group flex h-[74px] min-w-[165px] flex-[1.2] items-center justify-center gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 text-emerald-400 backdrop-blur-md transition-all hover:bg-emerald-500/20 active:scale-95"
+                className="group flex h-14 items-center justify-center gap-3 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-6 font-bold text-white shadow-[0_8px_25px_rgba(16,185,129,0.2)] backdrop-blur-xl transition-all hover:bg-emerald-500/30 active:scale-95"
               >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-black transition-transform group-hover:scale-110">
-                  <Icon name="whatsapp" size={20} />
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 text-black transition-transform group-hover:scale-110">
+                  <Icon name="whatsapp" size={19} />
                 </div>
-                <div className="text-left flex flex-col justify-center">
-                  <span className="block text-[9px] font-black uppercase tracking-wider text-emerald-300/70 leading-tight">
-                    Instant Quote
+                <div className="text-left leading-tight">
+                  <span className="block text-[10px] font-black uppercase tracking-wider text-emerald-300">
+                    Instant Fare Quote
                   </span>
-                  <span className="block text-sm font-black tracking-tight text-white leading-snug whitespace-nowrap">
-                    WhatsApp Booking
-                  </span>
+                  <span className="text-sm font-black">Book via WhatsApp</span>
                 </div>
               </a>
-
             </div>
 
-            {/* Quick Guarantees Footer */}
-            <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-slate-400 pt-1">
-              <span>✔ Raipur Airport Drop Available</span>
-              <span>✔ Chhattisgarh State Permit AC Cabs</span>
-              <span>✔ No Hidden Toll/Night Charges</span>
+            {/* Frosted Glass Value Props */}
+            <div className="grid grid-cols-3 gap-3 pt-1 max-w-lg">
+              <div className="rounded-xl border border-white/15 bg-slate-900/40 p-2.5 text-center backdrop-blur-md shadow-lg">
+                <span className="block text-xs font-black text-amber-300">₹0 Advance</span>
+                <span className="text-[10px] font-semibold text-slate-300">Pay On Drop</span>
+              </div>
+              <div className="rounded-xl border border-white/15 bg-slate-900/40 p-2.5 text-center backdrop-blur-md shadow-lg">
+                <span className="block text-xs font-black text-emerald-400">Zero Return Fare</span>
+                <span className="text-[10px] font-semibold text-slate-300">Pure 1-Way Toll</span>
+              </div>
+              <div className="rounded-xl border border-white/15 bg-slate-900/40 p-2.5 text-center backdrop-blur-md shadow-lg">
+                <span className="block text-xs font-black text-white">4.9 ★ Statewide</span>
+                <span className="text-[10px] font-semibold text-slate-300">Clean AC Cabs</span>
+              </div>
             </div>
           </div>
 
-          {/* RIGHT: FLUTTER APP GLASS CARD LIFTED TO TOP LEVEL */}
-          <div className="lg:col-span-5 lg:-mt-4 xl:-mt-7">
-            <div className="relative mx-auto max-w-[430px] rounded-[36px] border border-white/15 bg-white/[0.07] p-5 shadow-[0_25px_60px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
+          {/* RIGHT COLUMN: PRO FROSTED GLASS DISPATCH BOARD */}
+          <div className="lg:col-span-5">
+            <div className="relative mx-auto max-w-[420px] rounded-[28px] border border-sky-400/25 bg-[#0a1832]/65 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-2xl">
               
-              {/* Flutter App Top Header */}
-              <div className="relative overflow-hidden rounded-[24px] border border-white/10 bg-gradient-to-br from-blue-600/30 via-indigo-600/20 to-transparent p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-400 ring-4 ring-emerald-400/20 animate-pulse" />
-                    <span className="text-[11px] font-black uppercase tracking-wider text-emerald-300">
-                      Live Dispatch Board
-                    </span>
-                  </div>
-                  <span className="rounded-full bg-black/40 px-2.5 py-0.5 text-[10px] font-extrabold text-slate-300 border border-white/10">
-                    {currentDate || "Today"}
+              {/* Dispatch Header */}
+              <div className="flex items-center justify-between border-b border-white/15 pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
                   </span>
+                  <div>
+                    <h3 className="text-xs font-black uppercase tracking-wider text-white">
+                      Live Fleet Tracker
+                    </h3>
+                    <p className="text-[10px] text-slate-300">{currentDate || "Today"}</p>
+                  </div>
                 </div>
 
-                <div className="mt-3 flex items-end justify-between">
-                  <div>
-                    <h2 className="text-xl font-black tracking-tight text-white sm:text-2xl">
-                      Today's Booking Status
-                    </h2>
-                    <p className="mt-0.5 text-[11px] font-semibold text-slate-300">
-                      Cumulative confirmed trips (0 to 25 Max cap)
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-right">
-                    <span className="block font-mono text-xs font-black text-amber-300">
-                      {currentTime || "--:--"}
-                    </span>
-                  </div>
+                <div className="rounded-lg border border-amber-400/40 bg-amber-400/15 px-2.5 py-1 text-right font-mono text-[11px] font-black text-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.15)]">
+                  {currentTime || "--:--"}
                 </div>
               </div>
 
-              {/* VERTICAL AUTO SLIDER CONTAINER */}
-              <div className="relative mt-4 h-[310px] overflow-hidden rounded-[24px] border border-white/10 bg-black/30 p-2.5">
-                {/* Visual Depth Masks */}
-                <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-10 bg-gradient-to-b from-[#0e1626] via-[#0e1626]/80 to-transparent" />
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-10 bg-gradient-to-t from-[#0e1626] via-[#0e1626]/80 to-transparent" />
+              {/* Scroller Box with Dynamic Depth */}
+              <div className="relative mt-3 h-[300px] overflow-hidden rounded-2xl border border-white/10 bg-[#040914]/50 p-2 backdrop-blur-sm">
+                {/* Gradient Masks */}
+                <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-7 bg-gradient-to-b from-[#040914]/90 to-transparent" />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-7 bg-gradient-to-t from-[#040914]/90 to-transparent" />
 
-                {/* Vertical Continuous Flow */}
-                <div className="animate-vertical-infinite space-y-2.5">
+                <div className="animate-vertical-infinite space-y-2">
                   {[...routeBookings, ...routeBookings].map((item, idx) => (
                     <div
                       key={idx}
-                      className="group flex items-center justify-between rounded-[20px] border border-white/10 bg-white/[0.06] p-3 transition-all duration-300 hover:border-amber-400/60 hover:bg-white/[0.1]"
+                      className="group flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.05] p-2.5 backdrop-blur-md transition-all hover:border-amber-400/50 hover:bg-white/[0.1]"
                     >
-                      {/* Left: Origin, Destination & Specs */}
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-400/10 text-amber-300 border border-amber-400/20">
-                          <Icon name="car" size={17} />
+                      <div>
+                        <div className="flex items-center gap-1.5 text-xs font-black text-white">
+                          <span>{item.from}</span>
+                          <span className="text-amber-400">➔</span>
+                          <span>{item.to}</span>
                         </div>
-                        <div>
-                          <div className="flex items-center gap-1.5 text-xs font-black text-white sm:text-[13px]">
-                            <span>{item.from}</span>
-                            <span className="text-amber-400 font-bold">➔</span>
-                            <span>{item.to}</span>
-                          </div>
-                          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[10px] font-bold text-slate-400">
-                            <span>{item.distance}</span>
-                            <span>•</span>
-                            <span>{item.travelTime}</span>
-                            <span>•</span>
-                            <span className="text-slate-300">{item.fleet}</span>
-                          </div>
+                        <div className="mt-0.5 flex items-center gap-1.5 text-[9px] font-semibold text-slate-300">
+                          <span>{item.distance}</span>
+                          <span>•</span>
+                          <span>{item.travelTime}</span>
+                          <span>•</span>
+                          <span className="text-amber-200/80">{item.fleet}</span>
                         </div>
                       </div>
 
-                      {/* Right: Monotonic Counters */}
                       <div className="text-right">
-                        <span className="inline-flex items-center rounded-lg bg-amber-400/20 border border-amber-400/30 px-2.5 py-0.5 text-xs font-black text-amber-300">
+                        <span className="inline-block rounded-md bg-amber-400/25 px-2 py-0.5 text-[10px] font-black text-amber-300 border border-amber-400/30">
                           {item.count} Booked
                         </span>
-                        <div className="mt-0.5 flex items-center justify-end gap-1 text-[9px] font-bold">
+                        <div className="mt-0.5 flex items-center justify-end gap-1 text-[8px] font-extrabold uppercase tracking-wide">
                           <span className={item.count >= 16 ? "text-amber-400" : "text-emerald-400"}>
                             {item.status}
                           </span>
-                          <span className="text-slate-600">•</span>
-                          <span className="text-slate-400">{item.availableSlots} Left</span>
+                          <span className="text-slate-500">•</span>
+                          <span className="text-rose-400">{item.availableSlots} Left</span>
                         </div>
                       </div>
                     </div>
@@ -449,13 +387,13 @@ export default function Hero() {
                 </div>
               </div>
 
-              {/* Card Footer */}
-              <div className="mt-3.5 flex items-center justify-between px-2 text-[11px] font-bold text-slate-400">
-                <span className="inline-flex items-center gap-1.5 text-emerald-400">
+              {/* Card Bottom Meta */}
+              <div className="mt-3 flex items-center justify-between text-[11px] font-bold text-slate-300 px-1">
+                <span className="flex items-center gap-1.5 text-emerald-400">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                  SMS & Driver Details Allocated
+                  Driver & Cab Details via SMS
                 </span>
-                <span className="font-extrabold text-amber-400">Zero Advance</span>
+                <span className="text-amber-400 font-extrabold">Instant Confirm</span>
               </div>
             </div>
           </div>
@@ -464,7 +402,7 @@ export default function Hero() {
       </div>
 
       {/* -------------------------------------------------------------
-          KEYFRAME ANIMATIONS: READABLE & ULTRA SMOOTH MOTION
+          KEYFRAME ANIMATIONS
       -------------------------------------------------------------- */}
       <style jsx global>{`
         @keyframes marquee {
@@ -476,7 +414,7 @@ export default function Hero() {
           }
         }
         .animate-marquee {
-          animation: marquee 80s linear infinite;
+          animation: marquee 75s linear infinite;
         }
         .animate-marquee:hover {
           animation-play-state: paused;
@@ -491,7 +429,7 @@ export default function Hero() {
           }
         }
         .animate-vertical-infinite {
-          animation: verticalInfinite 65s linear infinite;
+          animation: verticalInfinite 50s linear infinite;
         }
         .animate-vertical-infinite:hover {
           animation-play-state: paused;
