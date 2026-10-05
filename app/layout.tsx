@@ -38,124 +38,76 @@ export const metadata: Metadata = {
   description:
     "Book trusted taxi service in Chhattisgarh with Khatu Rides Travels Co. We provide affordable one way taxi, round trip cab, outstation taxi, airport transfer, local cab, corporate travel and commercial car rental across Chhattisgarh. Popular routes include Raipur to Bilaspur, Bilaspur to Raipur, Raipur to Korba, Korba to Raipur, Raipur to Raigarh, Raigarh to Raipur, Raipur to Durg, Durg to Raipur, Raipur to Bhilai, Bhilai to Raipur, Bilaspur to Korba, Korba to Bilaspur, Bilaspur to Raigarh, Raigarh to Bilaspur, Raipur to Ambikapur, Ambikapur to Raipur, Raipur to Jagdalpur, Jagdalpur to Raipur, Raipur to Champa, Champa to Raipur, Raipur to Janjgir, Janjgir to Raipur, Raipur to Sakti, Sakti to Raipur, Raipur to Kawardha, Kawardha to Raipur, Raipur to Dhamtari, Dhamtari to Raipur, Raipur to Mahasamund, Mahasamund to Raipur, Raipur to Baloda Bazar, Baloda Bazar to Raipur, Raipur to Kanker, Kanker to Raipur, Raipur to Rajnandgaon, Rajnandgaon to Raipur, Raipur to Dongargarh, Dongargarh to Raipur, Raipur to Korba Airport, Raipur Airport Taxi, Swami Vivekananda Airport pickup and drop, Bilaspur Airport taxi and intercity cab services. Travel comfortably in Swift Dzire, Ertiga, Innova, Innova Crysta, Sedan and SUV taxis with experienced drivers, transparent pricing, 24×7 booking, doorstep pickup, safe travel and instant booking support.",
 
-  keywords: [
+  keywords: [ 
     // ========================================================
-    // PRIMARY BUSINESS KEYWORDS
-    // ========================================================
+// KORBA HIGH-INTENT & IMMEDIATE BOOKING (DIRECT CALL/LEAD)
+// ========================================================
+"taxi contact number korba",
+"cab booking number korba",
+"korba taxi travel agency contact number",
+"24x7 taxi service in korba",
+"emergency cab booking korba",
+"best cab service in korba",
+"cheap cab booking korba",
+"affordable taxi service korba",
+"taxi stand korba contact number",
+"local cab hire in korba",
 
-    "taxi service in chhattisgarh",
-    "best taxi service in chhattisgarh",
-    "cab booking chhattisgarh",
-    "online taxi booking chhattisgarh",
-    "one way taxi chhattisgarh",
-    "outstation taxi chhattisgarh",
-    "outstation cab chhattisgarh",
-    "car rental chhattisgarh",
-    "commercial taxi service",
-    "corporate taxi service",
-    "24x7 taxi service",
-    "airport taxi service",
-    "intercity taxi service",
+// ========================================================
+// KORBA CAR RENTAL (DAILY, HOURLY & DRIVER)
+// ========================================================
+"car rental in korba with driver",
+"self drive car rental korba",
+"luxury car rental korba",
+"car hire in korba for outstation",
+"full day cab hire korba",
+"wedding car rental korba",
+"monthly cab rental korba",
 
-    // ========================================================
-    // RAIPUR
-    // ========================================================
+// ========================================================
+// KORBA HIGH-FREQUENCY OUTSTATION & ONE-WAY DROP
+// ========================================================
+"one way taxi korba to raipur",
+"korba to raipur one way cab fare",
+"korba to bilaspur one way cab",
+"korba to raigarh one way taxi",
+"korba to ambikapur taxi service",
+"korba to jagdalpur cab",
+"korba to rourkela taxi",
+"korba to prayagraj cab service",
+"korba to amarkantak round trip cab",
+"korba to varanasi outstation taxi",
 
-    "raipur taxi service",
-    "cab booking raipur",
-    "book taxi in raipur",
-    "raipur airport taxi",
-    "raipur airport pickup",
-    "raipur airport drop",
-    "raipur to bilaspur taxi",
-    "raipur to korba taxi",
-    "raipur to raigarh taxi",
-    "raipur to ambikapur taxi",
-    "raipur to durg taxi",
-    "raipur to bhilai taxi",
-    "raipur to jagdalpur taxi",
+// ========================================================
+// AIRPORT & RAILWAY STATION CONNECTIVITY (CRITICAL CONVERSIONS)
+// ========================================================
+"korba to raipur airport taxi",
+"korba to swami vivekananda airport cab",
+"raipur airport drop from korba taxi fare",
+"raipur airport to korba taxi booking",
+"korba to jharsuguda airport cab",
+"korba to bilaspur airport taxi service",
+"korba railway station taxi pickup drop",
+"champa railway station to korba taxi",
 
-    // ========================================================
-    // BILASPUR
-    // ========================================================
+// ========================================================
+// INDUSTRIAL & CORPORATE INTENT (NTPC, BALCO, SECL HUBS)
+// ========================================================
+"taxi service in balco korba",
+"cab service near ntpc korba",
+"taxi service secl gevra korba",
+"kusmunda korba taxi hire",
+"corporate cab booking in korba",
+"monthly taxi hire for companies in korba",
 
-    "bilaspur taxi service",
-    "cab booking bilaspur",
-    "book taxi in bilaspur",
-    "bilaspur to raipur taxi",
-    "bilaspur to korba taxi",
-    "bilaspur to raigarh taxi",
-    "bilaspur airport taxi",
-
-    // ========================================================
-    // KORBA
-    // ========================================================
-
-    "korba taxi service",
-    "cab booking korba",
-    "book taxi in korba",
-    "korba to raipur taxi",
-    "korba to bilaspur taxi",
-    "korba to raigarh taxi",
-    "korba to jharsuguda taxi",
-    "korba to amarkantak taxi",
-    "korba to varanasi taxi",
-
-    // ========================================================
-    // RAIGARH
-    // ========================================================
-
-    "raigarh taxi service",
-    "cab booking raigarh",
-    "raigarh to raipur taxi",
-    "raigarh to bilaspur taxi",
-    "raigarh to korba taxi",
-
-    // ========================================================
-    // AIRPORT
-    // ========================================================
-
-    "swami vivekananda airport taxi",
-    "raipur airport cab",
-    "airport pickup raipur",
-    "airport drop raipur",
-
-    // ========================================================
-    // LONG DISTANCE
-    // ========================================================
-
-    "one way taxi booking",
-    "one way cab booking",
-    "round trip taxi",
-    "long distance taxi",
-    "intercity cab booking",
-
-    // ========================================================
-    // VEHICLE INTENT
-    // ========================================================
-
-    "swift dzire taxi",
-    "ertiga taxi",
-    "innova taxi",
-    "innova crysta taxi",
-    "sedan taxi",
-    "suv taxi",
-    "7 seater taxi",
-
-    // ========================================================
-    // COMMERCIAL INTENT
-    // ========================================================
-
-    "book taxi online",
-    "hire taxi online",
-    "online cab booking",
-    "instant taxi booking",
-    "cheap taxi booking",
-    "affordable taxi service",
-    "reliable taxi service",
-    "professional taxi service",
-    "24 hour taxi booking",
-    "doorstep taxi service",
+// ========================================================
+// VEHICLE SPECIFIC HIGH-INTENT KEYWORDS (KORBA)
+// ========================================================
+"innova crysta taxi in korba",
+"ertiga cab booking korba",
+"7 seater cab booking in korba",
+"swift dzire on rent in korba",
+"tempo traveller in korba for tour"
   ],
 
   alternates: {
