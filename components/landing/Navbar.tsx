@@ -15,7 +15,7 @@ const links = [
   { label: "Travel Invoice", href: "/my-invoices" },
   { label: "Fleet", href: "/fleet" },
   { label: "Services", href: "/services" },
-  { label: "Fare Calculator", href: "/fare-calculator" },
+  { label: "Online Book", href: "/fare-calculator" },
 ];
 
 function WhatsAppIcon({ className = "h-5 w-5" }: { className?: string }) {

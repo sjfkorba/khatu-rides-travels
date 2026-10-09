@@ -22,7 +22,7 @@ export default function HomePage() {
       <Navbar />
       <Hero />
       <QuickServices />
-      <EnquiryForm/>
+      {/* <EnquiryForm/> */}
       <ImageCarousel/>
       <PopularRoutes />
       <TourPackages />

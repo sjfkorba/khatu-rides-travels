@@ -1,27 +1,16 @@
 "use client";
 
 import { useRef } from "react";
-import { ArrowLeft, ArrowRight, MapPin, MessageCircle } from "lucide-react";
-import { ROUTES } from "./data";
+import { ArrowLeft, ArrowRight, MapPin, MessageCircle, CheckCircle2 } from "lucide-react";
+// Assumed data import
+import { ROUTES } from "./data"; 
 
 const WHATSAPP_NUMBER = "919244137353";
+const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`;
 
 function getWhatsAppUrl(from: string, to: string) {
-  const message = `Hello Khatu Rides Travels,
-
-I want to book a cab for:
-
-📍 Pickup: ${from}
-📍 Destination: ${to}
-
-Please share the available cab options, fare and booking details.
-
-Thank you.
-Khatu Rides Travels Co.`;
-
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
-    message
-  )}`;
+  const message = `Hello Khatu Rides Travels,\n\nI want to book a cab for:\n📍 *Pickup:* ${from}\n📍 *Destination:* ${to}\n\nPlease share the available cab options, fare and booking details.\n\nThank you.`;
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
 export default function PopularRoutes() {
@@ -29,12 +18,7 @@ export default function PopularRoutes() {
 
   const scrollRoutes = (direction: "left" | "right") => {
     if (!sliderRef.current) return;
-
-    const amount = Math.min(
-      sliderRef.current.clientWidth * 0.82,
-      760
-    );
-
+    const amount = Math.min(sliderRef.current.clientWidth * 0.8, 400);
     sliderRef.current.scrollBy({
       left: direction === "right" ? amount : -amount,
       behavior: "smooth",
@@ -42,184 +26,136 @@ export default function PopularRoutes() {
   };
 
   return (
-    <section
-      id="routes"
-      className="relative overflow-hidden bg-[#F5F7FA] py-12 sm:py-16 lg:py-20"
-    >
-      {/* =========================================================
-          BACKGROUND DECORATION
-      ========================================================= */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -left-32 top-10 h-72 w-72 rounded-full bg-[#F5C400]/10 blur-3xl" />
-        <div className="absolute -right-32 bottom-0 h-80 w-80 rounded-full bg-[#063B8F]/10 blur-3xl" />
+    <section id="routes" className="relative overflow-hidden bg-slate-50 py-16 lg:py-24 font-sans">
+      {/* Background Subtle Elements */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-amber-400/5 rounded-full blur-[120px] pointer-events-none" />
 
-        {/* subtle road lines */}
-        <div className="absolute left-0 top-[48%] h-px w-full bg-slate-200/70" />
-      </div>
-
-      <div className="relative mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        
         {/* =========================================================
-            SECTION HEADER
+            SECTION HEADER (Premium & Clean)
         ========================================================= */}
-        <div className="flex items-end justify-between gap-5">
-          <div className="max-w-[760px]">
-            {/* Eyebrow */}
-            <div className="mb-2 flex items-center gap-2">
-              <span className="h-[3px] w-7 rounded-full bg-[#F5C400]" />
-
-              <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[#063B8F]">
-                Most Booked Routes
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100/80 border border-amber-200 mb-4">
+              <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+              <span className="text-xs font-bold uppercase tracking-widest text-amber-800">
+                Trending Routes
               </span>
             </div>
-
-            <h2 className="text-[30px] font-black leading-[1.02] tracking-[-0.045em] text-[#071A3A] sm:text-[40px] lg:text-[48px]">
-              Popular Cab Routes
+            <h2 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl lg:text-5xl mb-3">
+              Most Booked <span className="text-amber-500">Cab Routes</span>
             </h2>
-
-            <p className="mt-2 max-w-[620px] text-[12px] font-medium leading-5 text-slate-500 sm:text-sm">
-              Book reliable one-way and outstation cabs on the routes
-              our customers travel most.
+            <p className="text-sm sm:text-base font-medium text-slate-600 max-w-lg">
+              Affordable one-way and outstation cabs with verified drivers. Lock your fare today and pay after the ride.
             </p>
           </div>
 
-          {/* Desktop Controls */}
-          <div className="hidden shrink-0 items-center gap-2 sm:flex">
+          {/* Slider Controls (Desktop) */}
+          <div className="hidden sm:flex items-center gap-3">
             <button
-              type="button"
               onClick={() => scrollRoutes("left")}
+              className="flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:shadow-md active:scale-95"
               aria-label="Previous routes"
-              className="flex h-11 w-11 items-center justify-center rounded-xl border-2 border-[#071A3A] bg-white text-[#071A3A] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#071A3A] hover:text-white active:translate-y-0"
             >
-              <ArrowLeft className="h-4 w-4" strokeWidth={2.7} />
+              <ArrowLeft className="h-5 w-5" strokeWidth={2.5} />
             </button>
-
             <button
-              type="button"
               onClick={() => scrollRoutes("right")}
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900 text-white shadow-md transition-all hover:bg-slate-800 hover:shadow-lg active:scale-95"
               aria-label="Next routes"
-              className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#F5C400] text-[#071A3A] shadow-[0_8px_20px_rgba(245,196,0,0.25)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#FFD21A] active:translate-y-0"
             >
-              <ArrowRight className="h-4 w-4" strokeWidth={2.7} />
+              <ArrowRight className="h-5 w-5" strokeWidth={2.5} />
             </button>
           </div>
         </div>
 
         {/* =========================================================
-            ROUTE SLIDER
+            CARDS SLIDER (Modern UI)
         ========================================================= */}
-        <div className="relative mt-7">
+        <div className="relative -mx-4 px-4 sm:mx-0 sm:px-0">
           <div
             ref={sliderRef}
-            className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-5"
+            className="flex snap-x snap-mandatory gap-5 sm:gap-6 overflow-x-auto pb-8 pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {ROUTES.map((route, index) => (
               <article
                 key={`${route.from}-${route.to}`}
-                className="group relative w-[285px] shrink-0 snap-start overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-[0_8px_30px_rgba(7,26,58,0.08)] transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_18px_42px_rgba(7,26,58,0.16)] sm:w-[315px] lg:w-[330px]"
+                className="group relative flex-none w-[300px] sm:w-[340px] snap-start flex flex-col bg-white rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] overflow-hidden"
               >
-                {/* =================================================
-                    IMAGE
-                ================================================= */}
-                <div className="relative h-[250px] overflow-hidden bg-[#071A3A] sm:h-[270px] lg:h-[280px]">
+                {/* Upper Image Section */}
+                <div className="relative h-48 w-full overflow-hidden bg-slate-100">
                   <img
-  src={route.image}
-  alt={`${route.from} to ${route.to} cab service`}
-  loading={index < 3 ? "eager" : "lazy"}
-  className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-[1.04]"
-/>
-
-                  {/* Image Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#071A3A]/90 via-[#071A3A]/15 to-transparent" />
-
-                  {/* Route Number */}
-                  <div className="absolute left-4 top-4 flex h-8 min-w-8 items-center justify-center rounded-lg border border-white/20 bg-[#071A3A]/85 px-2 text-[9px] font-black tracking-wider text-white backdrop-blur-md">
-                    {String(index + 1).padStart(2, "0")}
+                    src={route.image}
+                    alt={`${route.from} to ${route.to} cab`}
+                    loading={index < 3 ? "eager" : "lazy"}
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                  {/* Subtle Dark Gradient for Text Visibility */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-slate-900/10 to-transparent" />
+                  
+                  {/* Badges */}
+                  <div className="absolute top-4 left-4">
+                    <span className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-white/95 backdrop-blur-sm text-[10px] font-black uppercase tracking-wider text-slate-800 shadow-sm">
+                      One-Way Trip
+                    </span>
                   </div>
-
-                  {/* Popular Badge */}
                   {index < 3 && (
-                    <div className="absolute right-4 top-4 rounded-lg bg-[#F5C400] px-2.5 py-1.5 text-[8px] font-black uppercase tracking-wider text-[#071A3A] shadow-lg">
-                      Popular
+                    <div className="absolute top-4 right-4">
+                      <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-amber-400 text-[10px] font-black uppercase tracking-wider text-amber-950 shadow-sm">
+                        🔥 Popular
+                      </span>
                     </div>
                   )}
 
-                  {/* Location pin */}
-                  <div className="absolute bottom-4 left-4 flex h-9 w-9 items-center justify-center rounded-full bg-[#F5C400] text-[#071A3A] shadow-[0_5px_16px_rgba(245,196,0,0.40)]">
-                    <MapPin
-                      className="h-4 w-4"
-                      fill="currentColor"
-                      strokeWidth={2}
-                    />
-                  </div>
-
-                  {/* Route on image */}
-                  <div className="absolute bottom-4 left-[58px] right-4">
-                    <div className="flex items-center gap-2 text-[16px] font-black tracking-[-0.025em] text-white">
-                      <span>{route.from}</span>
-
-                      <span className="text-[#F5C400]">→</span>
-
-                      <span>{route.to}</span>
+                  {/* Route overlay on image bottom */}
+                  <div className="absolute bottom-4 left-4 right-4 flex items-center gap-2 text-white">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-400 text-slate-900">
+                      <MapPin className="h-3.5 w-3.5" strokeWidth={2.5} />
                     </div>
+                    <h3 className="text-lg font-black tracking-tight drop-shadow-md">
+                      {route.from} <span className="text-amber-400 mx-1">→</span> {route.to}
+                    </h3>
                   </div>
                 </div>
 
-                {/* =================================================
-                    CARD BODY
-                ================================================= */}
-                <div className="p-4">
-                  {/* Journey line */}
-                  <div className="mb-3 flex items-center gap-2">
-                    <span className="h-[2px] flex-1 bg-slate-100" />
-                    <span className="text-[8px] font-black uppercase tracking-[0.16em] text-slate-400">
-                      One Way Cab
-                    </span>
-                    <span className="h-[2px] flex-1 bg-slate-100" />
-                  </div>
-
-                  {/* Route title */}
-                  <h3 className="text-[15px] font-black tracking-[-0.02em] text-[#071A3A]">
-                    {route.from}
-                    <span className="mx-1.5 text-[#F5C400]">→</span>
-                    {route.to}
-                  </h3>
-
-                  {/* Meta */}
-                  <p className="mt-1.5 min-h-[30px] text-[10px] font-semibold leading-4 text-slate-500">
-                    {route.meta}
+                {/* Card Body content */}
+                <div className="flex flex-col flex-grow p-5 sm:p-6">
+                  {/* Meta / Description */}
+                  <p className="text-sm font-medium text-slate-500 line-clamp-2 min-h-[40px] mb-4">
+                    {route.meta || "Comfortable AC cabs with verified drivers for a safe and smooth journey."}
                   </p>
 
-                  {/* Price + CTA */}
-                  <div className="mt-4 flex items-end justify-between gap-3 border-t border-slate-100 pt-3.5">
-                    <div>
-                      <span className="block text-[8px] font-black uppercase tracking-[0.16em] text-slate-400">
-                        Starting Fare
-                      </span>
-
-                      <div className="mt-0.5 flex items-baseline gap-1">
-                        <span className="text-[21px] font-black tracking-[-0.04em] text-[#071A3A]">
-                          {route.price}
+                  <div className="mt-auto space-y-4">
+                    {/* Price & Features */}
+                    <div className="flex items-end justify-between border-t border-slate-100 pt-4">
+                      <div>
+                        <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-0.5">
+                          Starting Fare
+                        </p>
+                        <div className="flex items-baseline gap-1 text-slate-900">
+                          <span className="text-2xl font-black">{route.price}</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-600">
+                          <CheckCircle2 className="h-3 w-3" /> No Advance
+                        </span>
+                        <span className="flex items-center gap-1 text-[11px] font-bold text-slate-500">
+                          <CheckCircle2 className="h-3 w-3" /> Toll Included
                         </span>
                       </div>
                     </div>
 
+                    {/* Action Button */}
                     <a
                       href={getWhatsAppUrl(route.from, route.to)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group/btn flex min-h-10 items-center gap-1.5 rounded-xl bg-[#F5C400] px-3.5 text-[9px] font-black uppercase tracking-wide text-[#071A3A] shadow-[0_7px_18px_rgba(245,196,0,0.22)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#FFD21A] hover:shadow-[0_10px_22px_rgba(245,196,0,0.32)]"
+                      className="group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-green-200 transition-all hover:-translate-y-1 hover:bg-[#20bd5a] hover:shadow-xl active:translate-y-0"
                     >
-                      <MessageCircle
-                        className="h-3.5 w-3.5"
-                        strokeWidth={2.7}
-                      />
-
-                      Book Now
-
-                      <ArrowRight
-                        className="h-3 w-3 transition-transform duration-200 group-hover/btn:translate-x-0.5"
-                        strokeWidth={2.8}
-                      />
+                      <MessageCircle className="h-5 w-5 transition-transform group-hover/btn:scale-110" />
+                      Book via WhatsApp
                     </a>
                   </div>
                 </div>
@@ -227,49 +163,46 @@ export default function PopularRoutes() {
             ))}
           </div>
 
-          {/* =======================================================
-              MOBILE SWIPE INDICATOR
-          ======================================================= */}
-          <div className="mt-1 flex items-center justify-center gap-2 sm:hidden">
-            <span className="h-1.5 w-8 rounded-full bg-[#F5C400]" />
-            <span className="text-[8px] font-black uppercase tracking-[0.16em] text-slate-400">
-              Swipe to explore routes
+          {/* Mobile Swipe Hint */}
+          <div className="mt-2 flex items-center justify-center gap-2 sm:hidden text-slate-400">
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span className="text-[11px] font-bold uppercase tracking-widest">
+              Swipe to explore
             </span>
-            <ArrowRight
-              className="h-3 w-3 text-[#063B8F]"
-              strokeWidth={2.8}
-            />
+            <ArrowRight className="h-3.5 w-3.5" />
           </div>
         </div>
 
         {/* =========================================================
-            BOTTOM CTA
+            BOTTOM CUSTOM ROUTE CTA (Conversion Focused)
         ========================================================= */}
-        <div className="mt-6 flex flex-col items-center justify-between gap-4 rounded-[20px] bg-[#071A3A] px-5 py-4 shadow-[0_14px_35px_rgba(7,26,58,0.16)] sm:flex-row sm:px-6">
-          <div>
-            <p className="text-[13px] font-black text-white sm:text-[15px]">
-              Don&apos;t see your route?
-            </p>
-
-            <p className="mt-0.5 text-[10px] font-medium text-white/55">
-              Tell us your pickup and destination. We&apos;ll help you plan
-              the ride.
-            </p>
+        <div className="mt-12 overflow-hidden rounded-3xl bg-slate-900 relative shadow-xl">
+          <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="relative p-6 sm:p-8 lg:p-10 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+            <div className="max-w-2xl">
+              <h3 className="text-2xl sm:text-3xl font-black text-white mb-2">
+                Don't see your specific route?
+              </h3>
+              <p className="text-slate-300 font-medium text-sm sm:text-base">
+                We operate across all of Chhattisgarh! Just text us your Pickup and Drop location, and our dispatch team will share the best possible fare instantly.
+              </p>
+            </div>
+            
+            <a
+              href={`${WHATSAPP_URL}?text=Hello%20Khatu%20Rides%2C%20I%20want%20to%20know%20the%20fare%20for%20a%20custom%20route.`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 flex items-center gap-3 rounded-xl bg-amber-400 px-8 py-4 text-sm font-black uppercase tracking-wide text-slate-900 shadow-lg shadow-amber-500/30 transition-transform hover:-translate-y-1 hover:shadow-xl active:translate-y-0"
+            >
+              <MessageCircle className="h-5 w-5" strokeWidth={2.5} />
+              Ask on WhatsApp
+            </a>
           </div>
-
-          <a
-            href={WHATSAPP_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex min-h-10 shrink-0 items-center gap-2 rounded-xl bg-[#18C964] px-5 text-[9px] font-black uppercase tracking-wide text-white shadow-[0_8px_20px_rgba(24,201,100,0.22)] transition-all hover:-translate-y-0.5 hover:bg-[#12B457]"
-          >
-            <MessageCircle className="h-4 w-4" strokeWidth={2.7} />
-            Ask on WhatsApp
-          </a>
         </div>
+
       </div>
     </section>
   );
 }
-
-const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`;
