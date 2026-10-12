@@ -8,21 +8,54 @@ import Icon from "./Icons";
 export default function Hero() {
   // Form State for Lead Capture
   const [tripType, setTripType] = useState("One-Way");
+  const [name, setName] = useState("");
+  const [mobile, setMobile] = useState("");
   const [pickup, setPickup] = useState("");
   const [drop, setDrop] = useState("");
   const [travelDate, setTravelDate] = useState("");
+  const [car, setCar] = useState("Ertiga (6-seater)");
+  const [note, setNote] = useState("");
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false); // New state for Thank You screen
 
   const telUrl = `tel:${PHONE}`;
 
-  // Handle Form Submit -> Redirect to WhatsApp with pre-filled details
-  const handleQuickBook = (e: React.FormEvent) => {
+  // Pre-generate WhatsApp URL for the success screen
+  const whatsappMessage = `Hello Khatu Rides, I need an enquiry:\n*Trip Type:* ${tripType}\n*Name:* ${name}\n*Mobile:* ${mobile}\n*From:* ${pickup}\n*To:* ${drop}\n*Date:* ${travelDate || "Flexible"}\n*Car:* ${car}\n*Note:* ${note || "-"}\n\nPlease share the best fare.`;
+  const whatsappUrl = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(whatsappMessage)}`;
+
+  // Handle Form Submit -> Send Email & Show Thank You Screen
+  const handleQuickBook = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pickup || !drop) return;
-    
-    const message = `Hello Khatu Rides, I need an enquiry:\n*Trip Type:* ${tripType}\n*From:* ${pickup}\n*To:* ${drop}\n*Date:* ${travelDate || "Flexible"}\n\nPlease share the best fare.`;
-    const whatsappUrl = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(message)}`;
-    
-    window.open(whatsappUrl, "_blank");
+    if (!pickup || !drop || !name || !mobile) return;
+    setIsSubmitting(true);
+
+    const enquiryData = {
+      tripType,
+      name,
+      mobile,
+      pickup,
+      drop,
+      travelDate: travelDate || "Flexible",
+      car,
+      note: note || "-"
+    };
+
+    try {
+      // 1. Send data to Next.js API route to trigger email
+      await fetch("/api/send-enquiry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(enquiryData),
+      });
+    } catch (error) {
+      console.error("Failed to send email", error);
+    } finally {
+      setIsSubmitting(false);
+      // 2. Show Success Screen instead of redirecting directly
+      setIsSubmitted(true);
+    }
   };
 
   const handleCall = (e: React.MouseEvent) => {
@@ -32,6 +65,16 @@ export default function Hero() {
     } else {
       window.location.href = telUrl;
     }
+  };
+
+  // Reset form to submit a new enquiry
+  const handleReset = () => {
+    setIsSubmitted(false);
+    setPickup("");
+    setDrop("");
+    setName("");
+    setMobile("");
+    setNote("");
   };
 
   return (
@@ -126,7 +169,7 @@ export default function Hero() {
           </div>
 
           {/* -------------------------------------------------------------
-              RIGHT COLUMN: LEAD CAPTURE FORM (BUSINESS ENGINE)
+              RIGHT COLUMN: LEAD CAPTURE FORM OR SUCCESS MESSAGE
           -------------------------------------------------------------- */}
           <div className="lg:col-span-5 z-10 w-full max-w-md mx-auto lg:mx-0">
             <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
@@ -136,69 +179,162 @@ export default function Hero() {
                 <p className="text-amber-400 text-sm font-semibold relative z-10 mt-1">100% Assured Cab Availability</p>
               </div>
               
-              <form onSubmit={handleQuickBook} className="p-6 space-y-5">
-                {/* Trip Type Selector */}
-                <div className="flex bg-slate-100 p-1 rounded-lg">
-                  {["One-Way", "Round Trip", "Airport"].map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setTripType(type)}
-                      className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
-                        tripType === type 
-                          ? "bg-white text-slate-900 shadow-sm" 
-                          : "text-slate-500 hover:text-slate-800"
-                      }`}
-                    >
-                      {type}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Input Fields */}
-                <div className="space-y-4">
-                  <div className="relative">
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Pickup City</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. Korba, Raipur Airport" 
-                      value={pickup}
-                      onChange={(e) => setPickup(e.target.value)}
-                      required
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all"
-                    />
+              {isSubmitted ? (
+                /* SUCCESS MESSAGE SCREEN */
+                <div className="p-8 text-center space-y-5 animate-in fade-in zoom-in duration-300">
+                  <div className="w-16 h-16 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
                   </div>
+                  <h4 className="text-2xl font-black text-slate-900">Thank You, {name}!</h4>
+                  <p className="text-slate-600 font-medium text-sm leading-relaxed">
+                    Your enquiry for <span className="font-bold text-slate-800">{pickup} to {drop}</span> has been received successfully. Our team will contact you shortly with the best fare.
+                  </p>
                   
-                  <div className="relative">
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Drop City</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. Bilaspur, Ambikapur" 
-                      value={drop}
-                      onChange={(e) => setDrop(e.target.value)}
-                      required
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all"
-                    />
+                  <div className="w-full h-px bg-slate-100 my-4"></div>
+                  
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">For Instant Response:</p>
+                  
+                  <div className="flex flex-col gap-3">
+                    <a
+                      href={whatsappUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-lg py-3.5 rounded-xl shadow-[0_4px_14px_0_rgba(37,211,102,0.39)] hover:shadow-[0_6px_20px_rgba(37,211,102,0.23)] hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2"
+                    >
+                      Chat on WhatsApp <Icon name="whatsapp" size={20} />
+                    </a>
+                    
+                    <a
+                      href={telUrl}
+                      onClick={handleCall}
+                      className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-lg py-3.5 rounded-xl shadow-lg hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2"
+                    >
+                      Call Us Now <Icon name="phone" size={20} />
+                    </a>
                   </div>
 
-                  <div className="relative">
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Travel Date</label>
-                    <input 
-                      type="date" 
-                      value={travelDate}
-                      onChange={(e) => setTravelDate(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all"
-                    />
-                  </div>
+                  <button 
+                    onClick={handleReset}
+                    className="text-slate-400 hover:text-amber-500 text-sm font-semibold mt-4 transition-colors"
+                  >
+                    Submit another enquiry
+                  </button>
                 </div>
+              ) : (
+                /* LEAD CAPTURE FORM */
+                <form onSubmit={handleQuickBook} className="p-6 space-y-4">
+                  {/* Trip Type Selector */}
+                  <div className="flex bg-slate-100 p-1 rounded-lg mb-4">
+                    {["One-Way", "Round Trip", "Airport"].map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setTripType(type)}
+                        className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
+                          tripType === type 
+                            ? "bg-white text-slate-900 shadow-sm" 
+                            : "text-slate-500 hover:text-slate-800"
+                        }`}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
 
-                <button 
-                  type="submit"
-                  className="w-full bg-amber-400 hover:bg-amber-500 text-slate-900 font-black text-lg py-4 rounded-xl shadow-[0_4px_14px_0_rgba(251,191,36,0.39)] hover:shadow-[0_6px_20px_rgba(251,191,36,0.23)] hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2"
-                >
-                  Check Fare on WhatsApp <Icon name="whatsapp" size={20} />
-                </button>
-              </form>
+                  {/* Input Fields */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="relative col-span-2 sm:col-span-1">
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Name</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"
+                      />
+                    </div>
+                    
+                    <div className="relative col-span-2 sm:col-span-1">
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Mobile</label>
+                      <input 
+                        type="tel" 
+                        required
+                        value={mobile}
+                        onChange={(e) => setMobile(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"
+                      />
+                    </div>
+
+                    <div className="relative col-span-2 sm:col-span-1">
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Pickup</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. Korba" 
+                        required
+                        value={pickup}
+                        onChange={(e) => setPickup(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"
+                      />
+                    </div>
+                    
+                    <div className="relative col-span-2 sm:col-span-1">
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Drop</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. Bilaspur" 
+                        required
+                        value={drop}
+                        onChange={(e) => setDrop(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"
+                      />
+                    </div>
+
+                    <div className="relative col-span-2 sm:col-span-1">
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Travel Date</label>
+                      <input 
+                        type="date" 
+                        value={travelDate}
+                        onChange={(e) => setTravelDate(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"
+                      />
+                    </div>
+
+                    <div className="relative col-span-2 sm:col-span-1">
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Car Type</label>
+                      <select 
+                        value={car}
+                        onChange={(e) => setCar(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"
+                      >
+                        <option>Sedan (4-seater)</option>
+                        <option>Ertiga (6-seater)</option>
+                        <option>Innova (7-seater)</option>
+                      </select>
+                    </div>
+                    
+                    <div className="relative col-span-2">
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Note (Optional)</label>
+                      <input 
+                        type="text" 
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        placeholder="Any specific requirement?"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <button 
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full mt-2 bg-amber-400 hover:bg-amber-500 text-slate-900 font-black text-lg py-4 rounded-xl shadow-[0_4px_14px_0_rgba(251,191,36,0.39)] hover:shadow-[0_6px_20px_rgba(251,191,36,0.23)] hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2 disabled:opacity-70 disabled:hover:translate-y-0"
+                  >
+                    {isSubmitting ? "Sending..." : "Submit Enquiry"}
+                  </button>
+                </form>
+              )}
             </div>
           </div>
 

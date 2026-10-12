@@ -1116,7 +1116,7 @@ function FareResultsScreen({ data, onClose, onBookCall, onBookWhatsApp }: any) {
 
                   <div className="mt-auto grid grid-cols-2 gap-3">
                     <button
-                      onClick={() => onBookCall ? onBookCall(option, data) : window.location.href = `tel:+919999999999`}
+                      onClick={() => onBookCall ? onBookCall(option, data) : window.location.href = `tel:+919244137353`}
                       className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1a365d] text-xs font-black uppercase tracking-wide text-white transition-transform active:scale-95 sm:text-sm"
                     >
                       <Phone className="h-4 w-4" fill="currentColor" /> Book By Call
@@ -1127,7 +1127,7 @@ function FareResultsScreen({ data, onClose, onBookCall, onBookWhatsApp }: any) {
                           onBookWhatsApp(option, data);
                         } else {
                           const text = `Hi, I want to book a ${option.vehicleLabel} from ${data.pickup} to ${data.drop} on ${data.pickupDate}. Fare shown: ${option.fareText}.`;
-                          window.open(`https://wa.me/919999999999?text=${encodeURIComponent(text)}`, "_blank");
+                          window.open(`https://wa.me/919244137353?text=${encodeURIComponent(text)}`, "_blank");
                         }
                       }}
                       className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] text-xs font-black uppercase tracking-wide text-white transition-transform active:scale-95 sm:text-sm"
