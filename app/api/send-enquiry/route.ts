@@ -6,9 +6,11 @@ export async function POST(req: Request) {
     const data = await req.json();
     const { tripType, name, mobile, pickup, drop, travelDate, car, note } = data;
 
-    // Configure Nodemailer with Gmail SMTP
+    // Configure Nodemailer with strict Gmail SMTP settings for Vercel
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true, // Use SSL for secure connection
       auth: {
         user: process.env.EMAIL_USER, // e.g. khaturides@gmail.com
         pass: process.env.EMAIL_PASS, // 16-digit App Password

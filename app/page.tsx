@@ -7,7 +7,6 @@ import Fleet from "@/components/landing/Fleet";
 import TrustSection from "@/components/landing/TrustSection";
 import Services from "@/components/landing/Services";
 import AirportSection from "@/components/landing/AirportSection";
-import Reviews from "@/components/landing/Reviews";
 import SeoSection from "@/components/landing/SeoSection";
 import FinalCTA from "@/components/landing/FinalCTA";
 import Footer from "@/components/landing/Footer";
@@ -15,6 +14,7 @@ import MobileActionBar from "@/components/landing/MobileActionBar";
 import ImageCarousel from "@/components/ImageCarousel";
 import EnquiryForm from "@/components/landing/EnquiryForm";
 import SakhaBot from "@/components/SakhaBot";
+import Reviews from "@/components/Reviews";
 
 export default function HomePage() {
   return (
@@ -27,10 +27,10 @@ export default function HomePage() {
       <PopularRoutes />
       <TourPackages />
       <Fleet />
-      <TrustSection />
+      <Reviews/>
+      {/* <TrustSection /> */}
       <Services />
       <AirportSection />
-      <Reviews />
       <SeoSection />
       <FinalCTA />
       <MobileActionBar />
