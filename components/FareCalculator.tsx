@@ -711,7 +711,7 @@ export default function FareCalculator({ onFareCalculated, onBookCall, onBookWha
                     type="button"
                     onClick={() => selectTab(item.id)}
                     aria-pressed={active}
-                    className={`flex flex-1 min-w-[100px] items-center justify-center gap-2 rounded-lg px-3 py-3 text-sm font-bold transition-all ${
+                    className={`flex flex-1 min-w-25 items-center justify-center gap-2 rounded-lg px-3 py-3 text-sm font-bold transition-all ${
                       active
                         ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200"
                         : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"

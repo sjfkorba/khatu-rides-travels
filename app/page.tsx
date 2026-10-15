@@ -13,7 +13,6 @@ import Footer from "@/components/landing/Footer";
 import MobileActionBar from "@/components/landing/MobileActionBar";
 import ImageCarousel from "@/components/ImageCarousel";
 import EnquiryForm from "@/components/landing/EnquiryForm";
-import SakhaBot from "@/components/SakhaBot";
 import Reviews from "@/components/Reviews";
 
 export default function HomePage() {
@@ -34,7 +33,7 @@ export default function HomePage() {
       <SeoSection />
       <FinalCTA />
       <MobileActionBar />
-      <SakhaBot/>
+      {/* <SakhaBot/> */}
     </main>
   );
 }

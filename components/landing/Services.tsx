@@ -113,37 +113,37 @@ const accentClasses: Record<
   yellow: {
     icon: "bg-amber-100 text-amber-600",
     badge: "bg-amber-100 text-amber-700",
-    button: "bg-amber-400 hover:bg-amber-300",
+    button: "bg-amber-400 hover:bg-amber-300 text-slate-900",
     soft: "bg-amber-50",
   },
   orange: {
     icon: "bg-orange-100 text-orange-600",
     badge: "bg-orange-100 text-orange-700",
-    button: "bg-orange-500 hover:bg-orange-400",
+    button: "bg-orange-500 hover:bg-orange-400 text-white",
     soft: "bg-orange-50",
   },
   blue: {
     icon: "bg-blue-100 text-blue-600",
     badge: "bg-blue-100 text-blue-700",
-    button: "bg-blue-600 hover:bg-blue-500",
+    button: "bg-blue-600 hover:bg-blue-500 text-white",
     soft: "bg-blue-50",
   },
   purple: {
     icon: "bg-purple-100 text-purple-600",
     badge: "bg-purple-100 text-purple-700",
-    button: "bg-purple-600 hover:bg-purple-500",
+    button: "bg-purple-600 hover:bg-purple-500 text-white",
     soft: "bg-purple-50",
   },
   red: {
     icon: "bg-red-100 text-red-600",
     badge: "bg-red-100 text-red-700",
-    button: "bg-red-600 hover:bg-red-500",
+    button: "bg-red-600 hover:bg-red-500 text-white",
     soft: "bg-red-50",
   },
   green: {
     icon: "bg-emerald-100 text-emerald-600",
     badge: "bg-emerald-100 text-emerald-700",
-    button: "bg-emerald-600 hover:bg-emerald-500",
+    button: "bg-emerald-600 hover:bg-emerald-500 text-white",
     soft: "bg-emerald-50",
   },
 };
@@ -153,11 +153,11 @@ export default function Services() {
     <section
       id="services"
       aria-labelledby="services-heading"
-      className="relative overflow-hidden bg-[#F7F9FC] py-14 sm:py-20"
+      className="relative overflow-hidden bg-[#F7F9FC] py-16 sm:py-24"
     >
       {/* Background decoration */}
-      <div className="pointer-events-none absolute -left-40 top-20 h-[360px] w-[360px] rounded-full bg-amber-100/50 blur-3xl" />
-      <div className="pointer-events-none absolute -right-40 bottom-10 h-[400px] w-[400px] rounded-full bg-orange-100/40 blur-3xl" />
+      <div className="pointer-events-none absolute -left-40 top-20 h-[500px] w-[500px] rounded-full bg-amber-200/30 blur-[120px]" />
+      <div className="pointer-events-none absolute -right-40 bottom-10 h-[500px] w-[500px] rounded-full bg-orange-200/30 blur-[120px]" />
 
       <div className="relative mx-auto max-w-[1350px] px-4 sm:px-6">
 
@@ -166,21 +166,21 @@ export default function Services() {
         ===================================================== */}
         <div className="mx-auto max-w-3xl text-center">
 
-          <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-[9px] font-black uppercase tracking-[0.22em] text-amber-700">
+          <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-100/50 px-5 py-2.5 text-xs sm:text-sm font-black uppercase tracking-[0.2em] text-amber-800 shadow-sm backdrop-blur-sm">
             Our Cab & Travel Services
           </span>
 
           <h2
             id="services-heading"
-            className="mt-4 text-3xl font-black leading-[1.05] tracking-tight text-slate-950 sm:text-4xl lg:text-5xl"
+            className="mt-6 text-4xl font-black leading-[1.1] tracking-tight text-slate-900 sm:text-5xl lg:text-6xl"
           >
             One Travel Partner.
-            <span className="block text-amber-500">
+            <span className="block mt-2 bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent drop-shadow-sm">
               Every Journey Covered.
             </span>
           </h2>
 
-          <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-slate-500 sm:text-[15px] sm:leading-7">
+          <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg sm:leading-8">
             From a quick city transfer to a long-distance outstation journey,
             airport pickup, family holiday or spiritual tour, Khatu Rides
             provides practical cab and travel solutions designed around your
@@ -188,7 +188,7 @@ export default function Services() {
           </p>
 
           {/* Quick trust indicators */}
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             {[
               "✓ Professional Drivers",
               "✓ Clean AC Vehicles",
@@ -197,7 +197,7 @@ export default function Services() {
             ].map((item) => (
               <span
                 key={item}
-                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-[9px] font-bold text-slate-600 shadow-sm"
+                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs sm:text-sm font-bold text-slate-700 shadow-sm transition-transform hover:-translate-y-0.5"
               >
                 {item}
               </span>
@@ -206,9 +206,9 @@ export default function Services() {
         </div>
 
         {/* =====================================================
-            FEATURED SERVICE
+            FEATURED SERVICE - Big Glass Card
         ===================================================== */}
-        <div className="mt-10">
+        <div className="mt-14">
 
           {SERVICE_DETAILS
             .filter((service) => service.featured)
@@ -218,60 +218,61 @@ export default function Services() {
               return (
                 <article
                   key={service.title}
-                  className="relative overflow-hidden rounded-[30px] border border-amber-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,.08)]"
+                  className="relative overflow-hidden rounded-[40px] border border-amber-200/50 bg-white shadow-[0_20px_60px_rgba(15,23,42,.08)] transition-all duration-500 hover:shadow-[0_30px_80px_rgba(15,23,42,.12)] group"
                 >
-                  <div className="absolute right-0 top-0 h-56 w-56 rounded-full bg-amber-100/50 blur-3xl" />
+                  <div className="absolute right-[-10%] top-[-10%] h-64 w-64 rounded-full bg-amber-100/60 blur-[80px] transition-transform duration-700 group-hover:scale-150" />
 
-                  <div className="relative grid gap-8 p-6 sm:p-8 lg:grid-cols-[1fr_1fr] lg:items-center lg:p-10">
+                  <div className="relative grid gap-10 p-8 sm:p-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:p-16">
 
-                    {/* LEFT */}
-                    <div>
+                    {/* LEFT CONTENT */}
+                    <div className="relative z-10">
 
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-5">
 
                         <div
-                          className={`flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-[22px] ${colors.icon} shadow-sm`}
+                          className={`flex h-[80px] w-[80px] shrink-0 items-center justify-center rounded-[24px] ${colors.icon} shadow-md transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3`}
                         >
                           <Icon
                             name={service.icon as any}
-                            size={34}
-                            strokeWidth={2}
+                            size={40}
+                            strokeWidth={1.8}
                           />
                         </div>
 
                         <div>
                           <span
-                            className={`inline-flex rounded-full px-3 py-1.5 text-[9px] font-black uppercase tracking-[.16em] ${colors.badge}`}
+                            className={`inline-flex rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.15em] shadow-sm ${colors.badge}`}
                           >
                             Most Popular
                           </span>
 
-                          <span className="mt-1 block text-[9px] font-black uppercase tracking-[.16em] text-slate-400">
+                          <span className="mt-2 block text-xs font-black uppercase tracking-[0.15em] text-slate-500">
                             {service.eyebrow}
                           </span>
                         </div>
                       </div>
 
-                      <h3 className="mt-6 text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-4xl">
+                      <h3 className="mt-8 text-4xl font-black leading-tight tracking-tight text-slate-900 sm:text-5xl">
                         {service.title}
                       </h3>
 
-                      <p className="mt-1 text-sm font-bold text-amber-600 sm:text-base">
+                      <p className="mt-3 text-base font-bold text-amber-600 sm:text-lg">
                         {service.seoTitle}
                       </p>
 
-                      <p className="mt-4 max-w-xl text-sm leading-7 text-slate-500 sm:text-[15px]">
+                      <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
                         {service.description}
                       </p>
 
-                      <div className="mt-5 grid gap-2 sm:grid-cols-3">
+                      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {service.benefits.map((benefit) => (
                           <div
                             key={benefit}
-                            className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-3 text-[10px] font-bold text-slate-600"
+                            className="flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-4 text-xs sm:text-sm font-bold text-slate-700 shadow-sm border border-slate-100"
                           >
-                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-100 text-[9px] font-black text-amber-700">
-                              ✓
+                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 shadow-inner">
+                              {/* Replaced Icon with SVG Check */}
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                             </span>
                             {benefit}
                           </div>
@@ -279,13 +280,15 @@ export default function Services() {
                       </div>
 
                       {/* ACTIONS */}
-                      <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
+                      <div className="mt-10 flex flex-col gap-4 sm:flex-row">
 
                         <a
                           href={`tel:${PHONE}`}
-                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-6 py-3.5 text-[10px] font-black uppercase tracking-wider text-slate-950 shadow-[0_8px_22px_rgba(251,191,36,.25)] transition hover:-translate-y-0.5 hover:bg-amber-300"
+                          className="group/btn inline-flex items-center justify-center gap-3 rounded-2xl bg-amber-400 px-8 py-5 text-sm sm:text-base font-black uppercase tracking-widest text-slate-900 shadow-[0_15px_30px_rgba(251,191,36,.3)] transition-all duration-300 hover:-translate-y-1 hover:bg-amber-300 hover:shadow-[0_20px_40px_rgba(251,191,36,.4)] active:scale-95"
                         >
-                          <Icon name="phone" size={15} />
+                          <span className="transition-transform group-hover/btn:scale-110">
+                            <Icon name="phone" size={20} />
+                          </span>
                           Call For Booking
                         </a>
 
@@ -293,59 +296,56 @@ export default function Services() {
                           href={`https://wa.me/${WHATSAPP}?text=Hello%20Khatu%20Rides%2C%20I%20want%20to%20book%20a%20one-way%20cab.`}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-6 py-3.5 text-[10px] font-black uppercase tracking-wider text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100"
+                          className="group/btn inline-flex items-center justify-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-8 py-5 text-sm sm:text-base font-black uppercase tracking-widest text-emerald-700 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:bg-emerald-100 hover:shadow-md active:scale-95"
                         >
-                          <Icon name="whatsapp" size={16} />
+                          <span className="transition-transform group-hover/btn:scale-110">
+                            <Icon name="whatsapp" size={22} />
+                          </span>
                           WhatsApp Us
                         </a>
 
                       </div>
                     </div>
 
-                    {/* RIGHT VISUAL */}
-                    <div className="relative min-h-[230px] overflow-hidden rounded-[24px] bg-gradient-to-br from-[#061B32] to-[#0A3555] p-6 text-white sm:min-h-[280px]">
+                    {/* RIGHT VISUAL - Modern Data Card Look */}
+                    <div className="relative min-h-[300px] overflow-hidden rounded-[32px] bg-gradient-to-br from-[#061B32] to-[#0A3555] p-8 text-white shadow-2xl sm:min-h-[350px] lg:h-full lg:min-h-[400px]">
 
-                      <div className="absolute right-[-50px] top-[-60px] h-48 w-48 rounded-full bg-amber-400/15 blur-3xl" />
+                      <div className="absolute right-[-20%] top-[-20%] h-[300px] w-[300px] rounded-full bg-amber-400/20 blur-[80px]" />
 
-                      <div className="relative flex h-full flex-col justify-between">
+                      <div className="relative z-10 flex h-full flex-col justify-between">
 
                         <div className="flex items-start justify-between">
-                          <span className="text-[9px] font-black uppercase tracking-[.2em] text-amber-300">
+                          <span className="text-xs font-black uppercase tracking-[0.2em] text-amber-300">
                             Why One Way?
                           </span>
 
-                          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10">
-                            <Icon name="route" size={17} />
+                          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-md shadow-inner">
+                            <Icon name="route" size={24} />
                           </span>
                         </div>
 
-                        <div className="mt-8">
-                          <div className="text-5xl font-black tracking-tight text-white">
+                        <div className="mt-12">
+                          <div className="text-6xl font-black tracking-tight text-white drop-shadow-md">
                             Easy
                           </div>
-
-                          <div className="text-5xl font-black tracking-tight text-amber-300">
+                          <div className="text-5xl font-black tracking-tight text-amber-300 drop-shadow-md mt-1">
                             Point-to-Point
                           </div>
 
-                          <p className="mt-3 max-w-sm text-[11px] leading-5 text-white/55">
+                          <p className="mt-5 max-w-sm text-sm leading-relaxed text-white/70 font-medium">
                             Ideal for Raipur ↔ Korba, Raipur ↔ Bilaspur,
                             Korba ↔ Bilaspur and other popular Chhattisgarh
                             travel routes.
                           </p>
                         </div>
 
-                        <div className="mt-6 flex flex-wrap gap-2">
+                        <div className="mt-10 flex flex-wrap gap-3">
                           {[
-                            "Raipur",
-                            "Bilaspur",
-                            "Korba",
-                            "Durg",
-                            "Bhilai",
+                            "Raipur", "Bilaspur", "Korba", "Durg", "Bhilai",
                           ].map((city) => (
                             <span
                               key={city}
-                              className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[8px] font-bold text-white/70"
+                              className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-bold text-white shadow-sm backdrop-blur-md transition-colors hover:bg-white/20 hover:border-white/30"
                             >
                               {city}
                             </span>
@@ -361,9 +361,9 @@ export default function Services() {
         </div>
 
         {/* =====================================================
-            OTHER SERVICES
+            OTHER SERVICES - Grid Cards
         ===================================================== */}
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
 
           {SERVICE_DETAILS.filter(
             (service) => !service.featured
@@ -373,82 +373,85 @@ export default function Services() {
             return (
               <article
                 key={service.title}
-                className="group relative overflow-hidden rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_7px_25px_rgba(15,23,42,.045)] transition-all duration-300 hover:-translate-y-1 hover:border-slate-300 hover:shadow-[0_18px_40px_rgba(15,23,42,.10)]"
+                className="group relative overflow-hidden rounded-[32px] border border-slate-200 bg-white p-8 shadow-[0_10px_30px_rgba(15,23,42,.05)] transition-all duration-500 hover:-translate-y-2 hover:border-slate-300 hover:shadow-[0_25px_50px_rgba(15,23,42,.12)]"
               >
 
-                {/* Card number */}
-                <span className="absolute right-5 top-5 text-5xl font-black tracking-tighter text-slate-100 transition group-hover:text-slate-200">
+                {/* Card number watermark */}
+                <span className="absolute right-6 top-6 text-7xl font-black tracking-tighter text-slate-50 transition-colors duration-500 group-hover:text-slate-100 select-none pointer-events-none">
                   {String(index + 2).padStart(2, "0")}
                 </span>
 
-                {/* Icon */}
-                <div
-                  className={`relative flex h-[64px] w-[64px] items-center justify-center rounded-[20px] ${colors.icon} transition-transform duration-300 group-hover:scale-105`}
-                >
-                  <Icon
-                    name={service.icon as any}
-                    size={29}
-                    strokeWidth={2}
-                  />
-                </div>
+                {/* Content */}
+                <div className="relative z-10">
+                  {/* Icon */}
+                  <div
+                    className={`flex h-[80px] w-[80px] items-center justify-center rounded-[24px] ${colors.icon} shadow-sm transition-all duration-500 group-hover:scale-110 group-hover:shadow-md`}
+                  >
+                    <Icon
+                      name={service.icon as any}
+                      size={36}
+                      strokeWidth={1.8}
+                    />
+                  </div>
 
-                {/* Eyebrow */}
-                <span
-                  className={`mt-5 inline-flex rounded-full px-2.5 py-1.5 text-[8px] font-black uppercase tracking-[.16em] ${colors.badge}`}
-                >
-                  {service.eyebrow}
-                </span>
+                  {/* Eyebrow */}
+                  <span
+                    className={`mt-8 inline-flex rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[.16em] shadow-sm ${colors.badge}`}
+                  >
+                    {service.eyebrow}
+                  </span>
 
-                {/* Title */}
-                <h3 className="mt-3 text-xl font-black leading-tight tracking-tight text-slate-950">
-                  {service.title}
-                </h3>
+                  {/* Title */}
+                  <h3 className="mt-4 text-2xl sm:text-3xl font-black leading-tight tracking-tight text-slate-900 group-hover:text-slate-800 transition-colors">
+                    {service.title}
+                  </h3>
 
-                {/* SEO title */}
-                <p className="mt-1 text-[11px] font-bold text-amber-600">
-                  {service.seoTitle}
-                </p>
+                  {/* SEO title */}
+                  <p className={`mt-2 text-sm font-bold ${colors.icon.split(' ')[1]}`}>
+                    {service.seoTitle}
+                  </p>
 
-                {/* Description */}
-                <p className="mt-3 text-[12px] leading-5 text-slate-500">
-                  {service.description}
-                </p>
+                  {/* Description */}
+                  <p className="mt-4 text-sm sm:text-base leading-relaxed text-slate-600">
+                    {service.description}
+                  </p>
 
-                {/* Benefits */}
-                <div className="mt-5 space-y-2 border-t border-slate-100 pt-4">
-                  {service.benefits.map((benefit) => (
-                    <div
-                      key={benefit}
-                      className="flex items-center gap-2 text-[10px] font-bold text-slate-600"
+                  {/* Benefits */}
+                  <div className="mt-6 space-y-3 border-t border-slate-100 pt-6">
+                    {service.benefits.map((benefit) => (
+                      <div
+                        key={benefit}
+                        className="flex items-center gap-3 text-sm font-bold text-slate-700"
+                      >
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] text-emerald-600 shadow-inner">
+                          {/* Replaced Icon with SVG Check */}
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" /></svg>
+                        </span>
+                        {benefit}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="mt-8 grid grid-cols-[1fr_auto] gap-3">
+                    <a
+                      href={service.href}
+                      className={`flex items-center justify-center gap-2 rounded-2xl px-6 py-4 text-xs font-black uppercase tracking-wider shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md active:scale-95 ${colors.button}`}
                     >
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[9px] text-emerald-600">
-                        ✓
+                      Explore Service
+                      <Icon name="arrow" size={16} />
+                    </a>
+
+                    <a
+                      href={`tel:${PHONE}`}
+                      aria-label={`Call for ${service.title}`}
+                      className="group/call flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-600 hover:shadow-md active:scale-95"
+                    >
+                      <span className="transition-transform group-hover/call:scale-110">
+                        <Icon name="phone" size={20} />
                       </span>
-
-                      {benefit}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Buttons */}
-                <div className="mt-5 grid grid-cols-[1fr_auto] gap-2">
-
-                  <a
-                    href={service.href}
-                    className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-3 text-[9px] font-black uppercase tracking-wider text-white transition ${colors.button}`}
-                  >
-                    Explore Service
-                    <Icon name="arrow" size={13} />
-                  </a>
-
-                  <a
-                    href={`tel:${PHONE}`}
-                    aria-label={`Call for ${service.title}`}
-                    className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-600"
-                  >
-                    <Icon name="phone" size={15} />
-                  </a>
-
+                    </a>
+                  </div>
                 </div>
               </article>
             );
@@ -458,69 +461,45 @@ export default function Services() {
         {/* =====================================================
             SEO CONTENT + CTA
         ===================================================== */}
-        <div className="mt-10 grid gap-5 lg:grid-cols-[1.35fr_.65fr]">
+        <div className="mt-14 grid gap-8 lg:grid-cols-[1.3fr_0.7fr]">
 
-          {/* SEO TEXT */}
-          <div className="rounded-[26px] border border-slate-200 bg-white p-6 sm:p-8">
+          {/* SEO TEXT - Clean White Card */}
+          <div className="rounded-[32px] border border-slate-200 bg-white p-8 sm:p-12 shadow-[0_10px_30px_rgba(15,23,42,.03)]">
 
-            <span className="text-[9px] font-black uppercase tracking-[.2em] text-amber-600">
+            <span className="text-xs sm:text-sm font-black uppercase tracking-[0.2em] text-amber-600">
               Local & Outstation Cab Service
             </span>
 
-            <h3 className="mt-3 text-2xl font-black leading-tight tracking-tight text-slate-950 sm:text-3xl">
+            <h3 className="mt-4 text-3xl font-black leading-tight tracking-tight text-slate-900 sm:text-4xl lg:text-5xl">
               Cab Services Designed for
               <span className="text-amber-500">
                 {" "}Chhattisgarh Travellers
               </span>
             </h3>
 
-            <p className="mt-4 text-[12px] leading-6 text-slate-500 sm:text-sm sm:leading-7">
-              Khatu Rides Travels offers cab services for local and outstation
-              travel across Chhattisgarh. Whether you are searching for a
-              reliable{" "}
-              <strong className="font-black text-slate-700">
-                Raipur cab service
-              </strong>
-              ,{" "}
-              <strong className="font-black text-slate-700">
-                Bilaspur taxi
-              </strong>
-              ,{" "}
-              <strong className="font-black text-slate-700">
-                Korba cab
-              </strong>
-              ,{" "}
-              <strong className="font-black text-slate-700">
-                Durg or Bhilai cab service
-              </strong>
-              , we provide practical travel options for different journey
-              requirements.
-            </p>
+            <div className="mt-6 space-y-5">
+              <p className="text-base leading-relaxed text-slate-600 sm:text-lg">
+                Khatu Rides Travels offers premium cab services for local and outstation travel across Chhattisgarh. Whether you are searching for a reliable{" "}
+                <strong className="font-black text-slate-800">Raipur cab service</strong>,{" "}
+                <strong className="font-black text-slate-800">Bilaspur taxi</strong>,{" "}
+                <strong className="font-black text-slate-800">Korba cab</strong>, or{" "}
+                <strong className="font-black text-slate-800">Durg/Bhilai cab service</strong>, 
+                we provide practical and comfortable travel options for all journey requirements.
+              </p>
 
-            <p className="mt-3 text-[12px] leading-6 text-slate-500 sm:text-sm sm:leading-7">
-              Our services also cover{" "}
-              <strong className="font-black text-slate-700">
-                Raipur Airport taxi
-              </strong>
-              , one-way cabs, round-trip taxis, local rentals, outstation
-              journeys and spiritual travel to popular destinations such as
-              Khatu Shyam, Ujjain, Ayodhya, Prayagraj, Varanasi and Puri.
-            </p>
+              <p className="text-base leading-relaxed text-slate-600 sm:text-lg">
+                Our extensive services also cover <strong className="font-black text-slate-800">Raipur Airport taxi</strong>, one-way cabs, round-trip taxis, local city rentals, outstation journeys, and spiritual travel to popular destinations such as Khatu Shyam, Ujjain, Ayodhya, Prayagraj, Varanasi and Puri.
+              </p>
+            </div>
 
-            <div className="mt-5 flex flex-wrap gap-2">
+            <div className="mt-8 flex flex-wrap gap-3">
               {[
-                "Raipur Cab",
-                "Bilaspur Taxi",
-                "Korba Cab",
-                "Durg Taxi",
-                "Bhilai Cab",
-                "Airport Taxi",
-                "One Way Cab",
-                "Outstation Taxi",
+                "Raipur Cab", "Bilaspur Taxi", "Korba Cab", "Durg Taxi", 
+                "Bhilai Cab", "Airport Taxi", "One Way Cab", "Outstation Taxi",
               ].map((keyword) => (
                 <span
                   key={keyword}
-                  className="rounded-full bg-slate-50 px-3 py-2 text-[9px] font-bold text-slate-500"
+                  className="rounded-full border border-slate-100 bg-slate-50 px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100 cursor-default"
                 >
                   {keyword}
                 </span>
@@ -528,36 +507,37 @@ export default function Services() {
             </div>
           </div>
 
-          {/* QUICK CTA */}
-          <div className="relative overflow-hidden rounded-[26px] bg-[#061B32] p-6 text-white sm:p-8">
+          {/* QUICK CTA - Deep App Card */}
+          <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#061B32] to-[#0A3555] p-8 text-white shadow-2xl sm:p-12">
 
-            <div className="absolute right-[-60px] top-[-60px] h-48 w-48 rounded-full bg-amber-400/15 blur-3xl" />
+            <div className="absolute right-[-20%] top-[-20%] h-[300px] w-[300px] rounded-full bg-amber-400/20 blur-[80px]" />
 
-            <div className="relative">
+            <div className="relative z-10 flex h-full flex-col justify-center">
 
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400 text-slate-950">
-                <Icon name="phone" size={22} />
+              <div className="flex h-16 w-16 items-center justify-center rounded-[24px] bg-gradient-to-br from-amber-400 to-amber-500 text-slate-900 shadow-[0_10px_20px_rgba(251,191,36,0.3)]">
+                <Icon name="phone" size={28} />
               </div>
 
-              <h3 className="mt-5 text-2xl font-black leading-tight">
+              <h3 className="mt-8 text-3xl sm:text-4xl font-black leading-tight tracking-tight">
                 Not Sure Which
-                <span className="block text-amber-300">
+                <span className="block mt-1 text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-amber-500">
                   Cab You Need?
                 </span>
               </h3>
 
-              <p className="mt-3 text-[11px] leading-5 text-white/55">
-                Tell us your route, date and travel requirement. Our team can
-                help you choose a suitable vehicle and service.
+              <p className="mt-4 text-sm sm:text-base leading-relaxed text-white/70">
+                Tell us your route, date and travel requirement. Our team will help you choose the most suitable vehicle and service plan.
               </p>
 
-              <div className="mt-6 grid gap-2">
+              <div className="mt-8 flex flex-col gap-4">
 
                 <a
                   href={`tel:${PHONE}`}
-                  className="flex items-center justify-center gap-2 rounded-xl bg-amber-400 py-3.5 text-[10px] font-black uppercase tracking-wider text-slate-950 transition hover:bg-amber-300"
+                  className="group flex items-center justify-center gap-3 rounded-2xl bg-amber-400 py-5 text-sm sm:text-base font-black uppercase tracking-widest text-slate-900 shadow-[0_10px_30px_rgba(251,191,36,0.2)] transition-all duration-300 hover:-translate-y-1 hover:bg-amber-300 hover:shadow-[0_15px_40px_rgba(251,191,36,0.3)] active:scale-95"
                 >
-                  <Icon name="phone" size={15} />
+                  <span className="transition-transform group-hover:scale-110">
+                    <Icon name="phone" size={20} />
+                  </span>
                   Call {PHONE.replace("+91", "")}
                 </a>
 
@@ -565,17 +545,21 @@ export default function Services() {
                   href={`https://wa.me/${WHATSAPP}?text=Hello%20Khatu%20Rides%2C%20I%20need%20help%20choosing%20a%20cab.`}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 py-3.5 text-[10px] font-black uppercase tracking-wider text-white transition hover:bg-white/10"
+                  className="group flex items-center justify-center gap-3 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md py-5 text-sm sm:text-base font-black uppercase tracking-widest text-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:bg-white/20 hover:border-white/30 active:scale-95"
                 >
-                  <Icon name="whatsapp" size={16} />
+                  <span className="transition-transform group-hover:scale-110">
+                    <Icon name="whatsapp" size={22} />
+                  </span>
                   Ask on WhatsApp
                 </a>
 
               </div>
 
-              <div className="mt-5 flex items-center justify-center gap-2 border-t border-white/10 pt-4 text-[9px] font-bold text-white/40">
-                <Icon name="clock" size={13} />
-                24×7 Customer Support
+              <div className="mt-8 flex items-center justify-center gap-2 border-t border-white/10 pt-6 text-xs sm:text-sm font-bold text-white/60">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/10">
+                  <Icon name="clock" size={12} />
+                </span>
+                24×7 Customer Support Available
               </div>
 
             </div>

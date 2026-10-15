@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { PHONE, PHONE_DISPLAY, WHATSAPP } from "./data";
 import Icon from "./Icons";
@@ -12,6 +12,142 @@ export default function Hero() {
   const [mobile, setMobile] = useState("");
   const [pickup, setPickup] = useState("");
   const [drop, setDrop] = useState("");
+
+  // Reuse the same places-autocomplete API and behaviour as FareCalculator.
+  const [pickupSuggestions, setPickupSuggestions] = useState<string[]>([]);
+  const [dropSuggestions, setDropSuggestions] = useState<string[]>([]);
+  const [showPickupSuggestions, setShowPickupSuggestions] = useState(false);
+  const [showDropSuggestions, setShowDropSuggestions] = useState(false);
+  const pickupAbortRef = useRef<AbortController | null>(null);
+  const dropAbortRef = useRef<AbortController | null>(null);
+  const pickupRequestRef = useRef(0);
+  const dropRequestRef = useRef(0);
+  const pickupSelectedRef = useRef(false);
+  const dropSelectedRef = useRef(false);
+  const pickupFieldRef = useRef<HTMLDivElement>(null);
+  const dropFieldRef = useRef<HTMLDivElement>(null);
+
+  const MIN_AUTOCOMPLETE_CHARS = 3;
+  const DEBOUNCE_MS = 350;
+  const sanitizeSuggestions = (input: unknown): string[] => {
+    if (!Array.isArray(input)) return [];
+    return Array.from(new Set(input.map((item: any) =>
+      typeof item === "string" ? item.trim() : String(item?.description || item?.formatted_address || "").trim()
+    ).filter(Boolean))).slice(0, 6);
+  };
+
+  useEffect(() => {
+    const value = pickup.trim();
+    const requestId = ++pickupRequestRef.current;
+    pickupAbortRef.current?.abort();
+    pickupAbortRef.current = null;
+
+    if (pickupSelectedRef.current) {
+      pickupSelectedRef.current = false;
+      setPickupSuggestions([]);
+      setShowPickupSuggestions(false);
+      return;
+    }
+    if (value.length < MIN_AUTOCOMPLETE_CHARS) {
+      setPickupSuggestions([]);
+      setShowPickupSuggestions(false);
+      return;
+    }
+
+    const timer = window.setTimeout(async () => {
+      const controller = new AbortController();
+      pickupAbortRef.current = controller;
+      try {
+        const response = await fetch(`/api/places-autocomplete?input=${encodeURIComponent(value)}`, {
+          signal: controller.signal, cache: "no-store", headers: { Accept: "application/json" },
+        });
+        const raw = await response.text();
+        if (!response.ok || requestId !== pickupRequestRef.current) return;
+        let data: any;
+        try { data = JSON.parse(raw); } catch { return; }
+        if (requestId !== pickupRequestRef.current) return;
+        const results = sanitizeSuggestions(data?.predictions ?? data?.results);
+        setPickupSuggestions(results);
+        setShowPickupSuggestions(results.length > 0);
+      } catch (error: any) {
+        if (error?.name !== "AbortError") console.error("Hero pickup autocomplete error:", error);
+      }
+    }, DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [pickup]);
+
+  useEffect(() => {
+    const value = drop.trim();
+    const requestId = ++dropRequestRef.current;
+    dropAbortRef.current?.abort();
+    dropAbortRef.current = null;
+
+    if (dropSelectedRef.current) {
+      dropSelectedRef.current = false;
+      setDropSuggestions([]);
+      setShowDropSuggestions(false);
+      return;
+    }
+    if (value.length < MIN_AUTOCOMPLETE_CHARS) {
+      setDropSuggestions([]);
+      setShowDropSuggestions(false);
+      return;
+    }
+
+    const timer = window.setTimeout(async () => {
+      const controller = new AbortController();
+      dropAbortRef.current = controller;
+      try {
+        const response = await fetch(`/api/places-autocomplete?input=${encodeURIComponent(value)}`, {
+          signal: controller.signal, cache: "no-store", headers: { Accept: "application/json" },
+        });
+        const raw = await response.text();
+        if (!response.ok || requestId !== dropRequestRef.current) return;
+        let data: any;
+        try { data = JSON.parse(raw); } catch { return; }
+        if (requestId !== dropRequestRef.current) return;
+        const results = sanitizeSuggestions(data?.predictions ?? data?.results);
+        setDropSuggestions(results);
+        setShowDropSuggestions(results.length > 0);
+      } catch (error: any) {
+        if (error?.name !== "AbortError") console.error("Hero drop autocomplete error:", error);
+      }
+    }, DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [drop]);
+
+  useEffect(() => {
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (pickupFieldRef.current && !pickupFieldRef.current.contains(target)) setShowPickupSuggestions(false);
+      if (dropFieldRef.current && !dropFieldRef.current.contains(target)) setShowDropSuggestions(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, []);
+
+  useEffect(() => () => {
+    pickupAbortRef.current?.abort();
+    dropAbortRef.current?.abort();
+  }, []);
+
+  const selectPickupSuggestion = (value: string) => {
+    pickupSelectedRef.current = true;
+    pickupRequestRef.current += 1;
+    pickupAbortRef.current?.abort();
+    setPickup(value);
+    setPickupSuggestions([]);
+    setShowPickupSuggestions(false);
+  };
+
+  const selectDropSuggestion = (value: string) => {
+    dropSelectedRef.current = true;
+    dropRequestRef.current += 1;
+    dropAbortRef.current?.abort();
+    setDrop(value);
+    setDropSuggestions([]);
+    setShowDropSuggestions(false);
+  };
   const [travelDate, setTravelDate] = useState("");
   const [car, setCar] = useState("Ertiga (6-seater)");
   const [note, setNote] = useState("");
@@ -267,28 +403,56 @@ export default function Hero() {
                       />
                     </div>
 
-                    <div className="relative col-span-2 sm:col-span-1">
+                    <div className="relative col-span-2 sm:col-span-1" ref={pickupFieldRef}>
                       <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Pickup</label>
-                      <input 
-                        type="text" 
-                        placeholder="e.g. Korba" 
+                      <input
+                        type="text"
+                        placeholder="e.g. Korba"
                         required
+                        autoComplete="off"
+                        role="combobox"
+                        aria-autocomplete="list"
+                        aria-expanded={showPickupSuggestions && pickupSuggestions.length > 0}
                         value={pickup}
-                        onChange={(e) => setPickup(e.target.value)}
+                        onFocus={() => { if (pickupSuggestions.length > 0) setShowPickupSuggestions(true); }}
+                        onChange={(e) => { pickupSelectedRef.current = false; setPickup(e.target.value); if (e.target.value.trim().length < MIN_AUTOCOMPLETE_CHARS) setShowPickupSuggestions(false); }}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"
                       />
+                      {showPickupSuggestions && pickupSuggestions.length > 0 && (
+                        <ul role="listbox" className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1 shadow-xl">
+                          {pickupSuggestions.map((suggestion, index) => (
+                            <li key={`${suggestion}-${index}`}>
+                              <button type="button" role="option" aria-selected={false} onClick={() => selectPickupSuggestion(suggestion)} className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-amber-50 hover:text-slate-900 focus:bg-amber-50 focus:outline-none">{suggestion}</button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                     
-                    <div className="relative col-span-2 sm:col-span-1">
+                    <div className="relative col-span-2 sm:col-span-1" ref={dropFieldRef}>
                       <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Drop</label>
-                      <input 
-                        type="text" 
-                        placeholder="e.g. Bilaspur" 
+                      <input
+                        type="text"
+                        placeholder="e.g. Bilaspur"
                         required
+                        autoComplete="off"
+                        role="combobox"
+                        aria-autocomplete="list"
+                        aria-expanded={showDropSuggestions && dropSuggestions.length > 0}
                         value={drop}
-                        onChange={(e) => setDrop(e.target.value)}
+                        onFocus={() => { if (dropSuggestions.length > 0) setShowDropSuggestions(true); }}
+                        onChange={(e) => { dropSelectedRef.current = false; setDrop(e.target.value); if (e.target.value.trim().length < MIN_AUTOCOMPLETE_CHARS) setShowDropSuggestions(false); }}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"
                       />
+                      {showDropSuggestions && dropSuggestions.length > 0 && (
+                        <ul role="listbox" className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1 shadow-xl">
+                          {dropSuggestions.map((suggestion, index) => (
+                            <li key={`${suggestion}-${index}`}>
+                              <button type="button" role="option" aria-selected={false} onClick={() => selectDropSuggestion(suggestion)} className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-amber-50 hover:text-slate-900 focus:bg-amber-50 focus:outline-none">{suggestion}</button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
 
                     <div className="relative col-span-2 sm:col-span-1">
