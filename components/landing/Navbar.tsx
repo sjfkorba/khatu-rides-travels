@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Calculator, ChevronRight, Phone } from "lucide-react";
@@ -37,14 +38,20 @@ function WhatsAppIcon({ className = "h-5 w-5" }: { className?: string }) {
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+
+  const isActiveLink = (href: string) => {
+    if (href === "/") return pathname === "/";
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
 
   const closeMenu = () => {
     setOpen(false);
   };
 
   return (
-    <header className="sticky top-0 z-[100] border-b border-slate-200 bg-white shadow-[0_5px_24px_rgba(7,26,58,0.10)]">
-      <div className="mx-auto flex h-[68px] max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:h-[76px] lg:px-8">
+    <header className="sticky top-0 z-[100] border-b border-white/10 bg-[#010614]/80 backdrop-blur-xl supports-[backdrop-filter]:bg-[#010614]/60 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+      <div className="mx-auto flex h-[72px] max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:h-[84px] lg:px-8">
         {/* =========================================================
             BRAND LOGO
         ========================================================= */}
@@ -52,8 +59,9 @@ export default function Navbar() {
           href="/"
           onClick={closeMenu}
           aria-label="Khatu Rides Travels Co. Home"
-          className="flex shrink-0 items-center"
+          className="flex shrink-0 items-center drop-shadow-lg"
         >
+          {/* Note: Ensure your nav_logo.png is visible on dark backgrounds, or use a white/transparent variant here */}
           <Image
             src="/nav_logo.png"
             alt="Khatu Rides Travels Co."
@@ -67,19 +75,23 @@ export default function Navbar() {
         {/* =========================================================
             DESKTOP NAVIGATION
         ========================================================= */}
-        <nav className="hidden items-center gap-0.5 xl:flex">
+        <nav className="hidden items-center gap-1 xl:flex">
           {links.map((link) => {
             const isCalculator = link.href === "/fare-calculator";
+            const isActive = isActiveLink(link.href);
 
             return (
               <Link
                 key={link.href}
                 href={link.href}
+                aria-current={isActive ? "page" : undefined}
                 className={[
-                  "group relative flex items-center gap-1.5 rounded-[11px] px-3 py-2.5 text-[11px] font-black tracking-wide transition-all duration-200",
-                  isCalculator
-                    ? "ml-1 bg-[#F5C400] text-[#071A3A] shadow-[0_7px_18px_rgba(245,196,0,0.28)] hover:-translate-y-0.5 hover:bg-[#FFD21A] hover:shadow-[0_10px_24px_rgba(245,196,0,0.36)]"
-                    : "text-[#26364D] hover:bg-[#071A3A] hover:text-white",
+                  "group relative flex items-center gap-1.5 rounded-xl px-3.5 py-2.5 text-[11px] font-bold uppercase tracking-widest transition-all duration-300",
+                  isActive
+                    ? "kr-nav-active ml-0 bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-500 text-slate-950 ring-1 ring-yellow-200/70 shadow-[0_5px_18px_rgba(250,204,21,0.35)] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(250,204,21,0.5)]"
+                    : isCalculator
+                      ? "ml-2 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 shadow-[0_4px_15px_rgba(245,158,11,0.4)] hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(245,158,11,0.6)]"
+                      : "text-slate-300 hover:bg-white/10 hover:text-white",
                 ].join(" ")}
               >
                 {isCalculator && (
@@ -97,6 +109,12 @@ export default function Navbar() {
                     strokeWidth={2.8}
                   />
                 )}
+                {isActive && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute -bottom-1 left-1/2 h-1 w-5 -translate-x-1/2 rounded-full bg-yellow-200 shadow-[0_0_10px_rgba(253,224,71,0.9)]"
+                  />
+                )}
               </Link>
             );
           })}
@@ -105,36 +123,36 @@ export default function Navbar() {
         {/* =========================================================
             DESKTOP CTA
         ========================================================= */}
-        <div className="hidden items-center gap-2 lg:flex">
-          {/* WhatsApp */}
+        <div className="hidden items-center gap-3 lg:flex">
+          {/* WhatsApp - Premium Dark Variant */}
           <a
             href={WHATSAPP_URL}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Chat with Khatu Rides Travels on WhatsApp"
-            className="group flex h-11 items-center gap-2 rounded-xl bg-[#18C964] px-4 text-[11px] font-black uppercase tracking-wide text-white shadow-[0_8px_20px_rgba(24,201,100,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#12B457] hover:shadow-[0_12px_28px_rgba(24,201,100,0.32)]"
+            className="group flex h-[42px] items-center gap-2 rounded-xl border border-[#25D366]/30 bg-[#25D366]/10 px-4 text-[11px] font-bold uppercase tracking-widest text-[#25D366] shadow-[0_0_15px_rgba(37,211,102,0.1)] backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-[#25D366]/60 hover:bg-[#25D366]/20 hover:text-[#25D366] hover:shadow-[0_0_25px_rgba(37,211,102,0.25)]"
           >
-            <WhatsAppIcon className="h-[19px] w-[19px] transition-transform duration-200 group-hover:scale-110" />
+            <WhatsAppIcon className="h-[18px] w-[18px] transition-transform duration-300 group-hover:scale-110" />
             WhatsApp
           </a>
 
-          {/* Call */}
+          {/* Call - High Contrast White Variant */}
           <a
             href={`tel:${PHONE}`}
             aria-label={`Call Khatu Rides Travels at ${PHONE_DISPLAY}`}
             onClick={(e) => {
-    e.preventDefault();
-    const telUrl = `tel:${PHONE}`;
-    if (typeof window !== "undefined" && typeof (window as any).gtag_report_conversion === "function") {
-      (window as any).gtag_report_conversion(telUrl);
-    } else {
-      window.location.href = telUrl;
-    }
-  }}
-            className="group flex h-11 items-center gap-2 rounded-xl bg-[#063B8F] px-5 text-[11px] font-black uppercase tracking-wide text-white shadow-[0_9px_22px_rgba(6,59,143,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#052F73] hover:shadow-[0_12px_28px_rgba(6,59,143,0.34)]"
+              e.preventDefault();
+              const telUrl = `tel:${PHONE}`;
+              if (typeof window !== "undefined" && typeof (window as any).gtag_report_conversion === "function") {
+                (window as any).gtag_report_conversion(telUrl);
+              } else {
+                window.location.href = telUrl;
+              }
+            }}
+            className="group flex h-[42px] items-center gap-2 rounded-xl bg-white px-5 text-[11px] font-extrabold uppercase tracking-widest text-slate-950 shadow-[0_0_20px_rgba(255,255,255,0.15)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-100 hover:shadow-[0_0_25px_rgba(255,255,255,0.3)]"
           >
             <Phone
-              className="h-4 w-4 transition-transform duration-200 group-hover:scale-110"
+              className="h-3.5 w-3.5 transition-transform duration-300 group-hover:scale-110"
               strokeWidth={2.8}
             />
             Call Now
@@ -144,49 +162,43 @@ export default function Navbar() {
         {/* =========================================================
             MOBILE ACTIONS
         ========================================================= */}
-        <div className="flex items-center gap-2 lg:hidden">
+        <div className="flex items-center gap-3 lg:hidden">
           {/* Call */}
           <a
             href={`tel:${PHONE}`}
             aria-label={`Call Khatu Rides Travels at ${PHONE_DISPLAY}`}
-            className="flex h-10 items-center gap-1.5 rounded-xl bg-[#063B8F] px-3.5 text-[10px] font-black uppercase tracking-wide text-white shadow-[0_7px_18px_rgba(6,59,143,0.24)] transition active:scale-95"
+            className="flex h-9 items-center gap-1.5 rounded-lg bg-white px-3.5 text-[10px] font-extrabold uppercase tracking-widest text-slate-950 shadow-[0_4px_10px_rgba(255,255,255,0.1)] transition active:scale-95"
           >
             <Phone
-              className="h-4 w-4"
+              className="h-3.5 w-3.5"
               strokeWidth={2.8}
             />
             Call
           </a>
 
-          {/* Menu */}
+          {/* Menu Toggle */}
           <button
             type="button"
             aria-label={open ? "Close navigation menu" : "Open navigation menu"}
             aria-expanded={open}
             onClick={() => setOpen((value) => !value)}
             className={[
-              "flex h-10 w-10 items-center justify-center rounded-xl border-2 transition-all duration-200 active:scale-95",
+              "flex h-9 w-9 items-center justify-center rounded-lg border transition-all duration-300 active:scale-95",
               open
-                ? "border-[#071A3A] bg-[#071A3A] shadow-[0_7px_18px_rgba(7,26,58,0.20)]"
-                : "border-[#F5C400] bg-[#F5C400] shadow-[0_7px_18px_rgba(245,196,0,0.26)]",
+                ? "border-white/20 bg-white/10 text-white shadow-inner"
+                : "border-amber-400/50 bg-amber-400/10 text-amber-400",
             ].join(" ")}
           >
             {open ? (
-              <span
-                className="relative block h-5 w-5"
-                aria-hidden="true"
-              >
-                <span className="absolute left-1/2 top-1/2 h-[2.5px] w-5 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-full bg-white" />
-                <span className="absolute left-1/2 top-1/2 h-[2.5px] w-5 -translate-x-1/2 -translate-y-1/2 -rotate-45 rounded-full bg-white" />
+              <span className="relative block h-4 w-4" aria-hidden="true">
+                <span className="absolute left-1/2 top-1/2 h-[2px] w-4 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-full bg-current transition-all" />
+                <span className="absolute left-1/2 top-1/2 h-[2px] w-4 -translate-x-1/2 -translate-y-1/2 -rotate-45 rounded-full bg-current transition-all" />
               </span>
             ) : (
-              <span
-                className="flex w-5 flex-col gap-[4px]"
-                aria-hidden="true"
-              >
-                <span className="h-[2.5px] w-5 rounded-full bg-[#071A3A]" />
-                <span className="h-[2.5px] w-5 rounded-full bg-[#071A3A]" />
-                <span className="h-[2.5px] w-5 rounded-full bg-[#071A3A]" />
+              <span className="flex w-4 flex-col gap-[3.5px]" aria-hidden="true">
+                <span className="h-[2px] w-4 rounded-full bg-current" />
+                <span className="h-[2px] w-4 rounded-full bg-current" />
+                <span className="h-[2px] w-4 rounded-full bg-current" />
               </span>
             )}
           </button>
@@ -197,25 +209,29 @@ export default function Navbar() {
           MOBILE MENU
       ========================================================= */}
       {open && (
-        <div className="border-t border-slate-200 bg-white shadow-[0_18px_34px_rgba(7,26,58,0.12)] lg:hidden">
-          <nav className="mx-auto max-w-[1440px] px-4 py-3 sm:px-6">
+        <div className="absolute top-full left-0 w-full border-b border-white/10 bg-[#010614]/95 backdrop-blur-2xl shadow-[0_20px_40px_rgba(0,0,0,0.7)] lg:hidden">
+          <nav className="mx-auto max-w-[1440px] px-4 py-4 sm:px-6">
             <div className="grid gap-1.5">
               {links.map((link) => {
                 const isCalculator = link.href === "/fare-calculator";
+                const isActive = isActiveLink(link.href);
 
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
                     onClick={closeMenu}
+                    aria-current={isActive ? "page" : undefined}
                     className={[
-                      "flex min-h-12 items-center justify-between rounded-xl px-4 text-[12px] font-black uppercase tracking-wide transition-all duration-200",
-                      isCalculator
-                        ? "bg-[#F5C400] text-[#071A3A] shadow-[0_6px_16px_rgba(245,196,0,0.22)]"
-                        : "text-[#26364D] hover:bg-[#071A3A] hover:text-white",
+                      "relative flex min-h-[48px] items-center justify-between rounded-xl px-4 text-[11px] font-bold uppercase tracking-widest transition-all duration-300",
+                      isActive
+                        ? "bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 text-slate-950 ring-1 ring-yellow-200/70 shadow-[0_5px_18px_rgba(250,204,21,0.25)]"
+                        : isCalculator
+                          ? "mt-2 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 shadow-[0_4px_15px_rgba(245,158,11,0.3)]"
+                          : "text-slate-300 hover:bg-white/10 hover:text-white",
                     ].join(" ")}
                   >
-                    <span className="flex items-center gap-2">
+                    <span className="flex items-center gap-2.5">
                       {isCalculator && (
                         <Calculator
                           className="h-4 w-4"
@@ -229,9 +245,7 @@ export default function Navbar() {
                     <ChevronRight
                       className={[
                         "h-4 w-4",
-                        isCalculator
-                          ? "text-[#071A3A]"
-                          : "text-slate-400",
+                        isActive || isCalculator ? "text-slate-950" : "text-slate-500",
                       ].join(" ")}
                       strokeWidth={2.7}
                     />
@@ -241,25 +255,25 @@ export default function Navbar() {
             </div>
 
             {/* Mobile CTA */}
-            <div className="mt-3 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3">
+            <div className="mt-5 grid grid-cols-2 gap-3 border-t border-white/10 pt-5">
               <a
                 href={WHATSAPP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Chat with Khatu Rides Travels on WhatsApp"
-                className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#18C964] px-3 text-[10px] font-black uppercase tracking-wide text-white shadow-[0_8px_20px_rgba(24,201,100,0.22)] transition active:scale-[0.98]"
+                className="flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-[#25D366]/30 bg-[#25D366]/10 px-3 text-[10px] font-bold uppercase tracking-widest text-[#25D366] transition active:scale-[0.98]"
               >
-                <WhatsAppIcon className="h-5 w-5" />
+                <WhatsAppIcon className="h-[18px] w-[18px]" />
                 WhatsApp
               </a>
 
               <a
                 href={`tel:${PHONE}`}
                 onClick={closeMenu}
-                className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#063B8F] px-3 text-[10px] font-black uppercase tracking-wide text-white shadow-[0_8px_20px_rgba(6,59,143,0.22)] transition active:scale-[0.98]"
+                className="flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-white px-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-950 shadow-[0_4px_15px_rgba(255,255,255,0.15)] transition active:scale-[0.98]"
               >
                 <Phone
-                  className="h-4 w-4"
+                  className="h-3.5 w-3.5"
                   strokeWidth={2.8}
                 />
                 Call Now

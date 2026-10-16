@@ -214,11 +214,27 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative bg-slate-50 overflow-hidden font-sans pt-4 pb-12 lg:py-12">
+    <section className="relative isolate min-h-[720px] overflow-hidden bg-[#06142d] pt-4 pb-12 font-sans lg:py-12">
+      {/* Cinematic hero background: existing public image, with deep navy overlays */}
+      <div className="absolute inset-0 -z-20 kr-hero-bg-enter">
+        <Image
+          src="/hero/main%20image.png"
+          alt="Khatu Rides premium taxi travel background"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center"
+        />
+      </div>
+      <div className="absolute inset-0 -z-10 bg-[#06142d]/75" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#041027]/95 via-[#071a38]/80 to-[#06142d]/65" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-[#06142d]/60 via-transparent to-[#020817]/90" />
+      <div className="pointer-events-none absolute -left-24 top-1/3 -z-10 h-80 w-80 rounded-full bg-blue-500/20 blur-[120px]" />
+      <div className="pointer-events-none absolute -right-20 bottom-0 -z-10 h-96 w-96 rounded-full bg-amber-400/10 blur-[130px]" />
       {/* -------------------------------------------------------------
           1. TOP HINDI MARQUEE TICKER 
       -------------------------------------------------------------- */}
-      <div className="absolute top-0 w-full bg-slate-900 border-b-4 border-amber-400 z-20">
+      <div className="absolute top-0 z-20 w-full border-b border-amber-400/70 bg-[#041027]/85 shadow-lg shadow-black/20 backdrop-blur-md">
         <div className="flex h-10 items-center overflow-hidden max-w-7xl mx-auto px-4">
           <div className="flex shrink-0 animate-marquee items-center gap-12 text-[13px] font-medium tracking-wide text-white">
             <span className="inline-flex items-center gap-2">
@@ -234,40 +250,40 @@ export default function Hero() {
         </div>
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-4 mt-12 sm:px-6 lg:px-8">
+      <div className="relative mx-auto mt-12 max-w-7xl px-4 sm:px-6 lg:px-8 lg:mt-16">
         <div className="grid items-center gap-10 lg:grid-cols-12">
           
           {/* -------------------------------------------------------------
               LEFT COLUMN: HIGH-IMPACT BUSINESS PITCH & TRUST SIGNALS
           -------------------------------------------------------------- */}
-          <div className="space-y-7 z-10 lg:col-span-7">
+          <div className="z-10 space-y-7 lg:col-span-7 lg:pr-8 kr-hero-left-enter">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-sm font-bold text-amber-800 mb-4 border border-amber-200">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-300/40 bg-white/10 px-4 py-2 text-sm font-bold text-amber-200 shadow-lg shadow-black/10 backdrop-blur-md kr-hero-badge-enter">
                 ⭐ 4.9/5 Top Rated Travel Firm in CG
               </div>
-              <h1 className="text-4xl font-black tracking-tight text-slate-900 sm:text-5xl lg:text-[54px] leading-[1.1]">
+              <h1 className="text-4xl font-black leading-[1.04] tracking-tight text-white drop-shadow-[0_8px_24px_rgba(0,0,0,0.45)] sm:text-5xl lg:text-[64px] xl:text-[72px] kr-hero-title-enter">
                 KHATU RIDES <br />
-                <span className="text-amber-500">TRAVELS CO.</span>
+                <span className="bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-500 bg-clip-text text-transparent">TRAVELS CO.</span>
               </h1>
-              <p className="mt-4 text-lg text-slate-600 font-semibold max-w-lg">
-                Premium Cabs for One-Way, Round Trips & Airport Transfers. <br className="hidden sm:block"/> 
-                <span className="text-slate-900">Zero Hidden Cost. Pay After Drop.</span>
+              <p className="mt-5 max-w-xl text-lg font-medium leading-relaxed text-blue-50/90 sm:text-xl kr-hero-copy-enter">
+                Book reliable cabs across Chhattisgarh for one-way drops, outstation round trips, and seamless airport transfers. Enjoy 100% transparent pricing, doorstep pickup, premium AC vehicles, and verified chauffeurs with instant WhatsApp booking support. <br className="hidden sm:block"/> 
+                <span className="font-bold text-white">Zero Hidden Cost. Pay After Drop.</span>
               </p>
             </div>
 
             {/* Quick Action Buttons (Primary CTAs) */}
-            <div className="flex flex-col sm:flex-row gap-4 pt-2">
+            <div className="flex flex-col sm:flex-row gap-4 pt-2 kr-hero-actions-enter">
               <a
                 href={telUrl}
                 onClick={handleCall}
-                className="group flex flex-1 items-center justify-center gap-3 rounded-xl bg-slate-900 px-6 py-4 font-bold text-white shadow-lg transition-all hover:bg-slate-800 hover:shadow-xl hover:-translate-y-1"
+                className="kr-call-glow group flex flex-1 items-center justify-center gap-3 rounded-2xl border border-yellow-200/90 bg-gradient-to-br from-yellow-300 via-amber-400 to-yellow-500 px-6 py-4 font-bold text-[#07162f] shadow-[0_0_22px_rgba(250,204,21,0.48),0_12px_32px_rgba(234,179,8,0.28)] transition-all duration-300 hover:-translate-y-1 hover:from-yellow-200 hover:via-amber-300 hover:to-yellow-400 hover:shadow-[0_0_34px_rgba(250,204,21,0.72),0_18px_42px_rgba(234,179,8,0.36)]"
               >
-                <div className="bg-white/20 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                <div className="rounded-xl bg-white/55 p-2 text-[#07162f] shadow-inner transition-transform duration-300 group-hover:scale-110">
                   <Icon name="phone" size={24} />
                 </div>
                 <div className="text-left leading-tight">
-                  <span className="block text-[11px] uppercase tracking-wider text-amber-400 font-bold">Call Dispatch Desk</span>
-                  <span className="text-xl tracking-wide">{PHONE_DISPLAY || "Call Us Now"}</span>
+                  <span className="block text-[11px] uppercase tracking-wider text-[#5a3900] font-extrabold">Talk To Our Team</span>
+                  <span className="text-xl tracking-wide text-[#07162f]">{"BOOK VIA CALL"}</span>
                 </div>
               </a>
 
@@ -275,31 +291,31 @@ export default function Hero() {
                 href={`https://wa.me/${WHATSAPP}?text=Hello`}
                 target="_blank"
                 rel="noreferrer"
-                className="group flex flex-1 items-center justify-center gap-3 rounded-xl bg-[#25D366] px-6 py-4 font-bold text-white shadow-lg shadow-green-200 transition-all hover:bg-[#20bd5a] hover:shadow-xl hover:-translate-y-1"
+                className="kr-whatsapp-glow group flex flex-1 items-center justify-center gap-3 rounded-2xl border border-emerald-100 bg-gradient-to-br from-[#b9ffd2] via-[#91f5b7] to-[#70e99c] px-6 py-4 font-bold text-[#063b24] shadow-[0_0_22px_rgba(74,222,128,0.42),0_12px_32px_rgba(34,197,94,0.22)] transition-all duration-300 hover:-translate-y-1 hover:from-[#d0ffe0] hover:via-[#a7f8c3] hover:to-[#83efaa] hover:shadow-[0_0_34px_rgba(74,222,128,0.65),0_18px_42px_rgba(34,197,94,0.32)]"
               >
-                <div className="bg-white/20 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                <div className="rounded-xl bg-white/65 p-2 text-[#087443] shadow-inner transition-transform duration-300 group-hover:scale-110">
                   <Icon name="whatsapp" size={24} />
                 </div>
                 <div className="text-left leading-tight">
-                  <span className="block text-[11px] uppercase tracking-wider text-green-100 font-bold">Fastest Reply</span>
-                  <span className="text-xl tracking-wide">WhatsApp Us</span>
+                  <span className="block text-[11px] uppercase tracking-wider text-[#17633e] font-extrabold">Fastest Reply</span>
+                  <span className="text-xl tracking-wide text-[#063b24]">WHATSAPP US</span>
                 </div>
               </a>
             </div>
 
             {/* Trust Badges - Crucial for Conversion */}
-            <div className="grid grid-cols-3 gap-3 pt-4 border-t border-slate-200 max-w-lg">
-              <div className="flex flex-col items-center justify-center bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center">
+            <div className="grid max-w-xl grid-cols-3 gap-3 border-t border-white/20 pt-5 kr-hero-trust-enter">
+              <div className="kr-trust-item flex flex-col items-center justify-center rounded-2xl border border-white/15 bg-white/[0.09] p-3 text-center shadow-lg shadow-black/10 backdrop-blur-md">
                 <span className="text-2xl mb-1">🛡️</span>
-                <span className="text-xs font-bold text-slate-800">Verified Drivers</span>
+                <span className="text-xs font-bold text-white">Verified Drivers</span>
               </div>
-              <div className="flex flex-col items-center justify-center bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center">
+              <div className="kr-trust-item flex flex-col items-center justify-center rounded-2xl border border-white/15 bg-white/[0.09] p-3 text-center shadow-lg shadow-black/10 backdrop-blur-md">
                 <span className="text-2xl mb-1">₹</span>
-                <span className="text-xs font-bold text-slate-800">No Advance</span>
+                <span className="text-xs font-bold text-white">No Advance</span>
               </div>
-              <div className="flex flex-col items-center justify-center bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center">
+              <div className="kr-trust-item flex flex-col items-center justify-center rounded-2xl border border-white/15 bg-white/[0.09] p-3 text-center shadow-lg shadow-black/10 backdrop-blur-md">
                 <span className="text-2xl mb-1">❄️</span>
-                <span className="text-xs font-bold text-slate-800">Clean AC Cabs</span>
+                <span className="text-xs font-bold text-white">Clean AC Cabs</span>
               </div>
             </div>
           </div>
@@ -307,10 +323,10 @@ export default function Hero() {
           {/* -------------------------------------------------------------
               RIGHT COLUMN: LEAD CAPTURE FORM OR SUCCESS MESSAGE
           -------------------------------------------------------------- */}
-          <div className="lg:col-span-5 z-10 w-full max-w-md mx-auto lg:mx-0">
-            <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
-              <div className="bg-slate-900 p-5 text-center relative overflow-hidden">
-                <div className="absolute inset-0 opacity-20 bg-[url('/pattern.png')] mix-blend-overlay"></div>
+          <div className="lg:col-span-5 z-10 w-full max-w-md mx-auto lg:mx-0 kr-hero-form-enter">
+            <div className="overflow-hidden rounded-[28px] border border-white/70 bg-white shadow-[0_30px_90px_rgba(0,0,0,0.45)] ring-1 ring-black/10 kr-form-shell-enter">
+              <div className="relative overflow-hidden bg-gradient-to-br from-[#06142d] via-[#0b2850] to-[#102f5a] p-5 text-center kr-form-header-enter">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.18),transparent_45%)]"></div>
                 <h3 className="text-xl font-extrabold text-white relative z-10">Get Instant Fare Quote</h3>
                 <p className="text-amber-400 text-sm font-semibold relative z-10 mt-1">100% Assured Cab Availability</p>
               </div>
@@ -337,7 +353,7 @@ export default function Hero() {
                       href={whatsappUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-lg py-3.5 rounded-xl shadow-[0_4px_14px_0_rgba(37,211,102,0.39)] hover:shadow-[0_6px_20px_rgba(37,211,102,0.23)] hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2"
+                      className="kr-whatsapp-glow w-full bg-gradient-to-r from-[#b9ffd2] via-[#91f5b7] to-[#70e99c] text-[#063b24] font-extrabold text-lg py-3.5 rounded-xl border border-emerald-100 shadow-[0_0_20px_rgba(74,222,128,0.4),0_4px_14px_rgba(37,211,102,0.25)] hover:-translate-y-0.5 hover:shadow-[0_0_30px_rgba(74,222,128,0.62),0_8px_22px_rgba(37,211,102,0.3)] transition-all duration-300 flex justify-center items-center gap-2"
                     >
                       Chat on WhatsApp <Icon name="whatsapp" size={20} />
                     </a>
@@ -345,7 +361,7 @@ export default function Hero() {
                     <a
                       href={telUrl}
                       onClick={handleCall}
-                      className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-lg py-3.5 rounded-xl shadow-lg hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2"
+                      className="kr-call-glow w-full bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-500 text-[#07162f] font-extrabold text-lg py-3.5 rounded-xl border border-yellow-200 shadow-[0_0_20px_rgba(250,204,21,0.42),0_4px_14px_rgba(234,179,8,0.25)] hover:-translate-y-0.5 hover:shadow-[0_0_30px_rgba(250,204,21,0.68),0_8px_22px_rgba(234,179,8,0.32)] transition-all duration-300 flex justify-center items-center gap-2"
                     >
                       Call Us Now <Icon name="phone" size={20} />
                     </a>
@@ -360,7 +376,7 @@ export default function Hero() {
                 </div>
               ) : (
                 /* LEAD CAPTURE FORM */
-                <form onSubmit={handleQuickBook} className="p-6 space-y-4">
+                <form onSubmit={handleQuickBook} className="space-y-4 p-5 sm:p-6 kr-form-fields-enter">
                   {/* Trip Type Selector */}
                   <div className="flex bg-slate-100 p-1 rounded-lg mb-4">
                     {["One-Way", "Round Trip", "Airport"].map((type) => (
@@ -388,7 +404,7 @@ export default function Hero() {
                         required
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-900 transition placeholder:text-slate-400 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-400/15"
                       />
                     </div>
                     
@@ -399,7 +415,7 @@ export default function Hero() {
                         required
                         value={mobile}
                         onChange={(e) => setMobile(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-900 transition placeholder:text-slate-400 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-400/15"
                       />
                     </div>
 
@@ -416,7 +432,7 @@ export default function Hero() {
                         value={pickup}
                         onFocus={() => { if (pickupSuggestions.length > 0) setShowPickupSuggestions(true); }}
                         onChange={(e) => { pickupSelectedRef.current = false; setPickup(e.target.value); if (e.target.value.trim().length < MIN_AUTOCOMPLETE_CHARS) setShowPickupSuggestions(false); }}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-900 transition placeholder:text-slate-400 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-400/15"
                       />
                       {showPickupSuggestions && pickupSuggestions.length > 0 && (
                         <ul role="listbox" className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1 shadow-xl">
@@ -442,7 +458,7 @@ export default function Hero() {
                         value={drop}
                         onFocus={() => { if (dropSuggestions.length > 0) setShowDropSuggestions(true); }}
                         onChange={(e) => { dropSelectedRef.current = false; setDrop(e.target.value); if (e.target.value.trim().length < MIN_AUTOCOMPLETE_CHARS) setShowDropSuggestions(false); }}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-900 transition placeholder:text-slate-400 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-400/15"
                       />
                       {showDropSuggestions && dropSuggestions.length > 0 && (
                         <ul role="listbox" className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1 shadow-xl">
@@ -461,7 +477,7 @@ export default function Hero() {
                         type="date" 
                         value={travelDate}
                         onChange={(e) => setTravelDate(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-900 transition placeholder:text-slate-400 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-400/15"
                       />
                     </div>
 
@@ -470,7 +486,7 @@ export default function Hero() {
                       <select 
                         value={car}
                         onChange={(e) => setCar(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-900 transition placeholder:text-slate-400 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-400/15"
                       >
                         <option>Sedan (4-seater)</option>
                         <option>Ertiga (6-seater)</option>
@@ -485,7 +501,7 @@ export default function Hero() {
                         value={note}
                         onChange={(e) => setNote(e.target.value)}
                         placeholder="Any specific requirement?"
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-900 transition placeholder:text-slate-400 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-400/15"
                       />
                     </div>
                   </div>
@@ -506,8 +522,8 @@ export default function Hero() {
       </div>
 
       {/* Decorative Background Elements */}
-      <div className="absolute top-1/2 left-0 -translate-y-1/2 w-64 h-64 bg-amber-300/20 rounded-full blur-[80px] -z-10" />
-      <div className="absolute top-0 right-0 w-96 h-96 bg-blue-400/10 rounded-full blur-[100px] -z-10" />
+      <div className="hidden" />
+      <div className="hidden" />
 
       <style jsx global>{`
         @keyframes marquee {
@@ -519,6 +535,71 @@ export default function Hero() {
         }
         .animate-marquee:hover {
           animation-play-state: paused;
+        }
+        @keyframes krCallGlow {
+          0%, 100% { box-shadow: 0 0 18px rgba(250, 204, 21, 0.38), 0 12px 30px rgba(234, 179, 8, 0.20); }
+          50% { box-shadow: 0 0 30px rgba(250, 204, 21, 0.68), 0 12px 38px rgba(234, 179, 8, 0.34); }
+        }
+        @keyframes krWhatsappGlow {
+          0%, 100% { box-shadow: 0 0 18px rgba(74, 222, 128, 0.32), 0 12px 30px rgba(34, 197, 94, 0.16); }
+          50% { box-shadow: 0 0 30px rgba(74, 222, 128, 0.58), 0 12px 38px rgba(34, 197, 94, 0.28); }
+        }
+        .kr-call-glow { animation: krCallGlow 2.6s ease-in-out infinite; }
+        .kr-whatsapp-glow { animation: krWhatsappGlow 2.8s ease-in-out infinite; }
+        /* Premium, lightweight entrance animations for the hero */
+        @keyframes krHeroFadeUp {
+          from { opacity: 0; transform: translate3d(0, 24px, 0); }
+          to { opacity: 1; transform: translate3d(0, 0, 0); }
+        }
+        @keyframes krHeroSlideLeft {
+          from { opacity: 0; transform: translate3d(-34px, 0, 0); }
+          to { opacity: 1; transform: translate3d(0, 0, 0); }
+        }
+        @keyframes krHeroSlideRight {
+          from { opacity: 0; transform: translate3d(34px, 12px, 0) scale(0.985); }
+          to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+        }
+        @keyframes krHeroBackgroundReveal {
+          from { opacity: 0.55; transform: scale(1.045); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .kr-hero-bg-enter {
+          animation: krHeroBackgroundReveal 1.2s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+        }
+        .kr-hero-left-enter {
+          animation: krHeroSlideLeft 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) 0.08s both;
+        }
+        .kr-hero-badge-enter { animation: krHeroFadeUp 0.55s ease-out 0.2s both; }
+        .kr-hero-title-enter { animation: krHeroFadeUp 0.75s cubic-bezier(0.2, 0.7, 0.2, 1) 0.3s both; }
+        .kr-hero-copy-enter { animation: krHeroFadeUp 0.65s ease-out 0.44s both; }
+        .kr-hero-actions-enter { animation: krHeroFadeUp 0.65s ease-out 0.56s both; }
+        .kr-hero-trust-enter { animation: krHeroFadeUp 0.65s ease-out 0.68s both; }
+        .kr-hero-form-enter {
+          animation: krHeroSlideRight 0.85s cubic-bezier(0.2, 0.7, 0.2, 1) 0.22s both;
+        }
+        .kr-form-shell-enter { transform-origin: center right; }
+        .kr-form-header-enter { animation: krHeroFadeUp 0.6s ease-out 0.45s both; }
+        .kr-form-fields-enter > div {
+          animation: krHeroFadeUp 0.48s ease-out both;
+        }
+        .kr-form-fields-enter > div:first-child { animation-delay: 0.5s; }
+        .kr-form-fields-enter > div:nth-child(2) > div:nth-child(1) { animation-delay: 0.57s; }
+        .kr-form-fields-enter > div:nth-child(2) > div:nth-child(2) { animation-delay: 0.64s; }
+        .kr-form-fields-enter > div:nth-child(2) > div:nth-child(3) { animation-delay: 0.71s; }
+        .kr-form-fields-enter > div:nth-child(2) > div:nth-child(4) { animation-delay: 0.78s; }
+        .kr-form-fields-enter > div:nth-child(2) > div:nth-child(5) { animation-delay: 0.85s; }
+        .kr-form-fields-enter > div:nth-child(2) > div:nth-child(6) { animation-delay: 0.9s; }
+        .kr-form-fields-enter > button { animation: krHeroFadeUp 0.5s ease-out 0.92s both; }
+        .kr-trust-item:nth-child(1) { animation: krHeroFadeUp 0.5s ease-out 0.72s both; }
+        .kr-trust-item:nth-child(2) { animation: krHeroFadeUp 0.5s ease-out 0.82s both; }
+        .kr-trust-item:nth-child(3) { animation: krHeroFadeUp 0.5s ease-out 0.92s both; }
+        @media (prefers-reduced-motion: reduce) {
+          .kr-call-glow, .kr-whatsapp-glow,
+          .kr-hero-bg-enter, .kr-hero-left-enter, .kr-hero-badge-enter,
+          .kr-hero-title-enter, .kr-hero-copy-enter, .kr-hero-actions-enter,
+          .kr-hero-trust-enter, .kr-hero-form-enter, .kr-form-header-enter,
+          .kr-form-fields-enter > div, .kr-form-fields-enter > button,
+          .kr-trust-item { animation: none !important; }
         }
       `}</style>
     </section>
