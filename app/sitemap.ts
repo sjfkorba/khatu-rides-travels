@@ -227,4 +227,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   // 4. Combine and return all routes (Static + Dynamic)
   return [...staticRoutes, ...dynamicCabRoutes];
+
+  // Generate 22 dynamic City Taxi pages
+  const dynamicCityRoutes: MetadataRoute.Sitemap = HUBS.map((hub) => ({
+    url: `${siteUrl}/taxi-service-in/${hub.toLowerCase()}`, // <-- Yahan '-' ki jagah '/' aayega
+    lastModified: now,
+    changeFrequency: "weekly",
+    priority: 0.85,
+  }));
 }
