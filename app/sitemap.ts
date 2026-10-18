@@ -2,10 +2,37 @@ import type { MetadataRoute } from "next";
 
 const siteUrl = "https://khaturidescg.in";
 
+// 1. Hubs list for dynamic generation
+const HUBS = [
+  "Korba", "Champa", "Kharsia", "Raigarh", "Katghora", "Dipka", 
+  "Ambikapur", "Bilaspur", "Raipur", "Durg", "Bhilai", "Rajnandgaon", 
+  "Jagdalpur", "Sambalpur", "Dhamtari", "Jharsuguda", "Ranchi", 
+  "Patna", "Aourangabad", "Prayagraj", "Varanasi", "Ujjain"
+];
+
+const createRouteSlug = (from: string, to: string) => 
+  `${from.toLowerCase()}-to-${to.toLowerCase()}`;
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
 
-  return [
+  // 2. Generate all 462 dynamic cab-service routes automatically
+  const dynamicCabRoutes: MetadataRoute.Sitemap = [];
+  for (let i = 0; i < HUBS.length; i++) {
+    for (let j = 0; j < HUBS.length; j++) {
+      if (i !== j) {
+        dynamicCabRoutes.push({
+          url: `${siteUrl}/cab-service/${createRouteSlug(HUBS[i], HUBS[j])}`,
+          lastModified: now,
+          changeFrequency: "weekly",
+          priority: 0.8, // Priority set for SEO
+        });
+      }
+    }
+  }
+
+  // 3. Your existing static routes
+  const staticRoutes: MetadataRoute.Sitemap = [
     {
       url: siteUrl,
       lastModified: now,
@@ -108,8 +135,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.9,
     },
+    {
+      url: `${siteUrl}/services/puri-to-raipur-cab-one-way-taxi`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
 
-    // Route Pages
+    // Old Static Route Pages
     {
       url: `${siteUrl}/routes/raipur-to-korba-taxi`,
       lastModified: now,
@@ -190,12 +223,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.8,
     },
-
-    {
-      url: `${siteUrl}/services/puri-to-raipur-cab-one-way-taxi`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
   ];
+
+  // 4. Combine and return all routes (Static + Dynamic)
+  return [...staticRoutes, ...dynamicCabRoutes];
 }
