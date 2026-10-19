@@ -7,10 +7,29 @@ import FloatingContact from "@/components/FloatingContact";
 import { MapPin, ShieldCheck, Clock, CreditCard, CheckCircle2, CarFront, Search, Navigation } from "lucide-react";
 
 const HUBS = [
-  "Korba", "Champa", "Kharsia", "Raigarh", "Katghora", "Dipka", 
-  "Ambikapur", "Bilaspur", "Raipur", "Durg", "Bhilai", "Rajnandgaon", 
-  "Jagdalpur", "Sambalpur", "Dhamtari", "Jharsuguda", "Ranchi", 
-  "Patna", "Aourangabad", "Prayagraj", "Varanasi", "Ujjain"
+  // 1. Major Cities & Commercial Hubs (Highest Volume)
+  "Raipur", "Naya Raipur", "Bilaspur", "Durg", "Bhilai", "Korba", 
+  "Raigarh", "Ambikapur", "Jagdalpur", "Rajnandgaon",
+
+  // 2. Industrial & Mining Belts (Corporate/Contract Leads)
+  "Champa", "Kharsia", "Katghora", "Dipka", "Gevra", "Kusmunda", 
+  "Balco", "Jamnipali", "NTPC Sipat", "Akaltara", "Janjgir", 
+  "Sakti", "Bhatapara", "Tilda", "Baloda Bazar",
+
+  // 3. District Headquarters & Mid-Size Towns (Regular Travel)
+  "Mahasamund", "Dhamtari", "Gariaband", "Kawardha", "Bemetara", 
+  "Balod", "Kanker", "Kondagaon", "Dantewada", "Sukma", "Bijapur", 
+  "Narayanpur", "Mungeli", "Pendra", "Gaurela", "Baikunthpur", 
+  "Surajpur", "Balrampur", "Jashpur", "Pathalgaon", "Manendragarh",
+
+  // 4. Tourist & Pilgrimage Spots (High Margin Round-Trips)
+  "Dongargarh", "Mainpat", "Chitrakote", "Tirathgarh", "Sirpur", 
+  "Ratanpur", "Bhoramdeo", "Gangrel Dam", "Amarkantak", "Bastar",
+
+  // 5. Inter-State Border Hubs (Long Distance Outstation)
+  "Jharsuguda", "Sambalpur", "Bargarh", "Rourkela", "Nagpur", 
+  "Gondia", "Jabalpur", "Ranchi", "Patna", "Varanasi", "Prayagraj", 
+  "Deoghar", "Ujjain"
 ];
 
 // 1. Generate Static Pages for each City (Total 22 Pages)

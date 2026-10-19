@@ -23,91 +23,83 @@ const sansFont = Plus_Jakarta_Sans({
 const siteUrl = "https://khaturidescg.in";
 
 // ============================================================
-// GLOBAL SEO METADATA
+// GLOBAL SEO METADATA (Korba & Raipur Dominance)
 // ============================================================
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
 
   title: {
-    default:
-      "Khatu Rides Travels Co. | Best Taxi Service in Chhattisgarh",
+    default: "Khatu Rides Travels Co. | Best Taxi Service in Raipur & Korba, Chhattisgarh",
     template: "%s | Khatu Rides Travels Co.",
   },
 
   description:
-    "Book trusted taxi service in Chhattisgarh with Khatu Rides Travels Co. We provide affordable one way taxi, round trip cab, outstation taxi, airport transfer, local cab, corporate travel and commercial car rental across Chhattisgarh. Popular routes include Raipur to Bilaspur, Bilaspur to Raipur, Raipur to Korba, Korba to Raipur, Raipur to Raigarh, Raigarh to Raipur, Raipur to Durg, Durg to Raipur, Raipur to Bhilai, Bhilai to Raipur, Bilaspur to Korba, Korba to Bilaspur, Bilaspur to Raigarh, Raigarh to Bilaspur, Raipur to Ambikapur, Ambikapur to Raipur, Raipur to Jagdalpur, Jagdalpur to Raipur, Raipur to Champa, Champa to Raipur, Raipur to Janjgir, Janjgir to Raipur, Raipur to Sakti, Sakti to Raipur, Raipur to Kawardha, Kawardha to Raipur, Raipur to Dhamtari, Dhamtari to Raipur, Raipur to Mahasamund, Mahasamund to Raipur, Raipur to Baloda Bazar, Baloda Bazar to Raipur, Raipur to Kanker, Kanker to Raipur, Raipur to Rajnandgaon, Rajnandgaon to Raipur, Raipur to Dongargarh, Dongargarh to Raipur, Raipur to Korba Airport, Raipur Airport Taxi, Swami Vivekananda Airport pickup and drop, Bilaspur Airport taxi and intercity cab services. Travel comfortably in Swift Dzire, Ertiga, Innova, Innova Crysta, Sedan and SUV taxis with experienced drivers, transparent pricing, 24×7 booking, doorstep pickup, safe travel and instant booking support.",
+    "Chhattisgarh's top-rated taxi service operating primarily from Raipur and Korba. We provide 24/7 airport transfers from Swami Vivekananda Airport, corporate monthly car rentals in Korba/Raipur, and outstation cabs across Bilaspur, Durg, Bhilai, Raigarh, and Ambikapur. Book Innova, Ertiga, and Sedans for one-way drops, round trips, and local hourly rentals.",
 
-  keywords: [ 
+  keywords: [
     // ========================================================
-// KORBA HIGH-INTENT & IMMEDIATE BOOKING (DIRECT CALL/LEAD)
-// ========================================================
-"taxi contact number korba",
-"cab booking number korba",
-"korba taxi travel agency contact number",
-"24x7 taxi service in korba",
-"emergency cab booking korba",
-"best cab service in korba",
-"cheap cab booking korba",
-"affordable taxi service korba",
-"taxi stand korba contact number",
-"local cab hire in korba",
+    // 1. RAIPUR & KORBA HIGH-INTENT (IMMEDIATE LEAD)
+    // ========================================================
+    "taxi service in raipur",
+    "taxi service in korba",
+    "cab booking number raipur",
+    "taxi contact number korba",
+    "best cab service in raipur",
+    "24x7 taxi service in korba",
+    "raipur local taxi booking",
+    "korba cab hire",
+    
+    // ========================================================
+    // 2. AIRPORT TRANSFERS (CRITICAL RAIPUR CONVERSIONS)
+    // ========================================================
+    "raipur airport taxi service",
+    "swami vivekananda airport cab",
+    "korba to raipur airport taxi",
+    "bilaspur to raipur airport drop",
+    "raipur airport to bhilai taxi",
+    "raipur airport prepaid taxi",
+    "chakarbhata airport bilaspur taxi",
 
-// ========================================================
-// KORBA CAR RENTAL (DAILY, HOURLY & DRIVER)
-// ========================================================
-"car rental in korba with driver",
-"self drive car rental korba",
-"luxury car rental korba",
-"car hire in korba for outstation",
-"full day cab hire korba",
-"wedding car rental korba",
-"monthly cab rental korba",
+    // ========================================================
+    // 3. TOP REVENUE ROUTES (KORBA <-> RAIPUR <-> BILASPUR)
+    // ========================================================
+    "one way taxi raipur to korba",
+    "korba to raipur cab fare",
+    "raipur to bilaspur taxi",
+    "bilaspur to korba cab",
+    "raipur to raigarh taxi",
+    "korba to jagdalpur outstation cab",
+    
+    // ========================================================
+    // 4. CORPORATE & B2B (INDUSTRIAL KORBA & RAIPUR)
+    // ========================================================
+    "corporate car rental raipur",
+    "monthly taxi service korba",
+    "cab service near ntpc korba",
+    "balco korba taxi hire",
+    "secl gevra taxi service",
+    "commercial vehicle on rent raipur",
+    "wedding car rental raipur",
+    "luxury car rental korba",
 
-// ========================================================
-// KORBA HIGH-FREQUENCY OUTSTATION & ONE-WAY DROP
-// ========================================================
-"one way taxi korba to raipur",
-"korba to raipur one way cab fare",
-"korba to bilaspur one way cab",
-"korba to raigarh one way taxi",
-"korba to ambikapur taxi service",
-"korba to jagdalpur cab",
-"korba to rourkela taxi",
-"korba to prayagraj cab service",
-"korba to amarkantak round trip cab",
-"korba to varanasi outstation taxi",
+    // ========================================================
+    // 5. REST OF CHHATTISGARH (CG NETWORK)
+    // ========================================================
+    "chhattisgarh taxi service",
+    "durg bhilai cab service",
+    "taxi service in raigarh",
+    "ambikapur to raipur cab",
+    "jagdalpur outstation taxi",
+    "champa to korba cab",
 
-// ========================================================
-// AIRPORT & RAILWAY STATION CONNECTIVITY (CRITICAL CONVERSIONS)
-// ========================================================
-"korba to raipur airport taxi",
-"korba to swami vivekananda airport cab",
-"raipur airport drop from korba taxi fare",
-"raipur airport to korba taxi booking",
-"korba to jharsuguda airport cab",
-"korba to bilaspur airport taxi service",
-"korba railway station taxi pickup drop",
-"champa railway station to korba taxi",
-
-// ========================================================
-// INDUSTRIAL & CORPORATE INTENT (NTPC, BALCO, SECL HUBS)
-// ========================================================
-"taxi service in balco korba",
-"cab service near ntpc korba",
-"taxi service secl gevra korba",
-"kusmunda korba taxi hire",
-"corporate cab booking in korba",
-"monthly taxi hire for companies in korba",
-
-// ========================================================
-// VEHICLE SPECIFIC HIGH-INTENT KEYWORDS (KORBA)
-// ========================================================
-"innova crysta taxi in korba",
-"ertiga cab booking korba",
-"7 seater cab booking in korba",
-"swift dzire on rent in korba",
-"tempo traveller in korba for tour"
+    // ========================================================
+    // 6. PREMIUM FLEET SPECIFIC
+    // ========================================================
+    "innova crysta on rent in raipur",
+    "ertiga cab booking korba",
+    "7 seater cab raipur",
+    "swift dzire taxi korba"
   ],
 
   alternates: {
@@ -115,25 +107,17 @@ export const metadata: Metadata = {
   },
 
   openGraph: {
-    title:
-      "Khatu Rides Travels Co. | Best Taxi Service in Chhattisgarh",
-
-    description:
-      "Trusted cab booking network in Chhattisgarh for one way drops, round trips, outstation corporate tours and verified airport transfers.",
-
+    title: "Khatu Rides Travels Co. | Best Taxi Service in Raipur & Korba",
+    description: "Trusted outstation, corporate, and airport taxi network operating heavily in Raipur, Korba, Bilaspur, and across Chhattisgarh.",
     url: siteUrl,
-
     siteName: "Khatu Rides Travels Co.",
-
     locale: "en_IN",
-
     type: "website",
   },
 
   robots: {
     index: true,
     follow: true,
-
     googleBot: {
       index: true,
       follow: true,
@@ -154,120 +138,58 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   // ==========================================================
-  // LOCAL BUSINESS / TAXI SERVICE STRUCTURED DATA
+  // LOCAL BUSINESS SCHEMA (Optimized for Korba & Raipur)
   // ==========================================================
 
   const businessSchema = {
     "@context": "https://schema.org",
-
     "@type": "TaxiService",
-
-    name: "Khatu Rides Travels Co.",
-
-    url: siteUrl,
-
-    logo: `${siteUrl}/logo.png`,
-
-    image: `${siteUrl}/logo.png`,
-
-    telephone: [
+    "name": "Khatu Rides Travels Co.",
+    "url": siteUrl,
+    "logo": `${siteUrl}/logo.png`,
+    "image": `${siteUrl}/hero/main%20image.png`,
+    "telephone": [
       "+919244137353",
-      "+918319376115",
+      "+918319376115"
     ],
-
-    priceRange: "₹₹",
-
-    description:
-      "Khatu Rides Travels Co. Chhattisgarh ki trusted taxi aur cab booking service hai, jo Korba, Raipur, Bilaspur, Durg, Bhilai, Raigarh, Jharsuguda, Jagdalpur, Ambikapur aur nearby areas me reliable travel service provide karti hai. Dzire, Ertiga, Innova Crysta aur Sedan cars ke saath one way taxi, round trip cab, outstation tour, airport/railway pickup-drop aur commercial booking available hai.",
-
-    provider: {
+    "priceRange": "₹₹",
+    "description": "Premium taxi service headquartered in Korba and Raipur. We offer fast Swami Vivekananda Airport transfers, corporate monthly rentals in industrial hubs, and outstation trips across Bilaspur, Durg, Bhilai, Raigarh, and Ambikapur.",
+    "provider": {
       "@type": "LocalBusiness",
-
-      name: "Khatu Rides Travels Co.",
-
-      telephone: "+919244137353",
-
-      priceRange: "₹₹",
+      "name": "Khatu Rides Travels Co.",
+      "telephone": "+919244137353",
+      "priceRange": "₹₹"
     },
-
-    areaServed: [
-      {
-        "@type": "AdministrativeArea",
-        name: "Chhattisgarh",
-      },
-
-      {
-        "@type": "AdministrativeArea",
-        name: "Raipur",
-      },
-
-      {
-        "@type": "AdministrativeArea",
-        name: "Korba",
-      },
-
-      {
-        "@type": "AdministrativeArea",
-        name: "Bilaspur",
-      },
-
-      {
-        "@type": "AdministrativeArea",
-        name: "Raigarh",
-      },
-
-      {
-        "@type": "AdministrativeArea",
-        name: "Jharsuguda",
-      },
-
-      {
-        "@type": "AdministrativeArea",
-        name: "Jagdalpur",
-      },
-
-      {
-        "@type": "AdministrativeArea",
-        name: "Ambikapur",
-      },
-
-      {
-        "@type": "AdministrativeArea",
-        name: "Durg",
-      },
-
-      {
-        "@type": "AdministrativeArea",
-        name: "Bhilai",
-      },
+    // Priority Area Array: Google reads the first elements as most important
+    "areaServed": [
+      { "@type": "AdministrativeArea", "name": "Korba" },
+      { "@type": "AdministrativeArea", "name": "Raipur" },
+      { "@type": "AdministrativeArea", "name": "Chhattisgarh" },
+      { "@type": "AdministrativeArea", "name": "Bilaspur" },
+      { "@type": "AdministrativeArea", "name": "Durg" },
+      { "@type": "AdministrativeArea", "name": "Bhilai" },
+      { "@type": "AdministrativeArea", "name": "Raigarh" },
+      { "@type": "AdministrativeArea", "name": "Ambikapur" },
+      { "@type": "AdministrativeArea", "name": "Jagdalpur" },
+      { "@type": "AdministrativeArea", "name": "Jharsuguda" }
     ],
-
-    serviceType: [
+    "serviceType": [
+      "Raipur Airport Transfers",
+      "Korba Corporate Car Rentals",
       "One Way Taxi Drop",
       "Round Trip Intercity Cab",
-      "Outstation Commercial Fleet",
-      "Corporate Travel Packages",
-      "Swami Vivekananda Airport Transfers",
+      "Monthly Commercial Fleet"
     ],
-
-    availableChannel: {
+    "availableChannel": {
       "@type": "ServiceChannel",
-
-      servicePhone: {
+      "servicePhone": {
         "@type": "ContactPoint",
-
-        telephone: "+919244137353",
-
-        contactType: "booking help desk",
-
-        areaServed: "IN",
-
-        availableLanguage: [
-          "Hindi",
-          "English",
-        ],
-      },
-    },
+        "telephone": "+919244137353",
+        "contactType": "booking help desk",
+        "areaServed": ["Korba", "Raipur", "IN"],
+        "availableLanguage": ["Hindi", "English"]
+      }
+    }
   };
 
   // ==========================================================
@@ -275,80 +197,48 @@ export default function RootLayout({
   // ==========================================================
 
   return (
-    <html
-      lang="en-IN"
-      className={`${sansFont.variable} scroll-smooth`}
-    >
+    <html lang="en-IN" className={`${sansFont.variable} scroll-smooth`}>
       <head>
         {/* ====================================================
             GOOGLE TAG MANAGER / ADS BASE SCRIPT
         ==================================================== */}
-
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=AW-18196199181"
           strategy="afterInteractive"
         />
 
         {/* ====================================================
-            GOOGLE ANALYTICS + GOOGLE ADS
+            GOOGLE ANALYTICS + GOOGLE ADS (Unchanged)
         ==================================================== */}
-
-        <Script
-          id="google-tag-and-conversions"
-          strategy="afterInteractive"
-        >
+        <Script id="google-tag-and-conversions" strategy="afterInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
-
-            function gtag(){
-              dataLayer.push(arguments);
-            }
-
+            function gtag(){ dataLayer.push(arguments); }
             gtag('js', new Date());
 
             gtag('config', 'G-FXZZCTGQ4', {
               anonymize_ip: true
             });
-
             gtag('config', 'AW-18196199181');
 
-            /*
-             * Global Google Ads Call Conversion Function
-             */
-
             window.gtag_report_conversion = function(url) {
-
               var callback = function () {
-
                 if (typeof(url) != 'undefined') {
                   window.location = url;
                 }
-
               };
-
               if (typeof gtag === 'function') {
-
                 gtag('event', 'conversion', {
-
-                  'send_to':
-                    'AW-18196199181/DXCJCJiJxPYcEI3uz-RD',
-
+                  'send_to': 'AW-18196199181/DXCJCJiJxPYcEI3uz-RD',
                   'value': 1.0,
-
                   'currency': 'INR',
-
                   'event_callback': callback
-
                 });
-
               } else {
-
                 if (typeof(url) != 'undefined') {
                   window.location = url;
                 }
-
               }
-
               return false;
             };
           `}
@@ -357,7 +247,6 @@ export default function RootLayout({
         {/* ====================================================
             GLOBAL TAXI SERVICE JSON-LD
         ==================================================== */}
-
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -366,33 +255,14 @@ export default function RootLayout({
         />
       </head>
 
-      <body
-        className="
-          antialiased
-          bg-slate-50
-          text-slate-800
-          min-h-screen
-          flex
-          flex-col
-          overflow-x-hidden
-        "
-      >
-        {/* ====================================================
-            MAIN WEBSITE CONTENT
-        ==================================================== */}
-
+      <body className="antialiased bg-slate-50 text-slate-800 min-h-screen flex flex-col overflow-x-hidden">
+        
+        {/* MAIN WEBSITE CONTENT */}
         <main className="flex-grow w-full flex flex-col">
           {children}
         </main>
 
-        {/* ====================================================
-            PUBLIC WEBSITE FOOTER
-            ----------------------------------------------------
-            Footer automatically disappears on:
-            /admin
-            /admin/*
-        ==================================================== */}
-
+        {/* PUBLIC WEBSITE FOOTER */}
         <SiteFooter />
       </body>
     </html>
