@@ -11,6 +11,11 @@
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  
+  /* Naye Tailwind V4 Animations */
+  --animate-shimmer: shimmer 1.5s infinite;
+  --animate-float: float 3s ease-in-out infinite;
+  --animate-pulse-glow: pulseGlow 3s ease-in-out infinite;
 }
 
 /* =========================
@@ -28,18 +33,18 @@ body {
   overflow-x: hidden;
 }
 
+img {
+  border: none;
+  outline: none;
+}
+
 /* =========================
-   REVIEW CAROUSEL (Updated to Slow 120s & Hover Pause Fix)
+   REVIEW CAROUSEL (Slow 120s & Hover Pause)
 ========================= */
 
 @keyframes reviewMarquee {
-  0% {
-    transform: translate3d(0, 0, 0);
-  }
-
-  100% {
-    transform: translate3d(-50%, 0, 0);
-  }
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
 }
 
 .review-marquee {
@@ -67,17 +72,31 @@ body {
 ========================= */
 
 @keyframes progressBar {
-  0% {
-    transform: translateX(-120%);
-  }
-
-  100% {
-    transform: translateX(320%);
-  }
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(320%); }
 }
 
 .animate-progressBar {
   animation: progressBar 1.2s ease-in-out infinite;
+}
+
+/* =========================
+   STANDARD MARQUEE
+========================= */
+
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-33.333%); }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 28s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
 }
 
 /* =========================
@@ -92,11 +111,7 @@ body {
   height: 100%;
   z-index: 10;
   pointer-events: none;
-  background: linear-gradient(
-    to right,
-    white,
-    rgba(255, 255, 255, 0)
-  );
+  background: linear-gradient(to right, white, rgba(255, 255, 255, 0));
 }
 
 .carousel-fade-right {
@@ -107,11 +122,42 @@ body {
   height: 100%;
   z-index: 10;
   pointer-events: none;
-  background: linear-gradient(
-    to left,
-    white,
-    rgba(255, 255, 255, 0)
-  );
+  background: linear-gradient(to left, white, rgba(255, 255, 255, 0));
+}
+
+/* =========================
+   PREMIUM CUSTOM ANIMATIONS
+========================= */
+
+/* 1. Shimmer Effect (For Buttons & Cards) */
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+
+/* 2. Floating Effect (For Hero Images or Offer Badges) */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* 3. Pulse Glow Effect (For Offer Popup Background) */
+@keyframes pulseGlow {
+  0%, 100% { 
+    opacity: 0.5; 
+    transform: scale(1); 
+  }
+  50% { 
+    opacity: 0.8; 
+    transform: scale(1.05); 
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 3s ease-in-out infinite;
 }
 
 /* =========================
@@ -133,23 +179,4 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #ea580c;
-}
-img {
-  border: none;
-  outline: none;
-}
-
-@keyframes marquee {
-  0% { transform: translateX(0%); }
-  100% { transform: translateX(-33.333%); }
-}
-
-.animate-marquee {
-  display: flex;
-  width: max-content;
-  animation: marquee 28s linear infinite;
-}
-
-.animate-marquee:hover {
-  animation-play-state: paused;
 }

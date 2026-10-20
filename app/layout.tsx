@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import SiteFooter from "@/components/SiteFooter";
+import OfferPopup from "@/components/OfferPopup"; // ✅ Yahan Offer Popup Import kiya gaya hai
 
 // ============================================================
 // GLOBAL FONT
@@ -257,6 +258,11 @@ export default function RootLayout({
 
       <body className="antialiased bg-slate-50 text-slate-800 min-h-screen flex flex-col overflow-x-hidden">
         
+        {/* ====================================================
+            OFFER POPUP (ADDED HERE)
+        ==================================================== */}
+        <OfferPopup />
+
         {/* MAIN WEBSITE CONTENT */}
         <main className="flex-grow w-full flex flex-col">
           {children}
