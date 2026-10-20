@@ -247,8 +247,8 @@ export default function AboutUsPage() {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
     name: "Khatu Rides Travels Co.",
-    image: "https://khaturidestravels.com/logo.png",
-    url: "https://khaturidestravels.com/about-us",
+    image: "https://khaturidescg.in/logo.png",
+    url: "https://khaturidescg.in/about-us",
     telephone: PHONE,
     priceRange: "₹₹",
     description:
@@ -288,7 +288,7 @@ export default function AboutUsPage() {
   };
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#F8FAFC] text-slate-950">
+    <main className="about-page-animated min-h-screen overflow-hidden bg-[#F8FAFC] text-slate-950">
 
       {/* ============================================================
           STRUCTURED DATA
@@ -489,30 +489,21 @@ export default function AboutUsPage() {
 
                 </div>
 
-                {/* Rating */}
+                {/* Trust message — avoids publishing an unverified rating */}
 
-                <div className="relative mt-3 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[.05] p-4">
+                <div className="about-hover-card relative mt-3 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[.05] p-4">
 
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-400 text-[#071A3A]">
-                    <Star
-                      size={19}
-                      fill="currentColor"
-                    />
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-300">
+                    <ShieldCheck size={20} />
                   </div>
 
                   <div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xl font-black">
-                        4.9
-                      </span>
+                    <p className="text-sm font-black text-white">
+                      Customer-First Travel
+                    </p>
 
-                      <span className="text-[9px] font-bold text-slate-400">
-                        / 5
-                      </span>
-                    </div>
-
-                    <p className="text-[8px] font-black uppercase tracking-[.15em] text-slate-400">
-                      Google Reviews
+                    <p className="mt-1 text-[9px] font-bold text-slate-400">
+                      Clear communication from enquiry to booking
                     </p>
                   </div>
 
@@ -1148,7 +1139,7 @@ export default function AboutUsPage() {
 
           </div>
 
-          <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+          <div className="about-stagger-grid mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
 
             {serviceCards.map((service) => {
               const Icon = service.icon;
@@ -1218,7 +1209,7 @@ export default function AboutUsPage() {
 
           </div>
 
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="about-stagger-grid mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
             {cityLinks.map((city) => (
               <Link
@@ -1368,7 +1359,7 @@ export default function AboutUsPage() {
 
           </div>
 
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="about-stagger-grid mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
 
             <div className="rounded-[28px] border border-slate-200 bg-white p-7 text-center shadow-sm">
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[20px] bg-emerald-50 text-emerald-600">
@@ -1665,6 +1656,9 @@ export default function AboutUsPage() {
 
         </div>
       </section>
+
+
+      
 
     </main>
   );
