@@ -204,12 +204,12 @@ export default function RootLayout({
             GOOGLE TAG MANAGER / ADS BASE SCRIPT
         ==================================================== */}
         <Script
-          src="https://www.googletagmanager.com/gtag/js?id=AW-18196199181"
+          src="https://www.googletagmanager.com/gtag/js?id=AW-18502918680"
           strategy="afterInteractive"
         />
 
         {/* ====================================================
-            GOOGLE ANALYTICS + GOOGLE ADS (Unchanged)
+            GOOGLE ANALYTICS + GOOGLE ADS
         ==================================================== */}
         <Script id="google-tag-and-conversions" strategy="afterInteractive">
           {`
@@ -220,7 +220,7 @@ export default function RootLayout({
             gtag('config', 'G-FXZZCTGQ4', {
               anonymize_ip: true
             });
-            gtag('config', 'AW-18196199181');
+            gtag('config', 'AW-18502918680');
 
             window.gtag_report_conversion = function(url) {
               var callback = function () {
@@ -230,7 +230,7 @@ export default function RootLayout({
               };
               if (typeof gtag === 'function') {
                 gtag('event', 'conversion', {
-                  'send_to': 'AW-18196199181/DXCJCJiJxPYcEI3uz-RD',
+                  'send_to': 'AW-18502918680/j4qnCNWBlKQdEJjE8PZE',
                   'value': 1.0,
                   'currency': 'INR',
                   'event_callback': callback
