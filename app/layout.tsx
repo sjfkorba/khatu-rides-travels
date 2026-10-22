@@ -24,7 +24,7 @@ const sansFont = Plus_Jakarta_Sans({
 const siteUrl = "https://khaturidescg.in";
 
 // ============================================================
-// GLOBAL SEO METADATA (Korba & Raipur Dominance)
+// GLOBAL SEO METADATA (Updated from Google Ads Search Terms)
 // ============================================================
 
 export const metadata: Metadata = {
@@ -40,7 +40,22 @@ export const metadata: Metadata = {
 
   keywords: [
     // ========================================================
-    // 1. RAIPUR & KORBA HIGH-INTENT (IMMEDIATE LEAD)
+    // 1. PROVEN ADS SEARCH TERMS (Highest Clicks & CTR)
+    // ========================================================
+    "cab booking in raipur",
+    "one way taxi raipur",
+    "raipur airport taxi service",
+    "cabs in raipur chhattisgarh",
+    "bilaspur to korba taxi",
+    "korba taxi",
+    "cab in raipur",
+    "bilaspur to raipur cab",
+    "raipur to bilaspur taxi",
+    "car rental in korba",
+    "raipur taxi service",
+
+    // ========================================================
+    // 2. RAIPUR & KORBA HIGH-INTENT (IMMEDIATE LEAD)
     // ========================================================
     "taxi service in raipur",
     "taxi service in korba",
@@ -52,23 +67,10 @@ export const metadata: Metadata = {
     "korba cab hire",
     
     // ========================================================
-    // 2. AIRPORT TRANSFERS (CRITICAL RAIPUR CONVERSIONS)
-    // ========================================================
-    "raipur airport taxi service",
-    "swami vivekananda airport cab",
-    "korba to raipur airport taxi",
-    "bilaspur to raipur airport drop",
-    "raipur airport to bhilai taxi",
-    "raipur airport prepaid taxi",
-    "chakarbhata airport bilaspur taxi",
-
-    // ========================================================
     // 3. TOP REVENUE ROUTES (KORBA <-> RAIPUR <-> BILASPUR)
     // ========================================================
     "one way taxi raipur to korba",
     "korba to raipur cab fare",
-    "raipur to bilaspur taxi",
-    "bilaspur to korba cab",
     "raipur to raigarh taxi",
     "korba to jagdalpur outstation cab",
     
@@ -79,27 +81,17 @@ export const metadata: Metadata = {
     "monthly taxi service korba",
     "cab service near ntpc korba",
     "balco korba taxi hire",
-    "secl gevra taxi service",
     "commercial vehicle on rent raipur",
-    "wedding car rental raipur",
     "luxury car rental korba",
 
     // ========================================================
-    // 5. REST OF CHHATTISGARH (CG NETWORK)
+    // 5. REST OF CHHATTISGARH & PREMIUM FLEET
     // ========================================================
     "chhattisgarh taxi service",
     "durg bhilai cab service",
-    "taxi service in raigarh",
     "ambikapur to raipur cab",
-    "jagdalpur outstation taxi",
-    "champa to korba cab",
-
-    // ========================================================
-    // 6. PREMIUM FLEET SPECIFIC
-    // ========================================================
     "innova crysta on rent in raipur",
     "ertiga cab booking korba",
-    "7 seater cab raipur",
     "swift dzire taxi korba"
   ],
 
@@ -259,7 +251,7 @@ export default function RootLayout({
       <body className="antialiased bg-slate-50 text-slate-800 min-h-screen flex flex-col overflow-x-hidden">
         
         {/* ====================================================
-            OFFER POPUP (ADDED HERE)
+            OFFER POPUP
         ==================================================== */}
         <OfferPopup />
 
