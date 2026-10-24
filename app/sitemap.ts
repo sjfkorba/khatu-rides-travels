@@ -26,6 +26,12 @@ const PREMIUM_HUBS = [
   "ambikapur", "jagdalpur", "champa", "kharsia", "katghora"
 ];
 
+// One-Way Taxi Cities (From your new One-Way page setup)
+const ONE_WAY_CITIES = [
+  "raipur", "bilaspur", "durg", "bhilai", "korba", "nagpur", 
+  "jabalpur", "ranchi", "jharsuguda"
+];
+
 const createRouteSlug = (from: string, to: string) => `${from.toLowerCase()}-to-${to.toLowerCase()}`;
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -117,6 +123,34 @@ export default function sitemap(): MetadataRoute.Sitemap {
     lastModified: now, changeFrequency: "monthly", priority: 0.8,
   }));
 
+  // I. NEW: One-Way Taxi Routes (Both City-based and Route-based)
+  const dynamicOneWayRoutes: MetadataRoute.Sitemap = [];
+  
+  // I.1. City-based One-Way (e.g., /one-way-taxi/raipur)
+  for (const city of ONE_WAY_CITIES) {
+    dynamicOneWayRoutes.push({
+      url: `${siteUrl}/one-way-taxi/${city}`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.9, // High priority for top-level city drop pages
+    });
+  }
+
+  // I.2. Route-based One-Way (e.g., /one-way-taxi/raipur-to-nagpur)
+  for (const origin of ONE_WAY_CITIES) {
+    for (const dest of ONE_WAY_CITIES) {
+      if (origin !== dest) {
+        dynamicOneWayRoutes.push({
+          url: `${siteUrl}/one-way-taxi/${createRouteSlug(origin, dest)}`,
+          lastModified: now,
+          changeFrequency: "weekly",
+          priority: 0.85,
+        });
+      }
+    }
+  }
+
+
   // ==========================================
   // 3. EXISTING STATIC ROUTES
   // ==========================================
@@ -171,6 +205,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...dynamicOutstationRoutes,
     ...dynamicCorporateRoutes,
     ...dynamicRentalRoutes,
-    ...dynamicWeddingRoutes
+    ...dynamicWeddingRoutes,
+    ...dynamicOneWayRoutes // Added One-Way Routes here
   ];
 }

@@ -5,7 +5,20 @@ import Image from "next/image";
 import { PHONE, WHATSAPP } from "./data";
 import Icon from "./Icons";
 
-export default function RouteHero({ initialPickup = "", initialDrop = "" }: { initialPickup?: string, initialDrop?: string }) {
+// TypeScript interface updated to accept titleText and subtitleText
+interface RouteHeroProps {
+  initialPickup?: string;
+  initialDrop?: string;
+  titleText?: string;
+  subtitleText?: string;
+}
+
+export default function RouteHero({ 
+  initialPickup = "", 
+  initialDrop = "",
+  titleText,
+  subtitleText
+}: RouteHeroProps) {
   const [tripType, setTripType] = useState("One-Way");
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
@@ -240,13 +253,24 @@ export default function RouteHero({ initialPickup = "", initialDrop = "" }: { in
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-300/40 bg-white/10 px-4 py-2 text-sm font-bold text-amber-200 shadow-lg shadow-black/10 backdrop-blur-md kr-hero-badge-enter">
                 ⭐ 4.9/5 Top Rated Travel Firm in CG
               </div>
-              <h1 className="text-4xl font-black leading-[1.04] tracking-tight text-white drop-shadow-[0_8px_24px_rgba(0,0,0,0.45)] sm:text-5xl lg:text-[64px] xl:text-[72px] kr-hero-title-enter">
-                KHATU RIDES <br />
-                <span className="bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-500 bg-clip-text text-transparent">TRAVELS CO.</span>
-              </h1>
+              
+              {/* Conditional Title Rendering */}
+              {titleText ? (
+                <h1 className="text-4xl font-black leading-[1.1] tracking-tight text-white drop-shadow-[0_8px_24px_rgba(0,0,0,0.45)] sm:text-5xl lg:text-[54px] xl:text-[60px] kr-hero-title-enter">
+                  {titleText}
+                </h1>
+              ) : (
+                <h1 className="text-4xl font-black leading-[1.04] tracking-tight text-white drop-shadow-[0_8px_24px_rgba(0,0,0,0.45)] sm:text-5xl lg:text-[64px] xl:text-[72px] kr-hero-title-enter">
+                  KHATU RIDES <br />
+                  <span className="bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-500 bg-clip-text text-transparent">TRAVELS CO.</span>
+                </h1>
+              )}
+
+              {/* Conditional Subtitle Rendering */}
               <p className="mt-5 max-w-xl text-lg font-medium leading-relaxed text-blue-50/90 sm:text-xl kr-hero-copy-enter">
-                Book reliable cabs across Chhattisgarh for one-way drops, outstation round trips, and seamless airport transfers. Enjoy 100% transparent pricing, doorstep pickup, premium AC vehicles, and verified chauffeurs with instant WhatsApp booking support. <br className="hidden sm:block"/> 
-                <span className="font-bold text-white">Zero Hidden Cost. Pay After Drop.</span>
+                {subtitleText || "Book reliable cabs across Chhattisgarh for one-way drops, outstation round trips, and seamless airport transfers. Enjoy 100% transparent pricing, doorstep pickup, premium AC vehicles, and verified chauffeurs with instant WhatsApp booking support."} 
+                <br className="hidden sm:block"/> 
+                <span className="font-bold text-white mt-1 block">Zero Hidden Cost. Pay After Drop.</span>
               </p>
             </div>
 
