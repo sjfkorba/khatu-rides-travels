@@ -20,16 +20,24 @@ const TOURIST_DESTS = ["mainpat", "chitrakote", "dongargarh", "bhoramdeo", "amar
 const OUTSTATION_ORIGINS = ["raipur", "bilaspur", "durg", "bhilai", "korba", "raigarh", "ambikapur", "jagdalpur"];
 const OUTSTATION_DESTS = ["nagpur", "jabalpur", "ranchi", "jharsuguda", "sambalpur", "varanasi", "prayagraj", "gondia", "patna", "bhubaneswar", "rourkela"];
 
-// Cities for B2B, Rentals, and Weddings
 const PREMIUM_HUBS = [
   "raipur", "bilaspur", "durg", "bhilai", "korba", "raigarh", 
   "ambikapur", "jagdalpur", "champa", "kharsia", "katghora"
 ];
 
-// One-Way Taxi Cities (From your new One-Way page setup)
 const ONE_WAY_CITIES = [
   "raipur", "bilaspur", "durg", "bhilai", "korba", "nagpur", 
   "jabalpur", "ranchi", "jharsuguda"
+];
+
+// Special Custom Tour Slugs (SEO Keywords)
+const CUSTOM_TOUR_SLUGS = [
+  "tour-package-chhattisgarh",
+  "raipur-to-ayodhya",
+  "korba-to-mainpat-tour",
+  "raipur-to-jagdalpur-bastar-tour",
+  "bilaspur-to-amarkantak-tour",
+  "chhattisgarh-darshan-package"
 ];
 
 const createRouteSlug = (from: string, to: string) => `${from.toLowerCase()}-to-${to.toLowerCase()}`;
@@ -41,7 +49,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // 2. GENERATE ALL DYNAMIC ROUTES
   // ==========================================
 
-  // A. Cab Service Routes (Point to Point)
+  // A. Cab Service Routes
   const dynamicCabRoutes: MetadataRoute.Sitemap = [];
   for (let i = 0; i < HUBS.length; i++) {
     for (let j = 0; j < HUBS.length; j++) {
@@ -59,12 +67,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // B. City Taxi Pages
   const dynamicCityRoutes: MetadataRoute.Sitemap = HUBS.map((hub) => ({
     url: `${siteUrl}/taxi-service-in/${hub.toLowerCase()}`,
-    lastModified: now,
-    changeFrequency: "weekly",
-    priority: 0.85,
+    lastModified: now, changeFrequency: "weekly", priority: 0.85,
   }));
 
-  // C. Airport Transfer Routes (Both directions)
+  // C. Airport Transfer Routes
   const dynamicAirportRoutes: MetadataRoute.Sitemap = [];
   for (const hub of HUBS) {
     for (const airport of AIRPORTS) {
@@ -79,7 +85,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     }
   }
 
-  // D. Tourist Routes
+  // D. Tourist Routes (General Cabs)
   const dynamicTouristRoutes: MetadataRoute.Sitemap = [];
   for (const origin of TOURIST_ORIGINS) {
     for (const dest of TOURIST_DESTS) {
@@ -111,51 +117,66 @@ export default function sitemap(): MetadataRoute.Sitemap {
     lastModified: now, changeFrequency: "weekly", priority: 0.9,
   }));
 
-  // G. Local Car Rental (Hourly) Pages
+  // G. Local Car Rental
   const dynamicRentalRoutes: MetadataRoute.Sitemap = PREMIUM_HUBS.map((city) => ({
     url: `${siteUrl}/car-rental/${city}`,
     lastModified: now, changeFrequency: "weekly", priority: 0.85,
   }));
 
-  // H. Wedding Taxi Pages
+  // H. Wedding Taxi
   const dynamicWeddingRoutes: MetadataRoute.Sitemap = PREMIUM_HUBS.map((city) => ({
     url: `${siteUrl}/wedding-taxi/${city}`,
     lastModified: now, changeFrequency: "monthly", priority: 0.8,
   }));
 
-  // I. NEW: One-Way Taxi Routes (Both City-based and Route-based)
+  // I. One-Way Taxi Routes
   const dynamicOneWayRoutes: MetadataRoute.Sitemap = [];
-  
-  // I.1. City-based One-Way (e.g., /one-way-taxi/raipur)
   for (const city of ONE_WAY_CITIES) {
     dynamicOneWayRoutes.push({
       url: `${siteUrl}/one-way-taxi/${city}`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.9, // High priority for top-level city drop pages
+      lastModified: now, changeFrequency: "weekly", priority: 0.9,
     });
   }
-
-  // I.2. Route-based One-Way (e.g., /one-way-taxi/raipur-to-nagpur)
   for (const origin of ONE_WAY_CITIES) {
     for (const dest of ONE_WAY_CITIES) {
       if (origin !== dest) {
         dynamicOneWayRoutes.push({
           url: `${siteUrl}/one-way-taxi/${createRouteSlug(origin, dest)}`,
-          lastModified: now,
-          changeFrequency: "weekly",
-          priority: 0.85,
+          lastModified: now, changeFrequency: "weekly", priority: 0.85,
         });
       }
     }
   }
 
+  // J. NEW: Tour Packages Routes (Combining Custom SEO Slugs & Dynamic Loops)
+  const dynamicTourPackageRoutes: MetadataRoute.Sitemap = [];
+  
+  // 1. Push Custom High-Value Slugs
+  for (const slug of CUSTOM_TOUR_SLUGS) {
+    dynamicTourPackageRoutes.push({
+      url: `${siteUrl}/tour-packages/${slug}`,
+      lastModified: now, changeFrequency: "weekly", priority: 0.95, // High priority
+    });
+  }
+
+  // 2. Generate Tour Slugs mapping Origins to Tourist Destinations
+  for (const origin of TOURIST_ORIGINS) {
+    for (const dest of TOURIST_DESTS) {
+      if (origin !== dest) {
+        dynamicTourPackageRoutes.push({
+          url: `${siteUrl}/tour-packages/${createRouteSlug(origin, dest)}-tour-package`,
+          lastModified: now, changeFrequency: "weekly", priority: 0.9,
+        });
+      }
+    }
+  }
 
   // ==========================================
   // 3. EXISTING STATIC ROUTES
   // ==========================================
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: siteUrl, lastModified: now, changeFrequency: "weekly", priority: 1 },
+    { url: `${siteUrl}/tour-packages`, lastModified: now, changeFrequency: "weekly", priority: 0.95 }, // New Base Tour Page
     { url: `${siteUrl}/about-us`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${siteUrl}/contact-us`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${siteUrl}/blog`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
@@ -206,6 +227,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...dynamicCorporateRoutes,
     ...dynamicRentalRoutes,
     ...dynamicWeddingRoutes,
-    ...dynamicOneWayRoutes // Added One-Way Routes here
+    ...dynamicOneWayRoutes,
+    ...dynamicTourPackageRoutes // NEW: Added Tour Package URLs here
   ];
 }

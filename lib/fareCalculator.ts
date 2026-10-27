@@ -265,6 +265,29 @@ function isOneWayServiceAvailable(pickupLocation: string, dropLocation: string):
   return isPickupValid || isDropValid;
 }
 
+/* =========================================================
+   CUSTOM FIXED ONEWAY FARES (Route Specific)
+========================================================= */
+export const FIXED_ONEWAY_FARES: Record<string, Record<VehicleType, number>> = {
+  "korba-bilaspur": { sedan: 1799, ertiga: 2499, crysta: 3000 },
+  "bilaspur-korba": { sedan: 1799, ertiga: 2499, crysta: 3000 }, // Reverse
+  
+  "korba-uslapur": { sedan: 1799, ertiga: 2499, crysta: 3000 },
+  "uslapur-korba": { sedan: 1799, ertiga: 2499, crysta: 3000 }, // Reverse
+  
+  "korba-raipur": { sedan: 3899, ertiga: 4499, crysta: 5499 },
+  "raipur-korba": { sedan: 3899, ertiga: 4499, crysta: 5499 }, // Reverse
+  
+  "korba-raigarh": { sedan: 2499, ertiga: 3299, crysta: 4299 },
+  "raigarh-korba": { sedan: 2499, ertiga: 3299, crysta: 4299 }, // Reverse
+  
+  "raipur-ambikapur": { sedan: 5499, ertiga: 6499, crysta: 7999 },
+  "ambikapur-raipur": { sedan: 5499, ertiga: 6499, crysta: 7999 }, // Reverse
+};
+
+/* =========================================================
+   MAIN FARE CALCULATION ENGINE
+========================================================= */
 export function calculateFare({
   distance,
   vehicleType,
@@ -306,6 +329,7 @@ export function calculateFare({
     oneWayAvailable = isOneWayServiceAvailable(pickup, drop);
   }
 
+  // --- LOCAL FARE LOGIC ---
   if (serviceType === "local") {
     const selectedPackage = LOCAL_PACKAGES[vehicleType][localPackage || "8hr80km"];
     const calculatedHours = typeof localHours === "number" ? localHours : selectedPackage.hours;
@@ -335,6 +359,7 @@ export function calculateFare({
 
   let workingDistance = bookingType === "roundtrip" ? inputDistance * 2 : inputDistance;
 
+  // --- SHORT ROUNDTRIP OVERRIDE ---
   if (bookingType === "roundtrip" && workingDistance < 80) {
     const shortRoundTripPackages: Record<string, { baseFare: number; rate: number }> = {
       sedan: { baseFare: 1200, rate: 11 },
@@ -366,14 +391,41 @@ export function calculateFare({
 
   let showKms = workingDistance > 500 ? workingDistance + 50 : workingDistance;
   let effectiveCalculationDistance = bookingType === "oneway" && showKms < 80 ? 80 : showKms;
+
+  const lowerPickup = pickup ? pickup.toLowerCase().trim() : "";
+  const lowerDrop = drop ? drop.toLowerCase().trim() : "";
+
+  // =========================================================
+  // FIXED ONEWAY FARE CHECK
+  // =========================================================
+  if (bookingType === "oneway" && lowerPickup && lowerDrop) {
+    const routeKey = `${lowerPickup}-${lowerDrop}`;
+    
+    if (FIXED_ONEWAY_FARES[routeKey]) {
+      const fixedFareValue = FIXED_ONEWAY_FARES[routeKey][vehicleType];
+      const durationMin = Math.round((showKms / 50) * 60) + 30;
+      
+      return {
+        actualDistance: workingDistance,
+        billedDistance: showKms,
+        rateUsed: 0, 
+        strikeFare: Math.round(fixedFareValue * 1.15),
+        finalFare: fixedFareValue,
+        discountPercent: 15,
+        durationMinutes: durationMin,
+        haltCharges: 0,
+        autoCorrectedService: finalServiceType,
+        isOneWayAvailable: oneWayAvailable,
+      };
+    }
+  }
+  // =========================================================
+
   let ratePerKm = VEHICLES[vehicleType].baseRatePerKm;
   let currentMultiplier = 1.0;
   let haltCharges = 0;
   let useCustomMicroBase = false;
   let customBaseFareValue = 0;
-
-  const lowerPickup = pickup ? pickup.toLowerCase() : "";
-  const lowerDrop = drop ? drop.toLowerCase() : "";
   let routeCustomMultiplier = 1.0;
 
   if (lowerDrop.includes("ambikapur") && showKms < 200) {
@@ -386,7 +438,7 @@ export function calculateFare({
 
   if (bookingType === "oneway") {
     if (showKms >= 39 && showKms < 50) {
-      currentMultiplier = vehicleType === "sedan" ? 1.35 : vehicleType === "ertiga" ? 1.3 : 1.2;
+      currentMultiplier = vehicleType === "sedan" ? 1.0 : vehicleType === "ertiga" ? 1.3 : 1.2;
     } else if (showKms >= 50 && showKms <= 100) {
       currentMultiplier = vehicleType === "crysta" ? 1.8 : 2.1;
       ratePerKm = vehicleType === "sedan" ? 12 : vehicleType === "ertiga" ? 13 : 20;

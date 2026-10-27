@@ -17,6 +17,9 @@ import {
   Ticket,
   Users,
   X,
+  Map,
+  Car,
+  Landmark
 } from "lucide-react";
 
 import Footer from "@/components/Footer";
@@ -25,6 +28,7 @@ import {
   getTourPackageBySlug,
   getTourPackageSlugs,
 } from "@/lib/tourPackages";
+import Navbar from "@/components/landing/Navbar";
 
 const SITE_URL = "https://www.khaturidescg.in";
 const PHONE = "9244137353";
@@ -48,284 +52,221 @@ export function generateStaticParams() {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Metadata                                                                   */
+/* Dynamic Slug Parser (SEO Magic for Infinite URLs)                          */
 /* -------------------------------------------------------------------------- */
 
-export async function generateMetadata({
-  params,
-}: PageProps): Promise<Metadata> {
-  const { slug } = await params;
-  const tour = getTourPackageBySlug(slug);
+function parseDynamicSlug(slug: string) {
+  const cleanSlug = slug.replace(/-/g, " ");
+  let source = "Chhattisgarh";
+  let destination = "Central India";
+  let isRoute = slug.includes("-to-");
+  let title = "";
 
-  if (!tour) {
-    return {
-      title: "Tour Package Not Found | Khatu Rides Travels",
-      robots: {
-        index: false,
-        follow: false,
-      },
-    };
+  if (isRoute) {
+    const parts = slug.split("-to-");
+    source = parts[0].replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+    destination = parts[1].replace(/-/g, " ").replace(/tour|package|taxi|cab/gi, "").trim().replace(/\b\w/g, (l) => l.toUpperCase());
+    title = `${source} To ${destination} Premium Taxi & Tour Package`;
+  } else {
+    destination = cleanSlug.replace(/tour|package|taxi|cab/gi, "").trim().replace(/\b\w/g, (l) => l.toUpperCase()) || "Chhattisgarh";
+    title = cleanSlug.replace(/\b\w/g, (l) => l.toUpperCase());
+    if (!title.toLowerCase().includes("tour") && !title.toLowerCase().includes("taxi")) {
+      title += " Taxi & Tour Package";
+    }
   }
 
-  const title = `${tour.title} from Chhattisgarh | Khatu Rides Travels`;
-
-  const description = `${tour.title} from Chhattisgarh with private cab travel, flexible pickup, sightseeing and customizable itinerary. Book from Korba, Raipur, Bilaspur and other cities.`;
-
-  const url = `${SITE_URL}/tour-packages/${tour.slug}`;
-
+  // Generate dynamic extensive content for SEO padding
   return {
+    slug,
     title,
-    description,
-
-    keywords: [
-      tour.title,
-      `${tour.destination} tour package`,
-      `${tour.destination} tour from Chhattisgarh`,
-      `${tour.destination} cab package`,
-      `${tour.destination} taxi from Chhattisgarh`,
-      `${tour.destination} tour from Korba`,
-      `${tour.destination} tour from Raipur`,
-      `${tour.destination} tour from Bilaspur`,
-      `${tour.destination} private cab`,
-      "tour packages from Chhattisgarh",
-      "Khatu Rides Travels",
+    source,
+    destination,
+    description: `Book premium ${title} with Khatu Rides Travels. Expert drivers, flexible pickup from ${source}, Raipur, Korba, and Bilaspur. Customized itineraries for your journey to ${destination}. Enjoy safe, reliable, and affordable outstation cabs across Chhattisgarh.`,
+    shortDescription: `Experience a hassle-free journey to ${destination} with our premium outstation taxi and private cab service. Book reliable cabs from ${source} today.`,
+    category: isRoute ? "Outstation Route" : "Tour Package",
+    badge: "Bestseller",
+    startingPrice: "Enquire for Best Fare",
+    duration: "Flexible (1 to Multiple Days)",
+    pickup: source,
+    image: "/hero/main%20image.png",
+    pickupCities: [source, "Raipur", "Korba", "Bilaspur", "Bhilai", "Durg", "Raigarh", "Ambikapur"],
+    highlights: [
+      `Direct private cab from ${source} to ${destination}`,
+      "Door-step pickup and drop facility",
+      "Clean, sanitized, and air-conditioned vehicles",
+      "Experienced route-expert drivers for long distance",
+      "Transparent pricing with no hidden charges",
+      "24/7 dedicated customer support"
     ],
-
-    alternates: {
-      canonical: url,
-    },
-
-    openGraph: {
-      title,
-      description,
-      url,
-      siteName: "Khatu Rides Travels",
-      type: "website",
-      locale: "en_IN",
-      images: [
-        {
-          url: tour.image.startsWith("http")
-            ? tour.image
-            : `${SITE_URL}${tour.image}`,
-          width: 1200,
-          height: 800,
-          alt: tour.title,
-        },
-      ],
-    },
-
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [
-        tour.image.startsWith("http")
-          ? tour.image
-          : `${SITE_URL}${tour.image}`,
-      ],
-    },
-
-    robots: {
-      index: true,
-      follow: true,
-    },
+    places: [destination, "Local Sightseeing points", "Major Transit Hubs", "Highway Stopovers", "Nearby Tourist Attractions"],
+    itinerary: [
+      {
+        day: "Day 1",
+        title: `Departure from ${source}`,
+        description: `Your journey begins as our professional driver picks you up from your preferred location in ${source}. Enjoy a comfortable and scenic drive towards ${destination} in our premium private cab.`,
+        places: [source, "Highway Transit", "Mid-way Stops"]
+      },
+      {
+        day: "Day 2",
+        title: `Explore ${destination}`,
+        description: `Reach ${destination} and explore the key attractions. Your private cab remains at your disposal for local sightseeing, business meetings, or family visits.`,
+        places: [destination, "Local Markets", "Key Landmarks"]
+      },
+      {
+        day: "Day 3",
+        title: `Return Journey to ${source}`,
+        description: `After concluding your visit at ${destination}, begin your safe and relaxing return journey back to ${source} or your designated drop-off city in Chhattisgarh.`,
+        places: ["Return Route", source]
+      }
+    ],
+    inclusions: [
+      "Private AC Cab (Innova, Ertiga, or Dzire)",
+      "Experienced and verified driver",
+      "Fuel and driver allowance",
+      "Door-to-door pickup and drop",
+      "Toll taxes (if included in custom quote)"
+    ],
+    exclusions: [
+      "Monument entry fees and camera charges",
+      "Personal expenses, meals, and shopping",
+      "Hotel accommodations (unless requested)",
+      "Parking charges (charged at actuals)"
+    ],
+    suitableFor: ["Families", "Corporate Travelers", "Solo Explorers", "Pilgrimage Groups", "Couples"],
+    faqs: [
+      {
+        question: `How can I book a cab from ${source} to ${destination}?`,
+        answer: `You can easily book by calling our 24/7 helpline at ${PHONE_DISPLAY} or sending a message on WhatsApp. We will provide you with the latest fare and instantly confirm your vehicle.`
+      },
+      {
+        question: `Which vehicles are available for the ${destination} trip?`,
+        answer: `We offer a wide range of well-maintained cabs including Sedans (Swift Dzire, Etios), SUVs (Maruti Ertiga), and Premium SUVs (Toyota Innova Crysta) based on your group size.`
+      },
+      {
+        question: `Is it safe to travel from ${source} to ${destination} at night?`,
+        answer: `Absolutely. All our drivers are highly experienced, police-verified, and familiar with the highway routes across Chhattisgarh and neighboring states, ensuring a 100% safe journey.`
+      },
+      {
+        question: `Does Khatu Rides offer custom tour packages?`,
+        answer: `Yes! Our itineraries are highly flexible. You can add extra days, include nearby tourist spots, or change your drop location. Just let our team know your preferences.`
+      }
+    ]
   };
 }
 
 /* -------------------------------------------------------------------------- */
-/* WhatsApp Icon                                                              */
+/* Metadata Generator (Dynamic SEO Tags)                                      */
+/* -------------------------------------------------------------------------- */
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const dbTour = getTourPackageBySlug(slug);
+  const tour = dbTour || parseDynamicSlug(slug);
+
+  const title = `${tour.title} from Chhattisgarh | Khatu Rides Travels`;
+  const url = `${SITE_URL}/tour-packages/${slug}`;
+
+  return {
+    title,
+    description: tour.description,
+    keywords: [
+      tour.title,
+      `${tour.destination} tour package`,
+      `${tour.destination} taxi service`,
+      `taxi for ${tour.destination} from Korba`,
+      `cab from Raipur to ${tour.destination}`,
+      `Chhattisgarh to ${tour.destination} cab`,
+      "tour packages from Chhattisgarh",
+      "Khatu Rides Travels",
+      "Bilaspur outstation taxi",
+      "Korba to Raipur travel"
+    ],
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description: tour.description,
+      url,
+      siteName: "Khatu Rides Travels",
+      type: "website",
+      locale: "en_IN",
+      images: [{ url: tour.image.startsWith("http") ? tour.image : `${SITE_URL}${tour.image}` }],
+    },
+    robots: { index: true, follow: true },
+  };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Icons & Floating Buttons                                                   */
 /* -------------------------------------------------------------------------- */
 
 function WhatsAppIcon({ size = 18 }: { size?: number }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path
-        d="M20.52 3.48A11.86 11.86 0 0 0 12.08 0C5.52 0 .18 5.34.18 11.9c0 2.1.55 4.15 1.6 5.96L.08 24l6.28-1.65a11.88 11.88 0 0 0 5.72 1.46h.01c6.56 0 11.9-5.34 11.9-11.9 0-3.18-1.24-6.17-3.47-8.43Z"
-        fill="currentColor"
-      />
-      <path
-        d="M17.52 13.9c-.3-.15-1.77-.87-2.04-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.95 1.17-.17.2-.35.22-.65.07-.3-.15-1.27-.47-2.42-1.5-.9-.8-1.5-1.77-1.67-2.07-.17-.3-.02-.46.13-.61.14-.14.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.49 0 1.47 1.07 2.89 1.22 3.09.15.2 2.1 3.2 5.09 4.49.71.31 1.27.5 1.71.64.72.23 1.37.2 1.89.12.58-.09 1.77-.72 2.02-1.42.25-.7.25-1.3.17-1.42-.07-.12-.27-.2-.57-.35Z"
-        fill="white"
-      />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M20.52 3.48A11.86 11.86 0 0 0 12.08 0C5.52 0 .18 5.34.18 11.9c0 2.1.55 4.15 1.6 5.96L.08 24l6.28-1.65a11.88 11.88 0 0 0 5.72 1.46h.01c6.56 0 11.9-5.34 11.9-11.9 0-3.18-1.24-6.17-3.47-8.43Z" fill="currentColor"/>
+      <path d="M17.52 13.9c-.3-.15-1.77-.87-2.04-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.95 1.17-.17.2-.35.22-.65.07-.3-.15-1.27-.47-2.42-1.5-.9-.8-1.5-1.77-1.67-2.07-.17-.3-.02-.46.13-.61.14-.14.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.49 0 1.47 1.07 2.89 1.22 3.09.15.2 2.1 3.2 5.09 4.49.71.31 1.27.5 1.71.64.72.23 1.37.2 1.89.12.58-.09 1.77-.72 2.02-1.42.25-.7.25-1.3.17-1.42-.07-.12-.27-.2-.57-.35Z" fill="white"/>
     </svg>
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/* Floating Mobile Actions                                                    */
-/* -------------------------------------------------------------------------- */
-
 function FloatingActions({ title }: { title: string }) {
-  const whatsappText = encodeURIComponent(
-    `Hello Khatu Rides Travels, I want to enquire about the ${title}. Please share package details, current price and availability.`
-  );
-
+  const whatsappText = encodeURIComponent(`Hello Khatu Rides, I want to enquire about "${title}". Please share details, current price, and cab availability.`);
   return (
-    <details className="fixed bottom-5 right-4 z-50 md:hidden">
-      {/* Main Floating Button */}
+    <details className="fixed bottom-6 right-4 z-50 group">
       <summary
-        className="
-          flex h-14 w-14 cursor-pointer list-none
-          items-center justify-center
-          rounded-full
-          bg-[#071A3A]
-          text-white
-          shadow-[0_12px_35px_rgba(7,26,58,0.35)]
-          ring-4 ring-white/80
-          transition-all
-          duration-300
-          hover:scale-105
-          [&::-webkit-details-marker]:hidden
-        "
-        aria-label="Open contact options"
+        className="flex h-16 w-16 cursor-pointer list-none items-center justify-center rounded-full bg-[#063B8F] text-white shadow-[0_10px_40px_rgba(6,59,143,0.5)] ring-4 ring-white/90 transition-all duration-300 hover:scale-105 [&::-webkit-details-marker]:hidden"
+        aria-label="Contact Options"
       >
-        {/* Phone icon */}
-        <Phone
-          size={22}
-          fill="currentColor"
-          className="transition-transform duration-300 group-open:rotate-45"
-        />
+        <MessageCircle size={26} fill="currentColor" className="transition-transform duration-300 group-open:rotate-45 group-open:scale-0 absolute" />
+        <X size={26} className="transition-transform duration-300 scale-0 group-open:scale-100 group-open:rotate-90 absolute" />
       </summary>
-
-      {/* Expandable Buttons */}
-      <div className="absolute bottom-[68px] right-0 flex flex-col items-center gap-3">
-        {/* WhatsApp */}
-        <a
-          href={`https://wa.me/${WHATSAPP}?text=${whatsappText}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="WhatsApp Khatu Rides Travels"
-          className="
-            flex h-12 w-12 items-center justify-center
-            rounded-full
-            bg-[#25D366]
-            text-white
-            shadow-[0_10px_25px_rgba(37,211,102,0.35)]
-            transition-all duration-300
-            hover:scale-110
-          "
-        >
-          <WhatsAppIcon size={21} />
+      <div className="absolute bottom-20 right-1 flex flex-col items-center gap-4 opacity-0 transition-opacity duration-300 group-open:opacity-100">
+        <a href={`https://wa.me/${WHATSAPP}?text=${whatsappText}`} target="_blank" rel="noopener noreferrer" className="flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-transform hover:scale-110">
+          <WhatsAppIcon size={26} />
         </a>
-
-        {/* Call */}
-        <a
-          href={`tel:+91${PHONE}`}
-          aria-label="Call Khatu Rides Travels"
-          className="
-            flex h-12 w-12 items-center justify-center
-            rounded-full
-            bg-[#E53935]
-            text-white
-            shadow-[0_10px_25px_rgba(229,57,53,0.35)]
-            transition-all duration-300
-            hover:scale-110
-          "
-        >
-          <Phone size={20} fill="currentColor" />
+        <a href={`tel:+91${PHONE}`} className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-500 text-slate-900 shadow-lg transition-transform hover:scale-110">
+          <Phone size={24} fill="currentColor" />
         </a>
       </div>
     </details>
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/* Booking CTA                                                                */
-/* -------------------------------------------------------------------------- */
-
-function BookingButtons({
-  title,
-  compact = false,
-}: {
-  title: string;
-  compact?: boolean;
-}) {
-  const whatsappText = encodeURIComponent(
-    `Hello Khatu Rides Travels, I want to book/enquire about the ${title}. Please share the current package price, vehicle options, itinerary and availability.`
-  );
-
+function BookingButtons({ title, compact = false }: { title: string; compact?: boolean }) {
+  const whatsappText = encodeURIComponent(`Hello Khatu Rides, I want to book/enquire about ${title}. Share pricing & vehicle options.`);
   return (
-    <div
-      className={`flex ${
-        compact ? "flex-col sm:flex-row" : "flex-col sm:flex-row"
-      } gap-3`}
-    >
-      <a
-        href={`tel:+91${PHONE}`}
-        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#063B8F] px-6 text-sm font-black text-white shadow-[0_12px_30px_rgba(6,59,143,0.25)] transition hover:-translate-y-0.5 hover:bg-[#052f73]"
-      >
-        <Phone size={17} fill="currentColor" />
-        Call Now
+    <div className={`flex w-full ${compact ? "flex-col sm:flex-row" : "flex-col sm:flex-row"} gap-3`}>
+      <a href={`tel:+91${PHONE}`} className="inline-flex flex-1 min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#063B8F] px-6 text-sm font-black text-white shadow-md transition hover:-translate-y-0.5 hover:bg-[#052f73]">
+        <Phone size={17} fill="currentColor" /> Call Now
       </a>
-
-      <a
-        href={`https://wa.me/${WHATSAPP}?text=${whatsappText}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#25D366] px-6 text-sm font-black text-white shadow-[0_12px_30px_rgba(37,211,102,0.25)] transition hover:-translate-y-0.5"
-      >
-        <WhatsAppIcon size={19} />
-        WhatsApp Enquiry
+      <a href={`https://wa.me/${WHATSAPP}?text=${whatsappText}`} target="_blank" rel="noopener noreferrer" className="inline-flex flex-1 min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#25D366] px-6 text-sm font-black text-white shadow-md transition hover:-translate-y-0.5">
+        <WhatsAppIcon size={19} /> WhatsApp Enquiry
       </a>
     </div>
   );
 }
 
 /* -------------------------------------------------------------------------- */
-/* Page                                                                       */
+/* MAIN PAGE RENDER                                                           */
 /* -------------------------------------------------------------------------- */
 
-export default async function TourPackageDetailPage({
-  params,
-}: PageProps) {
+export default async function TourPackageDetailPage({ params }: PageProps) {
   const { slug } = await params;
 
-  const tour = getTourPackageBySlug(slug);
-
-  if (!tour) {
-    notFound();
-  }
-
+  // DB Check or Dynamic Fallback Generation
+  const dbTour = getTourPackageBySlug(slug);
+  const tour = dbTour || parseDynamicSlug(slug);
   const relatedPackages = getRelatedTourPackages(slug, 3);
+  const pageUrl = `${SITE_URL}/tour-packages/${slug}`;
+  const imageUrl = tour.image.startsWith("http") ? tour.image : `${SITE_URL}${tour.image}`;
 
-  const pageUrl = `${SITE_URL}/tour-packages/${tour.slug}`;
-
-  const imageUrl = tour.image.startsWith("http")
-    ? tour.image
-    : `${SITE_URL}${tour.image}`;
-
-  /* ------------------------------------------------------------------------ */
-  /* Structured Data                                                          */
-  /* ------------------------------------------------------------------------ */
-
+  // Structured Data for SEO
   const breadcrumbSchema = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: "Home",
-        item: SITE_URL,
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: "Tour Packages",
-        item: `${SITE_URL}/tour-packages`,
-      },
-      {
-        "@type": "ListItem",
-        position: 3,
-        name: tour.title,
-        item: pageUrl,
-      },
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Tour Packages", item: `${SITE_URL}/tour-packages` },
+      { "@type": "ListItem", position: 3, name: tour.title, item: pageUrl },
     ],
   };
 
@@ -336,659 +277,198 @@ export default async function TourPackageDetailPage({
     description: tour.description,
     url: pageUrl,
     image: imageUrl,
-
     provider: {
       "@type": "LocalBusiness",
       name: "Khatu Rides Travels Co.",
-      url: SITE_URL,
       telephone: `+91${PHONE}`,
-      address: {
-        "@type": "PostalAddress",
-        addressLocality: "Korba",
-        addressRegion: "Chhattisgarh",
-        addressCountry: "IN",
-      },
+      address: { "@type": "PostalAddress", addressLocality: "Korba", addressRegion: "Chhattisgarh", addressCountry: "IN" },
     },
-
-    areaServed: tour.pickupCities.map((city) => ({
-      "@type": "City",
-      name: city,
-    })),
-
-    serviceType: `${tour.destination} Tour Package`,
+    areaServed: tour.pickupCities.map((city) => ({ "@type": "City", name: city })),
+    serviceType: `${tour.destination} Tour Package & Taxi`,
   };
 
   return (
-    <main className="min-h-screen bg-white text-slate-900">
-      {/* ------------------------------------------------------------------ */}
-      {/* JSON-LD                                                            */}
-      {/* ------------------------------------------------------------------ */}
+    <main className="min-h-screen bg-slate-50 text-slate-900 selection:bg-amber-300 selection:text-slate-900 overflow-x-hidden">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }} />
 
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(breadcrumbSchema),
-        }}
-      />
+      {/* Header Placeholder */}
+      <Navbar/>
 
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(serviceSchema),
-        }}
-      />
-
-      {/* ------------------------------------------------------------------ */}
-      {/* Header                                                             */}
-      {/* ------------------------------------------------------------------ */}
-
-      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-xl">
-        <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link href="/" className="shrink-0">
-            <img
-              src="/logo.png"
-              alt="Khatu Rides Travels"
-              className="h-10 w-auto sm:h-11"
-            />
-          </Link>
-
-          <nav className="hidden items-center gap-1 lg:flex">
-            <Link
-              href="/"
-              className="rounded-xl px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50 hover:text-[#063B8F]"
-            >
-              Home
-            </Link>
-
-            <Link
-              href="/#popular-routes"
-              className="rounded-xl px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50 hover:text-[#063B8F]"
-            >
-              Popular Routes
-            </Link>
-
-            <Link
-              href="/tour-packages"
-              className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-black text-amber-700"
-            >
-              Tour Packages
-            </Link>
-
-            <Link
-              href="/#fleet"
-              className="rounded-xl px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50 hover:text-[#063B8F]"
-            >
-              Fleet
-            </Link>
-
-            <Link
-              href="/#services"
-              className="rounded-xl px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50 hover:text-[#063B8F]"
-            >
-              Services
-            </Link>
-
-            <Link
-              href="/fare-calculator"
-              className="ml-2 inline-flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-xs font-black text-slate-950 shadow-sm transition hover:bg-amber-300"
-            >
-              <Ticket size={14} />
-              Fare Calculator
-            </Link>
-
-            <a
-              href={`tel:+91${PHONE}`}
-              className="ml-1 inline-flex items-center gap-2 rounded-xl bg-[#063B8F] px-4 py-2.5 text-xs font-black text-white shadow-sm transition hover:bg-[#052f73]"
-            >
-              <Phone size={14} fill="currentColor" />
-              Call Now
-            </a>
-          </nav>
-
-          <div className="flex items-center gap-2 lg:hidden">
-            <a
-              href={`tel:+91${PHONE}`}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-[#063B8F] text-white shadow-md"
-              aria-label="Call Now"
-            >
-              <Phone size={17} fill="currentColor" />
-            </a>
-
-            <details className="relative">
-              <summary
-                className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-full bg-slate-100 text-slate-900"
-                aria-label="Open menu"
-              >
-                <span className="flex flex-col gap-1.5">
-                  <span className="block h-0.5 w-5 bg-slate-900" />
-                  <span className="block h-0.5 w-5 bg-slate-900" />
-                  <span className="block h-0.5 w-5 bg-slate-900" />
-                </span>
-              </summary>
-
-              <div className="absolute right-0 top-12 w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl">
-                <Link
-                  href="/"
-                  className="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-bold hover:bg-slate-50"
-                >
-                  Home
-                  <ChevronRight size={15} />
-                </Link>
-
-                <Link
-                  href="/#popular-routes"
-                  className="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-bold hover:bg-slate-50"
-                >
-                  Popular Routes
-                  <ChevronRight size={15} />
-                </Link>
-
-                <Link
-                  href="/tour-packages"
-                  className="flex items-center justify-between rounded-xl bg-amber-50 px-4 py-3 text-sm font-black text-amber-700"
-                >
-                  Tour Packages
-                  <ChevronRight size={15} />
-                </Link>
-
-                <Link
-                  href="/#fleet"
-                  className="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-bold hover:bg-slate-50"
-                >
-                  Fleet
-                  <ChevronRight size={15} />
-                </Link>
-
-                <Link
-                  href="/#services"
-                  className="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-bold hover:bg-slate-50"
-                >
-                  Services
-                  <ChevronRight size={15} />
-                </Link>
-
-                <Link
-                  href="/fare-calculator"
-                  className="mt-1 flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-3 text-sm font-black text-slate-950"
-                >
-                  <Ticket size={16} />
-                  Fare Calculator
-                </Link>
-              </div>
-            </details>
-          </div>
-        </div>
-      </header>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* Mobile Call Strip                                                  */}
-      {/* ------------------------------------------------------------------ */}
-
-      <div className="bg-[#071A3A] px-4 py-2 text-center text-[22px] font-bold text-white sm:hidden">
-        टूर पैकेज बुक करने के लिए कॉल करें{" "}
-        <a
-          href={`tel:+91${PHONE}`}
-          className="font-black text-[22px] text-amber-300"
-        >
-          {PHONE_DISPLAY}
-        </a>
-      </div>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* Breadcrumb                                                          */}
-      {/* ------------------------------------------------------------------ */}
-
-      <div className="mx-auto max-w-7xl px-4 pt-5 sm:px-6 lg:px-8">
-        <nav
-          aria-label="Breadcrumb"
-          className="flex flex-wrap items-center gap-1.5 text-[10px] font-bold text-slate-400"
-        >
-          <Link href="/" className="hover:text-[#063B8F]">
-            Home
-          </Link>
-
-          <ChevronRight size={12} />
-
-          <Link
-            href="/tour-packages"
-            className="hover:text-[#063B8F]"
-          >
-            Tour Packages
-          </Link>
-
-          <ChevronRight size={12} />
-
-          <span className="text-slate-600">{tour.title}</span>
-        </nav>
-      </div>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* Hero                                                               */}
-      {/* ------------------------------------------------------------------ */}
-
+      {/* Hero Section */}
       <section className="relative isolate overflow-hidden bg-[#020B24]">
-  {/* ------------------------------------------------------------------ */}
-  {/* High Contrast Background                                           */}
-  {/* ------------------------------------------------------------------ */}
+        <div className="absolute inset-0 bg-[linear-gradient(115deg,#020B24_0%,#052B70_48%,#063B8F_100%)]" />
+        <div className="absolute -right-32 -top-32 h-105 w-105 rounded-full bg-blue-500/25 blur-[100px]" />
+        <div className="absolute -bottom-40 left-[30%] h-100 w-100 rounded-full bg-amber-400/15 blur-[110px]" />
+        
+        <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:gap-14 lg:py-20">
+          
+          <div className="text-white z-10">
+            <div className="mb-6 flex flex-wrap items-center gap-3">
+              <span className="inline-flex items-center rounded-full bg-amber-400 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[#071A3A] shadow-[0_5px_20px_rgba(251,191,36,0.3)]">{tour.badge}</span>
+              <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white backdrop-blur-md">{tour.category}</span>
+            </div>
+            <h1 className="text-4xl font-black leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl capitalize">{tour.title.toLowerCase()}</h1>
+            <div className="mt-6 h-1.5 w-24 rounded-full bg-gradient-to-r from-amber-300 to-orange-500" />
+            <p className="mt-6 max-w-2xl text-base font-medium leading-relaxed text-white/90 sm:text-lg">{tour.shortDescription}</p>
 
-  <div className="absolute inset-0 bg-[linear-gradient(115deg,#020B24_0%,#052B70_48%,#063B8F_100%)]" />
-
-  {/* Electric blue glow */}
-  <div className="absolute -right-32 -top-32 h-[420px] w-[420px] rounded-full bg-blue-500/25 blur-[100px]" />
-
-  {/* Yellow glow */}
-  <div className="absolute -bottom-40 left-[30%] h-[400px] w-[400px] rounded-full bg-amber-400/15 blur-[110px]" />
-
-  {/* Decorative grid */}
-  <div
-    className="absolute inset-0 opacity-[0.07]"
-    style={{
-      backgroundImage:
-        "linear-gradient(rgba(255,255,255,0.35) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.35) 1px, transparent 1px)",
-      backgroundSize: "42px 42px",
-    }}
-  />
-
-  {/* ------------------------------------------------------------------ */}
-  {/* Content                                                             */}
-  {/* ------------------------------------------------------------------ */}
-
-  <div className="relative mx-auto grid max-w-7xl items-center gap-8 px-4 py-9 sm:px-6 sm:py-12 lg:grid-cols-[1.04fr_0.96fr] lg:gap-12 lg:px-8 lg:py-14">
-    {/* ---------------------------------------------------------------- */}
-    {/* LEFT CONTENT                                                     */}
-    {/* ---------------------------------------------------------------- */}
-
-    <div className="text-white">
-      {/* Badge Row */}
-      <div className="mb-5 flex flex-wrap items-center gap-2">
-        {tour.badge && (
-          <span className="inline-flex items-center rounded-full bg-amber-400 px-4 py-2 text-[9px] font-black uppercase tracking-[0.18em] text-[#071A3A] shadow-[0_8px_25px_rgba(251,191,36,0.25)]">
-            {tour.badge}
-          </span>
-        )}
-
-        <span className="inline-flex items-center rounded-full border border-white/25 bg-white/10 px-4 py-2 text-[9px] font-black uppercase tracking-[0.18em] text-white backdrop-blur-md">
-          {tour.category}
-        </span>
-      </div>
-
-      {/* Destination */}
-      <p className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-amber-300 sm:text-sm">
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-400 text-[#071A3A] shadow-lg">
-          <MapPin size={14} fill="currentColor" />
-        </span>
-
-        {tour.destination}
-      </p>
-
-      {/* H1 */}
-      <h1 className="max-w-4xl text-[2.35rem] font-black leading-[0.98] tracking-[-0.045em] text-white sm:text-5xl lg:text-[4.15rem]">
-        {tour.title}
-      </h1>
-
-      {/* Accent line */}
-      <div className="mt-5 h-1.5 w-24 rounded-full bg-gradient-to-r from-amber-300 via-yellow-400 to-orange-500" />
-
-      {/* Description */}
-      <p className="mt-5 max-w-2xl text-[15px] font-medium leading-7 text-white/90 sm:text-lg sm:leading-8">
-        {tour.shortDescription}
-      </p>
-
-      {/* ---------------------------------------------------------------- */}
-      {/* Info Cards                                                       */}
-      {/* ---------------------------------------------------------------- */}
-
-      <div className="mt-7 grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
-        {/* Duration */}
-        <div className="group rounded-2xl border border-white/20 bg-white/[0.10] p-3.5 shadow-[0_10px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition hover:border-amber-300/60 hover:bg-white/[0.15]">
-          <Clock3
-            size={20}
-            className="mb-3 text-amber-300"
-          />
-
-          <p className="text-[9px] font-black uppercase tracking-[0.14em] text-white/60">
-            Duration
-          </p>
-
-          <p className="mt-1 text-[12px] font-black leading-4 text-white sm:text-sm">
-            {tour.duration}
-          </p>
-        </div>
-
-        {/* Pickup */}
-        <div className="group rounded-2xl border border-white/20 bg-white/[0.10] p-3.5 shadow-[0_10px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition hover:border-amber-300/60 hover:bg-white/[0.15]">
-          <Navigation
-            size={20}
-            className="mb-3 text-amber-300"
-          />
-
-          <p className="text-[9px] font-black uppercase tracking-[0.14em] text-white/60">
-            Pickup
-          </p>
-
-          <p className="mt-1 text-[12px] font-black leading-4 text-white sm:text-sm">
-            {tour.pickup}
-          </p>
-        </div>
-
-        {/* Travel */}
-        <div className="group rounded-2xl border border-white/20 bg-white/[0.10] p-3.5 shadow-[0_10px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition hover:border-amber-300/60 hover:bg-white/[0.15]">
-          <Users
-            size={20}
-            className="mb-3 text-amber-300"
-          />
-
-          <p className="text-[9px] font-black uppercase tracking-[0.14em] text-white/60">
-            Travel
-          </p>
-
-          <p className="mt-1 text-[12px] font-black leading-4 text-white sm:text-sm">
-            Private Cab
-          </p>
-        </div>
-
-        {/* Booking */}
-        <div className="group rounded-2xl border border-white/20 bg-white/[0.10] p-3.5 shadow-[0_10px_30px_rgba(0,0,0,0.12)] backdrop-blur-md transition hover:border-amber-300/60 hover:bg-white/[0.15]">
-          <Star
-            size={20}
-            className="mb-3 text-amber-300"
-            fill="currentColor"
-          />
-
-          <p className="text-[9px] font-black uppercase tracking-[0.14em] text-white/60">
-            Booking
-          </p>
-
-          <p className="mt-1 text-[12px] font-black leading-4 text-white sm:text-sm">
-            Easy Enquiry
-          </p>
-        </div>
-      </div>
-
-      {/* ---------------------------------------------------------------- */}
-      {/* CTA                                                              */}
-      {/* ---------------------------------------------------------------- */}
-
-      <div className="mt-7">
-        <BookingButtons title={tour.title} />
-      </div>
-
-      <p className="mt-4 flex items-center gap-2 text-[10px] font-bold text-white/65 sm:text-xs">
-        <ShieldCheck size={14} className="text-amber-300" />
-        Latest price • Vehicle availability • Customized itinerary
-      </p>
-    </div>
-
-    {/* ---------------------------------------------------------------- */}
-    {/* RIGHT IMAGE                                                       */}
-    {/* ---------------------------------------------------------------- */}
-
-    <div className="relative">
-      {/* Glow behind image */}
-      <div className="absolute -inset-5 rounded-[38px] bg-amber-400/20 blur-[45px]" />
-
-      <div className="relative overflow-hidden rounded-[30px] border border-white/25 bg-white/10 p-2 shadow-[0_30px_80px_rgba(0,0,0,0.35)] backdrop-blur-sm">
-        <div className="relative overflow-hidden rounded-[24px] bg-slate-200">
-          <img
-            src={tour.image}
-            alt={`${tour.title} - Khatu Rides Travels`}
-            className="aspect-[4/3] h-auto w-full object-cover transition duration-700 hover:scale-[1.02]"
-          />
-
-          {/* Image gradient */}
-          <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#020B24]/95 via-[#020B24]/35 to-transparent" />
-
-          {/* Price Card */}
-          <div className="absolute bottom-4 left-4 right-4 rounded-[22px] border border-white/30 bg-[#020B24]/90 p-4 text-white shadow-2xl backdrop-blur-xl sm:p-5">
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-amber-300">
-                  Starting From
-                </p>
-
-                <p className="mt-1 text-3xl font-black tracking-tight text-amber-300 sm:text-4xl">
-                  {tour.startingPrice}
-                </p>
-              </div>
-
-              <div className="text-right">
-                <p className="text-[9px] font-black uppercase tracking-[0.16em] text-white/50">
-                  Destination
-                </p>
-
-                <p className="mt-1 max-w-[145px] text-xs font-black leading-5 text-white sm:text-sm">
-                  {tour.destination}
-                </p>
-              </div>
+            <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+              {[
+                { icon: Clock3, label: "Duration", val: tour.duration },
+                { icon: Navigation, label: "Pickup", val: tour.pickup },
+                { icon: Car, label: "Travel", val: "Private Cab" },
+                { icon: Star, label: "Reviews", val: "4.9/5" }
+              ].map((stat, i) => (
+                <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+                  <stat.icon size={22} className="mb-2 text-amber-400" />
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-white/50">{stat.label}</p>
+                  <p className="mt-1 text-sm font-black text-white">{stat.val}</p>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Floating image label */}
-      <div className="absolute -bottom-4 -left-3 hidden rounded-2xl border border-white/20 bg-white px-4 py-3 shadow-xl sm:block">
-        <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-400 text-[#071A3A]">
-            <Compass size={16} />
-          </span>
+          {/* Code-Generated Dynamic Graphic */}
+          <div className="relative z-10 hidden lg:block">
+            <div className="absolute -inset-4 rounded-[40px] bg-amber-400/20 blur-[40px]" />
+            <div className="relative h-[480px] w-full overflow-hidden rounded-[32px] border-4 border-white/10 bg-gradient-to-br from-[#052B70] via-[#020B24] to-[#071A3A] shadow-2xl flex items-center justify-center">
 
-          <div>
-            <p className="text-[8px] font-black uppercase tracking-wider text-slate-400">
-              Explore
-            </p>
+              <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }} />
+              <div className="absolute -top-20 -right-20 h-64 w-64 rounded-full bg-blue-500/30 blur-[60px]" />
+              <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-amber-500/20 blur-[60px]" />
 
-            <p className="text-[11px] font-black text-slate-950">
-              Plan Your Journey
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+              <div className="relative w-full max-w-[320px]">
+                <div className="absolute left-[27px] top-12 bottom-12 w-1 border-l-2 border-dashed border-amber-400/40" />
 
-  {/* Bottom accent */}
-  <div className="relative h-1.5 bg-gradient-to-r from-amber-300 via-yellow-400 to-orange-500" />
-</section>
+                <div className="relative flex items-center gap-5 mb-20">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/10 border border-white/20 backdrop-blur-md shadow-[0_0_20px_rgba(255,255,255,0.1)] z-10">
+                    <MapPin size={24} className="text-blue-300" />
+                  </div>
+                  <div className="flex-1 rounded-2xl bg-white/5 border border-white/10 p-3.5 backdrop-blur-sm shadow-lg transition-transform hover:scale-105">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-blue-300">Pickup Location</p>
+                    <p className="mt-0.5 text-lg font-black text-white truncate">{tour.pickup}</p>
+                  </div>
+                </div>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Quick Info                                                         */}
-      {/* ------------------------------------------------------------------ */}
+                <div className="absolute left-[15px] top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-full bg-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.6)] z-20">
+                  <Car size={14} className="text-slate-900" />
+                </div>
 
-      <section className="border-b border-slate-200 bg-white">
-        <div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-slate-200 sm:grid-cols-4">
-          <div className="p-4 text-center">
-            <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">
-              Starting Price
-            </p>
-            <p className="mt-1 text-sm font-black text-slate-950">
-              {tour.startingPrice}
-            </p>
-          </div>
+                <div className="relative flex items-center gap-5">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-amber-400 shadow-[0_0_30px_rgba(251,191,36,0.4)] z-10">
+                    <MapPin size={24} className="text-slate-900" fill="currentColor" />
+                  </div>
+                  <div className="flex-1 rounded-2xl bg-gradient-to-r from-amber-500/20 to-transparent border border-amber-400/30 p-3.5 backdrop-blur-sm shadow-lg transition-transform hover:scale-105">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-amber-400">Destination Hub</p>
+                    <p className="mt-0.5 text-xl font-black text-white truncate">{tour.destination}</p>
+                  </div>
+                </div>
+              </div>
 
-          <div className="p-4 text-center">
-            <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">
-              Duration
-            </p>
-            <p className="mt-1 text-sm font-black text-slate-950">
-              {tour.duration}
-            </p>
-          </div>
+              <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-md shadow-xl">
+                <div className="flex items-center gap-3">
+                  <ShieldCheck size={20} className="text-emerald-400" />
+                  <div>
+                    <p className="text-[9px] font-bold uppercase text-white/50">Verified Route</p>
+                    <p className="text-xs font-black text-white">Safe & Secure Travel</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                   <p className="text-[9px] font-bold uppercase text-white/50">Travel Mode</p>
+                   <p className="text-xs font-black text-amber-400">Private Cab</p>
+                </div>
+              </div>
 
-          <div className="p-4 text-center">
-            <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">
-              Pickup
-            </p>
-            <p className="mt-1 text-sm font-black text-slate-950">
-              Chhattisgarh
-            </p>
-          </div>
-
-          <div className="p-4 text-center">
-            <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">
-              Travel Type
-            </p>
-            <p className="mt-1 text-sm font-black text-slate-950">
-              Private Cab
-            </p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Main Content                                                       */}
-      {/* ------------------------------------------------------------------ */}
-
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_350px]">
-          <div>
-            {/* Overview */}
-
+      {/* Main Content & Sidebar */}
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="grid gap-10 lg:grid-cols-[1fr_380px]">
+          
+          <div className="space-y-16">
+            
+            {/* Overview & Travel Guide */}
             <section>
-              <div className="mb-5">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">
-                  Tour Overview
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">Travel Guide</p>
+              <h2 className="mt-2 text-3xl font-black text-slate-900">Tour Overview: {tour.title}</h2>
+              <div className="mt-6 space-y-4 text-base leading-relaxed text-slate-600">
+                <p>
+                  Planning a journey for <strong className="text-slate-900">{tour.title}</strong>? Khatu Rides Travels provides premium private cab and taxi services to ensure your trip to <strong className="text-slate-900">{tour.destination}</strong> is safe, luxurious, and highly reliable. Whether you are traveling for a family vacation, corporate events, or pilgrimage, our extensive fleet guarantees the perfect ride.
                 </p>
-
-                <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
-                  {tour.title} — Plan Your Journey
-                </h2>
+                <p>
+                  We operate extensively across Chhattisgarh's major hubs. You can conveniently schedule your pickup from <strong className="text-slate-900">Raipur, Korba, Bilaspur, Bhilai, Durg, Raigarh, and Ambikapur</strong>. The final itinerary, vehicle choice, and exact cost are fully transparent and confirmed prior to your booking.
+                </p>
               </div>
-
-              <p className="text-sm leading-7 text-slate-600 sm:text-base">
-                {tour.description}
-              </p>
-
-              <p className="mt-4 text-sm leading-7 text-slate-600 sm:text-base">
-                Khatu Rides Travels offers private cab travel with
-                flexible pickup options from major cities across
-                Chhattisgarh. Share your travel date, passenger count,
-                pickup location and preferred vehicle with our booking
-                team to receive the latest quotation.
-              </p>
             </section>
 
             {/* Highlights */}
-
-            <section className="mt-12">
-              <div className="mb-5">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">
-                  Why This Tour
-                </p>
-
-                <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
-                  Tour Highlights
-                </h2>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                {tour.highlights.map((item) => (
-                  <div
-                    key={item}
-                    className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-                  >
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+            <section>
+              <h3 className="text-2xl font-black text-slate-900">Why Choose This Package?</h3>
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                {tour.highlights.map((h, i) => (
+                  <div key={i} className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
                       <Check size={16} strokeWidth={3} />
                     </span>
-
-                    <p className="pt-1 text-sm font-bold text-slate-700">
-                      {item}
-                    </p>
+                    <p className="pt-1 text-sm font-bold text-slate-700">{h}</p>
                   </div>
                 ))}
               </div>
             </section>
 
-            {/* Places */}
-
-            <section className="mt-12">
-              <div className="mb-5">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">
-                  Explore
-                </p>
-
-                <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
-                  Places Covered
-                </h2>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                {tour.places.map((place) => (
-                  <div
-                    key={place}
-                    className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4"
-                  >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#071A3A] text-amber-300">
-                      <MapPin size={16} fill="currentColor" />
-                    </span>
-
-                    <span className="text-sm font-black text-slate-800">
-                      {place}
-                    </span>
-                  </div>
-                ))}
-              </div>
+            {/* Chhattisgarh Tourism Integration (SEO Booster) */}
+            <section className="rounded-3xl border border-blue-100 bg-blue-50/60 p-6 sm:p-8">
+              <h3 className="flex items-center gap-3 text-2xl font-black text-[#063B8F]">
+                <Map size={28} className="text-amber-500" /> Explore Chhattisgarh Tourism
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                Enhance your journey by connecting through Chhattisgarh's top tourist destinations. Khatu Rides Travels offers intercity outstation cabs connecting major spots:
+              </p>
+              <ul className="mt-5 grid gap-4 sm:grid-cols-2">
+                <li className="flex gap-3">
+                  <Landmark size={20} className="shrink-0 text-amber-500 mt-1" />
+                  <p className="text-sm text-slate-700"><strong className="text-slate-900">Raipur & Sirpur:</strong> The capital transit hub connecting to the ancient archaeological marvels.</p>
+                </li>
+                <li className="flex gap-3">
+                  <Landmark size={20} className="shrink-0 text-amber-500 mt-1" />
+                  <p className="text-sm text-slate-700"><strong className="text-slate-900">Bastar & Chitrakote:</strong> Book outstation cabs from Raipur/Korba to witness the Niagara Falls of India.</p>
+                </li>
+                <li className="flex gap-3">
+                  <Landmark size={20} className="shrink-0 text-amber-500 mt-1" />
+                  <p className="text-sm text-slate-700"><strong className="text-slate-900">Mainpat (Shimla of CG):</strong> Enjoy scenic hill station travel easily accessible via cab from Korba.</p>
+                </li>
+                <li className="flex gap-3">
+                  <Landmark size={20} className="shrink-0 text-amber-500 mt-1" />
+                  <p className="text-sm text-slate-700"><strong className="text-slate-900">Bhoramdeo Temple:</strong> Known as the Khajuraho of Chhattisgarh, a perfect cultural detour.</p>
+                </li>
+              </ul>
             </section>
 
             {/* Itinerary */}
-
-            <section className="mt-12">
-              <div className="mb-6">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">
-                  Suggested Plan
-                </p>
-
-                <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
-                  {tour.duration} Itinerary
-                </h2>
-
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  The itinerary can be customized according to your
-                  pickup city, travel dates and sightseeing requirements.
-                </p>
-              </div>
-
-              <div className="relative space-y-4">
+            <section>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">Suggested Plan</p>
+              <h2 className="mt-2 text-3xl font-black text-slate-900">Sample Itinerary</h2>
+              <p className="mt-2 text-sm text-slate-500">This itinerary is fully customizable based on your pickup city, travel dates, and sightseeing needs.</p>
+              
+              <div className="relative mt-8 space-y-6">
                 <div className="absolute bottom-5 left-[19px] top-5 hidden w-px bg-slate-200 sm:block" />
-
                 {tour.itinerary.map((item, index) => (
-                  <div
-                    key={`${item.day}-${index}`}
-                    className="relative rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:pl-6"
-                  >
-                    <div className="flex gap-4">
-                      <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-400 text-xs font-black text-slate-950 shadow-sm">
+                  <div key={index} className="relative rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:pl-8">
+                    <div className="flex gap-5">
+                      <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-400 text-sm font-black text-slate-950 shadow-md">
                         {index + 1}
                       </div>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div>
-                            <p className="text-[9px] font-black uppercase tracking-[0.16em] text-amber-600">
-                              {item.day}
-                            </p>
-
-                            <h3 className="mt-1 text-base font-black text-slate-950 sm:text-lg">
-                              {item.title}
-                            </h3>
-                          </div>
-
-                          <span className="rounded-full bg-slate-100 px-3 py-1 text-[9px] font-black uppercase tracking-wider text-slate-500">
-                            Private Cab
-                          </span>
-                        </div>
-
-                        <p className="mt-3 text-sm leading-6 text-slate-600">
-                          {item.description}
-                        </p>
-
+                      <div className="flex-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-amber-600">{item.day}</p>
+                        <h3 className="mt-1 text-lg font-black text-slate-950">{item.title}</h3>
+                        <p className="mt-3 text-sm leading-6 text-slate-600">{item.description}</p>
                         <div className="mt-4 flex flex-wrap gap-2">
                           {item.places.map((place) => (
-                            <span
-                              key={place}
-                              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-600"
-                            >
-                              <MapPin size={11} />
-                              {place}
+                            <span key={place} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-600">
+                              <MapPin size={11} /> {place}
                             </span>
                           ))}
                         </div>
@@ -999,484 +479,125 @@ export default async function TourPackageDetailPage({
               </div>
             </section>
 
-            {/* Pickup Cities */}
-
-            <section className="mt-12 rounded-[28px] bg-[#071A3A] p-6 text-white sm:p-8">
-              <div className="flex items-start gap-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-400 text-slate-950">
-                  <Navigation size={20} />
+            {/* Inclusions & Exclusions */}
+            <section className="grid gap-6 md:grid-cols-2">
+              <div className="rounded-3xl border border-emerald-100 bg-emerald-50/60 p-6 sm:p-8">
+                <div className="flex items-center gap-3 mb-5">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-white"><Check size={18} strokeWidth={3} /></span>
+                  <h3 className="text-xl font-black text-slate-950">What's Included</h3>
                 </div>
-
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-300">
-                    Pickup Available
-                  </p>
-
-                  <h2 className="mt-2 text-xl font-black sm:text-2xl">
-                    Book This Tour From Chhattisgarh
-                  </h2>
-
-                  <p className="mt-2 text-sm leading-6 text-slate-300">
-                    Pickup can be planned from major cities and nearby
-                    areas. Final pickup point depends on your confirmed
-                    itinerary.
-                  </p>
-                </div>
+                <ul className="space-y-3">
+                  {tour.inclusions.map((item) => (
+                    <li key={item} className="flex items-start gap-2 text-sm leading-6 text-slate-700">
+                      <Check size={16} className="mt-1 shrink-0 text-emerald-600" strokeWidth={3} /> {item}
+                    </li>
+                  ))}
+                </ul>
               </div>
 
-              <div className="mt-6 flex flex-wrap gap-2">
-                {tour.pickupCities.map((city) => (
-                  <span
-                    key={city}
-                    className="rounded-full border border-white/10 bg-white/10 px-3 py-2 text-[10px] font-bold text-white/90"
-                  >
-                    {city}
-                  </span>
-                ))}
-              </div>
-
-              <div className="mt-6">
-                <BookingButtons title={tour.title} compact />
+              <div className="rounded-3xl border border-red-100 bg-red-50/50 p-6 sm:p-8">
+                <div className="flex items-center gap-3 mb-5">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500 text-white"><X size={18} strokeWidth={3} /></span>
+                  <h3 className="text-xl font-black text-slate-950">Not Included</h3>
+                </div>
+                <ul className="space-y-3">
+                  {tour.exclusions.map((item) => (
+                    <li key={item} className="flex items-start gap-2 text-sm leading-6 text-slate-700">
+                      <X size={16} className="mt-1 shrink-0 text-red-500" strokeWidth={3} /> {item}
+                    </li>
+                  ))}
+                </ul>
               </div>
             </section>
 
-            {/* Inclusions / Exclusions */}
-
-            <section className="mt-12">
-              <div className="grid gap-5 md:grid-cols-2">
-                <div className="rounded-3xl border border-emerald-100 bg-emerald-50/60 p-6">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-white">
-                      <Check size={18} strokeWidth={3} />
-                    </span>
-
-                    <h2 className="text-lg font-black text-slate-950">
-                      Package Includes
-                    </h2>
-                  </div>
-
-                  <ul className="mt-5 space-y-3">
-                    {tour.inclusions.map((item) => (
-                      <li
-                        key={item}
-                        className="flex items-start gap-2 text-sm leading-6 text-slate-700"
-                      >
-                        <Check
-                          size={16}
-                          className="mt-1 shrink-0 text-emerald-600"
-                          strokeWidth={3}
-                        />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="rounded-3xl border border-red-100 bg-red-50/50 p-6">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500 text-white">
-                      <X size={18} strokeWidth={3} />
-                    </span>
-
-                    <h2 className="text-lg font-black text-slate-950">
-                      Not Included
-                    </h2>
-                  </div>
-
-                  <ul className="mt-5 space-y-3">
-                    {tour.exclusions.map((item) => (
-                      <li
-                        key={item}
-                        className="flex items-start gap-2 text-sm leading-6 text-slate-700"
-                      >
-                        <X
-                          size={16}
-                          className="mt-1 shrink-0 text-red-500"
-                          strokeWidth={3}
-                        />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </section>
-
-            {/* Suitable For */}
-
-            <section className="mt-12">
-              <div className="mb-5">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">
-                  Perfect For
-                </p>
-
-                <h2 className="mt-2 text-2xl font-black text-slate-950">
-                  Who Can Book This Tour?
-                </h2>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {tour.suitableFor.map((item) => (
-                  <span
-                    key={item}
-                    className="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm"
-                  >
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </section>
-
-            {/* SEO Content */}
-
-            <section className="mt-12 rounded-[28px] bg-slate-50 p-6 sm:p-8">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">
-                Travel Guide
-              </p>
-
-              <h2 className="mt-2 text-2xl font-black text-slate-950">
-                {tour.destination} Tour from Chhattisgarh
-              </h2>
-
-              <div className="mt-5 space-y-5 text-sm leading-7 text-slate-600">
-                <p>
-                  Travelling from Chhattisgarh to{" "}
-                  <strong className="font-black text-slate-800">
-                    {tour.destination}
-                  </strong>{" "}
-                  is more convenient when your complete journey is
-                  planned around a private cab. Khatu Rides Travels
-                  provides private taxi travel for families, devotees,
-                  senior citizens and groups looking for flexible
-                  long-distance travel.
-                </p>
-
-                <p>
-                  Depending on your starting location, the booking team
-                  can plan pickup from{" "}
-                  <strong className="font-black text-slate-800">
-                    Korba, Raipur, Bilaspur, Raigarh, Ambikapur, Durg,
-                    Bhilai
-                  </strong>{" "}
-                  and other nearby cities. The exact pickup point,
-                  vehicle, route and package cost are confirmed before
-                  booking.
-                </p>
-
-                <p>
-                  This package can also be customized according to the
-                  number of passengers, travel dates, preferred vehicle,
-                  sightseeing requirements and number of travel days.
-                  Contact Khatu Rides Travels to discuss your itinerary
-                  and receive the latest quotation.
-                </p>
-              </div>
-            </section>
-
-            {/* FAQ */}
-
-            <section className="mt-12">
-              <div className="mb-6">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">
-                  FAQs
-                </p>
-
-                <h2 className="mt-2 text-2xl font-black text-slate-950 sm:text-3xl">
-                  Frequently Asked Questions
-                </h2>
-              </div>
-
-              <div className="space-y-3">
+            {/* FAQs */}
+            <section>
+              <h2 className="text-3xl font-black text-slate-900">Frequently Asked Questions</h2>
+              <div className="mt-8 space-y-4">
                 {tour.faqs.map((faq, index) => (
-                  <details
-                    key={faq.question}
-                    className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-                    open={index === 0}
-                  >
-                    <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-black text-slate-900">
+                  <details key={index} className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" open={index === 0}>
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-base font-black text-slate-900">
                       {faq.question}
-
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 transition group-open:rotate-90">
-                        <ChevronRight size={15} />
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 transition group-open:rotate-90">
+                        <ChevronRight size={16} />
                       </span>
                     </summary>
-
-                    <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600">
-                      {faq.answer}
-                    </p>
+                    <p className="mt-4 text-sm leading-7 text-slate-600 pr-8">{faq.answer}</p>
                   </details>
                 ))}
               </div>
             </section>
-
-            {/* Final CTA */}
-
-            <section className="mt-12 overflow-hidden rounded-[30px] bg-[#071A3A] p-6 text-white sm:p-9">
-              <div className="grid gap-7 lg:grid-cols-[1fr_auto] lg:items-center">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck
-                      size={19}
-                      className="text-amber-300"
-                    />
-
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-300">
-                      Ready To Travel?
-                    </span>
-                  </div>
-
-                  <h2 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">
-                    Book Your {tour.destination} Tour
-                  </h2>
-
-                  <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-                    Get the latest package quotation, vehicle options
-                    and itinerary details directly from Khatu Rides
-                    Travels.
-                  </p>
-                </div>
-
-                <BookingButtons title={tour.title} />
-              </div>
-            </section>
           </div>
 
-          {/* ---------------------------------------------------------------- */}
-          {/* Desktop Sidebar                                                   */}
-          {/* ---------------------------------------------------------------- */}
-
+          {/* Sticky Sidebar */}
           <aside className="lg:sticky lg:top-24 lg:self-start">
-            <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_15px_45px_rgba(15,23,42,0.08)]">
-              <div className="bg-[#071A3A] p-6 text-white">
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-amber-300">
-                  Book This Package
-                </p>
-
-                <h2 className="mt-2 text-xl font-black">
-                  {tour.title}
-                </h2>
-
-                <div className="mt-5">
-                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                    Starting From
-                  </p>
-
-                  <p className="mt-1 text-3xl font-black text-white">
-                    {tour.startingPrice}
-                  </p>
-                </div>
+            <div className="rounded-[30px] border border-slate-200 bg-white shadow-xl overflow-hidden">
+              <div className="bg-[#071A3A] p-8 text-center text-white">
+                <p className="text-xs font-black uppercase tracking-widest text-amber-400">Secure Your Ride</p>
+                <h3 className="mt-2 text-2xl font-black">{tour.title}</h3>
+                <p className="mt-4 text-[10px] font-medium text-slate-400 uppercase tracking-widest">Starting Price</p>
+                <p className="text-4xl font-black text-amber-400 mt-1">{tour.startingPrice}</p>
               </div>
-
-              <div className="space-y-4 p-5">
-                <div className="flex items-start gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                    <Clock3 size={16} />
-                  </span>
-
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">
-                      Duration
-                    </p>
-
-                    <p className="mt-1 text-sm font-black text-slate-800">
-                      {tour.duration}
-                    </p>
+              
+              <div className="p-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4 border-b border-slate-100 pb-4">
+                     <Car size={20} className="text-amber-500" />
+                     <div>
+                        <p className="text-[10px] font-bold uppercase text-slate-400">Available Fleet</p>
+                        <p className="text-sm font-black text-slate-900">Innova, Ertiga, Dzire</p>
+                     </div>
+                  </div>
+                  <div className="flex items-center gap-4 border-b border-slate-100 pb-4">
+                     <MapPin size={20} className="text-amber-500" />
+                     <div>
+                        <p className="text-[10px] font-bold uppercase text-slate-400">Pickup Cities</p>
+                        <p className="text-sm font-black text-slate-900">Raipur, Korba, Bilaspur +</p>
+                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                    <MapPin size={16} />
-                  </span>
-
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">
-                      Destination
-                    </p>
-
-                    <p className="mt-1 text-sm font-black text-slate-800">
-                      {tour.destination}
-                    </p>
-                  </div>
+                <div className="mt-8 space-y-3">
+                  <BookingButtons title={tour.title} compact={false} />
                 </div>
-
-                <div className="flex items-start gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                    <Users size={16} />
-                  </span>
-
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">
-                      Travel Type
-                    </p>
-
-                    <p className="mt-1 text-sm font-black text-slate-800">
-                      Private Cab
-                    </p>
-                  </div>
-                </div>
-
-                <div className="border-t border-slate-100 pt-5">
-                  <BookingButtons title={tour.title} compact />
-                </div>
-
-                <p className="text-center text-[9px] font-semibold leading-4 text-slate-400">
-                  Final fare depends on pickup location, travel date,
-                  vehicle and confirmed itinerary.
-                </p>
+                
+                <Link href="/fare-calculator" className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-amber-400 bg-amber-50 py-4 text-sm font-black text-slate-900 transition hover:bg-amber-100">
+                  <Ticket size={18} /> Calculate Custom Fare
+                </Link>
               </div>
             </div>
 
             {/* Trust Box */}
-
-            <div className="mt-4 rounded-3xl border border-slate-200 bg-slate-50 p-5">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#063B8F] shadow-sm">
-                  <ShieldCheck size={18} />
-                </div>
-
+            <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-6">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-[#063B8F] shadow-sm"><ShieldCheck size={22} /></div>
                 <div>
-                  <p className="text-sm font-black text-slate-950">
-                    Travel With Confidence
-                  </p>
-
-                  <p className="mt-1 text-[10px] font-semibold text-slate-500">
-                    Private cab • Flexible planning
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <div className="rounded-xl bg-white p-3">
-                  <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">
-                    Support
-                  </p>
-
-                  <p className="mt-1 text-xs font-black">
-                    24×7
-                  </p>
-                </div>
-
-                <div className="rounded-xl bg-white p-3">
-                  <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">
-                    Booking
-                  </p>
-
-                  <p className="mt-1 text-xs font-black">
-                    Direct
-                  </p>
+                  <p className="text-base font-black text-slate-950">100% Secure Travel</p>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">Verified Drivers • 24/7 Support</p>
                 </div>
               </div>
             </div>
-
-            {/* Calculator */}
-
-            <Link
-              href="/fare-calculator"
-              className="mt-4 flex items-center justify-between rounded-3xl border border-amber-200 bg-amber-50 p-5 transition hover:-translate-y-0.5 hover:bg-amber-100"
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400 text-slate-950">
-                  <Ticket size={17} />
-                </div>
-
-                <div>
-                  <p className="text-sm font-black text-slate-950">
-                    Check Cab Fare
-                  </p>
-
-                  <p className="mt-1 text-[10px] font-semibold text-slate-500">
-                    Use our fare calculator
-                  </p>
-                </div>
-              </div>
-
-              <ArrowRight size={17} />
-            </Link>
           </aside>
         </div>
       </div>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Related Packages                                                   */}
-      {/* ------------------------------------------------------------------ */}
-
+      {/* Related Packages (If available) */}
       {relatedPackages.length > 0 && (
-        <section className="border-t border-slate-200 bg-slate-50 py-12 sm:py-16">
+        <section className="border-t border-slate-200 bg-slate-50 py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">
-                  Explore More
-                </p>
-
-                <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
-                  Related Tour Packages
-                </h2>
-
-                <p className="mt-2 max-w-2xl text-sm text-slate-500">
-                  Explore more pilgrimage and private cab tour
-                  packages from Khatu Rides Travels.
-                </p>
-              </div>
-
-              <Link
-                href="/tour-packages"
-                className="inline-flex items-center gap-2 text-xs font-black text-[#063B8F]"
-              >
-                View All Packages
-                <ArrowRight size={14} />
-              </Link>
-            </div>
-
-            <div className="mt-7 grid gap-5 md:grid-cols-3">
+            <h2 className="text-3xl font-black text-slate-900">Related Routes & Packages</h2>
+            <div className="mt-8 grid gap-6 md:grid-cols-3">
               {relatedPackages.map((related) => (
-                <Link
-                  key={related.slug}
-                  href={`/tour-packages/${related.slug}`}
-                  className="group overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
-                >
-                  <div className="relative overflow-hidden">
-                    <img
-                      src={related.image}
-                      alt={related.title}
-                      className="aspect-[4/3] w-full object-cover transition duration-500 group-hover:scale-105"
-                    />
-
-                    <span className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-slate-800 shadow-sm">
-                      {related.category}
-                    </span>
+                <Link key={related.slug} href={`/tour-packages/${related.slug}`} className="group block overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+                  <div className="relative overflow-hidden aspect-[4/3]">
+                    <img src={related.image} alt={related.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                    <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-900 shadow-sm backdrop-blur-sm">{related.category}</span>
                   </div>
-
-                  <div className="p-5">
-                    <p className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-amber-600">
-                      <MapPin size={11} />
-                      {related.destination}
-                    </p>
-
-                    <h3 className="mt-2 text-lg font-black leading-tight text-slate-950">
-                      {related.title}
-                    </h3>
-
-                    <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">
-                      {related.shortDescription}
-                    </p>
-
-                    <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4">
-                      <div>
-                        <p className="text-[8px] font-black uppercase tracking-wider text-slate-400">
-                          Starting From
-                        </p>
-
-                        <p className="mt-1 text-sm font-black text-slate-950">
-                          {related.startingPrice}
-                        </p>
-                      </div>
-
-                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#071A3A] text-white transition group-hover:bg-amber-400 group-hover:text-slate-950">
-                        <ArrowRight size={15} />
-                      </span>
-                    </div>
+                  <div className="p-6">
+                    <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-600"><MapPin size={12} /> {related.destination}</p>
+                    <h3 className="mt-2 text-xl font-black leading-tight text-slate-900">{related.title}</h3>
+                    <p className="mt-4 text-[10px] font-black uppercase text-slate-400 border-t border-slate-100 pt-4">Starting From</p>
+                    <p className="text-lg font-black text-slate-900">{related.startingPrice}</p>
                   </div>
                 </Link>
               ))}
@@ -1485,57 +606,7 @@ export default async function TourPackageDetailPage({
         </section>
       )}
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Final Contact Strip                                                */}
-      {/* ------------------------------------------------------------------ */}
-
-      <section className="bg-white py-10">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center justify-between gap-5 rounded-[28px] border border-slate-200 bg-white p-6 text-center shadow-sm sm:flex-row sm:text-left sm:p-7">
-            <div>
-              <p className="text-lg font-black text-slate-950">
-                Need a customized itinerary?
-              </p>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Call or WhatsApp Khatu Rides Travels for your exact
-                travel requirement.
-              </p>
-            </div>
-
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-              <a
-                href={`tel:+91${PHONE}`}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#063B8F] px-5 text-xs font-black text-white"
-              >
-                <Phone size={15} fill="currentColor" />
-                {PHONE_DISPLAY}
-              </a>
-
-              <a
-                href={`https://wa.me/${WHATSAPP}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 text-xs font-black text-white"
-              >
-                <WhatsAppIcon size={17} />
-                WhatsApp
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* Footer                                                             */}
-      {/* ------------------------------------------------------------------ */}
-
       <Footer />
-
-      {/* ------------------------------------------------------------------ */}
-      {/* Mobile Floating Actions                                            */}
-      {/* ------------------------------------------------------------------ */}
-
       <FloatingActions title={tour.title} />
     </main>
   );
