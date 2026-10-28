@@ -404,6 +404,7 @@ function Icon({
 }: {
   name:
     | "dashboard"
+    | "calculator"
     | "mail"
     | "phone"
     | "whatsapp"
@@ -478,6 +479,15 @@ function Icon({
             height="7"
             rx="1.5"
           />
+        </svg>
+      );
+
+    case "calculator":
+      return (
+        <svg {...common}>
+          <rect x="5" y="3" width="14" height="18" rx="2" />
+          <path d="M8 7h8" />
+          <path d="M8 11h2M14 11h2M8 15h2M14 15h2M8 18h2M14 18h2" />
         </svg>
       );
 
@@ -1496,6 +1506,14 @@ export default function AdminDashboard() {
                   false,
                 )
               }
+            />
+
+            <SidebarLink
+              href="/admin/fare-calculator"
+              icon="calculator"
+              label="Fare Calculator"
+              collapsed={sidebarCollapsed}
+              onClick={() => setMobileSidebar(false)}
             />
 
             <SidebarLink

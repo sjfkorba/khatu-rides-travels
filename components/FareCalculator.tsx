@@ -49,6 +49,57 @@ const LOCAL_PACKAGE_OPTIONS: Array<{ id: LocalPackageType; label: string }> = [
   { id: "12hr120km", label: "12 Hr / 120 KM" },
 ];
 
+// Popular hubs for One Way and Airport pickup/drop pricing.
+const POPULAR_HUBS = [
+  "Raipur",
+  "Korba",
+  "Raigarh",
+  "Champa",
+  "Durg",
+  "Bhilai",
+  "Bilaspur",
+  "Jharsuguda",
+  "Sambalpur",
+  "Jagdalpur",
+  "Kharsia",
+  "Nagpur",
+  "Balangir"
+];
+
+/**
+ * Match the hub against the complete Google Maps location description.
+ * This supports values such as "Raipur, Chhattisgarh, India" without
+ * depending on an exact full-address string match.
+ */
+function isPopularHub(location: string): boolean {
+  const normalizedLocation = String(location ?? "")
+    .normalize("NFKD")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+  if (!normalizedLocation) return false;
+
+  return POPULAR_HUBS.some((hub) => {
+    const normalizedHub = hub.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    return (` ${normalizedLocation} `).includes(` ${normalizedHub} `);
+  });
+}
+
+function getHubSurchargePercent(
+  pickupLocation: string,
+  dropLocation: string,
+  bookingType: BookingType,
+  serviceType: ServiceType,
+): number {
+  // Hub pricing applies to One Way / Airport journeys only. Local and Round Trip
+  // fare rules are intentionally unchanged.
+  const isOneWayJourney = bookingType === "oneway" && serviceType === "outstation";
+  if (!isOneWayJourney) return 0;
+
+  return isPopularHub(pickupLocation) && isPopularHub(dropLocation) ? 0 : 70;
+}
+
 function formatINR(value: number) {
   return `₹${Math.round(value).toLocaleString("en-IN")}`;
 }
@@ -618,15 +669,28 @@ export default function FareCalculator({ onFareCalculated, onBookCall, onBookWha
         }
 
         const localFare = result.localFare;
+        const hubSurchargePercent = getHubSurchargePercent(
+          cleanPickup,
+          cleanDrop,
+          bookingType,
+          serviceType,
+        );
+        const hubSurcharge = Math.round(
+          Number(result.finalFare) * (hubSurchargePercent / 100),
+        );
+        const adjustedFare = Math.round(Number(result.finalFare) + hubSurcharge);
 
         return {
           id: `${bookingType}-${vehicleType}-${createdAt}`,
           vehicleType,
           vehicleLabel: VEHICLES[vehicleType].label,
           vehicleImage: VEHICLES[vehicleType].image,
-          finalFare: result.finalFare,
-          strikeFare: isLocal ? result.finalFare : result.strikeFare,
-          fareText: formatINR(result.finalFare),
+          finalFare: adjustedFare,
+          strikeFare: isLocal ? adjustedFare : Math.round(adjustedFare * 1.15),
+          fareText: formatINR(adjustedFare),
+          hubSurchargePercent,
+          hubSurcharge,
+          isNonPopularHubRoute: hubSurchargePercent > 0,
           billedDistance: result.billedDistance,
           actualDistance: result.actualDistance,
           durationMinutes: result.durationMinutes,
@@ -995,6 +1059,23 @@ export default function FareCalculator({ onFareCalculated, onBookCall, onBookWha
 
 // --- MAIN SUB-COMPONENTS ---
 
+function getDisplayedFare(baseFare: unknown, distanceKm: unknown, bookingType: unknown) {
+  const actualFare = Number(baseFare);
+  const distance = Number(distanceKm) || 0;
+  const normalizedType = String(bookingType ?? "").toLowerCase().replace(/[\\s_-]/g, "");
+  const isLongOneWay = normalizedType === "oneway" && distance > 250;
+
+  if (!Number.isFinite(actualFare) || actualFare < 0) {
+    return { payable: 0, original: 0, savings: 0, discountPercent: 0 };
+  }
+
+  const payable = Math.round(isLongOneWay ? actualFare * 1.2 : actualFare);
+  const original = Math.round(isLongOneWay ? payable * 1.12 : payable * 1.15);
+  const savings = Math.max(0, original - payable);
+  const discountPercent = original > 0 ? Math.round((savings / original) * 100) : 0;
+  return { payable, original, savings, discountPercent };
+}
+
 function FareResultsScreen({ data, onClose, onBookCall, onBookWhatsApp }: any) {
   if (!data || !data.fareOptions) return null;
   const isLocal = data.bookingType === "local";
@@ -1023,8 +1104,11 @@ function FareResultsScreen({ data, onClose, onBookCall, onBookWhatsApp }: any) {
       <div className="mx-auto w-full max-w-7xl p-4 sm:p-8">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {data.fareOptions.map((option: any, index: number) => {
-            const originalPrice = option.strikeFare > option.finalFare ? option.strikeFare : Math.round(option.finalFare * 1.05);
-            const savings = originalPrice - option.finalFare;
+            const pricingDistance = option.actualDistance ?? option.billedDistance ?? 0;
+            const displayedFare = getDisplayedFare(option.finalFare, pricingDistance, data.bookingType);
+            const originalPrice = displayedFare.original;
+            const payablePrice = displayedFare.payable;
+            const savings = displayedFare.savings;
             
             return (
               <div key={option.id} className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-md transition-shadow hover:shadow-xl">
@@ -1061,22 +1145,27 @@ function FareResultsScreen({ data, onClose, onBookCall, onBookWhatsApp }: any) {
                       <div className="text-[10px] font-black uppercase tracking-wider text-gray-400">Payable Now</div>
                       <div className="mt-1 flex items-center gap-2">
                         <span className="text-4xl font-black text-[#1a365d]">
-                          {option.fareText}
+                          {formatINR(payablePrice)}
                         </span>
                       </div>
                       <div className="mt-1 flex items-center gap-2 text-sm font-semibold">
                         <span className="text-gray-400 line-through">₹{originalPrice.toLocaleString('en-IN')}</span>
-                        <span className="text-emerald-600">5% OFF</span>
+                        <span className="font-bold text-emerald-700">{displayedFare.discountPercent}% OFF</span>
                       </div>
                       <div className="mt-1 text-xs font-semibold text-gray-500">
                         {isLocal ? option.packageLabel : `${option.actualDistance || option.billedDistance} km billed distance`}
                       </div>
+                      {option.hubSurchargePercent > 0 && (
+                        <div className="mt-2 inline-flex rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[11px] font-bold text-amber-800">
+                          Includes non-popular hub surcharge
+                        </div>
+                      )}
                     </div>
 
                     {savings > 0 && (
                       <div className="flex flex-col items-center justify-center rounded-xl bg-emerald-50 px-3 py-2 text-center border border-emerald-100">
                         <span className="text-[9px] font-black uppercase tracking-wider text-emerald-600">You Save</span>
-                        <span className="mt-0.5 text-base font-black text-emerald-700">₹{savings}</span>
+                        <span className="mt-0.5 text-base font-black text-emerald-700">₹{savings.toLocaleString("en-IN")}</span>
                       </div>
                     )}
                   </div>
@@ -1088,7 +1177,7 @@ function FareResultsScreen({ data, onClose, onBookCall, onBookWhatsApp }: any) {
                     </div>
                     <div>
                       <div className="text-xs font-black text-yellow-900">Online booking benefit</div>
-                      <div className="mt-0.5 text-[10px] font-semibold text-yellow-800/80">Save 5% on this displayed fare</div>
+                      <div className="mt-0.5 text-[10px] font-semibold text-yellow-800/80">Save {displayedFare.discountPercent}% on this displayed fare</div>
                     </div>
                   </div>
 
@@ -1126,7 +1215,7 @@ function FareResultsScreen({ data, onClose, onBookCall, onBookWhatsApp }: any) {
                         if (onBookWhatsApp) {
                           onBookWhatsApp(option, data);
                         } else {
-                          const text = `Hi, I want to book a ${option.vehicleLabel} from ${data.pickup} to ${data.drop} on ${data.pickupDate}. Fare shown: ${option.fareText}.`;
+                          const text = `Hi, I want to book a ${option.vehicleLabel} from ${data.pickup} to ${data.drop} on ${data.pickupDate}. Fare shown: ${formatINR(getDisplayedFare(option.finalFare, option.actualDistance ?? option.billedDistance ?? 0, data.bookingType).payable)}.`;
                           window.open(`https://wa.me/919244137353?text=${encodeURIComponent(text)}`, "_blank");
                         }
                       }}

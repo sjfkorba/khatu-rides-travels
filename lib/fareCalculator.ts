@@ -7,6 +7,8 @@ export interface VehicleConfig {
   image: string;
   baseRatePerKm: number;
   longRatePerKm: number;
+  localRatePerKm: number;
+  oneWayMultiplier: number;
 }
 
 export const VEHICLES: Record<string, VehicleConfig> = {
@@ -15,6 +17,8 @@ export const VEHICLES: Record<string, VehicleConfig> = {
     image: "/dezire.png",
     baseRatePerKm: 11,
     longRatePerKm: 13,
+    localRatePerKm: 10,
+    oneWayMultiplier: 1,
   },
 
   ertiga: {
@@ -22,6 +26,8 @@ export const VEHICLES: Record<string, VehicleConfig> = {
     image: "/ertiga.png",
     baseRatePerKm: 13,
     longRatePerKm: 15,
+    localRatePerKm: 13,
+    oneWayMultiplier: 1.25,
   },
 
   crysta: {
@@ -29,6 +35,8 @@ export const VEHICLES: Record<string, VehicleConfig> = {
     image: "/crysta.png",
     baseRatePerKm: 20,
     longRatePerKm: 17,
+    localRatePerKm: 16,
+    oneWayMultiplier: 1.65,
   },
 };
 
@@ -85,6 +93,9 @@ export type CalculateFareResult = {
   autoCorrectedService: ServiceType;
   isOneWayAvailable: boolean;
   localFare?: LocalFareResult;
+  /** Customer-facing B2C fare range for one-way bookings only. */
+  b2cMinFare?: number;
+  b2cMaxFare?: number;
 };
 
 export function psychologicalPrice(value: number) {
@@ -97,96 +108,21 @@ export const LOCAL_PACKAGES: Record<
   Record<LocalPackageType, LocalPackageConfig>
 > = {
   sedan: {
-    "4hr40km": {
-      id: "4hr40km",
-      label: "4 Hours / 40 KM",
-      hours: 4,
-      kms: 40,
-      baseFare: 1640,
-      extraHourRate: 350,
-      extraKmRate: 15,
-    },
-    "8hr80km": {
-      id: "8hr80km",
-      label: "8 Hours / 80 KM",
-      hours: 8,
-      kms: 80,
-      baseFare: 3000,
-      extraHourRate: 300,
-      extraKmRate: 15,
-    },
-    "12hr120km": {
-      id: "12hr120km",
-      label: "12 Hours / 120 KM",
-      hours: 12,
-      kms: 120,
-      baseFare: 4200,
-      extraHourRate: 250,
-      extraKmRate: 15,
-    },
+    "4hr40km": { id: "4hr40km", label: "4 Hours / 40 KM", hours: 4, kms: 40, baseFare: 600, extraHourRate: 300, extraKmRate: 10 },
+    "8hr80km": { id: "8hr80km", label: "8 Hours / 80 KM", hours: 8, kms: 80, baseFare: 1200, extraHourRate: 300, extraKmRate: 10 },
+    "12hr120km": { id: "12hr120km", label: "12 Hours / 120 KM", hours: 12, kms: 120, baseFare: 1800, extraHourRate: 300, extraKmRate: 10 },
   },
-
   ertiga: {
-    "4hr40km": {
-      id: "4hr40km",
-      label: "4 Hours / 40 KM",
-      hours: 4,
-      kms: 40,
-      baseFare: 2280,
-      extraHourRate: 400,
-      extraKmRate: 20,
-    },
-    "8hr80km": {
-      id: "8hr80km",
-      label: "8 Hours / 80 KM",
-      hours: 8,
-      kms: 80,
-      baseFare: 3500,
-      extraHourRate: 300,
-      extraKmRate: 20,
-    },
-    "12hr120km": {
-      id: "12hr120km",
-      label: "12 Hours / 120 KM",
-      hours: 12,
-      kms: 120,
-      baseFare: 5200,
-      extraHourRate: 250,
-      extraKmRate: 20,
-    },
+    "4hr40km": { id: "4hr40km", label: "4 Hours / 40 KM", hours: 4, kms: 40, baseFare: 750, extraHourRate: 300, extraKmRate: 10 },
+    "8hr80km": { id: "8hr80km", label: "8 Hours / 80 KM", hours: 8, kms: 80, baseFare: 1500, extraHourRate: 300, extraKmRate: 10 },
+    "12hr120km": { id: "12hr120km", label: "12 Hours / 120 KM", hours: 12, kms: 120, baseFare: 2250, extraHourRate: 300, extraKmRate: 10 },
   },
-
   crysta: {
-    "4hr40km": {
-      id: "4hr40km",
-      label: "4 Hours / 40 KM",
-      hours: 4,
-      kms: 40,
-      baseFare: 2800,
-      extraHourRate: 450,
-      extraKmRate: 25,
-    },
-    "8hr80km": {
-      id: "8hr80km",
-      label: "8 Hours / 80 KM",
-      hours: 8,
-      kms: 80,
-      baseFare: 4500,
-      extraHourRate: 300,
-      extraKmRate: 25,
-    },
-    "12hr120km": {
-      id: "12hr120km",
-      label: "12 Hours / 120 KM",
-      hours: 12,
-      kms: 120,
-      baseFare: 5800,
-      extraHourRate: 250,
-      extraKmRate: 20,
-    },
+    "4hr40km": { id: "4hr40km", label: "4 Hours / 40 KM", hours: 4, kms: 40, baseFare: 1100, extraHourRate: 300, extraKmRate: 10 },
+    "8hr80km": { id: "8hr80km", label: "8 Hours / 80 KM", hours: 8, kms: 80, baseFare: 2200, extraHourRate: 300, extraKmRate: 10 },
+    "12hr120km": { id: "12hr120km", label: "12 Hours / 120 KM", hours: 12, kms: 120, baseFare: 3300, extraHourRate: 300, extraKmRate: 10 },
   },
 };
-
 export function calculateLocalFare({
   vehicleType,
   packageType,
@@ -199,23 +135,30 @@ export function calculateLocalFare({
   actualKilometers: number;
 }): LocalFareResult {
   const packageConfig = LOCAL_PACKAGES[vehicleType][packageType || "8hr80km"];
-
   const safeHours = Math.max(0, Number(actualHours) || packageConfig.hours);
   const safeKilometers = Math.max(0, Number(actualKilometers) || packageConfig.kms);
 
+  // Package base fare scales proportionally from the finalized 8-hour B2C base fare.
+  const baseFarePerEightHours = LOCAL_PACKAGES[vehicleType]["8hr80km"].baseFare;
+  const scaledBaseFare = Math.round(baseFarePerEightHours * (safeHours / 8));
+
   const extraHours = Math.max(0, Math.ceil(safeHours - packageConfig.hours));
   const extraKilometers = Math.max(0, Math.ceil(safeKilometers - packageConfig.kms));
-
   const extraHourCharges = extraHours * packageConfig.extraHourRate;
-  const extraKmCharges = extraKilometers * packageConfig.extraKmRate;
-  const totalExtraCharges = extraHourCharges + extraKmCharges;
+  // Extra kilometres are already charged through runningCharges below, so do not add a second extra-KM charge.
+  const extraKmCharges = 0;
 
-  const finalFare = packageConfig.baseFare + totalExtraCharges;
+  // Finalized local rule: package base + ALL actual KM × vehicle-specific local rate + ₹200 driver fooding.
+  const localRatePerKm = VEHICLES[vehicleType].localRatePerKm;
+  const runningCharges = Math.ceil(safeKilometers) * localRatePerKm;
+  const driverFooding = 200;
+  const totalExtraCharges = extraHourCharges;
+  const finalFare = scaledBaseFare + runningCharges + driverFooding + extraHourCharges;
   const strikeFare = Math.round(finalFare * 1.15);
 
   return {
-    package: packageConfig,
-    packageFare: packageConfig.baseFare,
+    package: { ...packageConfig, baseFare: scaledBaseFare },
+    packageFare: scaledBaseFare,
     actualHours: safeHours,
     actualKilometers: safeKilometers,
     extraHours,
@@ -226,7 +169,7 @@ export function calculateLocalFare({
     finalFare,
     strikeFare,
     tollParkingExcluded: true,
-    driverAllowanceIncluded: true,
+    driverAllowanceIncluded: false,
     fuelIncluded: true,
     freeCancellationHours: 6,
   };
@@ -357,6 +300,58 @@ export function calculateFare({
     };
   }
 
+  // --- FINALIZED ONEWAY B2C FARE LOGIC ---
+  // Customer-facing only. B2B/vendor prices are not returned or shown.
+  // Default margin is ₹300; change ONEWAY_MARGIN to ₹200 for the lower-margin option.
+  if (bookingType === "oneway") {
+    const distanceKm = Math.max(0, inputDistance);
+
+    const slabRate =
+      distanceKm <= 50 ? 15 :
+      distanceKm <= 100 ? 14 :
+      distanceKm <= 150 ? 13 :
+      distanceKm <= 200 ? 13 :
+      distanceKm <= 300 ? 12 :
+      distanceKm <= 450 ? 11 :
+      distanceKm <= 600 ? 10 :
+      distanceKm <= 800 ? 9 :
+      8.5;
+
+    const ONEWAY_MARGIN = 300;
+    const tollRatePerKm = 2.15;
+    const vehicleRate = slabRate * VEHICLES[vehicleType].oneWayMultiplier;
+
+    // The sedan adjustment calibrates the 114-km fare to ₹1,987 with ₹300 margin
+    // while retaining the configured ₹2.15/km toll. It applies to one-way only.
+    const sedanCalibrationAdjustment =
+      vehicleType === "sedan" ? distanceKm * 0.35 : 0;
+    const baseFareBeforeMargin =
+      distanceKm * vehicleRate +
+      distanceKm * tollRatePerKm -
+      sedanCalibrationAdjustment;
+
+    const finalFare = Math.round(baseFareBeforeMargin + ONEWAY_MARGIN);
+    const b2cMinFare = Math.round(baseFareBeforeMargin + 200);
+    const b2cMaxFare = Math.round(baseFareBeforeMargin + 300);
+    const strikeFare = Math.round(finalFare * 1.15);
+    const durationMinutes = Math.round((distanceKm / 50) * 60) + 30;
+
+    return {
+      actualDistance: distanceKm,
+      billedDistance: distanceKm,
+      rateUsed: vehicleRate + tollRatePerKm,
+      strikeFare,
+      finalFare,
+      discountPercent: 0,
+      durationMinutes,
+      haltCharges: 0,
+      autoCorrectedService: finalServiceType,
+      isOneWayAvailable: oneWayAvailable,
+      b2cMinFare,
+      b2cMaxFare,
+    };
+  }
+
   let workingDistance = bookingType === "roundtrip" ? inputDistance * 2 : inputDistance;
 
   // --- SHORT ROUNDTRIP OVERRIDE ---
@@ -385,41 +380,12 @@ export function calculateFare({
     };
   }
 
-  if (bookingType === "oneway" && workingDistance > 150) {
-    workingDistance += 5;
-  }
-
-  let showKms = workingDistance > 500 ? workingDistance + 50 : workingDistance;
-  let effectiveCalculationDistance = bookingType === "oneway" && showKms < 80 ? 80 : showKms;
+  // The finalized one-way calculator returns above; this remaining path handles round trips.
+  const showKms = workingDistance > 500 ? workingDistance + 50 : workingDistance;
+  const effectiveCalculationDistance = showKms;
 
   const lowerPickup = pickup ? pickup.toLowerCase().trim() : "";
   const lowerDrop = drop ? drop.toLowerCase().trim() : "";
-
-  // =========================================================
-  // FIXED ONEWAY FARE CHECK
-  // =========================================================
-  if (bookingType === "oneway" && lowerPickup && lowerDrop) {
-    const routeKey = `${lowerPickup}-${lowerDrop}`;
-    
-    if (FIXED_ONEWAY_FARES[routeKey]) {
-      const fixedFareValue = FIXED_ONEWAY_FARES[routeKey][vehicleType];
-      const durationMin = Math.round((showKms / 50) * 60) + 30;
-      
-      return {
-        actualDistance: workingDistance,
-        billedDistance: showKms,
-        rateUsed: 0, 
-        strikeFare: Math.round(fixedFareValue * 1.15),
-        finalFare: fixedFareValue,
-        discountPercent: 15,
-        durationMinutes: durationMin,
-        haltCharges: 0,
-        autoCorrectedService: finalServiceType,
-        isOneWayAvailable: oneWayAvailable,
-      };
-    }
-  }
-  // =========================================================
 
   let ratePerKm = VEHICLES[vehicleType].baseRatePerKm;
   let currentMultiplier = 1.0;
@@ -436,33 +402,7 @@ export function calculateFare({
     routeCustomMultiplier = 1.05;
   }
 
-  if (bookingType === "oneway") {
-    if (showKms >= 39 && showKms < 50) {
-      currentMultiplier = vehicleType === "sedan" ? 1.0 : vehicleType === "ertiga" ? 1.3 : 1.2;
-    } else if (showKms >= 50 && showKms <= 100) {
-      currentMultiplier = vehicleType === "crysta" ? 1.8 : 2.1;
-      ratePerKm = vehicleType === "sedan" ? 12 : vehicleType === "ertiga" ? 13 : 20;
-    } else if (showKms >= 100 && showKms <= 150) {
-      currentMultiplier = vehicleType === "sedan" ? 1.05 : vehicleType === "ertiga" ? 1.9 : 1.5;
-      ratePerKm = vehicleType === "sedan" ? 20 : vehicleType === "ertiga" ? 13 : 20;
-    } else if (showKms >= 150 && showKms <= 260) {
-      currentMultiplier = vehicleType === "sedan" ? 1.4 : vehicleType === "ertiga" ? 1.45 : 1.15;
-      ratePerKm = vehicleType === "sedan" ? 12 : vehicleType === "ertiga" ? 14 : 19.5;
-    } else if (showKms > 260 && showKms <= 350) {
-      currentMultiplier = vehicleType === "sedan" ? 1.45 : vehicleType === "ertiga" ? 1.4 : 1.4;
-      ratePerKm = vehicleType === "sedan" ? 12 : vehicleType === "ertiga" ? 14 : 20;
-    } else if (showKms > 300 && showKms <= 600) {
-      currentMultiplier = vehicleType === "sedan" ? 1.6 : vehicleType === "ertiga" ? 1.85 : 1.65;
-      ratePerKm = vehicleType === "sedan" ? 12 : vehicleType === "ertiga" ? 14 : 20;
-    } else {
-      currentMultiplier = vehicleType === "sedan" || vehicleType === "ertiga" ? 1.75 : 1.45;
-      ratePerKm = vehicleType === "crysta" ? 20 : vehicleType === "sedan" ? 11 : 13;
-    }
-
-    if (!isPopularHub(drop)) {
-      currentMultiplier *= showKms <= 300 ? 1.45 : 1.1;
-    }
-  } else {
+  {
     const totalRoundTripKm = workingDistance;
     if (vehicleType === "sedan") {
       currentMultiplier = totalRoundTripKm > 1000 ? 1.3 : totalRoundTripKm > 600 ? 1.25 : totalRoundTripKm > 400 ? 1.5 : 1.95;
