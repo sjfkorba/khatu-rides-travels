@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Calculator, CarFront, CheckCircle2, Clock3, LockKeyhole,
-  MapPin, Minus, Plus, RefreshCw, Route, ShieldCheck, Wallet,
+  MapPin, Minus, Plus, RefreshCw, Route, ShieldCheck, Wallet, X,
 } from "lucide-react";
 import {
   calculateFare,
@@ -39,6 +39,30 @@ function normalizeSuggestions(data: any): string[] {
   return rows.map((item: any) => typeof item === "string" ? item : item?.description ?? item?.formatted_address ?? item?.text?.text ?? "").filter(Boolean).slice(0, 6);
 }
 
+// Independent B2B/vendor rate master (₹ per billed km).
+// Editable defaults: Sedan ₹10/km above 300 km gives ~₹3,030 for 303 km.
+// Round-trip uses the fare engine's billed total distance. Hub surcharge is B2C-only.
+const B2B_RATE_SLABS: Record<VehicleType, { upTo150: number; upTo300: number; above300: number }> = {
+  sedan: { upTo150: 12, upTo300: 10.5, above300: 10 },
+  ertiga: { upTo150: 14, upTo300: 12.5, above300: 12 },
+  crysta: { upTo150: 17, upTo300: 15.5, above300: 15 },
+};
+
+// Vendor package cost estimates for local bookings; these are not derived from B2C.
+// Confirm/update these with your actual vendor agreements.
+const LOCAL_B2B_PACKAGE_RATES: Record<VehicleType, Record<LocalPackageType, number>> = {
+  sedan: { "4hr40km": 500, "8hr80km": 800, "12hr120km": 1100 },
+  ertiga: { "4hr40km": 650, "8hr80km": 950, "12hr120km": 1300 },
+  crysta: { "4hr40km": 900, "8hr80km": 1300, "12hr120km": 1750 },
+};
+
+function getB2BRate(vehicleType: VehicleType, billedKm: number): number {
+  const slab = B2B_RATE_SLABS[vehicleType];
+  if (billedKm <= 150) return slab.upTo150;
+  if (billedKm <= 300) return slab.upTo300;
+  return slab.above300;
+}
+
 export default function AdminFareCalculatorPage() {
   const router = useRouter();
   const [authReady, setAuthReady] = useState(false);
@@ -53,10 +77,6 @@ export default function AdminFareCalculatorPage() {
   const [nightCharge, setNightCharge] = useState(0);
   const [remoteAdjustment, setRemoteAdjustment] = useState(0);
   const [localPackage, setLocalPackage] = useState<LocalPackageType>("8hr80km");
-  const [journeyDate, setJourneyDate] = useState("");
-  const [journeyTime, setJourneyTime] = useState("10:00");
-  const [returnDate, setReturnDate] = useState("");
-  const [returnTime, setReturnTime] = useState("18:00");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [results, setResults] = useState<any[] | null>(null);
@@ -143,10 +163,6 @@ export default function AdminFareCalculatorPage() {
           vehicleType,
           bookingType: serviceType === "local" ? "local" : bookingType,
           serviceType,
-          pickupDate: journeyDate,
-          pickupTime: journeyTime,
-          returnDate: bookingType === "roundtrip" ? returnDate : "",
-          returnTime: bookingType === "roundtrip" ? returnTime : "",
           pickup: pickup.trim(), drop: drop.trim(), localPackage,
         });
         const base = result.finalFare;
@@ -156,13 +172,13 @@ export default function AdminFareCalculatorPage() {
         const additions = nightCharge + remoteAdjustment;
         const b2cMin = Math.round(b2cMinBase * hubMultiplier + additions);
         const b2cMax = Math.round(b2cMaxBase * hubMultiplier + additions);
-        // One-way B2B estimate removes the existing ₹200–₹300 B2C margin from the
-        // same pre-margin base. For other trip modes this is a provisional internal
-        // estimate (final vendor cost should be confirmed before quoting).
-        const b2bBase = result.b2cMinFare != null
-          ? Math.max(0, result.b2cMinFare - 200)
-          : Math.max(0, base - 300);
-        const b2b = Math.round(b2bBase * hubMultiplier + additions);
+        // B2B is calculated independently from B2C. Never subtract a margin
+        // from the customer fare to determine vendor cost.
+        const billedKm = Math.max(0, result.billedDistance || km);
+        const b2bRate = getB2BRate(vehicleType, billedKm);
+        const b2b = serviceType === "local"
+          ? Math.round(LOCAL_B2B_PACKAGE_RATES[vehicleType][localPackage] + additions)
+          : Math.round(billedKm * b2bRate + additions);
         return {
           vehicleType, label: VEHICLES[vehicleType].label,
           distance: result.billedDistance || km,
@@ -174,6 +190,15 @@ export default function AdminFareCalculatorPage() {
         };
       });
       setResults(next);
+      const params = new URLSearchParams({
+        pickup: pickup.trim(),
+        drop: serviceType === "local" ? "" : drop.trim(),
+        bookingType,
+        serviceType,
+        distance: String(km),
+        results: JSON.stringify(next),
+      });
+      router.push(`/admin/fare-calculator/results?${params.toString()}`);
     } catch (e) {
       console.error(e); setError("Fare calculate nahi ho paya. Please try again.");
     } finally { setLoading(false); }
@@ -198,10 +223,8 @@ export default function AdminFareCalculatorPage() {
             {([{ id: "oneway", label: "One Way" }, { id: "roundtrip", label: "Round Trip" }, { id: "local", label: "Local" }] as const).map((item) => <button key={item.id} onClick={() => { setBookingType(item.id); setServiceType(item.id === "local" ? "local" : "outstation"); setResults(null); }} className={`rounded-xl px-1.5 py-3 text-xs font-extrabold transition sm:px-2 sm:text-sm ${bookingType === item.id ? "bg-blue-950 text-white shadow" : "text-slate-600 hover:bg-white"}`}>{item.label}</button>)}
           </div>
           <div className="space-y-4">
-            <div className="relative"><label className="mb-1.5 block text-sm font-bold text-slate-700">Pickup location</label><div className="flex items-center gap-3 rounded-2xl border border-slate-200 px-3"><MapPin className="h-5 w-5 shrink-0 text-emerald-600"/><input value={pickup} onFocus={() => setActiveSuggestions("pickup")} onChange={(e) => { setPickup(e.target.value); setResults(null); }} placeholder="e.g. Raipur, Chhattisgarh, India" className="min-w-0 w-full bg-transparent py-3.5 text-sm outline-none"/></div>{activeSuggestions === "pickup" && pickupSuggestions.length > 0 && <div className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-2xl border bg-white p-1 shadow-xl">{pickupSuggestions.map((s, i) => <button key={`${s}-${i}`} onClick={() => { setPickup(s); setPickupSuggestions([]); setActiveSuggestions(null); }} className="block w-full rounded-xl px-3 py-3 text-left text-sm hover:bg-blue-50">{s}</button>)}</div>}</div>
-            {serviceType !== "local" && <div className="relative"><label className="mb-1.5 block text-sm font-bold text-slate-700">Drop location</label><div className="flex items-center gap-3 rounded-2xl border border-slate-200 px-3"><MapPin className="h-5 w-5 shrink-0 text-rose-600"/><input value={drop} onFocus={() => setActiveSuggestions("drop")} onChange={(e) => { setDrop(e.target.value); setResults(null); }} placeholder="e.g. Korba, Chhattisgarh, India" className="min-w-0 w-full bg-transparent py-3.5 text-sm outline-none"/></div>{activeSuggestions === "drop" && dropSuggestions.length > 0 && <div className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-2xl border bg-white p-1 shadow-xl">{dropSuggestions.map((s, i) => <button key={`${s}-${i}`} onClick={() => { setDrop(s); setDropSuggestions([]); setActiveSuggestions(null); }} className="block w-full rounded-xl px-3 py-3 text-left text-sm hover:bg-blue-50">{s}</button>)}</div>}</div>}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><div><label className="mb-1.5 block text-sm font-bold text-slate-700">Journey date</label><input type="date" value={journeyDate} onChange={(e) => setJourneyDate(e.target.value)} className="min-w-0 w-full rounded-xl border border-slate-200 px-2.5 py-3 text-sm outline-none focus:border-blue-500 sm:rounded-2xl sm:px-3"/></div><div><label className="mb-1.5 block text-sm font-bold text-slate-700">Pickup time</label><input type="time" value={journeyTime} onChange={(e) => setJourneyTime(e.target.value)} className="min-w-0 w-full rounded-xl border border-slate-200 px-2.5 py-3 text-sm outline-none focus:border-blue-500 sm:rounded-2xl sm:px-3"/></div></div>
-            {bookingType === "roundtrip" && <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><div><label className="mb-1.5 block text-sm font-bold text-slate-700">Return date</label><input type="date" value={returnDate} onChange={(e) => setReturnDate(e.target.value)} className="min-w-0 w-full rounded-xl border border-slate-200 px-2.5 py-3 text-sm outline-none sm:rounded-2xl sm:px-3"/></div><div><label className="mb-1.5 block text-sm font-bold text-slate-700">Return time</label><input type="time" value={returnTime} onChange={(e) => setReturnTime(e.target.value)} className="min-w-0 w-full rounded-xl border border-slate-200 px-2.5 py-3 text-sm outline-none sm:rounded-2xl sm:px-3"/></div></div>}
+            <div className="relative"><label className="mb-1.5 block text-sm font-bold text-slate-700">Pickup location</label><div className="flex items-center gap-2 rounded-2xl border border-slate-200 px-3"><MapPin className="h-5 w-5 shrink-0 text-emerald-600"/><input value={pickup} onFocus={() => setActiveSuggestions("pickup")} onChange={(e) => { setPickup(e.target.value); setResults(null); setResolvedDistance(null); }} placeholder="e.g. Raipur, Chhattisgarh, India" className="min-w-0 flex-1 bg-transparent py-3.5 text-sm outline-none"/><button type="button" onClick={() => { setPickup(""); setPickupSuggestions([]); setActiveSuggestions(null); setResults(null); setResolvedDistance(null); setError(""); }} disabled={!pickup} aria-label="Clear pickup location" title="Clear pickup" className="flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"><X className="h-3.5 w-3.5"/><span>Clear</span></button></div>{activeSuggestions === "pickup" && pickupSuggestions.length > 0 && <div className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-2xl border bg-white p-1 shadow-xl">{pickupSuggestions.map((s, i) => <button key={`${s}-${i}`} onClick={() => { setPickup(s); setPickupSuggestions([]); setActiveSuggestions(null); setResults(null); setResolvedDistance(null); }} className="block w-full rounded-xl px-3 py-3 text-left text-sm hover:bg-blue-50">{s}</button>)}</div>}</div>
+            {serviceType !== "local" && <div className="relative"><label className="mb-1.5 block text-sm font-bold text-slate-700">Drop location</label><div className="flex items-center gap-2 rounded-2xl border border-slate-200 px-3"><MapPin className="h-5 w-5 shrink-0 text-rose-600"/><input value={drop} onFocus={() => setActiveSuggestions("drop")} onChange={(e) => { setDrop(e.target.value); setResults(null); setResolvedDistance(null); }} placeholder="e.g. Korba, Chhattisgarh, India" className="min-w-0 flex-1 bg-transparent py-3.5 text-sm outline-none"/><button type="button" onClick={() => { setDrop(""); setDropSuggestions([]); setActiveSuggestions(null); setResults(null); setResolvedDistance(null); setError(""); }} disabled={!drop} aria-label="Clear drop location" title="Clear drop" className="flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"><X className="h-3.5 w-3.5"/><span>Clear</span></button></div>{activeSuggestions === "drop" && dropSuggestions.length > 0 && <div className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-2xl border bg-white p-1 shadow-xl">{dropSuggestions.map((s, i) => <button key={`${s}-${i}`} onClick={() => { setDrop(s); setDropSuggestions([]); setActiveSuggestions(null); setResults(null); setResolvedDistance(null); }} className="block w-full rounded-xl px-3 py-3 text-left text-sm hover:bg-blue-50">{s}</button>)}</div>}</div>}
             {serviceType === "local" && <div><label className="mb-1.5 block text-sm font-bold text-slate-700">Local package</label><select value={localPackage} onChange={(e) => setLocalPackage(e.target.value as LocalPackageType)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm sm:rounded-2xl"><option value="4hr40km">4 Hours / 40 KM</option><option value="8hr80km">8 Hours / 80 KM</option><option value="12hr120km">12 Hours / 120 KM</option></select></div>}
             {serviceType !== "local" && <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><div className="mb-3 flex items-center justify-between"><label className="text-sm font-bold">Distance fallback</label><span className="rounded-lg bg-white px-3 py-1.5 text-sm font-black">{distance} km</span></div><input type="range" min={10} max={1000} step={5} value={distance} onChange={(e) => setDistance(Number(e.target.value))} className="w-full accent-blue-950"/><div className="mt-1 flex justify-between text-xs text-slate-500"><span>10 km</span><span>1,000 km</span></div><p className="mt-2 text-xs text-slate-500">Route API distance available hone par actual Google route distance use hoga.</p></div>}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><div><label className="mb-1.5 block text-sm font-bold text-slate-700">Night charge (₹)</label><input type="number" min={0} value={nightCharge} onChange={(e) => setNightCharge(Math.max(0, Number(e.target.value) || 0))} className="min-w-0 w-full rounded-xl border border-slate-200 px-2.5 py-3 text-sm sm:rounded-2xl sm:px-3"/></div><div><label className="mb-1.5 block text-sm font-bold text-slate-700">Remote pickup/drop (₹)</label><input type="number" min={0} value={remoteAdjustment} onChange={(e) => setRemoteAdjustment(Math.max(0, Number(e.target.value) || 0))} className="min-w-0 w-full rounded-xl border border-slate-200 px-2.5 py-3 text-sm sm:rounded-2xl sm:px-3"/></div></div>
@@ -215,7 +238,7 @@ export default function AdminFareCalculatorPage() {
           <div className="mb-4 flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><h2 className="text-lg font-black">Fare comparison</h2><p className="mt-1 text-sm text-slate-500">Internal quote range · B2B values confidential</p></div>{results && <button onClick={() => { setResults(null); setResolvedDistance(null); }} className="flex items-center gap-2 rounded-xl border bg-white px-3 py-2 text-sm font-bold"><RefreshCw className="h-4 w-4"/> Reset</button>}</div>
           {!results ? <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white p-5 text-center sm:rounded-3xl sm:p-8"><div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-950"><Route className="h-8 w-8"/></div><h3 className="text-lg font-black">Ready to calculate</h3><p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">Pickup aur drop select karke Get Fare dabayein. Sedan, Ertiga aur Innova Crysta ke B2C range aur internal B2B estimate yahan dikhenge.</p></div> : <div className="space-y-4"> <div className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4"><div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-start"><div className="min-w-0"><p className="max-w-full break-words font-extrabold">{pickup}</p><p className="my-1 text-xs font-bold text-slate-400">TO</p><p className="max-w-full break-words font-extrabold">{serviceType === "local" ? "Local package" : drop}</p></div><div className="shrink-0 rounded-xl bg-slate-100 px-3 py-2 text-right"><p className="text-xs text-slate-500">Distance</p><p className="font-black">{resolvedDistance ?? distance} km</p></div></div></div>
               {results.map((r) => <article key={r.vehicleType} className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-3xl"><div className="flex flex-col items-start justify-between gap-3 border-b border-slate-100 p-3 sm:flex-row sm:items-center sm:p-4"><div className="flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-950"><CarFront className="h-6 w-6"/></div><div><h3 className="font-black">{r.label}</h3><p className="text-xs text-slate-500">{r.distance} km · approx. {Math.floor(r.durationMinutes / 60)}h {r.durationMinutes % 60}m</p></div></div><span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">{nonPopularRoute && serviceType !== "local" ? "+20% hub" : "Standard hub"}</span></div><div className="grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 sm:p-4"><div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-4"><p className="text-xs font-extrabold uppercase tracking-wide text-blue-800">B2C customer quote</p><p className="mt-2 break-words text-lg font-black text-blue-950 sm:text-xl">{INR(r.b2cMin)} – {INR(r.b2cMax)}</p><p className="mt-1 text-xs text-slate-500">Suggested quote range</p></div><div className="rounded-2xl border border-orange-200 bg-orange-50 p-4"><p className="text-xs font-extrabold uppercase tracking-wide text-orange-800">B2B internal rate</p><p className="mt-2 break-words text-lg font-black text-orange-950 sm:text-xl">{INR(r.b2b)}</p><p className="mt-1 text-xs text-orange-800">Confidential · do not share</p></div></div><div className="flex flex-col items-start justify-between gap-2 border-t border-slate-100 bg-slate-50 px-3 py-3 sm:flex-row sm:items-center sm:px-4"><div className="flex items-center gap-2 text-xs font-semibold text-slate-600"><Wallet className="h-4 w-4"/> Estimated margin room</div><p className="text-sm font-black text-emerald-700">{INR(r.estimatedMarginAtMin)} – {INR(r.estimatedMarginAtMax)}</p></div></article>)}
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-950"><p className="font-black">Internal pricing note</p><p className="mt-1">B2B one-way estimate derives from the current fare engine's pre-margin base. Round-trip/local B2B is a provisional estimate using a ₹300 deduction from the existing calculated fare; confirm the vendor quote before committing. Tolls, parking, permits or other actual charges may need separate confirmation.</p></div>
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-950"><p className="font-black">Internal pricing note</p><p className="mt-1">B2B is calculated independently using the editable vendor-rate slabs and local package rate master, not by deducting margin from B2C. Rates shown are estimates: confirm the actual vendor quote. Tolls, parking, permits and other actual charges should be added separately where applicable.</p></div>
             </div>}
         </section>
       </div>

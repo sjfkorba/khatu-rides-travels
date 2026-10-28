@@ -176,12 +176,12 @@ export function calculateLocalFare({
 }
 
 const POPULAR_HUBS = [
-  "bilaspur", "raipur", "durg", "korba", "raigarh",
+  "bilaspur", "uslapur", "raipur", "durg", "korba", "raigarh",
   "bhilai", "jharsuguda", "jagdalpur", "sambalpur", "ambikapur",
 ];
 
 const AVAILABLE_ONEWAY_CITIES = [
-  "raipur", "bilaspur", "korba", "raigarh", "durg", "bhilai",
+  "raipur", "bilaspur", "uslapur","korba", "raigarh", "durg", "bhilai",
   "rajnandgaon", "jagdalpur", "ambikapur", "dhamtari", "mahasamund",
   "kawardha", "janjgir", "champa", "balod", "bemetara", "kanker",
   "kondagaon", "dantewada", "sukma", "bijapur", "narayanpur", "gariaband",
