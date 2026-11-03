@@ -2,6 +2,8 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import {
   ArrowLeftRight,
   ArrowLeft,
@@ -18,6 +20,9 @@ import {
   X,
   Clock3,
   Route as RouteIcon,
+  ChevronDown,
+  ChevronUp,
+  Zap,
 } from "lucide-react";
 import {
   calculateFare,
@@ -39,6 +44,15 @@ interface FareCalculatorProps {
 type MainTab = "oneway" | "roundtrip" | "local";
 type SelectedLocation = { placeId: string; description: string };
 type Suggestion = { place_id: string; description: string };
+type FestivalRecord = { id: string; name: string; increasePercent: number; startAt: string; endAt: string; isActive: boolean };
+type CouponRecord = { id: string; code: string; from: string; to: string; fromNormalized?: string; toNormalized?: string; discountPercent: number; startAt: string; endAt: string; isActive: boolean };
+
+const normalizePlace = (value: string) => value.trim().toLocaleLowerCase("en-IN").replace(/\s+/g, " ");
+const roundFare = (value: number) => Math.max(0, Math.round(value / 100) * 100);
+const inValidity = (start: string, end: string, date: string) => {
+  const journey = new Date(`${date}T12:00:00`).getTime();
+  return Number.isFinite(journey) && journey >= new Date(start).getTime() && journey <= new Date(end).getTime();
+};
 
 const localPackages: { id: LocalPackageType; label: string }[] = [
   { id: "4hr40km", label: "4 Hr / 40 KM" },
@@ -172,6 +186,11 @@ export default function FareCalculator({
   const [paymentBusy, setPaymentBusy] = useState(false);
   const [paymentError, setPaymentError] = useState("");
   const [showRouteMap, setShowRouteMap] = useState(false);
+  const [expandedConditions, setExpandedConditions] = useState<Record<string, boolean>>({});
+  const [festivalRule, setFestivalRule] = useState<FestivalRecord | null>(null);
+  const [availableCoupons, setAvailableCoupons] = useState<CouponRecord[]>([]);
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponRecord | null>(null);
+  const [couponMessage, setCouponMessage] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -300,6 +319,29 @@ export default function FareCalculator({
         distanceKm = LOCAL_PACKAGES.sedan[localPackage].kms;
       }
 
+      // Load current promotion records from Firestore for this journey date.
+      // Final promotion validation must also happen inside the trusted order API.
+      const [festivalSnapshot, couponSnapshot] = await Promise.all([
+        getDocs(collection(db, "festival_fares")),
+        getDocs(collection(db, "route_coupons")),
+      ]);
+      const festivals = festivalSnapshot.docs.map((d) => ({ id: d.id, ...d.data() } as FestivalRecord));
+      const coupons = couponSnapshot.docs.map((d) => ({ id: d.id, ...d.data() } as CouponRecord));
+      const activeFestival = festivals
+        .filter((x) => x.isActive && Number(x.increasePercent) > 0 && inValidity(x.startAt, x.endAt, pickupDate))
+        .sort((a, b) => Number(b.increasePercent) - Number(a.increasePercent))[0] || null;
+      setFestivalRule(activeFestival);
+      setAvailableCoupons(coupons.filter((x) => {
+        const from = normalizePlace(pickup?.description || "");
+        const to = normalizePlace(drop?.description || "");
+        const couponFrom = normalizePlace(x.fromNormalized || x.from);
+        const couponTo = normalizePlace(x.toNormalized || x.to);
+        return x.isActive && Number(x.discountPercent) > 0 && inValidity(x.startAt, x.endAt, pickupDate) &&
+          tab !== "local" && from.includes(couponFrom) && to.includes(couponTo);
+      }));
+      setAppliedCoupon(null);
+      setCouponMessage("");
+
       const bookingType: BookingType = tab;
       const options = (Object.keys(VEHICLES) as VehicleType[]).map(
         (vehicleType) => {
@@ -317,10 +359,21 @@ export default function FareCalculator({
             localPackage,
           });
 
+          const baseFare = Number(result.finalFare || 0);
+          const festivalAmount = activeFestival ? baseFare * Number(activeFestival.increasePercent) / 100 : 0;
+          const festivalAdjustedFare = roundFare(baseFare + festivalAmount);
           return {
             vehicleType,
             vehicle: VEHICLES[vehicleType],
             ...result,
+            baseFare,
+            festivalPercent: activeFestival ? Number(activeFestival.increasePercent) : 0,
+            festivalAmount: festivalAdjustedFare - baseFare,
+            festivalAdjustedFare,
+            couponCode: "",
+            couponPercent: 0,
+            couponAmount: 0,
+            finalFare: festivalAdjustedFare,
           };
         }
       );
@@ -339,6 +392,7 @@ export default function FareCalculator({
         distanceKm,
         route: routeData,
         fareOptions: options,
+        festivalRule: activeFestival,
       };
 
       setRoute(routeData);
@@ -351,6 +405,42 @@ export default function FareCalculator({
     } finally {
       setLoading(false);
     }
+  }
+
+  function applyRouteCoupon(found: CouponRecord) {
+    setCouponMessage("");
+    if (tab === "local" || !pickup || !drop) { setCouponMessage("Coupon sirf matching pickup-drop route par apply hoga."); return; }
+    if (!found.isActive || !inValidity(found.startAt, found.endAt, pickupDate)) {
+      setAppliedCoupon(null);
+      setCouponMessage("Yeh coupon ab active ya valid nahi hai.");
+      return;
+    }
+    const from = normalizePlace(pickup.description);
+    const to = normalizePlace(drop.description);
+    const couponFrom = normalizePlace(found.fromNormalized || found.from);
+    const couponTo = normalizePlace(found.toNormalized || found.to);
+    if (!from.includes(couponFrom) || !to.includes(couponTo)) {
+      setAppliedCoupon(null);
+      setCouponMessage(`Yeh coupon sirf ${found.from} se ${found.to} route ke liye hai.`);
+      return;
+    }
+    setAppliedCoupon(found);
+    setCouponMessage(`${found.discountPercent}% discount coupon successfully applied.`);
+    setFareOptions((current) => current.map((option) => {
+      const beforeDiscount = Number(option.festivalAdjustedFare ?? option.finalFare ?? 0);
+      const discounted = roundFare(beforeDiscount * (1 - Number(found.discountPercent) / 100));
+      return { ...option, couponCode: found.code, couponPercent: Number(found.discountPercent), couponAmount: beforeDiscount - discounted, finalFare: discounted };
+    }));
+  }
+
+  function removeRouteCoupon() {
+    setAppliedCoupon(null);
+    setCouponMessage("Coupon remove kar diya gaya.");
+    setFareOptions((current) => current.map((option) => ({
+      ...option,
+      couponCode: "", couponPercent: 0, couponAmount: 0,
+      finalFare: Number(option.festivalAdjustedFare ?? option.baseFare ?? option.finalFare ?? 0),
+    })));
   }
 
   const resultData = {
@@ -373,6 +463,8 @@ export default function FareCalculator({
       tab === "local"
         ? localPackages.find((item) => item.id === localPackage)?.label || ""
         : "",
+    festivalRule,
+    appliedCoupon: appliedCoupon ? { code: appliedCoupon.code, discountPercent: appliedCoupon.discountPercent } : null,
     route,
   };
 
@@ -401,130 +493,70 @@ export default function FareCalculator({
     window.open(whatsappUrl, "_blank", "noopener,noreferrer");
   }
 
-  
-async function startRazorpayPayment() {
-  if (!bookingOption || paymentBusy) return;
-
-  setPaymentError("");
-
-  const name = passenger.name.trim();
-  const mobile = passenger.mobile.replace(/\D/g, "");
-  const email = passenger.email.trim();
-
-  if (
-    name.length < 2 ||
-    !/^[6-9]\d{9}$/.test(mobile) ||
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-  ) {
-    setPaymentError(
-      "Please enter your name, valid 10-digit mobile number and email."
-    );
-    return;
-  }
-
-  setPaymentBusy(true);
-
-  // Safely parse JSON, including HTML error responses.
-  async function readApiResponse(response: Response) {
-    const raw = await response.text();
-
+  async function startRazorpayPayment() {
+    if (!bookingOption || paymentBusy) return;
+    setPaymentError("");
+    const name = passenger.name.trim();
+    const mobile = passenger.mobile.replace(/\D/g, "");
+    const email = passenger.email.trim();
+    if (name.length < 2 || !/^[6-9]\d{9}$/.test(mobile) ||
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setPaymentError("Please enter your name, valid 10-digit mobile number and email.");
+      return;
+    }
+    setPaymentBusy(true);
     try {
-      return JSON.parse(raw);
-    } catch {
-      console.error("Non-JSON API response:", {
-        url: response.url,
-        status: response.status,
-        response: raw.slice(0, 1000),
-      });
-
-      throw new Error(
-        `Server returned an invalid response (${response.status}). Please contact Khatu Rides.`
-      );
-    }
-  }
-
-  try {
-    // Load Razorpay checkout.
-    if (!(window as any).Razorpay) {
-      await new Promise<void>((resolve, reject) => {
-        const existing = document.querySelector(
-          'script[data-khatu-razorpay]'
-        ) as HTMLScriptElement | null;
-
-        if (existing) {
-          existing.addEventListener("load", () => resolve(), {
-            once: true,
-          });
-          existing.addEventListener(
-            "error",
-            () => reject(new Error("Razorpay checkout could not load.")),
-            { once: true }
-          );
-          return;
-        }
-
-        const script = document.createElement("script");
-        script.src =
-          "https://checkout.razorpay.com/v1/checkout.js";
-        script.dataset.khatuRazorpay = "true";
-        script.onload = () => resolve();
-        script.onerror = () =>
-          reject(new Error("Razorpay checkout could not load."));
-
-        document.body.appendChild(script);
-      });
-    }
-
-    const booking = {
-      ...resultData,
-      vehicleType: bookingOption.vehicleType,
-      vehicleLabel:
-        bookingOption.vehicle?.label || bookingOption.vehicleType,
-      totalFare: Number(bookingOption.finalFare),
-      passenger: { name, mobile, email },
-    };
-
-    // Create server-side order.
-    const orderResponse = await fetch(
-      "/api/online-bookings/create-order",
-      {
+      if (!(window as any).Razorpay) {
+        await new Promise<void>((resolve, reject) => {
+          const existing = document.querySelector('script[data-khatu-razorpay]') as HTMLScriptElement | null;
+          if (existing && (window as any).Razorpay) return resolve();
+          const script = existing || document.createElement("script");
+          script.src = "https://checkout.razorpay.com/v1/checkout.js";
+          script.dataset.khatuRazorpay = "true";
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error("Razorpay checkout could not load."));
+          if (!existing) document.body.appendChild(script);
+        });
+      }
+      const booking = {
+        ...resultData,
+        vehicleType: bookingOption.vehicleType,
+        vehicleLabel: bookingOption.vehicle?.label || bookingOption.vehicleType,
+        totalFare: Number(bookingOption.finalFare),
+        fareBreakdown: {
+          baseFare: bookingOption.baseFare,
+          festivalPercent: bookingOption.festivalPercent,
+          festivalAmount: bookingOption.festivalAmount,
+          festivalAdjustedFare: bookingOption.festivalAdjustedFare,
+          couponCode: bookingOption.couponCode || "",
+          couponPercent: bookingOption.couponPercent || 0,
+          couponAmount: bookingOption.couponAmount || 0,
+          finalFare: bookingOption.finalFare,
+        },
+        passenger: { name, mobile, email },
+      };
+      const orderResponse = await fetch("/api/online-bookings/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ booking }),
+      });
+      const order = await orderResponse.json();
+      if (!orderResponse.ok || !order.orderId || !order.keyId) {
+        throw new Error(order.error || "Unable to create payment order.");
       }
-    );
-
-    const order = await readApiResponse(orderResponse);
-
-    if (!orderResponse.ok || !order.success ||
-        !order.orderId || !order.keyId || !order.bookingId) {
-      throw new Error(
-        order.error || "Unable to create payment order."
-      );
-    }
-
-    // Open Razorpay checkout.
-    const checkout = new (window as any).Razorpay({
-      key: order.keyId,
-      order_id: order.orderId,
-      amount: order.amount,
-      currency: order.currency || "INR",
-      name: "Khatu Rides Travels Co.",
-      description:
-        `${booking.vehicleLabel} · ${booking.pickup} to ${booking.drop}`,
-      prefill: { name, contact: mobile, email },
-      theme: { color: "#b91c1c" },
-
-      modal: {
-        ondismiss: () => setPaymentBusy(false),
-      },
-
-      handler: async (payment: any) => {
-        try {
-          // Verify payment on our server.
-          const verifyResponse = await fetch(
-            "/api/online-bookings/verify-payment",
-            {
+      const checkout = new (window as any).Razorpay({
+        key: order.keyId,
+        order_id: order.orderId,
+        amount: order.amount,
+        currency: "INR",
+        name: "Khatu Rides Travels Co.",
+        description: `${booking.vehicleLabel} · ${booking.pickup} to ${booking.drop}`,
+        prefill: { name, contact: mobile, email },
+        theme: { color: "#b91c1c" },
+        modal: { ondismiss: () => setPaymentBusy(false) },
+        handler: async (payment: any) => {
+          try {
+            const verifyResponse = await fetch("/api/online-bookings/verify-payment", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -533,55 +565,28 @@ async function startRazorpayPayment() {
                 razorpay_payment_id: payment.razorpay_payment_id,
                 razorpay_signature: payment.razorpay_signature,
               }),
+            });
+            const verified = await verifyResponse.json();
+            if (!verifyResponse.ok || !verified.success) {
+              throw new Error(verified.error || "Payment verification failed.");
             }
-          );
-
-          const verified = await readApiResponse(verifyResponse);
-
-          if (!verifyResponse.ok || !verified.success) {
-            throw new Error(
-              verified.error ||
-              "Payment verification failed. Please contact support with your payment ID."
-            );
+            window.location.assign(`/booking/success?id=${encodeURIComponent(order.bookingId)}`);
+          } catch (err: any) {
+            setPaymentError(err?.message || "Payment verification failed. Please contact support with your payment ID.");
+            setPaymentBusy(false);
           }
-
-          // Redirect only after server-side confirmation.
-          window.location.assign(
-            `/booking/success?id=${encodeURIComponent(
-              verified.bookingId || order.bookingId
-            )}`
-          );
-        } catch (err: any) {
-          console.error("Payment verification error:", err);
-
-          setPaymentError(
-            `${err?.message || "Payment verification failed."} Payment ID: ${payment.razorpay_payment_id}`
-          );
-
-          setPaymentBusy(false);
-        }
-      },
-    });
-
-    checkout.on("payment.failed", (failure: any) => {
-      setPaymentError(
-        failure?.error?.description || "Payment failed. Please retry."
-      );
+        },
+      });
+      checkout.on("payment.failed", (failure: any) => {
+        setPaymentError(failure?.error?.description || "Payment failed. Please retry.");
+        setPaymentBusy(false);
+      });
+      checkout.open();
+    } catch (err: any) {
+      setPaymentError(err?.message || "Unable to initiate payment.");
       setPaymentBusy(false);
-    });
-
-    checkout.open();
-  } catch (err: any) {
-    console.error("Payment initiation error:", err);
-
-    setPaymentError(
-      err?.message || "Unable to initiate payment."
-    );
-
-    setPaymentBusy(false);
+    }
   }
-}
-
 
   if (bookingOption) {
     const total = Number(bookingOption.finalFare || 0);
@@ -623,7 +628,7 @@ async function startRazorpayPayment() {
                   className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-blue-600" placeholder="name@example.com" />
               </label>
               {paymentError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-700">{paymentError}</p>}
-              <p className="text-xs text-slate-500">Pay 25% advance of your total fare and rest amount paid to driver.</p>
+              <p className="text-xs text-slate-500">The secure payment amount is determined by the server. Demo mode: ₹1; production: 25% advance.</p>
               <button type="submit" disabled={paymentBusy} className="w-full rounded-xl bg-red-700 px-5 py-4 text-base font-extrabold text-white hover:bg-red-800 disabled:opacity-60">
                 {paymentBusy ? "Processing..." : "Continue to Secure Payment"}
               </button>
@@ -769,7 +774,7 @@ async function startRazorpayPayment() {
               </p>
               <h1 className="mt-1 text-2xl font-black sm:text-3xl">Available cab options</h1>
               <p className="mt-1 text-sm text-slate-500">
-                Transparent customer fare · No hidden discounts
+                Transparent customer fare · Clear trip conditions
               </p>
             </div>
             <button
@@ -781,62 +786,413 @@ async function startRazorpayPayment() {
             </button>
           </div>
 
-          <div className="grid gap-5 lg:grid-cols-3">
+          {/* Mobile-first fare comparison: all vehicle fares stay visible without scrolling. */}
+          <section className="mb-4 space-y-2.5 lg:hidden" aria-label="Quick vehicle fare comparison">
+            {fareOptions.map((option) => {
+              const fare = Number(option.finalFare || 0);
+              const advance = Math.round(fare * 0.25);
+              const remaining = fare - advance;
+              const isExpanded = Boolean(expandedConditions[option.vehicleType]);
+              const localConfig = tab === "local"
+                ? LOCAL_PACKAGES[option.vehicleType as VehicleType][localPackage]
+                : null;
+              const conditions = tab === "oneway"
+                ? [
+                    ["Toll Charges", "Included"],
+                    ["Driver Fooding", "Included"],
+                    ["Parking Charges", "Extra — customer payable"],
+                    ["Night Halt", "If applicable, confirm before booking"],
+                    ["Distance", `${Number(route?.distanceKm || 0)} KM (one side)`],
+                  ]
+                : tab === "roundtrip"
+                  ? [
+                      ["Toll Charges", "Included"],
+                      ["Driver Fooding", "Extra — customer payable"],
+                      ["Parking Charges", "Extra — customer payable"],
+                      ["Night Halt", "Extra if applicable; confirm before booking"],
+                      ["Distance", `${Number(route?.distanceKm || 0)} KM one-side route distance`],
+                    ]
+                  : [
+                      ["Toll Charges", "Extra — customer payable"],
+                      ["Driver Fooding", "Extra — customer payable"],
+                      ["Parking Charges", "Extra — customer payable"],
+                      ["Package Limit", `${localConfig?.hours} Hours / ${localConfig?.kms} KM`],
+                      ["Extra KM", `${money(Number(localConfig?.b2cExtraKmRate || 0))} / KM`],
+                      ["Extra Hour", `${money(Number(localConfig?.b2cExtraHourRate || 0))} / Hour`],
+                      ["Night Halt", "Not included; confirm if required"],
+                    ];
+
+              return (
+                <article key={`mobile-${option.vehicleType}`} className="overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-sm">
+                  <div className="flex min-h-[76px] items-center gap-3 px-3 py-2.5">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+                      {option.vehicle?.image ? (
+                        <img src={option.vehicle.image} alt="" className="h-10 w-10 object-contain" />
+                      ) : <CarFront size={25} />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[10px] font-bold uppercase tracking-wider text-slate-400">{option.vehicleType}</p>
+                      <h2 className="truncate text-sm font-extrabold text-slate-900">{option.vehicle?.label || option.vehicleType}</h2>
+                      {option.couponPercent > 0 && <p className="text-[10px] font-bold text-green-700">{option.couponCode} · {option.couponPercent}% OFF</p>}
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-[9px] font-bold uppercase tracking-wide text-slate-500">Final Fare</p>
+                      <p className="text-xl font-black leading-tight text-red-700">{money(fare)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-slate-100 px-3 py-2">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedConditions((current) => ({ ...current, [option.vehicleType]: !current[option.vehicleType] }))}
+                      aria-expanded={isExpanded}
+                      className="inline-flex items-center gap-1.5 text-xs font-extrabold text-blue-700"
+                    >
+                      {isExpanded ? "Hide Details" : "View Details"}
+                      {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setBookingOption(option); setPaymentError(""); }}
+                      className="rounded-lg bg-red-700 px-4 py-2 text-xs font-extrabold text-white"
+                    >
+                      Book Cab
+                    </button>
+                  </div>
+                  {isExpanded && (
+                    <div className="space-y-3 border-t border-blue-100 bg-blue-50/60 p-3">
+                      <div className="rounded-xl border border-slate-200 bg-white p-3 text-xs">
+                        <p className="mb-2 font-extrabold text-slate-900">Fare Breakdown</p>
+                        <div className="flex justify-between gap-3"><span className="text-slate-600">Base Fare</span><strong>{money(Number(option.baseFare ?? fare))}</strong></div>
+                        {option.festivalPercent > 0 && <div className="mt-1 flex justify-between gap-3 text-amber-700"><span>{festivalRule?.name || "Festival Increase"} (+{option.festivalPercent}%)</span><strong>+{money(Number(option.festivalAmount || 0))}</strong></div>}
+                        {option.couponPercent > 0 && <div className="mt-1 flex justify-between gap-3 text-green-700"><span>Coupon Discount ({option.couponPercent}%)</span><strong>−{money(Number(option.couponAmount || 0))}</strong></div>}
+                        <div className="mt-2 flex justify-between gap-3 border-t pt-2 font-black"><span>Final Payable</span><strong>{money(fare)}</strong></div>
+                        <div className="mt-2 flex justify-between gap-3 text-slate-600"><span>Advance (25%)</span><strong>{money(advance)}</strong></div>
+                        <div className="flex justify-between gap-3 text-slate-600"><span>Balance (75%)</span><strong>{money(remaining)}</strong></div>
+                      </div>
+                      <div className="rounded-xl border border-blue-200 bg-white p-3 text-xs">
+                        <p className="mb-2 font-extrabold text-slate-900">Trip Inclusions & Conditions</p>
+                        <div className="space-y-2">
+                          {conditions.map(([label, value]) => <div key={label} className="flex items-start justify-between gap-3"><span className="text-slate-600">{label}</span><strong className="max-w-[60%] text-right text-slate-900">{value}</strong></div>)}
+                        </div>
+                        <p className="mt-3 border-t border-slate-100 pt-2 leading-5 text-[10px] text-slate-500">Any additional applicable charge will be communicated before booking confirmation.</p>
+                      </div>
+                      <button type="button" onClick={() => { setBookingOption(option); setPaymentError(""); }} className="w-full rounded-xl bg-red-700 px-4 py-3 text-sm font-extrabold text-white">Book Your Cab</button>
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </section>
+
+          {availableCoupons.length > 0 && tab !== "local" && (
+            <section className="mb-5 rounded-2xl border border-green-200 bg-green-50 p-4 sm:p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h2 className="font-black text-green-950">Exclusive Route Discount</h2>
+                  <p className="text-xs text-green-800">Aapke selected route ke liye live coupon automatically mil gaya hai.</p>
+                </div>
+                {appliedCoupon && <span className="rounded-full bg-green-700 px-3 py-1 text-xs font-bold text-white">{appliedCoupon.discountPercent}% Applied</span>}
+              </div>
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {availableCoupons.map((coupon) => {
+                  const isApplied = appliedCoupon?.id === coupon.id;
+                  return (
+                    <div key={coupon.id} className="rounded-xl border border-green-200 bg-white p-3 sm:p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-green-700">Route coupon</span>
+                        <span className="rounded-full bg-green-50 px-2.5 py-1 text-[10px] font-bold text-green-800">{coupon.discountPercent}% OFF</span>
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xl font-black tracking-[0.18em] text-slate-900">{coupon.code}</p>
+                          <p className="mt-1 text-xs font-semibold text-slate-600">{coupon.from} → {coupon.to}</p>
+                        </div>
+                        {isApplied ? (
+                          <button type="button" onClick={removeRouteCoupon} className="rounded-lg border border-green-700 px-4 py-2.5 text-sm font-bold text-green-800">Remove</button>
+                        ) : (
+                          <button type="button" onClick={() => applyRouteCoupon(coupon)} disabled={!!appliedCoupon} className="rounded-lg bg-green-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50">Apply Coupon</button>
+                        )}
+                      </div>
+                      <p className="mt-2 text-[10px] text-slate-500">Valid till {formatBookingDate(coupon.endAt.slice(0, 10))}</p>
+                    </div>
+                  );
+                })}
+              </div>
+              {couponMessage && <p className="mt-2 text-xs font-semibold text-green-900">{couponMessage}</p>}
+            </section>
+          )}
+          {festivalRule && <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><strong>{festivalRule.name}:</strong> {festivalRule.increasePercent}% festival fare increase automatically applied for this journey date.</div>}
+
+          <div className="hidden grid-cols-1 gap-4 sm:gap-5 lg:grid lg:grid-cols-3">
             {fareOptions.map((option) => {
               const fare = Number(option.finalFare || 0);
               const advance = Math.round(fare * 0.25);
               const remaining = fare - advance;
 
-              return (
-                <article
-                  key={option.vehicleType}
-                  className="overflow-hidden rounded-3xl border-2 border-blue-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+             
+return (
+  <article
+    key={option.vehicleType}
+    className="group overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_8px_35px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_18px_45px_rgba(15,23,42,0.12)]"
+  >
+    {/* VEHICLE IMAGE */}
+    <div className="relative flex h-52 items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 via-white to-blue-50 sm:h-60">
+      <div className="absolute right-4 top-4 rounded-full border border-white bg-white/90 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-blue-700 shadow-sm">
+        Premium Fleet
+      </div>
+
+      {option.vehicle?.image ? (
+        <img
+          src={option.vehicle.image}
+          alt={option.vehicle.label}
+          className="h-full w-full object-contain p-2 transition-transform duration-500 group-hover:scale-105"
+        />
+      ) : (
+        <CarFront className="h-20 w-20 text-slate-300" />
+      )}
+
+      <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-blue-600 via-blue-400 to-transparent" />
+    </div>
+
+    <div className="p-5 sm:p-6">
+
+      {/* VEHICLE DETAILS */}
+      <div>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-blue-700">
+            {option.vehicleType}
+          </p>
+          <span className="rounded-full bg-green-50 px-3 py-1 text-[10px] font-bold text-green-700">
+            Available for Booking
+          </span>
+        </div>
+
+        <h2 className="mt-1 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
+          {option.vehicle.label}
+        </h2>
+      </div>
+
+      {/* FINAL FARE */}
+      <div className="relative mt-5 overflow-hidden rounded-2xl bg-gradient-to-br from-red-700 via-red-700 to-rose-800 p-5 text-white shadow-lg shadow-red-900/15">
+        <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full border-[18px] border-white/5" />
+
+        <div className="relative">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-extrabold tracking-[0.18em] text-red-100">
+              YOUR FINAL TRAVEL FARE
+            </p>
+            <span className="rounded-full bg-white/15 px-2.5 py-1 text-[9px] font-bold text-white">
+              ALL INCLUSIVE*
+            </span>
+          </div>
+
+          {option.festivalPercent > 0 && (
+            <p className="mt-2 text-sm text-red-200 line-through">
+              Base Fare: {money(option.baseFare)}
+            </p>
+          )}
+
+          <div className="mt-1 flex items-end justify-between gap-2">
+            <p className="text-3xl font-black tracking-tight sm:text-4xl">
+              {money(fare)}
+            </p>
+            <span className="pb-1 text-[10px] font-medium text-red-100">
+              Final Payable
+            </span>
+          </div>
+
+          {option.couponPercent > 0 && (
+            <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-white/15 px-3 py-2 text-xs font-bold text-white">
+              <span>✓</span>
+              <span>
+                {option.couponCode} Applied · {option.couponPercent}% OFF
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* FARE BREAKDOWN */}
+      <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+        <p className="mb-3 text-sm font-extrabold text-slate-900">
+          Fare Summary
+        </p>
+
+        <div className="space-y-3 text-sm">
+          <div className="flex justify-between gap-3">
+            <span className="text-slate-500">Base Fare</span>
+            <strong className="text-slate-800">
+              {money(Number(option.baseFare ?? fare))}
+            </strong>
+          </div>
+
+          {option.festivalPercent > 0 && (
+            <div className="flex justify-between gap-3 text-amber-700">
+              <span>
+                {festivalRule?.name || "Festival Fare Increase"} (+{option.festivalPercent}%)
+              </span>
+              <strong>
+                +{money(Number(option.festivalAmount || 0))}
+              </strong>
+            </div>
+          )}
+
+          {option.couponPercent > 0 && (
+            <div className="flex justify-between gap-3 text-green-700">
+              <span>Coupon Discount ({option.couponPercent}%)</span>
+              <strong>
+                −{money(Number(option.couponAmount || 0))}
+              </strong>
+            </div>
+          )}
+
+          <div className="flex justify-between gap-3 border-t border-slate-200 pt-3 font-black">
+            <span className="text-slate-900">Total Payable</span>
+            <strong className="text-red-700">{money(fare)}</strong>
+          </div>
+        </div>
+      </div>
+
+      {/* TRIP CONDITIONS */}
+      <div className="mt-4 overflow-hidden rounded-2xl border border-blue-100 bg-white">
+        <button
+          type="button"
+          onClick={() =>
+            setExpandedConditions((current) => ({
+              ...current,
+              [option.vehicleType]: !current[option.vehicleType],
+            }))
+          }
+          aria-expanded={Boolean(expandedConditions[option.vehicleType])}
+          aria-controls={`trip-conditions-${option.vehicleType}`}
+          className="flex min-h-14 w-full items-center justify-between gap-3 bg-blue-50/60 px-4 py-3 text-left transition hover:bg-blue-50"
+        >
+          <span className="text-sm font-extrabold text-slate-800">
+            Trip Inclusions & Conditions
+          </span>
+
+          <span className="flex shrink-0 items-center gap-2 text-xs font-bold text-blue-700">
+            {expandedConditions[option.vehicleType] ? "Hide" : "Details"}
+            {expandedConditions[option.vehicleType] ? (
+              <ChevronUp size={17} />
+            ) : (
+              <ChevronDown size={17} />
+            )}
+          </span>
+        </button>
+
+        {expandedConditions[option.vehicleType] && (
+          <div
+            id={`trip-conditions-${option.vehicleType}`}
+            className="border-t border-blue-100 px-4 pb-4 pt-3"
+          >
+            <div className="space-y-3 text-xs">
+              {(tab === "oneway"
+                ? [
+                    ["Toll Charges", "Included"],
+                    ["Driver Fooding", "Included"],
+                    ["Parking Charges", "Extra — customer payable"],
+                    ["Night Halt", "If applicable, confirm before booking"],
+                    ["Distance", `${Number(route?.distanceKm || 0)} KM (one side)`],
+                    ["KM / Hours Limit", "Route-distance based; no fixed hourly package"],
+                    ["Extra KM / Extra Hour", "Confirmed before booking"],
+                  ]
+                : tab === "roundtrip"
+                ? [
+                    ["Toll Charges", "Included"],
+                    ["Driver Fooding", "Extra — customer payable"],
+                    ["Parking Charges", "Extra — customer payable"],
+                    ["Night Halt", "If applicable, separately payable"],
+                    ["Distance", `${Number(route?.distanceKm || 0)} KM one-side route distance; return included`],
+                    ["Daily KM / Hours Limit", "As per confirmed itinerary"],
+                    ["Extra KM / Extra Hour", "Confirmed before booking"],
+                  ]
+                : [
+                    ["Toll Charges", "Extra — customer payable"],
+                    ["Driver Fooding", "Extra — customer payable"],
+                    ["Parking Charges", "Extra — customer payable"],
+                    [
+                      "Package Limit",
+                      `${LOCAL_PACKAGES[option.vehicleType as VehicleType][localPackage].hours} Hours / ${LOCAL_PACKAGES[option.vehicleType as VehicleType][localPackage].kms} KM`,
+                    ],
+                    [
+                      "Extra KM",
+                      `${money(LOCAL_PACKAGES[option.vehicleType as VehicleType][localPackage].b2cExtraKmRate)} / KM`,
+                    ],
+                    [
+                      "Extra Hour",
+                      `${money(LOCAL_PACKAGES[option.vehicleType as VehicleType][localPackage].b2cExtraHourRate)} / Hour`,
+                    ],
+                    ["Night Halt", "Not included; confirm if required"],
+                  ]
+              ).map(([label, value]) => (
+                <div
+                  key={label}
+                  className="flex items-start justify-between gap-3"
                 >
-                  <div className="flex h-40 items-center justify-center bg-gradient-to-b from-blue-50 to-white p-5 sm:h-44">
-                    {option.vehicle?.image ? (
-                      <img
-                        src={option.vehicle.image}
-                        alt={option.vehicle.label}
-                        className="h-full max-w-full object-contain"
-                      />
-                    ) : (
-                      <CarFront className="h-16 w-16 text-slate-300" />
-                    )}
-                  </div>
-                  <div className="p-4 sm:p-5">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
-                      {option.vehicleType}
-                    </p>
-                    <h2 className="mt-1 text-lg font-extrabold sm:text-xl">
-                      {option.vehicle.label}
-                    </h2>
+                  <span className="text-slate-500">{label}</span>
+                  <strong className="max-w-[60%] text-right text-slate-800">
+                    {value}
+                  </strong>
+                </div>
+              ))}
+            </div>
 
-                    <div className="mt-4 rounded-2xl bg-red-700 p-4 text-white">
-                      <p className="text-xs font-semibold text-red-100">TOTAL TRIP FARE</p>
-                      <p className="mt-1 text-3xl font-black">{money(fare)}</p>
-                    </div>
+            <p className="mt-4 border-t border-slate-100 pt-3 text-[10px] leading-5 text-slate-500">
+              Any extra charge will be communicated before booking confirmation.
+              Parking is payable separately in all trip types. Additional
+              charges and night-halt rates must be confirmed for the specific
+              itinerary.
+            </p>
+          </div>
+        )}
+      </div>
 
-                    <div className="mt-4 space-y-3 rounded-2xl bg-blue-50 p-4 text-sm">
-                      <div className="flex justify-between gap-3">
-                        <span className="text-slate-600">Standard advance (25%)</span>
-                        <strong>{money(advance)}</strong>
-                      </div>
-                      <div className="flex justify-between gap-3">
-                        <span className="text-slate-600">Standard balance (75%)</span>
-                        <strong>{money(remaining)}</strong>
-                      </div>
-                    </div>
+      {/* ADVANCE PAYMENT */}
+      <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+        <p className="mb-3 text-xs font-extrabold uppercase tracking-wider text-slate-500">
+          Payment Details
+        </p>
 
-                    <button
-                      type="button"
-                      onClick={() => { setBookingOption(option); setPaymentError(""); }}
-                      className="mt-5 w-full rounded-xl bg-red-700 px-4 py-3.5 font-bold text-white hover:bg-red-800"
-                    >
-                      Book Your Cab
-                    </button>
-                  </div>
-                </article>
-              );
+        <div className="space-y-3 text-sm">
+          <div className="flex justify-between gap-3">
+            <span className="text-slate-600">Advance (25%)</span>
+            <strong className="text-slate-900">{money(advance)}</strong>
+          </div>
+          <div className="flex justify-between gap-3">
+            <span className="text-slate-600">Balance (75%)</span>
+            <strong className="text-slate-900">{money(remaining)}</strong>
+          </div>
+        </div>
+      </div>
+
+      {/* BOOKING BUTTONS */}
+      <div className="mt-5 space-y-3">
+
+        {/* FAST BOOKING */}
+        <button
+          type="button"
+          onClick={() => {
+            setBookingOption(option);
+            setPaymentError("");
+          }}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 to-blue-600 px-4 py-4 text-sm font-extrabold text-white shadow-lg shadow-blue-700/20 transition hover:-translate-y-0.5 hover:from-blue-800 hover:to-blue-700 active:scale-[0.98]"
+        >
+          <Zap size={19} />
+          Quick Booking – Book Now
+          <ChevronDown size={17} className="-rotate-90" />
+        </button>
+
+        
+
+        <p className="text-center text-[10px] font-medium text-slate-400">
+          Secure Booking · Instant Assistance · 24×7 Support
+        </p>
+      </div>
+    </div>
+  </article>
+);
+
             })}
           </div>
 

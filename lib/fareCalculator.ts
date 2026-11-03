@@ -318,46 +318,21 @@ export const LOCAL_PACKAGES: Record<
 };
 
 export interface FestivalFareRule {
-
-  id: string;
-
-  name: string;
-
-  reason?: string;
-
-  increasePercent: number;
-
-  status: "draft" | "active" | "paused" | "expired";
-
-  fareTypes: FestivalFareType[];
-
-  validity: {
-
-    startDate: string; // YYYY-MM-DD, Asia/Kolkata business date
-
-    endDate: string;   // inclusive
-
-    timezone?: string;
-
-  };
-
-  scope?: {
-
-    type: "all" | "routes" | "hubs";
-
-    routes?: string[];
-
-    hubs?: string[];
-
-  };
-
-  surchargeBasis?: "both";
-
-  stackingPolicy?: "highest_only";
-
+  id: string; name: string; increasePercent: number;
+  isActive?: boolean; startAt?: string; endAt?: string;
+  status?: "draft" | "active" | "paused" | "expired";
+  fareTypes?: FestivalFareType[];
+  validity?: { startDate: string; endDate: string; timezone?: string };
+  scope?: { type: "all" | "routes" | "hubs"; routes?: string[]; hubs?: string[] };
+  reason?: string; surchargeBasis?: "both"; stackingPolicy?: "highest_only";
 }
 
-
+export interface RouteCouponRule {
+  id: string; code: string; from: string; to: string;
+  fromNormalized?: string; toNormalized?: string;
+  discountPercent: number; startAt: string; endAt: string;
+  isActive: boolean; usageCount?: number;
+}
 
 export interface LocalFareResult {
 
@@ -396,6 +371,8 @@ export interface LocalFareResult {
   b2bExtraCharges?: number;
 
   festivalSurchargePercent?: number;
+  couponDiscountPercent?: number;
+  couponDiscountAmount?: number;
 
 }
 
@@ -446,6 +423,9 @@ export interface CalculateFareResult {
   festivalSurchargePercent?: number;
 
   appliedFestivalRule?: { id: string; name: string; increasePercent: number } | null;
+  appliedCoupon?: { id: string; code: string; discountPercent: number } | null;
+  festivalIncreaseAmount?: number;
+  couponDiscountAmount?: number;
 
   calculationBreakdown?: string[];
 
@@ -523,6 +503,8 @@ export interface CalculateFareInput {
   driverFoodingPerDay?: number;
 
   festivalRules?: FestivalFareRule[];
+  couponRules?: RouteCouponRule[];
+  couponCode?: string;
 
   bookingDate?: string; // YYYY-MM-DD; used to select festival rule
 
@@ -939,75 +921,59 @@ function inferHubCategory(input: CalculateFareInput): HubCategory {
 
 
 
-function getApplicableFestivalRule(
-
-  rules: FestivalFareRule[] | undefined,
-
-  bookingType: BookingType,
-
-  bookingDate: string,
-
-  pickup: string,
-
-  drop: string,
-
-): FestivalFareRule | null {
-
-  if (!rules?.length || !bookingDate) return null;
-
-
-
-  const routeKey = `${normalize(pickup)}-${normalize(drop)}`;
-
-  const eligible = rules.filter((rule) => {
-
-    if (rule.status !== "active") return false;
-
-    if (!rule.fareTypes.includes(bookingType)) return false;
-
-    if (bookingDate < rule.validity.startDate || bookingDate > rule.validity.endDate) return false;
-
-    if (rule.increasePercent <= 0) return false;
-
-
-
-    const scope = rule.scope || { type: "all" as const };
-
-    if (scope.type === "all") return true;
-
-    if (scope.type === "routes") {
-
-      return (scope.routes || []).some((route) => {
-
-        const key = normalize(route);
-
-        return key === routeKey || (key && routeKey.includes(key));
-
-      });
-
-    }
-
-    if (scope.type === "hubs") {
-
-      const text = `${normalize(pickup)} ${normalize(drop)}`;
-
-      return (scope.hubs || []).some((hub) => text.includes(normalize(hub)));
-
-    }
-
-    return false;
-
-  });
-
-
-
-  // Highest percentage only. Never add/stack festival percentages.
-
-  return eligible.sort((a, b) => b.increasePercent - a.increasePercent)[0] || null;
-
+function bookingTimestamp(date: string, time = "00:00"): number {
+  if (!date) return Number.NaN;
+  const safeTime = /^\\d{2}:\\d{2}$/.test(time) ? time : "00:00";
+  return new Date(`${date}T${safeTime}:00+05:30`).getTime();
 }
-
-
+function inPromotionWindow(startAt: string | undefined, endAt: string | undefined, date: string, time: string): boolean {
+  const at = bookingTimestamp(date, time);
+  const start = startAt ? new Date(startAt).getTime() : NaN;
+  const end = endAt ? new Date(endAt).getTime() : NaN;
+  return Number.isFinite(at) && Number.isFinite(start) && Number.isFinite(end) && at >= start && at <= end;
+}
+function getApplicableFestivalRule(
+  rules: FestivalFareRule[] | undefined, bookingType: BookingType,
+  bookingDate: string, pickupTime: string, pickup: string, drop: string,
+): FestivalFareRule | null {
+  if (!rules?.length || !bookingDate) return null;
+  const routeKey = `${normalize(pickup)}-${normalize(drop)}`;
+  const eligible = rules.filter((rule) => {
+    if (!(rule.isActive === true || rule.status === "active") || !(Number(rule.increasePercent) > 0)) return false;
+    if (rule.fareTypes?.length && !rule.fareTypes.includes(bookingType)) return false;
+    const dateOk = rule.startAt && rule.endAt
+      ? inPromotionWindow(rule.startAt, rule.endAt, bookingDate, pickupTime)
+      : !!rule.validity && bookingDate >= rule.validity.startDate && bookingDate <= rule.validity.endDate;
+    if (!dateOk) return false;
+    const scope = rule.scope || { type: "all" as const };
+    if (scope.type === "all") return true;
+    if (scope.type === "routes") return (scope.routes || []).some((r) => {
+      const key = normalize(r); return key === routeKey || (!!key && routeKey.includes(key));
+    });
+    if (scope.type === "hubs") {
+      const locations = `${normalize(pickup)} ${normalize(drop)}`;
+      return (scope.hubs || []).some((h) => locations.includes(normalize(h)));
+    }
+    return false;
+  });
+  return eligible.sort((x, y) => y.increasePercent - x.increasePercent)[0] || null;
+}
+function cityKey(value: string): string { return normalize(value).split(",")[0].trim(); }
+function getApplicableCoupon(
+  rules: RouteCouponRule[] | undefined, selectedCode: string | undefined,
+  bookingDate: string, pickupTime: string, pickup: string, drop: string,
+): RouteCouponRule | null {
+  const code = (selectedCode || "").trim().toUpperCase();
+  if (!code || !rules?.length) return null;
+  return rules.find((c) => c.isActive === true &&
+    c.code?.trim().toUpperCase() === code &&
+    Number(c.discountPercent) > 0 && Number(c.discountPercent) <= 100 &&
+    inPromotionWindow(c.startAt, c.endAt, bookingDate, pickupTime) &&
+    cityKey(pickup) === cityKey(c.fromNormalized || c.from) &&
+    cityKey(drop) === cityKey(c.toNormalized || c.to)
+  ) || null;
+}
+function applyCoupon(value: number, percent: number): number { return value * (1 - percent / 100); }
 
 function applyFestival(value: number, percent: number): number {
 
@@ -1082,6 +1048,7 @@ export function calculateLocalFare({
   actualKilometers,
 
   festivalSurchargePercent = 0,
+  couponDiscountPercent = 0,
 
 }: {
 
@@ -1094,6 +1061,7 @@ export function calculateLocalFare({
   actualKilometers: number;
 
   festivalSurchargePercent?: number;
+  couponDiscountPercent?: number;
 
 }): LocalFareResult {
 
@@ -1130,8 +1098,10 @@ export function calculateLocalFare({
 
 
   const surcharge = safeNumber(festivalSurchargePercent);
-
-  const finalFare = roundCustomerFare(applyFestival(b2cBase, surcharge));
+  const couponPercent = safeNumber(couponDiscountPercent);
+  const afterFestival = applyFestival(b2cBase, surcharge);
+  const afterCoupon = applyCoupon(afterFestival, couponPercent);
+  const finalFare = roundCustomerFare(afterCoupon);
 
   const finalB2B = Math.round(applyFestival(b2bBase, surcharge));
 
@@ -1240,20 +1210,13 @@ export function calculateFare(input: CalculateFareInput): CalculateFareResult {
   const bookingDate = input.bookingDate || pickupDate;
 
   const festivalRule = getApplicableFestivalRule(
-
-    input.festivalRules,
-
-    bookingType,
-
-    bookingDate,
-
-    pickup,
-
-    drop,
-
+    input.festivalRules, bookingType, bookingDate, pickupTime, pickup, drop,
   );
-
+  const couponRule = getApplicableCoupon(
+    input.couponRules, input.couponCode, bookingDate, pickupTime, pickup, drop,
+  );
   const festivalPercent = festivalRule?.increasePercent || 0;
+  const couponPercent = couponRule?.discountPercent || 0;
 
 
 
@@ -1290,6 +1253,7 @@ export function calculateFare(input: CalculateFareInput): CalculateFareResult {
       actualKilometers: calculatedKilometers,
 
       festivalSurchargePercent: festivalPercent,
+      couponDiscountPercent: couponPercent,
 
     });
 
@@ -1315,7 +1279,7 @@ export function calculateFare(input: CalculateFareInput): CalculateFareResult {
 
       finalFare,
 
-      discountPercent: 0,
+      discountPercent: couponPercent,
 
       durationMinutes: Math.round(calculatedHours * 60),
 
@@ -1343,6 +1307,9 @@ export function calculateFare(input: CalculateFareInput): CalculateFareResult {
 
         : null,
 
+      appliedCoupon: couponRule ? { id: couponRule.id, code: couponRule.code, discountPercent: couponPercent } : null,
+      festivalIncreaseAmount: (selectedPackage.b2cFare + localFare.totalExtraCharges) * festivalPercent / 100,
+      couponDiscountAmount: localFare.couponDiscountAmount || 0,
       calculationBreakdown: [
 
         `${selectedPackage.label} package: ₹${selectedPackage.b2cFare}`,
@@ -1352,6 +1319,7 @@ export function calculateFare(input: CalculateFareInput): CalculateFareResult {
         `Extra hours: ${localFare.extraHours} × ₹${selectedPackage.b2cExtraHourRate}`,
 
         `Festival surcharge: ${festivalPercent}%`,
+        `Coupon discount: ${couponPercent}% applied after festival increase`,
 
         "Toll, parking, permit and night halt (if applicable) are separate.",
 
@@ -1369,15 +1337,19 @@ export function calculateFare(input: CalculateFareInput): CalculateFareResult {
 
   if (bookingType === "oneway") {
 
+    const minimumBillingOneWayKm = 50;
+    const fareCalculationOneWayKm = Math.max(actualOneWayKm, minimumBillingOneWayKm);
+    const minimumDistanceApplied = actualOneWayKm < minimumBillingOneWayKm;
+
     const longDistanceBuffer =
 
-      actualOneWayKm > ONEWAY_BUFFER_THRESHOLD_KM
+      fareCalculationOneWayKm > ONEWAY_BUFFER_THRESHOLD_KM
 
         ? ONEWAY_LONG_DISTANCE_BUFFER_KM
 
         : 0;
 
-    const billedOneWayKm = actualOneWayKm + longDistanceBuffer;
+    const billedOneWayKm = fareCalculationOneWayKm + longDistanceBuffer;
 
     const roundTripBaseKm = billedOneWayKm * 2;
 
@@ -1391,11 +1363,11 @@ export function calculateFare(input: CalculateFareInput): CalculateFareResult {
 
       routeClassification === "interstate" &&
 
-      actualOneWayKm > ONEWAY_BUFFER_THRESHOLD_KM;
+      fareCalculationOneWayKm > ONEWAY_BUFFER_THRESHOLD_KM;
 
 
 
-    const isShortOneWay = actualOneWayKm < 80;
+    const isShortOneWay = fareCalculationOneWayKm < 80;
 
 
 
@@ -1485,7 +1457,7 @@ export function calculateFare(input: CalculateFareInput): CalculateFareResult {
 
     const shortConfig = shortOneWayConfig[vehicleType];
 
-    const nonMajorRoundTripKm = actualOneWayKm * 2;
+    const nonMajorRoundTripKm = fareCalculationOneWayKm * 2;
 
     const nonMajorBilledRunningKm = nonMajorRoundTripKm + NON_MAJOR_EXTRA_KM;
 
@@ -1515,7 +1487,7 @@ export function calculateFare(input: CalculateFareInput): CalculateFareResult {
 
       : isShortOneWay
 
-        ? (shortConfig.fixed + actualOneWayKm * shortConfig.ratePerKm) * effectiveHub.customer
+        ? (shortConfig.fixed + fareCalculationOneWayKm * shortConfig.ratePerKm) * effectiveHub.customer
 
         : roundTripBaseKm * b2cRate * effectiveHub.customer;
 
@@ -1531,7 +1503,9 @@ export function calculateFare(input: CalculateFareInput): CalculateFareResult {
 
 
 
-    const b2cFinal = roundCustomerFare(applyFestival(b2cBase, festivalPercent));
+    const fareAfterFestival = applyFestival(b2cBase, festivalPercent);
+    const fareAfterCoupon = applyCoupon(fareAfterFestival, couponPercent);
+    const b2cFinal = roundCustomerFare(fareAfterCoupon);
 
     const b2bMinFinal = Math.round(applyFestival(b2bMinBase, festivalPercent));
 
@@ -1547,7 +1521,7 @@ export function calculateFare(input: CalculateFareInput): CalculateFareResult {
 
       actualDistance: actualOneWayKm,
 
-      billedDistance: isNonMajorOneWay ? nonMajorBilledRunningKm : (isShortOneWay ? actualOneWayKm : billedOneWayKm),
+      billedDistance: isNonMajorOneWay ? nonMajorBilledRunningKm : (isShortOneWay ? fareCalculationOneWayKm : billedOneWayKm),
 
       rateUsed: b2cRate,
 
@@ -1557,7 +1531,7 @@ export function calculateFare(input: CalculateFareInput): CalculateFareResult {
 
       finalFare: b2cFinal,
 
-      discountPercent: 0,
+      discountPercent: couponPercent,
 
       durationMinutes,
 
@@ -1583,6 +1557,10 @@ export function calculateFare(input: CalculateFareInput): CalculateFareResult {
 
         : null,
 
+      appliedCoupon: couponRule ? { id: couponRule.id, code: couponRule.code, discountPercent: couponPercent } : null,
+      festivalIncreaseAmount: b2cBase * festivalPercent / 100,
+      couponDiscountAmount: fareAfterFestival - fareAfterCoupon,
+
       routeClassification,
 
       hubCategory: isKorbaOdisha ? "non-major" : hubCategory,
@@ -1590,6 +1568,7 @@ export function calculateFare(input: CalculateFareInput): CalculateFareResult {
       calculationBreakdown: [
 
         `Actual One-Way Distance: ${actualOneWayKm} KM`,
+        ...(minimumDistanceApplied ? [`Minimum billing distance applied: ${minimumBillingOneWayKm} KM`] : []),
 
         `Long-distance buffer: ${longDistanceBuffer} KM`,
 
@@ -1631,7 +1610,7 @@ export function calculateFare(input: CalculateFareInput): CalculateFareResult {
 
           `Short One Way fixed charge: ₹${shortConfig.fixed}`,
 
-          `Short One Way running: ${actualOneWayKm} KM × ₹${shortConfig.ratePerKm}/KM (one-side distance)`,
+          `Short One Way running: ${fareCalculationOneWayKm} KM × ₹${shortConfig.ratePerKm}/KM (one-side distance)`,
 
           `Short One Way customer hub percentage: ${effectiveHub.customer * 100}% applied to fixed + one-side running subtotal.`,
 
@@ -1646,6 +1625,8 @@ export function calculateFare(input: CalculateFareInput): CalculateFareResult {
         `Vendor hub percentage: ${effectiveHub.vendorMin * 100}%–${effectiveHub.vendorMax * 100}%`,
 
         `Festival surcharge: ${festivalPercent}%`,
+        `Coupon discount: ${couponPercent}% applied after festival increase`,
+        `Coupon discount amount: ₹${fareAfterFestival - fareAfterCoupon}`,
 
         ...(isNonMajorOneWay ? ["Toll is included in the Non-Major formula above."] : ["Toll is separate."]),
 
@@ -1879,12 +1860,9 @@ export function calculateFare(input: CalculateFareInput): CalculateFareResult {
     haltCharges +
     driverFooding;
 
-  const fareAfterFestival = applyFestival(
-    rawFare,
-    festivalPercent,
-  );
-
-  const b2cFinal = roundCustomerFare(fareAfterFestival);
+  const fareAfterFestival = applyFestival(rawFare, festivalPercent);
+  const fareAfterCoupon = applyCoupon(fareAfterFestival, couponPercent);
+  const b2cFinal = roundCustomerFare(fareAfterCoupon);
 
   breakdown.push(
     `Running fare: ₹${runningFare}`,
@@ -1895,6 +1873,7 @@ export function calculateFare(input: CalculateFareInput): CalculateFareResult {
     `Subtotal before festival: ₹${rawFare}`,
     `Festival surcharge: ${festivalPercent}%`,
     `Fare after festival: ₹${fareAfterFestival}`,
+    `Coupon discount: ${couponPercent}% = ₹${fareAfterFestival - fareAfterCoupon}`,
     `Final fare rounded to nearest ₹100: ₹${b2cFinal}`,
   );
 
@@ -1904,7 +1883,7 @@ export function calculateFare(input: CalculateFareInput): CalculateFareResult {
     rateUsed,
     strikeFare: makeStrikeFare(b2cFinal),
     finalFare: b2cFinal,
-    discountPercent: 0,
+    discountPercent: couponPercent,
     durationMinutes: Math.round((billedDistance / 50) * 60) + 30,
     haltCharges,
     autoCorrectedService: "outstation",
@@ -1919,6 +1898,9 @@ export function calculateFare(input: CalculateFareInput): CalculateFareResult {
           increasePercent: festivalPercent,
         }
       : null,
+    appliedCoupon: couponRule ? { id: couponRule.id, code: couponRule.code, discountPercent: couponPercent } : null,
+    festivalIncreaseAmount: rawFare * festivalPercent / 100,
+    couponDiscountAmount: fareAfterFestival - fareAfterCoupon,
     calculationBreakdown: [
       routeNote,
       ...breakdown,
