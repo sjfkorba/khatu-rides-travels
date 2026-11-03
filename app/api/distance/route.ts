@@ -1,4 +1,4 @@
-// app/api/distance/route.ts
+
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -32,6 +32,7 @@ export async function POST(req: Request) {
     }
 
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+
     if (!apiKey) {
       return NextResponse.json(
         { error: "Google Maps API key is missing" },
@@ -57,7 +58,8 @@ export async function POST(req: Request) {
         headers: {
           "Content-Type": "application/json",
           "X-Goog-Api-Key": apiKey,
-          "X-Goog-FieldMask": "routes.distanceMeters,routes.duration,routes.legs.distanceMeters,routes.legs.duration,routes.travelAdvisory.tollInfo",
+          "X-Goog-FieldMask":
+            "routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline,routes.legs.distanceMeters,routes.legs.duration,routes.travelAdvisory.tollInfo",
         },
         body: JSON.stringify(requestBody),
         cache: "no-store",
@@ -74,32 +76,63 @@ export async function POST(req: Request) {
     }
 
     const route = data?.routes?.[0];
-    if (!route?.distanceMeters) {
-      return NextResponse.json({ error: "No route distance found" }, { status: 404 });
+
+    if (!route?.distanceMeters || !route?.polyline?.encodedPolyline) {
+      return NextResponse.json(
+        { error: "No valid route found" },
+        { status: 404 }
+      );
     }
 
-    const distanceMeters = route.distanceMeters;
+    const distanceMeters = Number(route.distanceMeters);
     const distanceKm = Math.round(distanceMeters / 1000);
+
+    // Google Routes API duration format: "12345s"
+    const durationSeconds = Number(
+      String(route.duration || "0s").replace("s", "")
+    );
+
+    const durationMinutes = Math.round(durationSeconds / 60);
+    const durationHours = Math.floor(durationMinutes / 60);
+    const remainingMinutes = durationMinutes % 60;
 
     const hasToll = Boolean(route?.travelAdvisory?.tollInfo);
     let estimatedTollCost = 0;
-    if (hasToll && route?.travelAdvisory?.tollInfo?.estimatedPrice) {
-      const priceList = route.travelAdvisory.tollInfo.estimatedPrice;
-      const inrPrice = priceList.find((p: any) => p.currencyCode === "INR");
-      if (inrPrice) {
-        estimatedTollCost = Math.round(Number(inrPrice.units || 0));
-      }
+
+    const priceList =
+      route?.travelAdvisory?.tollInfo?.estimatedPrice || [];
+
+    const inrPrice = priceList.find(
+      (price: any) => price.currencyCode === "INR"
+    );
+
+    if (inrPrice) {
+      estimatedTollCost = Math.round(
+        Number(inrPrice.units || 0) +
+        Number(inrPrice.nanos || 0) / 1_000_000_000
+      );
     }
 
     return NextResponse.json({
       origin,
       destination,
       distanceKm,
+      distanceMeters,
+      durationSeconds,
+      durationMinutes,
+      durationText: `${String(durationHours).padStart(2, "0")}:${String(
+        remainingMinutes
+      ).padStart(2, "0")}`,
+      encodedPolyline: route.polyline.encodedPolyline,
       hasToll,
       estimatedTollCost,
     });
   } catch (error) {
-    console.error("Distance API Pure Error:", error);
-    return NextResponse.json({ error: "Failed to calculate distance" }, { status: 500 });
+    console.error("Distance API Error:", error);
+
+    return NextResponse.json(
+      { error: "Failed to calculate distance" },
+      { status: 500 }
+    );
   }
 }
