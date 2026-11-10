@@ -10,7 +10,7 @@ Business rules implemented:
 
 - Long One Way: +25 KM only when actual one-way distance >500 KM.
 
-- Interstate rate tier applies only above 500 KM; Korba–Odisha keeps its special rate.
+- Interstate rate tier applies only above 500 KM: Dzire ₹12/KM, Ertiga ₹21/KM, Crysta ₹25/KM. Korba–Odisha keeps its previous special rates.
 
 - Round Trip: same-day, under-80 KM, multi-day and
 
@@ -18,6 +18,7 @@ Bilaspur–Raipur route-specific override.
 
 - Local Rental: approved package + extra KM + extra hours + pickup-time night surcharge.
 
+- B2C: 10% base-fare discount before applicable pickup-time night surcharge.
 - Festival: both B2C and B2B; highest eligible percentage only.
 
 Important:
@@ -26,11 +27,12 @@ Important:
 
 - Multi-day round-trip running rates are toll-inclusive.
 
-- One Way and Local Rental: 20% customer night surcharge for pickup 21:00–05:59.
+- One Way and Local Rental: 20% customer night surcharge for pickup 21:00–05:59,
+  calculated after the 10% B2C base-fare discount. Round Trip night-halt rules remain unchanged.
 
 - This module calculates fares only. It does not write to Firebase.
 
-\========================================================= */
+//========================================================= */
 
 export type VehicleType = "sedan" | "ertiga" | "crysta";
 
@@ -60,9 +62,17 @@ oneWayB2BMaxRate: number;
 
 interstateB2CRate: number;
 
+/** Dedicated legacy rate for the Korba–Odisha special route. */
+korbaOdishaB2CRate?: number;
+
 interstateB2BMinRate: number;
 
 interstateB2BMaxRate: number;
+
+/** Dedicated vendor range for the Korba–Odisha special route. */
+korbaOdishaB2BMinRate?: number;
+
+korbaOdishaB2BMaxRate?: number;
 
 roundTripRate: number;
 
@@ -92,13 +102,13 @@ label: "Maruti Suzuki Dzire",
 
 image: "/dezire.png",
 
-oneWayB2CRate: 12,
+oneWayB2CRate: 13,
 
 oneWayB2BMinRate: 9,
 
 oneWayB2BMaxRate: 10,
 
-interstateB2CRate: 17,
+interstateB2CRate: 11,
 
 interstateB2BMinRate: 14,
 
@@ -128,17 +138,23 @@ label: "Maruti Suzuki Ertiga (MUV)",
 
 image: "/ertiga.png",
 
-oneWayB2CRate: 14,
+oneWayB2CRate: 17,
 
 oneWayB2BMinRate: 11,
 
 oneWayB2BMaxRate: 12,
 
-interstateB2CRate: 19,
+interstateB2CRate: 18,
+
+korbaOdishaB2CRate: 19,
 
 interstateB2BMinRate: 16,
 
 interstateB2BMaxRate: 17,
+
+korbaOdishaB2BMinRate: 16,
+
+korbaOdishaB2BMaxRate: 17,
 
 roundTripRate: 17,
 
@@ -164,17 +180,23 @@ label: "Toyota Innova Crysta (Premium)",
 
 image: "/crysta.png",
 
-oneWayB2CRate: 17,
+oneWayB2CRate: 21,
 
 oneWayB2BMinRate: 14,
 
 oneWayB2BMaxRate: 15,
 
-interstateB2CRate: 22,
+interstateB2CRate: 21,
+
+korbaOdishaB2CRate: 22,
 
 interstateB2BMinRate: 19,
 
 interstateB2BMaxRate: 20,
+
+korbaOdishaB2BMinRate: 19,
+
+korbaOdishaB2BMaxRate: 20,
 
 roundTripRate: 21,
 
@@ -451,6 +473,8 @@ nightSurchargeAmount?: number;
 couponDiscountPercent?: number;
 
 couponDiscountAmount?: number;
+baseDiscountPercent?: number;
+baseDiscountAmount?: number;
 
 }
 
@@ -509,6 +533,10 @@ appliedCoupon?: { id: string; code: string; discountPercent: number } | null;
 festivalIncreaseAmount?: number;
 
 couponDiscountAmount?: number;
+
+baseDiscountPercent?: number;
+
+baseDiscountAmount?: number;
 
 calculationBreakdown?: string[];
 
@@ -598,7 +626,7 @@ HubCategory,
 
 > = {
 
-major: { customer: 0.7, vendorMin: 0.6, vendorMax: 0.6 },
+major: { customer: 0.75, vendorMin: 0.6, vendorMax: 0.6 },
 
 "semi-major": { customer: 0.8, vendorMin: 0.7, vendorMax: 0.7 },
 
@@ -625,22 +653,34 @@ return Number.isFinite(parsed) ? Math.max(0, parsed) : fallback;
 }
 
 /**
+
  * Night surcharge applies to customer fare when pickup is from 21:00
+
  * through 05:59 (inclusive). Uses the booking pickup time.
+
  */
+
+const BASE_FARE_DISCOUNT_PERCENT = 10;
 const NIGHT_SURCHARGE_PERCENT = 20;
 
+function applyBaseFareDiscount(value: number): number {
+  return value * (1 - BASE_FARE_DISCOUNT_PERCENT / 100);
+}
+
 function getNightSurchargePercent(pickupTime: string): number {
-  const match = /^(\\d{2}):(\\d{2})$/.exec((pickupTime || "").trim());
+  const match = /^(\d{2}):(\d{2})$/.exec((pickupTime || "").trim());
+
   if (!match) return 0;
 
   const hours = Number(match[1]);
+
   const minutes = Number(match[2]);
+
   if (hours > 23 || minutes > 59) return 0;
 
   return hours >= 21 || hours < 6 ? NIGHT_SURCHARGE_PERCENT : 0;
-}
 
+}
 
 /** Customer fare rounds to nearest ₹100 as per the locked policy. */
 
@@ -699,61 +739,78 @@ return (
 }
 
 const ODISHA_PLACE_HINTS = [
-
-"odisha", "orissa", "sambalpur", "jharsuguda", "balangir",
-
-"balangir", "bargarh", "rourkela", "sundargarh", "bhubaneswar",
-
-"cuttack", "berhampur", "koraput", "keonjhar", "angul", "talcher",
-
+  "odisha", "orissa", "sambalpur", "jharsuguda", "balangir",
+  "bargarh", "rourkela", "sundargarh", "bhubaneswar",
+  "cuttack", "berhampur", "koraput", "keonjhar", "angul", "talcher",
 ];
 
-function inferRouteClassification(input: CalculateFareInput): RouteClassification {
+/**
+ * Out-of-Chhattisgarh city hints are needed because Google Places often
+ * returns only a city name or a short address without the state name.
+ */
+const OTHER_STATE_CITY_HINTS = [
+  // Madhya Pradesh
+  "bhopal", "indore", "jabalpur", "gwalior", "ujjain", "sagar", "rewa",
+  "satna", "katni", "chhindwara", "burhanpur", "khandwa", "dewas", "ratlam",
+  // Maharashtra
+  "nagpur", "mumbai", "pune", "nashik", "amravati", "wardha", "akola",
+  "chandrapur", "gondia", "yavatmal", "aurangabad", "sambhajinagar",
+  // Telangana / Andhra Pradesh
+  "hyderabad", "warangal", "karimnagar", "nizamabad", "vijayawada", "visakhapatnam",
+  // Jharkhand / Uttar Pradesh / Bihar
+  "ranchi", "jamshedpur", "dhanbad", "bokaro", "varanasi", "prayagraj",
+  "allahabad", "lucknow", "kanpur", "patna", "gaya", "muzaffarpur",
+  // Other nearby states
+  "kolkata", "howrah", "bhubaneswar", "cuttack", "jaipur", "delhi",
+];
 
-if (input.routeClassification) return input.routeClassification;
+const OTHER_STATE_NAME_HINTS = [
+  "madhya pradesh", "maharashtra", "telangana", "andhra pradesh",
+  "jharkhand", "uttar pradesh", "bihar", "west bengal", "rajasthan",
+  "gujarat", "goa", "karnataka", "kerala", "tamil nadu", "punjab",
+  "haryana", "uttarakhand", "himachal pradesh", "assam", "meghalaya",
+  "manipur", "mizoram", "nagaland", "tripura", "sikkim", "arunachal pradesh",
+  "delhi", "jammu and kashmir", "ladakh", "puducherry", "chandigarh",
+];
 
-const pickup = normalize(input.pickup || "");
+export function inferRouteClassification(
+  input: Pick<CalculateFareInput, "pickup" | "drop" | "routeClassification" | "isInterstate" | "isKorbaOriginOdisha">
+): RouteClassification {
+  if (input.routeClassification) return input.routeClassification;
 
-const drop = normalize(input.drop || "");
+  const pickup = normalize(input.pickup || "");
+  const drop = normalize(input.drop || "");
+  const routeText = `${pickup} ${drop}`;
 
-if (input.isKorbaOriginOdisha) return "korba-odisha";
+  if (input.isKorbaOriginOdisha) return "korba-odisha";
 
-const pickupIsKorba = pickup.includes("korba");
+  const pickupIsKorba = pickup.includes("korba");
+  const dropIsKorba = drop.includes("korba");
+  const pickupIsOdisha = ODISHA_PLACE_HINTS.some((place) => pickup.includes(place));
+  const dropIsOdisha = ODISHA_PLACE_HINTS.some((place) => drop.includes(place));
 
-const dropIsKorba = drop.includes("korba");
+  // Preserve the dedicated Korba–Odisha pricing in both directions.
+  if ((pickupIsKorba && dropIsOdisha) || (dropIsKorba && pickupIsOdisha)) {
+    return "korba-odisha";
+  }
 
-const pickupIsOdisha = ODISHA_PLACE_HINTS.some((place) => pickup.includes(place));
+  // An explicit classification supplied by the caller takes precedence.
+  if (typeof input.isInterstate === "boolean") {
+    return input.isInterstate ? "interstate" : "domestic";
+  }
 
-const dropIsOdisha = ODISHA_PLACE_HINTS.some((place) => drop.includes(place));
+  const hasCg = /\b(chhattisgarh|chattisgarh|cg)\b/.test(routeText);
+  const hasOtherState = OTHER_STATE_NAME_HINTS.some((state) => routeText.includes(state)) ||
+    /\b(odisha|orissa|mp|mh|ts|jh|up|br|wb|rj|gj|ga|ka|kl|tn|ap|pb|hr|uk|hp|as|dl)\b/.test(routeText);
+  const hasOutsideCgCity = OTHER_STATE_CITY_HINTS.some((city) => routeText.includes(city));
 
-// Korba–Odisha special pricing works in both directions.
+  // Google Places may return a city only, a city + state, or a full address.
+  // Any recognized non-Chhattisgarh state/city is treated as Interstate.
+  if (pickupIsOdisha || dropIsOdisha || hasOutsideCgCity || hasOtherState || (hasCg && hasOtherState)) {
+    return "interstate";
+  }
 
-if ((pickupIsKorba && dropIsOdisha) || (dropIsKorba && pickupIsOdisha)) {
-
-return "korba-odisha";
-
-}
-
-if (typeof input.isInterstate === "boolean") {
-
-return input.isInterstate ? "interstate" : "domestic";
-
-}
-
-const hasCg = /\b(chhattisgarh|chattisgarh|cg)\b/.test(`${pickup} ${drop}`);
-
-const hasOtherState = /\b(odisha|orissa|madhya pradesh|maharashtra|telangana|jharkhand|uttar pradesh)\b/.test(`${pickup} ${drop}`);
-
-// Odisha city-name hints recognize city-only Google Maps results.
-
-if (pickupIsOdisha || dropIsOdisha || (hasCg && hasOtherState)) {
-
-return "interstate";
-
-}
-
-return "domestic";
-
+  return "domestic";
 }
 
 /**
@@ -1192,9 +1249,10 @@ const couponPercent = safeNumber(couponDiscountPercent);
 
 const nightPercent = safeNumber(nightSurchargePercent);
 
-const nightAmount = b2cBase * nightPercent / 100;
-
-const afterNight = b2cBase + nightAmount;
+const baseDiscountAmount = b2cBase * BASE_FARE_DISCOUNT_PERCENT / 100;
+const discountedBase = applyBaseFareDiscount(b2cBase);
+const nightAmount = discountedBase * nightPercent / 100;
+const afterNight = discountedBase + nightAmount;
 
 const afterFestival = applyFestival(afterNight, surcharge);
 
@@ -1245,6 +1303,9 @@ festivalSurchargePercent: surcharge,
 nightSurchargePercent: nightPercent,
 
 nightSurchargeAmount: nightAmount,
+baseDiscountPercent: BASE_FARE_DISCOUNT_PERCENT,
+baseDiscountAmount,
+couponDiscountAmount: afterFestival - afterCoupon,
 
 };
 
@@ -1254,7 +1315,7 @@ nightSurchargeAmount: nightAmount,
 
 MAIN FARE CALCULATION ENGINE
 
-\========================================================= */
+//========================================================= */
 
 export function calculateFare(input: CalculateFareInput): CalculateFareResult {
 
@@ -1319,8 +1380,11 @@ const festivalPercent = festivalRule?.increasePercent || 0;
 const couponPercent = couponRule?.discountPercent || 0;
 
 const nightPercent =
+
   bookingType === "oneway" || bookingType === "local"
+
     ? getNightSurchargePercent(pickupTime)
+
     : 0;
 
 const isOneWayAvailable =
@@ -1505,7 +1569,11 @@ crysta: { fixed: 1600, ratePerKm: 15 },
 
 const isNonMajorOneWay = hubCategory === "non-major" || isKorbaOdisha;
 
-const b2cRate = isKorbaOdisha || isLongInterstate
+const b2cRate = isKorbaOdisha
+
+? (vehicle.korbaOdishaB2CRate ?? vehicle.interstateB2CRate)
+
+: isLongInterstate
 
 ? vehicle.interstateB2CRate
 
@@ -1519,13 +1587,21 @@ const b2cRate = isKorbaOdisha || isLongInterstate
 
 : vehicle.oneWayB2CRate;
 
-const b2bMinRate = isKorbaOdisha || isLongInterstate
+const b2bMinRate = isKorbaOdisha
+
+? (vehicle.korbaOdishaB2BMinRate ?? vehicle.interstateB2BMinRate)
+
+: isLongInterstate
 
 ? vehicle.interstateB2BMinRate
 
 : vehicle.oneWayB2BMinRate;
 
-const b2bMaxRate = isKorbaOdisha || isLongInterstate
+const b2bMaxRate = isKorbaOdisha
+
+? (vehicle.korbaOdishaB2BMaxRate ?? vehicle.interstateB2BMaxRate)
+
+: isLongInterstate
 
 ? vehicle.interstateB2BMaxRate
 
@@ -1589,9 +1665,14 @@ const b2bMinBase = roundTripBaseKm * b2bMinRate * effectiveHub.vendorMin;
 
 const b2bMaxBase = roundTripBaseKm * b2bMaxRate * effectiveHub.vendorMax;
 
-const nightSurchargeAmount = b2cBase * nightPercent / 100;
-
-const fareAfterNight = b2cBase + nightSurchargeAmount;
+// The 10% base discount is available only when the actual one-side route is 70 KM or more.
+// Do not use minimum billed KM or long-distance buffer for this eligibility check.
+const baseDiscountEligible = actualOneWayKm >= 70;
+const baseDiscountPercent = baseDiscountEligible ? BASE_FARE_DISCOUNT_PERCENT : 0;
+const baseDiscountAmount = baseDiscountEligible ? b2cBase * BASE_FARE_DISCOUNT_PERCENT / 100 : 0;
+const discountedBaseFare = baseDiscountEligible ? applyBaseFareDiscount(b2cBase) : b2cBase;
+const nightSurchargeAmount = discountedBaseFare * nightPercent / 100;
+const fareAfterNight = discountedBaseFare + nightSurchargeAmount;
 
 const fareAfterFestival = applyFestival(fareAfterNight, festivalPercent);
 
@@ -1654,6 +1735,8 @@ appliedCoupon: couponRule ? { id: couponRule.id, code: couponRule.code, discount
 festivalIncreaseAmount: b2cBase * festivalPercent / 100,
 
 couponDiscountAmount: fareAfterFestival - fareAfterCoupon,
+baseDiscountPercent,
+baseDiscountAmount,
 
 routeClassification,
 
@@ -1671,7 +1754,12 @@ calculationBreakdown: [
 
 `Round Trip Base KM: ${roundTripBaseKm} KM`,
 
-`B2C Rate: ₹${b2cRate}/KM`,
+`Route Classification: ${routeClassification}`,
+`Hub Category: ${hubCategory}`,
+`B2C Rate Applied: ₹${b2cRate}/KM`,
+...(baseDiscountEligible ? [`Base fare discount: ${BASE_FARE_DISCOUNT_PERCENT}% = ₹${baseDiscountAmount}`] : ["Base fare discount: Not eligible below 70 KM actual one-side distance."]),
+`Discounted base fare: ₹${discountedBaseFare}`,
+`Night surcharge: ${nightPercent}% = ₹${nightSurchargeAmount}`,
 
 ...(isRaipurJharsuguda ? [
 
@@ -2101,7 +2189,12 @@ haltCharges +
 
 driverFooding;
 
-const fareAfterFestival = applyFestival(rawFare, festivalPercent);
+const baseDiscountAmount = rawFare * BASE_FARE_DISCOUNT_PERCENT / 100;
+const discountedBaseFare = applyBaseFareDiscount(rawFare);
+// Round Trip pickup-time night surcharge remains disabled by the existing booking-type rule.
+const nightSurchargeAmount = discountedBaseFare * nightPercent / 100;
+const fareAfterNight = discountedBaseFare + nightSurchargeAmount;
+const fareAfterFestival = applyFestival(fareAfterNight, festivalPercent);
 
 const fareAfterCoupon = applyCoupon(fareAfterFestival, couponPercent);
 
@@ -2119,7 +2212,10 @@ breakdown.push(
 
 `Driver fooding: ${travelDays} days × ₹${driverFoodingPerDay} = ₹${driverFooding}`,
 
-`Subtotal before festival: ₹${rawFare}`,
+`Subtotal before discount: ₹${rawFare}`,
+`Base fare discount: ${BASE_FARE_DISCOUNT_PERCENT}% = ₹${baseDiscountAmount}`,
+`Discounted base fare: ₹${discountedBaseFare}`,
+`Night surcharge: ${nightPercent}% = ₹${nightSurchargeAmount}`,
 
 `Festival surcharge: ${festivalPercent}%`,
 
@@ -2178,6 +2274,8 @@ appliedCoupon: couponRule ? { id: couponRule.id, code: couponRule.code, discount
 festivalIncreaseAmount: rawFare * festivalPercent / 100,
 
 couponDiscountAmount: fareAfterFestival - fareAfterCoupon,
+baseDiscountPercent: BASE_FARE_DISCOUNT_PERCENT,
+baseDiscountAmount,
 
 calculationBreakdown: [
 
@@ -2199,7 +2297,7 @@ routeNote,
 
 LEGACY / HELPER EXPORTS
 
-\========================================================= */
+//========================================================= */
 
 /** @deprecated Use explicit hubCategory in calculateFare input. */
 

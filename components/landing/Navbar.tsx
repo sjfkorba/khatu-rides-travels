@@ -63,7 +63,7 @@ export default function Navbar() {
         >
           {/* Note: Ensure your nav_logo.png is visible on dark backgrounds, or use a white/transparent variant here */}
           <Image
-            src="/nav_logo.png"
+            src="/new_logo.png"
             alt="Khatu Rides Travels Co."
             width={190}
             height={58}

@@ -397,7 +397,7 @@ export default function Footer() {
               <div className="flex h-[100px] w-[185px] items-center justify-center overflow-hidden rounded-[22px] border border-slate-200 bg-white p-3 shadow-[0_12px_35px_rgba(15,23,42,.08)] transition-all duration-300 group-hover:-translate-y-1 group-hover:border-amber-300 group-hover:shadow-[0_18px_45px_rgba(245,158,11,.14)] sm:h-[110px] sm:w-[205px]">
 
                 <img
-                  src="/logo.png"
+                  src="/new_logo.png"
                   alt="Khatu Rides Travels"
                   className="h-full w-full object-contain"
                 />

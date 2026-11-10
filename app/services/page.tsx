@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 
 import Footer from "@/components/Footer";
+import Navbar from "@/components/landing/Navbar";
 
 const SITE_URL = "https://www.khaturidescg.in";
 const PAGE_URL = `${SITE_URL}/services`;
@@ -354,69 +355,7 @@ export default function ServicesPage() {
         {/* HEADER */}
         {/* ====================================================== */}
 
-        <header className="sticky top-0 z-50 border-b border-white/10 bg-[#061936]/95 shadow-lg backdrop-blur-xl">
-          <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-            <Link href="/" className="shrink-0">
-              <img
-                src="/logo.png"
-                alt="Khatu Rides Travels Co."
-                className="h-10 w-auto object-contain sm:h-11"
-              />
-            </Link>
-
-            <nav className="hidden items-center gap-6 lg:flex">
-              <Link
-                href="/"
-                className="text-sm font-bold text-white/75 transition hover:text-white"
-              >
-                Home
-              </Link>
-
-              <Link
-                href="/#popular-routes"
-                className="text-sm font-bold text-white/75 transition hover:text-white"
-              >
-                Popular Routes
-              </Link>
-
-              <Link
-                href="/tour-packages"
-                className="text-sm font-bold text-white/75 transition hover:text-white"
-              >
-                Tour Packages
-              </Link>
-
-              <Link
-                href="/fleet"
-                className="text-sm font-bold text-white/75 transition hover:text-white"
-              >
-                Fleet
-              </Link>
-
-              <Link
-                href="/services"
-                className="text-sm font-black text-amber-300"
-              >
-                Services
-              </Link>
-
-              <Link
-                href="/fare-calculator"
-                className="rounded-xl bg-amber-400 px-4 py-2.5 text-xs font-black text-slate-950 shadow-lg shadow-amber-400/20 transition hover:-translate-y-0.5 hover:bg-amber-300"
-              >
-                Fare Calculator
-              </Link>
-            </nav>
-
-            <a
-              href={`tel:+91${PHONE}`}
-              className="flex items-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-red-500/25 transition hover:-translate-y-0.5 hover:bg-red-600 sm:px-5"
-            >
-              <Phone size={15} fill="currentColor" />
-              <span>Call Now</span>
-            </a>
-          </div>
-        </header>
+         <Navbar/>
 
         {/* ====================================================== */}
         {/* MOBILE STRIP */}

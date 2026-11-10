@@ -22,6 +22,7 @@ import {
   Target,
   Users,
 } from "lucide-react";
+import Navbar from "@/components/landing/Navbar";
 
 export const metadata: Metadata = {
   title:
@@ -329,7 +330,7 @@ export default function ContactUsPage() {
           __html: JSON.stringify(faqSchema),
         }}
       />
-
+       <Navbar/>
       {/* ============================================================
           HERO
       ============================================================ */}
@@ -348,20 +349,7 @@ export default function ContactUsPage() {
 
           {/* Breadcrumb */}
 
-          <div className="mb-8 flex items-center gap-2 text-[9px] font-bold uppercase tracking-[.18em] text-slate-400">
-            <Link
-              href="/"
-              className="transition hover:text-white"
-            >
-              Home
-            </Link>
-
-            <ChevronRight size={11} />
-
-            <span className="text-amber-400">
-              Contact Us
-            </span>
-          </div>
+          
 
           <div className="grid items-center gap-12 lg:grid-cols-[1.15fr_.85fr]">
 

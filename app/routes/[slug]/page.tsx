@@ -77,7 +77,7 @@ export async function generateMetadata({
 
       images: [
         {
-          url: `${SITE_URL}/logo.png`,
+          url: `${SITE_URL}/new_logo.png`,
           width: 1200,
           height: 630,
           alt: "Khatu Rides Travels Co.",
@@ -96,7 +96,7 @@ export async function generateMetadata({
         route.desc ||
         `Book ${route.h1} with Khatu Rides Travels.`,
 
-      images: [`${SITE_URL}/logo.png`],
+      images: [`${SITE_URL}/new_logo.png`],
     },
 
     robots: {

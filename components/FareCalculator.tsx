@@ -24,9 +24,11 @@ import {
   ChevronDown,
   ChevronUp,
   Zap,
+  Wallet,
 } from "lucide-react";
 import {
   calculateFare,
+  inferRouteClassification,
   LOCAL_PACKAGES,
   VEHICLES,
   type BookingType,
@@ -173,10 +175,10 @@ export default function FareCalculator({
   const [activeField, setActiveField] = useState<"pickup" | "drop" | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [searching, setSearching] = useState(false);
-  const [pickupDate, setPickupDate] = useState(today());
-  const [pickupTime, setPickupTime] = useState("09:00");
-  const [returnDate, setReturnDate] = useState(today());
-  const [returnTime, setReturnTime] = useState("18:00");
+  const [pickupDate, setPickupDate] = useState("");
+  const [pickupTime, setPickupTime] = useState("");
+  const [returnDate, setReturnDate] = useState("");
+  const [returnTime, setReturnTime] = useState("");
   const [localPackage, setLocalPackage] = useState<LocalPackageType>("8hr80km");
   const [route, setRoute] = useState<any>(null);
   const [fareOptions, setFareOptions] = useState<any[]>([]);
@@ -295,6 +297,14 @@ export default function FareCalculator({
       setError("कृपया Pickup location चुनें।");
       return;
     }
+    if (!pickupDate || !pickupTime) {
+      setError("कृपया अपनी Pickup Date और Pickup Time select करें।");
+      return;
+    }
+    if (tab === "roundtrip" && (!returnDate || !returnTime)) {
+      setError("कृपया Return Date और Return Time भी select करें।");
+      return;
+    }
     if (tab === "roundtrip" && returnDate < pickupDate) {
       setError("Return date, pickup date से पहले नहीं हो सकती।");
       return;
@@ -327,6 +337,10 @@ export default function FareCalculator({
         distanceKm = LOCAL_PACKAGES.sedan[localPackage].kms;
       }
 
+      // One Way discounts (base discount, route coupons and campaign offers) require
+      // an actual one-side route distance of at least 70 KM.
+      const oneWayDiscountEligible = tab !== "oneway" || distanceKm >= 70;
+
       // Load current promotion records from Firestore for this journey date.
       // Final promotion validation must also happen inside the trusted order API.
       const [festivalSnapshot, couponSnapshot] = await Promise.all([
@@ -344,7 +358,7 @@ export default function FareCalculator({
         const to = normalizePlace(drop?.description || "");
         const couponFrom = normalizePlace(x.fromNormalized || x.from);
         const couponTo = normalizePlace(x.toNormalized || x.to);
-        return x.isActive && Number(x.discountPercent) > 0 && inValidity(x.startAt, x.endAt, pickupDate) &&
+        return oneWayDiscountEligible && x.isActive && Number(x.discountPercent) > 0 && inValidity(x.startAt, x.endAt, pickupDate) &&
           tab !== "local" && from.includes(couponFrom) && to.includes(couponTo);
       }));
       setAppliedCoupon(null); setCouponMessage(""); setAppliedCampaign(null); setCampaignMessage(""); setCampaignCouponCode("");
@@ -352,7 +366,7 @@ export default function FareCalculator({
       const campaignResponse = await fetch(`/api/fare-promotions?${campaignQuery.toString()}`, { cache: "no-store" });
       const campaignData = await campaignResponse.json();
       if (!campaignResponse.ok || campaignData.success !== true) throw new Error(campaignData.error || "Discount campaigns load nahi ho paye.");
-      const autoCampaigns = Array.isArray(campaignData.campaigns) ? campaignData.campaigns as FarePromotion[] : [];
+      const autoCampaigns = oneWayDiscountEligible && Array.isArray(campaignData.campaigns) ? campaignData.campaigns as FarePromotion[] : [];
       setAutomaticCampaigns(autoCampaigns);
 
       const bookingType: BookingType = tab;
@@ -365,6 +379,12 @@ export default function FareCalculator({
             serviceType: tab === "local" ? "local" : "outstation",
             pickup: pickup?.description || "",
             drop: drop?.description || "",
+            // Pass route classification explicitly so Interstate pricing does not
+            // depend on a second implicit classification inside the fare engine.
+            routeClassification: inferRouteClassification({
+              pickup: pickup?.description || "",
+              drop: drop?.description || "",
+            }),
             pickupDate,
             pickupTime,
             returnDate: tab === "roundtrip" ? returnDate : undefined,
@@ -376,7 +396,10 @@ export default function FareCalculator({
           // Keep the pre-night base separate so every adjustment is visible to customers.
           const fareAfterNight = Number(result.finalFare || 0);
           const nightSurchargeAmount = Number(result.nightSurchargeAmount || 0);
-          const baseFare = Math.max(0, fareAfterNight - nightSurchargeAmount);
+          const baseDiscountPercent = Number(result.baseDiscountPercent ?? (oneWayDiscountEligible ? 10 : 0));
+          const baseDiscountAmount = Number(result.baseDiscountAmount || 0);
+          const discountedBaseFare = Math.max(0, fareAfterNight - nightSurchargeAmount);
+          const baseFare = discountedBaseFare + baseDiscountAmount;
           const festivalPercent = activeFestival ? Number(activeFestival.increasePercent) : 0;
           const festivalRawAmount = fareAfterNight * festivalPercent / 100;
           const festivalAdjustedFare = roundFare(fareAfterNight + festivalRawAmount);
@@ -388,6 +411,9 @@ export default function FareCalculator({
             vehicle: VEHICLES[vehicleType],
             ...result,
             baseFare,
+            baseDiscountPercent,
+            baseDiscountAmount,
+            discountedBaseFare,
             nightSurchargePercent: Number(result.nightSurchargePercent || 0),
             nightSurchargeAmount,
             fareAfterNight,
@@ -417,6 +443,7 @@ export default function FareCalculator({
         returnDate,
         returnTime,
         distanceKm,
+        routeClassification: options[0]?.routeClassification || "domestic",
         route: routeData,
         fareOptions: options,
         festivalRule: activeFestival,
@@ -440,6 +467,10 @@ export default function FareCalculator({
   function applyBestOfferForVehicle(vehicleType: VehicleType) {
     const option = fareOptions.find((item) => item.vehicleType === vehicleType);
     if (!option) return;
+    if (tab === "oneway" && Number(route?.distanceKm || 0) < 70) {
+      setCampaignMessage("70 KM se kam One Way route par koi discount ya offer applicable nahi hai.");
+      return;
+    }
 
     // Route-specific coupons take priority when available and valid for this route.
     const routeCoupon = [...availableCoupons].sort(
@@ -507,6 +538,10 @@ export default function FareCalculator({
   async function applyDiscountCampaignCoupon() {
     const code = campaignCouponCode.trim().toUpperCase();
     if (!code) { setCampaignMessage("Coupon code enter karein."); return; }
+    if (tab === "oneway" && Number(route?.distanceKm || 0) < 70) {
+      setCampaignMessage("70 KM se kam One Way route par coupon ya discount applicable nahi hai.");
+      return;
+    }
     setCampaignBusy(true); setCampaignMessage("");
     try {
       const response = await fetch("/api/fare-promotions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, bookingType: tab, pickupDate, pickupTime, pickup: pickup?.description || "", drop: drop?.description || "", fare: Math.max(...fareOptions.map((x) => Number(x.festivalAdjustedFare || 0))) }) });
@@ -535,6 +570,10 @@ export default function FareCalculator({
 
   function applyRouteCoupon(found: CouponRecord) {
     setCouponMessage("");
+    if (tab === "oneway" && Number(route?.distanceKm || 0) < 70) {
+      setCouponMessage("70 KM se kam One Way route par coupon ya discount applicable nahi hai.");
+      return;
+    }
     if (appliedCampaign || fareOptions.some((option) => Number(option.campaignDiscountAmount || 0) > 0)) {
       setCouponMessage("Best eligible offer policy: ek booking par ek hi discount offer apply hoga.");
       return;
@@ -658,6 +697,9 @@ export default function FareCalculator({
         totalFare: Number(bookingOption.finalFare),
         fareBreakdown: {
           baseFare: bookingOption.baseFare,
+          baseDiscountPercent: bookingOption.baseDiscountPercent || 10,
+          baseDiscountAmount: bookingOption.baseDiscountAmount || 0,
+          discountedBaseFare: bookingOption.discountedBaseFare ?? null,
           nightSurchargePercent: bookingOption.nightSurchargePercent || 0,
           nightSurchargeAmount: bookingOption.nightSurchargeAmount || 0,
           fareAfterNight: bookingOption.fareAfterNight ?? bookingOption.baseFare,
@@ -1020,8 +1062,8 @@ export default function FareCalculator({
             </button>
           </div>
 
-          {/* Mobile-first fare comparison: all vehicle fares stay visible without scrolling. */}
-          <section className="mb-4 space-y-2.5 lg:hidden" aria-label="Quick vehicle fare comparison">
+          {/* Mobile fare cards: compact premium breakdown inspired by the supplied reference. */}
+          <section className="mb-4 space-y-3 lg:hidden" aria-label="Mobile cab fare results">
             {fareOptions.map((option) => {
               const fare = Number(option.finalFare || 0);
               const advance = Math.round(fare * 0.25);
@@ -1037,6 +1079,8 @@ export default function FareCalculator({
                     ["Parking Charges", "Extra — customer payable"],
                     ["Night Halt", "If applicable, confirm before booking"],
                     ["Distance", `${Number(route?.distanceKm || 0)} KM (one side)`],
+                    ["Route Type", option.routeClassification === "interstate" ? "Interstate" : option.routeClassification === "korba-odisha" ? "Korba–Odisha Special" : "Domestic"],
+                    ["Rate Applied", `${money(Number(option.rateUsed || 0))} / KM`],
                   ]
                 : tab === "roundtrip"
                   ? [
@@ -1057,94 +1101,143 @@ export default function FareCalculator({
                     ];
 
               return (
-                <article key={`mobile-${option.vehicleType}`} className="overflow-hidden rounded-2xl border border-orange-200 bg-white shadow-sm">
-                  <div className="flex min-h-[76px] items-center gap-3 px-3 py-2.5">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-700">
-                      {option.vehicle?.image ? (
-                        <img src={option.vehicle.image} alt="" className="h-10 w-10 object-contain" />
-                      ) : <CarFront size={25} />}
+                <article key={`mobile-${option.vehicleType}`} className="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-[0_4px_18px_rgba(15,23,42,0.07)]">
+                  <div className="grid grid-cols-[76px_minmax(0,1fr)] items-center gap-3 px-3 py-3">
+                    <div className="flex h-[68px] items-center justify-center">
+                      {option.vehicle?.image
+                        ? <img src={option.vehicle.image} alt={option.vehicle?.label || option.vehicleType} className="max-h-[66px] w-full object-contain" />
+                        : <CarFront size={48} className="text-slate-500" />}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[10px] font-bold uppercase tracking-wider text-slate-400">{option.vehicleType}</p>
-                      <h2 className="truncate text-sm font-extrabold text-slate-900">{option.vehicle?.label || option.vehicleType}</h2>
-                      {option.couponPercent > 0 && <p className="text-[10px] font-bold text-green-700">{option.couponCode} · {option.couponPercent}% OFF</p>}
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <p className="text-[9px] font-bold uppercase tracking-wide text-slate-500">Final Fare</p>
-                      <p className="text-xl font-black leading-tight text-orange-700">{money(fare)}</p>
+                    <div className="min-w-0">
+                      <span className="inline-flex rounded-md bg-blue-700 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white">
+                        {option.vehicleType === "sedan" ? "SEDAN" : option.vehicleType === "ertiga" ? "SUV" : "PREMIUM"}
+                      </span>
+                      <h2 className="mt-1 text-[16px] font-black leading-tight text-slate-950">{option.vehicle?.label || option.vehicleType}</h2>
+                      <p className="mt-1 text-xs font-medium text-slate-500">
+                        {tab === "local"
+                          ? (localPackages.find((x) => x.id === localPackage)?.label || "Local Rental")
+                          : `Distance: ${Number(route?.distanceKm || 0)} KM ${tab === "oneway" ? "(One Side)" : "(One Side Route)"}`}
+                      </p>
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 border-t border-green-100 bg-green-50/50 px-3 py-2">
-                    <button
-                      type="button"
-                      onClick={() => applyBestOfferForVehicle(option.vehicleType as VehicleType)}
-                      className="inline-flex min-h-8 flex-1 items-center justify-center gap-1 rounded-lg bg-green-700 px-2.5 py-1.5 text-[10px] font-extrabold text-white"
-                    >
+
+                  <div className="mx-3 mb-3 rounded-xl bg-gradient-to-r from-red-600 to-red-500 px-3 py-2.5 text-center text-white shadow-sm">
+                    <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-red-100">Final Payable</p>
+                    <p className="text-[32px] font-black leading-tight tracking-tight">{money(fare)}</p>
+                  </div>
+
+                  <div className="mx-3 mb-3 overflow-hidden rounded-xl border border-blue-200 bg-white">
+                    <div className="bg-gradient-to-r from-blue-900 to-blue-700 px-3 py-2 text-[17px] font-black text-white">
+                      Fare Breakdown
+                    </div>
+                    <div className="space-y-0.5 p-3 text-[13px]">
+                      {tab === "oneway" && (
+                        <div className="flex items-center justify-between gap-3 py-1 text-[11px] text-slate-500">
+                          <span>{option.routeClassification === "interstate" ? "Interstate Rate" : option.routeClassification === "korba-odisha" ? "Korba–Odisha Rate" : "One Way Rate"}</span>
+                          <strong>{money(Number(option.rateUsed || 0))} / KM</strong>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between gap-3 py-1.5 font-bold text-slate-900">
+                        <span>Base Fare</span><strong>{money(Number(option.baseFare ?? fare))}</strong>
+                      </div>
+                      {Number(option.baseDiscountAmount || 0) > 0 && (
+                        <div className="flex items-center justify-between gap-3 rounded-lg bg-green-50 px-2.5 py-2 font-bold text-green-700">
+                          <span>Discount ({option.baseDiscountPercent || 10}% on Base Fare)</span>
+                          <strong>−{money(Number(option.baseDiscountAmount))}</strong>
+                        </div>
+                      )}
+                      {Number(option.nightSurchargeAmount || 0) > 0 && (
+                        <div className="flex items-center justify-between gap-3 py-1.5 text-orange-700">
+                          <span>Night Charge (+{option.nightSurchargePercent || 20}%)</span>
+                          <strong>+{money(Number(option.nightSurchargeAmount))}</strong>
+                        </div>
+                      )}
+                      {Number(option.festivalAmount || 0) > 0 && (
+                        <div className="flex items-center justify-between gap-3 py-1.5 text-amber-700">
+                          <span>{festivalRule?.name || "Festival Fare"} (+{option.festivalPercent}%)</span>
+                          <strong>+{money(Number(option.festivalAmount))}</strong>
+                        </div>
+                      )}
+                      {Number(option.campaignDiscountAmount || 0) > 0 && (
+                        <div className="flex items-center justify-between gap-3 py-1.5 text-green-700">
+                          <span>{option.campaignName || "Offer Discount"}</span>
+                          <strong>−{money(Number(option.campaignDiscountAmount))}</strong>
+                        </div>
+                      )}
+                      {Number(option.couponAmount || 0) > 0 && (
+                        <div className="flex items-center justify-between gap-3 py-1.5 text-green-700">
+                          <span>Coupon ({option.couponCode})</span>
+                          <strong>−{money(Number(option.couponAmount))}</strong>
+                        </div>
+                      )}
+                      <div className="mt-1 flex items-center justify-between gap-3 rounded-lg border-t border-blue-100 bg-blue-50 px-2.5 py-2.5 text-[15px] font-black text-slate-950">
+                        <span>Final Payable</span><strong>{money(fare)}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mx-3 mb-3 grid grid-cols-2 overflow-hidden rounded-xl border border-amber-200 bg-[#fff9e9]">
+                    <div className="flex items-center gap-2 border-r border-amber-200 px-2.5 py-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-600"><Wallet size={24} /></span>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold text-slate-700">Advance (25%)</p>
+                        <p className="text-[19px] font-black leading-tight text-slate-950">{money(advance)}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 px-2.5 py-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-600"><Wallet size={24} /></span>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold text-slate-700">Balance (75%)</p>
+                        <p className="text-[19px] font-black leading-tight text-slate-950">{money(remaining)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 bg-slate-50/70 px-3 py-2">
+                    <button type="button" onClick={() => applyBestOfferForVehicle(option.vehicleType as VehicleType)}
+                      className="inline-flex min-h-9 flex-1 items-center justify-center gap-1 rounded-lg bg-green-700 px-2 py-2 text-[10px] font-extrabold text-white">
                       <Zap size={12} /> Apply Offer
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setCouponEntryVehicle((current) => current === option.vehicleType ? null : option.vehicleType)}
-                      className="inline-flex min-h-8 flex-1 items-center justify-center gap-1 rounded-lg border border-green-300 bg-white px-2.5 py-1.5 text-[10px] font-extrabold text-green-800"
-                    >
+                    <button type="button" onClick={() => setCouponEntryVehicle((current) => current === option.vehicleType ? null : option.vehicleType)}
+                      className="inline-flex min-h-9 flex-1 items-center justify-center rounded-lg border border-green-300 bg-white px-2 py-2 text-[10px] font-extrabold text-green-800">
                       Enter Coupon
                     </button>
                     {couponEntryVehicle === option.vehicleType && (
                       <div className="flex w-full gap-1.5">
-                        <input
-                          value={campaignCouponCode}
-                          onChange={(e) => setCampaignCouponCode(e.target.value.toUpperCase())}
+                        <input value={campaignCouponCode} onChange={(e) => setCampaignCouponCode(e.target.value.toUpperCase())}
                           onKeyDown={(e) => { if (e.key === "Enter") void applyVehicleCouponCode(option.vehicleType as VehicleType); }}
-                          placeholder="Enter coupon code"
-                          className="h-8 min-w-0 flex-1 rounded-md border border-green-300 bg-white px-2 text-xs outline-none focus:border-green-600"
-                          aria-label={`Coupon code for ${option.vehicle?.label || option.vehicleType}`}
-                        />
-                        <button type="button" disabled={campaignBusy} onClick={() => void applyVehicleCouponCode(option.vehicleType as VehicleType)} className="rounded-md bg-green-700 px-3 text-[10px] font-bold text-white disabled:opacity-50">
-                          {campaignBusy ? "..." : "Apply"}
-                        </button>
+                          placeholder="Enter coupon code" className="h-9 min-w-0 flex-1 rounded-md border border-green-300 bg-white px-2 text-xs outline-none focus:border-green-600"
+                          aria-label={`Coupon code for ${option.vehicle?.label || option.vehicleType}`} />
+                        <button type="button" disabled={campaignBusy} onClick={() => void applyVehicleCouponCode(option.vehicleType as VehicleType)}
+                          className="rounded-md bg-green-700 px-3 text-[10px] font-bold text-white disabled:opacity-50">{campaignBusy ? "..." : "Apply"}</button>
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center justify-between border-t border-slate-100 px-3 py-2">
-                    <button
-                      type="button"
+
+                  <div className="flex items-center justify-between border-t border-slate-100 px-3 py-2.5">
+                    <button type="button"
                       onClick={() => setExpandedConditions((current) => ({ ...current, [option.vehicleType]: !current[option.vehicleType] }))}
-                      aria-expanded={isExpanded}
-                      className="inline-flex items-center gap-1.5 text-xs font-extrabold text-orange-700"
-                    >
+                      aria-expanded={isExpanded} className="inline-flex items-center gap-1.5 text-xs font-extrabold text-orange-700">
                       {isExpanded ? "Hide Details" : "View Details"}
                       {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => { setBookingOption(option); setPaymentError(""); }}
-                      className="rounded-lg bg-orange-700 px-4 py-2 text-xs font-extrabold text-white"
-                    >
+                    <button type="button" onClick={() => { setBookingOption(option); setPaymentError(""); }}
+                      className="rounded-lg bg-orange-600 px-5 py-2.5 text-xs font-extrabold text-white shadow-sm hover:bg-orange-700">
                       Book Cab
                     </button>
                   </div>
+
                   {isExpanded && (
                     <div className="space-y-3 border-t border-orange-100 bg-orange-50/60 p-3">
                       <div className="rounded-xl border border-slate-200 bg-white p-3 text-xs">
-                        <p className="mb-2 font-extrabold text-slate-900">Fare Breakdown</p>
-                        <div className="flex justify-between gap-3"><span className="text-slate-600">Base Fare</span><strong>{money(Number(option.baseFare ?? fare))}</strong></div>
-                        {Number(option.nightSurchargePercent || 0) > 0 && <div className="mt-1 flex justify-between gap-3 text-orange-700"><span>Night Surcharge (+{option.nightSurchargePercent}%)</span><strong>+{money(Number(option.nightSurchargeAmount || 0))}</strong></div>}
-                        {option.festivalPercent > 0 && <div className="mt-1 flex justify-between gap-3 text-amber-700"><span>{festivalRule?.name || "Festival Fare Increase"} (+{option.festivalPercent}%)</span><strong>+{money(Number(option.festivalAmount || 0))}</strong></div>}
-                        <div className="mt-1 flex justify-between gap-3 border-t border-slate-100 pt-2 text-slate-700"><span>Fare before coupon</span><strong>{money(Number(option.festivalAdjustedFare ?? option.fareAfterNight ?? fare))}</strong></div>
-                        {option.campaignDiscountAmount > 0 && <div className="mt-1 flex justify-between gap-3 text-green-700"><span>{option.campaignName || "Campaign Discount"} ({option.campaignDiscountType === "percentage" ? `${option.campaignDiscountValue}%` : "Fixed"})</span><strong>−{money(Number(option.campaignDiscountAmount || 0))}</strong></div>}
-                        {option.couponPercent > 0 && <div className="mt-1 flex justify-between gap-3 text-green-700"><span>Coupon Discount · {option.couponCode} ({option.couponPercent}%)</span><strong>−{money(Number(option.couponAmount || 0))}</strong></div>}
-                        <div className="mt-2 flex justify-between gap-3 border-t pt-2 font-black"><span>Final Payable</span><strong>{money(fare)}</strong></div>
-                        <div className="mt-2 flex justify-between gap-3 text-slate-600"><span>Advance (25%)</span><strong>{money(advance)}</strong></div>
-                        <div className="flex justify-between gap-3 text-slate-600"><span>Balance (75%)</span><strong>{money(remaining)}</strong></div>
-                      </div>
-                      <div className="rounded-xl border border-orange-200 bg-white p-3 text-xs">
                         <p className="mb-2 font-extrabold text-slate-900">Trip Inclusions & Conditions</p>
                         <div className="space-y-2">
                           {conditions.map(([label, value]) => <div key={label} className="flex items-start justify-between gap-3"><span className="text-slate-600">{label}</span><strong className="max-w-[60%] text-right text-slate-900">{value}</strong></div>)}
                         </div>
                         <p className="mt-3 border-t border-slate-100 pt-2 leading-5 text-[10px] text-slate-500">Any additional applicable charge will be communicated before booking confirmation.</p>
                       </div>
-                      <button type="button" onClick={() => { setBookingOption(option); setPaymentError(""); }} className="w-full rounded-xl bg-orange-700 px-4 py-3 text-sm font-extrabold text-white">Book Your Cab</button>
+                      <button type="button" onClick={() => { setBookingOption(option); setPaymentError(""); }}
+                        className="w-full rounded-xl bg-orange-700 px-4 py-3 text-sm font-extrabold text-white">Book Your Cab</button>
                     </div>
                   )}
                 </article>
@@ -1270,6 +1363,7 @@ export default function FareCalculator({
                           <h3 className="mb-3 text-sm font-extrabold">Fare Breakdown</h3>
                           <div className="space-y-2 text-xs">
                             <div className="flex justify-between"><span>Base Fare</span><strong>{money(Number(option.baseFare ?? fare))}</strong></div>
+                            {Number(option.baseDiscountAmount || 0) > 0 && <div className="flex justify-between text-green-700"><span>Base Discount ({option.baseDiscountPercent || 10}%)</span><strong>−{money(Number(option.baseDiscountAmount))}</strong></div>}
                             {Number(option.nightSurchargeAmount || 0) > 0 && <div className="flex justify-between text-orange-700"><span>Night Surcharge</span><strong>+{money(Number(option.nightSurchargeAmount))}</strong></div>}
                             {option.festivalPercent > 0 && <div className="flex justify-between text-orange-700"><span>{festivalRule?.name || "Festival Increase"} ({option.festivalPercent}%)</span><strong>+{money(Number(option.festivalAmount || 0))}</strong></div>}
                             <div className="flex justify-between border-t pt-2"><span>Fare before coupon</span><strong>{money(Number(option.festivalAdjustedFare ?? fare))}</strong></div>
@@ -1440,7 +1534,8 @@ export default function FareCalculator({
                   type="date"
                   min={today()}
                   value={pickupDate}
-                  onChange={(e) => setPickupDate(e.target.value)}
+                  required
+                  onChange={(e) => { setPickupDate(e.target.value); setError(""); }}
                   className="w-full min-w-0 bg-transparent text-[12px] font-semibold outline-none sm:text-sm"
                   aria-label="Pickup date"
                 />
@@ -1477,7 +1572,8 @@ export default function FareCalculator({
                         type="date"
                         min={pickupDate}
                         value={returnDate}
-                        onChange={(e) => setReturnDate(e.target.value)}
+                        required
+                        onChange={(e) => { setReturnDate(e.target.value); setError(""); }}
                         className="w-full min-w-0 bg-transparent text-[12px] font-semibold outline-none sm:text-sm"
                         aria-label="Return date"
                       />
@@ -1488,7 +1584,8 @@ export default function FareCalculator({
                       <input
                         type="time"
                         value={pickupTime}
-                        onChange={(e) => setPickupTime(e.target.value)}
+                        required
+                        onChange={(e) => { setPickupTime(e.target.value); setError(""); }}
                         className="w-full min-w-0 bg-transparent text-sm font-semibold outline-none"
                         aria-label="Pickup time"
                       />
@@ -1501,6 +1598,18 @@ export default function FareCalculator({
 
           {/* Second row: return time when round-trip, plus a prominent centered Check Fare action. */}
           <div className="mt-2 flex flex-col items-center gap-2 border-t border-orange-100 pt-2 sm:mt-3 sm:gap-2.5 sm:pt-3">
+            {tab === "local" && (
+              <div className="w-full sm:max-w-xs">
+                <label className={fieldLabelClass()}>PICKUP TIME</label>
+                <div className={inputShellClass()}>
+                  <Clock3 className="hidden h-5 w-5 shrink-0 text-orange-700 sm:block" />
+                  <input type="time" value={pickupTime} required
+                    onChange={(e) => { setPickupTime(e.target.value); setError(""); }}
+                    className="w-full min-w-0 bg-transparent text-sm font-semibold outline-none" aria-label="Pickup time" />
+                </div>
+              </div>
+            )}
+
             {tab === "roundtrip" && (
               <div className="grid w-full grid-cols-2 gap-2 sm:max-w-md sm:gap-3">
                 <div>
@@ -1510,7 +1619,8 @@ export default function FareCalculator({
                     <input
                       type="time"
                       value={returnTime}
-                      onChange={(e) => setReturnTime(e.target.value)}
+                      required
+                      onChange={(e) => { setReturnTime(e.target.value); setError(""); }}
                       className="w-full min-w-0 bg-transparent text-sm font-semibold outline-none"
                       aria-label="Return time"
                     />

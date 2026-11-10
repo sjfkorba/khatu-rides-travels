@@ -79,7 +79,7 @@ export default function HomePage() {
       <AirportSection />
       <SeoSection />
       <FinalCTA />
-      <Footer />
+      {/* <Footer /> */}
       <MobileActionBar />
       {/* <SakhaBot/> */}
     </main>

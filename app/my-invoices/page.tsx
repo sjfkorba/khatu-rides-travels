@@ -57,6 +57,7 @@ import {
 import {
   downloadAdvanceBookingPdf,
 } from "@/lib/generateAdvanceBookingPdf";
+import Navbar from "@/components/landing/Navbar";
 
 /* ================================================================
    CONSTANTS
@@ -1803,123 +1804,51 @@ export default function MyInvoicesPage() {
   ================================================================ */
 
   return (
-    <main className="min-h-screen bg-[#F4F7FB] text-slate-900">
+    <main className="min-h-screen bg-[#F6F8FC] text-slate-900">
 
       {/* ==========================================================
           HEADER
       ========================================================== */}
 
-      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur-xl">
-
-        <div className="mx-auto flex min-h-[68px] max-w-[1250px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-
-          <a
-            href="/"
-            className="flex shrink-0 items-center"
-          >
-            <img
-              src="/logo.png"
-              alt="Khatu Rides Travels Co."
-              className="h-10 w-auto object-contain sm:h-12"
-            />
-          </a>
-
-          <div className="flex items-center gap-2">
-
-            <div className="hidden items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 sm:flex">
-
-              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-
-              <div>
-                <p className="text-[8px] font-black uppercase tracking-wider text-emerald-700">
-                  Mobile Verified
-                </p>
-
-                <p className="text-[8px] font-bold text-emerald-600/70">
-                  +91{" "}
-                  {normalizeMobile(
-                    currentUser.phoneNumber ||
-                      phone
-                  )}
-                </p>
-              </div>
-
-            </div>
-
-            <button
-              type="button"
-              onClick={
-                refreshDocuments
-              }
-              disabled={
-                documentsLoading
-              }
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
-              title="Refresh"
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${
-                  documentsLoading
-                    ? "animate-spin"
-                    : ""
-                }`}
-              />
-            </button>
-
-            <button
-              type="button"
-              onClick={logout}
-              className="flex h-10 items-center gap-2 rounded-xl bg-slate-100 px-3 text-[9px] font-black uppercase tracking-wider text-slate-600 transition hover:bg-red-50 hover:text-red-600"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              <span className="hidden sm:block">
-                Logout
-              </span>
-            </button>
-
-          </div>
-
-        </div>
-
-      </header>
+        <Navbar/>
 
       {/* ==========================================================
           MAIN
       ========================================================== */}
 
-      <div className="mx-auto max-w-[1250px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <div className="mx-auto max-w-[1320px] px-3 py-5 sm:px-6 sm:py-7 lg:px-8">
 
         {/* ========================================================
             WELCOME
         ======================================================== */}
 
-        <section className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#061936] via-[#0A2D68] to-[#063B8F] p-5 text-white shadow-[0_20px_60px_rgba(6,59,143,0.18)] sm:p-7 lg:p-9">
+        <section className="relative overflow-hidden rounded-[26px] border border-slate-200/80 bg-white p-5 text-slate-900 shadow-[0_12px_40px_rgba(15,23,42,0.05)] sm:p-7 lg:p-8">
 
-          <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-blue-400/20 blur-3xl" />
+          <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-blue-100/70 blur-3xl" />
 
-          <div className="pointer-events-none absolute -bottom-24 left-1/3 h-72 w-72 rounded-full bg-amber-400/10 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 left-1/3 h-72 w-72 rounded-full bg-amber-100/60 blur-3xl" />
 
-          <div className="relative z-10 flex flex-col justify-between gap-7 lg:flex-row lg:items-end">
+          <div className="relative z-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
 
             <div>
 
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[8px] font-black uppercase tracking-[0.15em] text-blue-100 backdrop-blur">
-                <ShieldCheck className="h-3 w-3 text-emerald-300" />
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-[0.13em] text-emerald-700">
+                <ShieldCheck className="h-3 w-3 text-emerald-600" />
                 Secure Customer Portal
               </div>
 
-              <h1 className="mt-4 text-3xl font-black tracking-[-0.04em] sm:text-4xl lg:text-5xl">
+              <h1 className="mt-4 text-2xl font-extrabold tracking-[-0.035em] text-slate-950 sm:text-3xl lg:text-[34px]">
                 My Travel Documents
               </h1>
 
-              <p className="mt-3 max-w-2xl text-xs font-medium leading-5 text-blue-100/70 sm:text-sm">
+              <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-slate-500">
                 View and download your Khatu Rides
                 invoices and advance booking
                 documents in one place.
               </p>
 
-              <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-white/60">
-                <Phone className="h-3.5 w-3.5 text-amber-300" />
+              <div className="mt-4 inline-flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-[11px] font-bold text-slate-600">
+                <Phone className="h-3.5 w-3.5 text-amber-500" />
 
                 +91{" "}
                 {normalizeMobile(
@@ -1927,55 +1856,66 @@ export default function MyInvoicesPage() {
                     phone
                 )}
 
-                <span className="text-white/20">
+                <span className="text-slate-300">
                   •
                 </span>
 
-                <span className="text-emerald-300">
+                <span className="text-emerald-600">
                   Verified
                 </span>
               </div>
 
             </div>
 
-            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <div className="w-full lg:w-auto">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
 
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-center backdrop-blur sm:min-w-[100px] sm:p-4">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 text-center sm:min-w-[112px] sm:p-4">
 
-                <div className="text-xl font-black text-amber-400 sm:text-2xl">
+                <div className="text-2xl font-extrabold tracking-tight text-[#1749D1] sm:text-[28px]">
                   {totalDocuments}
                 </div>
 
-                <p className="mt-1 text-[8px] font-black uppercase tracking-wider text-white/50">
+                <p className="mt-1 text-[9px] font-bold uppercase tracking-wider text-slate-400">
                   Documents
                 </p>
 
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-center backdrop-blur sm:min-w-[100px] sm:p-4">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 text-center sm:min-w-[112px] sm:p-4">
 
-                <div className="text-xl font-black text-amber-400 sm:text-2xl">
+                <div className="text-2xl font-extrabold tracking-tight text-[#1749D1] sm:text-[28px]">
                   {invoices.length}
                 </div>
 
-                <p className="mt-1 text-[8px] font-black uppercase tracking-wider text-white/50">
+                <p className="mt-1 text-[9px] font-bold uppercase tracking-wider text-slate-400">
                   Invoices
                 </p>
 
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-center backdrop-blur sm:min-w-[100px] sm:p-4">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 text-center sm:min-w-[112px] sm:p-4">
 
-                <div className="text-xl font-black text-amber-400 sm:text-2xl">
+                <div className="text-2xl font-extrabold tracking-tight text-[#1749D1] sm:text-[28px]">
                   {advanceBookings.length}
                 </div>
 
-                <p className="mt-1 text-[8px] font-black uppercase tracking-wider text-white/50">
+                <p className="mt-1 text-[9px] font-bold uppercase tracking-wider text-slate-400">
                   Bookings
                 </p>
 
               </div>
 
+              </div>
+
+              <button
+                type="button"
+                onClick={logout}
+                className="mt-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-4 text-[10px] font-extrabold uppercase tracking-wider text-red-600 transition hover:border-red-200 hover:bg-red-600 hover:text-white sm:w-auto sm:ml-auto"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                Logout
+              </button>
             </div>
 
           </div>
@@ -2020,7 +1960,7 @@ export default function MyInvoicesPage() {
             FILTER / SEARCH
         ======================================================== */}
 
-        <section className="mt-6 rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <section className="mt-6 rounded-[22px] border border-slate-200/80 bg-white p-4 shadow-[0_8px_28px_rgba(15,23,42,0.035)] sm:p-5">
 
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
@@ -2031,7 +1971,7 @@ export default function MyInvoicesPage() {
                 onClick={() =>
                   setActiveTab("all")
                 }
-                className={`flex min-h-10 shrink-0 items-center gap-2 rounded-xl px-4 text-[9px] font-black uppercase tracking-wider transition ${
+                className={`flex min-h-10 shrink-0 items-center gap-2 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-wider transition ${
                   activeTab === "all"
                     ? "bg-[#071B33] text-white shadow-md"
                     : "bg-slate-50 text-slate-500 hover:bg-slate-100"
@@ -2048,7 +1988,7 @@ export default function MyInvoicesPage() {
                     "invoice"
                   )
                 }
-                className={`flex min-h-10 shrink-0 items-center gap-2 rounded-xl px-4 text-[9px] font-black uppercase tracking-wider transition ${
+                className={`flex min-h-10 shrink-0 items-center gap-2 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-wider transition ${
                   activeTab ===
                   "invoice"
                     ? "bg-[#071B33] text-white shadow-md"
@@ -2069,7 +2009,7 @@ export default function MyInvoicesPage() {
                     "advance"
                   )
                 }
-                className={`flex min-h-10 shrink-0 items-center gap-2 rounded-xl px-4 text-[9px] font-black uppercase tracking-wider transition ${
+                className={`flex min-h-10 shrink-0 items-center gap-2 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-wider transition ${
                   activeTab ===
                   "advance"
                     ? "bg-[#071B33] text-white shadow-md"
@@ -2098,7 +2038,7 @@ export default function MyInvoicesPage() {
                   )
                 }
                 placeholder="Search invoice, route, booking..."
-                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-xs font-bold text-slate-800 outline-none transition focus:border-[#1749D1] focus:bg-white focus:ring-4 focus:ring-blue-50"
+                className="h-12 w-full rounded-xl border border-slate-200 bg-[#F8FAFC] pl-10 pr-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-[#1749D1] focus:bg-white focus:ring-4 focus:ring-blue-50"
               />
 
             </div>
@@ -2150,7 +2090,7 @@ export default function MyInvoicesPage() {
                       Travel Invoices
                     </div>
 
-                    <h2 className="mt-1 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
+                    <h2 className="mt-1 text-xl font-extrabold tracking-tight text-slate-950 sm:text-[22px]">
                       Your Invoices
                     </h2>
                   </div>
@@ -2176,10 +2116,10 @@ export default function MyInvoicesPage() {
                             key={
                               invoice.id
                             }
-                            className="group overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_20px_50px_rgba(15,23,42,0.10)]"
+                            className="group overflow-hidden rounded-[22px] border border-slate-200/80 bg-white shadow-[0_5px_20px_rgba(15,23,42,0.035)] transition duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_14px_34px_rgba(15,23,42,0.08)]"
                           >
 
-                            <div className="border-b border-slate-100 p-5">
+                            <div className="border-b border-slate-100 p-4 sm:p-5">
 
                               <div className="flex items-start justify-between gap-4">
 
@@ -2304,7 +2244,7 @@ export default function MyInvoicesPage() {
 
                             </div>
 
-                            <div className="flex flex-col gap-2 bg-slate-50/70 p-4 sm:flex-row">
+                            <div className="flex flex-col gap-2 bg-[#FAFBFD] p-4 sm:flex-row">
 
                               <button
                                 type="button"
@@ -2389,7 +2329,7 @@ export default function MyInvoicesPage() {
                       Advance & Pre Bookings
                     </div>
 
-                    <h2 className="mt-1 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
+                    <h2 className="mt-1 text-xl font-extrabold tracking-tight text-slate-950 sm:text-[22px]">
                       Your Bookings
                     </h2>
                   </div>
@@ -2415,10 +2355,10 @@ export default function MyInvoicesPage() {
                             key={
                               booking.id
                             }
-                            className="group overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:border-amber-200 hover:shadow-[0_20px_50px_rgba(15,23,42,0.10)]"
+                            className="group overflow-hidden rounded-[22px] border border-slate-200/80 bg-white shadow-[0_5px_20px_rgba(15,23,42,0.035)] transition duration-200 hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-[0_14px_34px_rgba(15,23,42,0.08)]"
                           >
 
-                            <div className="border-b border-slate-100 p-5">
+                            <div className="border-b border-slate-100 p-4 sm:p-5">
 
                               <div className="flex items-start justify-between gap-4">
 
@@ -2588,7 +2528,7 @@ export default function MyInvoicesPage() {
 
                               <div className="mt-3 flex items-center justify-between rounded-xl bg-[#071B33] px-4 py-3 text-white">
 
-                                <span className="text-[8px] font-black uppercase tracking-wider text-white/50">
+                                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
                                   Total Booking Amount
                                 </span>
 
@@ -2602,7 +2542,7 @@ export default function MyInvoicesPage() {
 
                             </div>
 
-                            <div className="flex flex-col gap-2 bg-slate-50/70 p-4 sm:flex-row">
+                            <div className="flex flex-col gap-2 bg-[#FAFBFD] p-4 sm:flex-row">
 
                               <button
                                 type="button"
@@ -2677,7 +2617,7 @@ export default function MyInvoicesPage() {
             {totalDocuments ===
               0 &&
               !search && (
-                <section className="rounded-[28px] border border-slate-200 bg-white p-8 text-center shadow-sm sm:p-12">
+                <section className="rounded-[24px] border border-slate-200/80 bg-white p-8 text-center shadow-[0_8px_28px_rgba(15,23,42,0.035)] sm:p-12">
 
                   <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
                     <FileText className="h-7 w-7" />
@@ -2726,7 +2666,7 @@ export default function MyInvoicesPage() {
             FOOTER SUPPORT
         ======================================================== */}
 
-        <section className="mt-8 rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="mt-8 rounded-[22px] border border-slate-200/80 bg-white p-5 shadow-[0_8px_28px_rgba(15,23,42,0.035)]">
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
