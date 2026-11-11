@@ -8,9 +8,13 @@ Business rules implemented:
 
 - One Way: round-trip base KM, hub percentages, route overrides.
 
-- Long One Way: +25 KM only when actual one-way distance >500 KM.
+- Long One Way: +25 KM only when the existing >500 KM rule applies.
 
-- Interstate rate tier applies only above 500 KM: Dzire ₹12/KM, Ertiga ₹21/KM, Crysta ₹25/KM. Korba–Odisha keeps its previous special rates.
+- KR-700+: for actual interstate one-way distance >700 KM (701+), B2C rates are Dzire ₹13/KM, Ertiga ₹18/KM, Crysta ₹22/KM. Existing >500 KM to 700 KM rates, B2B rates and Korba–Odisha special rates are preserved.
+
+- KR-SHARED: door-to-door shared taxi fare is 35% of the same route's private one-way customer fare per passenger, with four fixed daily departure slots (06:00, 08:00, 16:00, 18:00) and locked booking/cancellation policy metadata.
+
+- Local 20 KM Point-to-Point / Airport Transfer module is on hold and is not added to this fare engine.
 
 - Round Trip: same-day, under-80 KM, multi-day and
 
@@ -36,7 +40,8 @@ Important:
 
 export type VehicleType = "sedan" | "ertiga" | "crysta";
 
-export type BookingType = "oneway" | "roundtrip" | "local";
+/** "shared" is KR-SHARED; "local" remains the pre-existing hourly/package rental. */
+export type BookingType = "oneway" | "roundtrip" | "local" | "shared";
 
 export type ServiceType = "outstation" | "local";
 
@@ -61,6 +66,9 @@ oneWayB2BMinRate: number;
 oneWayB2BMaxRate: number;
 
 interstateB2CRate: number;
+
+/** KR-700+: dedicated B2C rate for interstate one-way routes above 700 KM. */
+kr700PlusB2CRate?: number;
 
 /** Dedicated legacy rate for the Korba–Odisha special route. */
 korbaOdishaB2CRate?: number;
@@ -102,13 +110,15 @@ label: "Maruti Suzuki Dzire",
 
 image: "/dezire.png",
 
-oneWayB2CRate: 13,
+oneWayB2CRate: 11,
 
 oneWayB2BMinRate: 9,
 
 oneWayB2BMaxRate: 10,
 
-interstateB2CRate: 11,
+interstateB2CRate: 12,
+
+kr700PlusB2CRate: 11.5,
 
 interstateB2BMinRate: 14,
 
@@ -138,13 +148,15 @@ label: "Maruti Suzuki Ertiga (MUV)",
 
 image: "/ertiga.png",
 
-oneWayB2CRate: 17,
+oneWayB2CRate: 15,
 
 oneWayB2BMinRate: 11,
 
 oneWayB2BMaxRate: 12,
 
-interstateB2CRate: 18,
+interstateB2CRate: 20.5,
+
+kr700PlusB2CRate: 19.75,
 
 korbaOdishaB2CRate: 19,
 
@@ -180,13 +192,15 @@ label: "Toyota Innova Crysta (Premium)",
 
 image: "/crysta.png",
 
-oneWayB2CRate: 21,
+oneWayB2CRate: 17.5,
 
 oneWayB2BMinRate: 14,
 
 oneWayB2BMaxRate: 15,
 
-interstateB2CRate: 21,
+interstateB2CRate: 26,
+
+kr700PlusB2CRate: 24.5,
 
 korbaOdishaB2CRate: 22,
 
@@ -478,6 +492,32 @@ baseDiscountAmount?: number;
 
 }
 
+export interface SharedTaxiPolicyResult {
+  model: "KR-SHARED";
+  onlineBookingRequired: true;
+  minimumAdvanceBookingDays: 7;
+  seatConfirmationHoursBefore: 48;
+  minimumSeatsPerDeparture: 2;
+  operatorCancellationRefundPercent: 100;
+  luggageAllowancePerPassenger: 1;
+  pickupMode: "door-to-door";
+  dropMode: "door-to-door";
+  fleetSource: "vendor-network";
+  departurePeriods: ["morning", "evening"];
+  departureTimes: ["06:00", "08:00", "16:00", "18:00"];
+  selectedDepartureTime: string;
+  departureTimeEligible: boolean;
+  fixedDailySchedule: true;
+  exactDepartureTimesFinalized: true;
+  supportedDirectionalRoutes: string[];
+  routeEligible: boolean;
+  advanceBookingEligible: boolean | null;
+  bookingEligible: boolean | null;
+  bookedSeats?: number;
+  operatorCancellationAllowed: boolean | null;
+  refundPercent: number;
+}
+
 export interface CalculateFareResult {
 
 actualDistance: number;
@@ -501,6 +541,16 @@ autoCorrectedService: ServiceType;
 isOneWayAvailable: boolean;
 
 localFare?: LocalFareResult;
+
+/** KR-SHARED: 35% of private One-Way fare, less the public 10% shared discount. */
+sharedPerPersonFare?: number;
+sharedBasePerPersonFare?: number;
+sharedDiscountPercent?: number;
+sharedDiscountAmount?: number;
+sharedPrivateOneWayFare?: number;
+sharedPassengerCount?: number;
+sharedTotalFare?: number;
+sharedPolicy?: SharedTaxiPolicyResult;
 
 /** Retained for compatibility with older UI; these are customer-fare values only if supplied. */
 
@@ -616,6 +666,13 @@ couponCode?: string;
 
 bookingDate?: string; // YYYY-MM-DD; used to select festival rule
 
+  // KR-SHARED inputs. Optional for compatibility with all existing callers.
+  sharedPassengerCount?: number;
+  /** Total seats booked across this departure, used for the 2-seat cancellation rule. */
+  sharedBookedSeats?: number;
+  /** KR-SHARED fixed departure slot: 06:00, 08:00, 16:00 or 18:00. */
+  sharedDepartureTime?: "06:00" | "08:00" | "16:00" | "18:00" | string;
+
 }
 
 const HUB_PERCENTAGES: Record<
@@ -651,6 +708,41 @@ const parsed = Number(value);
 return Number.isFinite(parsed) ? Math.max(0, parsed) : fallback;
 
 }
+
+/** Calendar-day difference using YYYY-MM-DD values, independent of local DST. */
+function calendarDaysBetween(startDate: string, endDate: string): number | null {
+  if (!startDate || !endDate) return null;
+  const start = /^\d{4}-\d{2}-\d{2}$/.test(startDate) ? startDate.split("-").map(Number) : [];
+  const end = /^\d{4}-\d{2}-\d{2}$/.test(endDate) ? endDate.split("-").map(Number) : [];
+  if (start.length !== 3 || end.length !== 3) return null;
+  const startUtc = Date.UTC(start[0], start[1] - 1, start[2]);
+  const endUtc = Date.UTC(end[0], end[1] - 1, end[2]);
+  if (!Number.isFinite(startUtc) || !Number.isFinite(endUtc)) return null;
+  return Math.round((endUtc - startUtc) / 86_400_000);
+}
+
+const KR_SHARED_HUBS = ["korba", "bilaspur", "raipur"] as const;
+const KR_SHARED_MIN_ADVANCE_DAYS = 7;
+const KR_SHARED_SEAT_CONFIRMATION_HOURS = 48;
+const KR_SHARED_MINIMUM_SEATS = 2;
+const KR_SHARED_REFUND_PERCENT = 100;
+const KR_SHARED_PRIVATE_FARE_PERCENT = 60;
+const KR_SHARED_DEPARTURE_TIMES = ["06:00", "08:00", "16:00", "18:00"] as const;
+
+/** Resolve an approved shared-taxi hub from a full address or city string. */
+function getKrSharedHub(value: string): (typeof KR_SHARED_HUBS)[number] | null {
+  const normalized = normalize(value);
+  return KR_SHARED_HUBS.find((hub) => normalized.includes(hub)) || null;
+}
+
+/** Shared Taxi is limited to the six directions between its three locked hubs. */
+function getKrSharedDirectionalRoute(pickup: string, drop: string): string | null {
+  const from = getKrSharedHub(pickup);
+  const to = getKrSharedHub(drop);
+  if (!from || !to || from === to) return null;
+  return `${from} → ${to}`;
+}
+
 
 /**
 
@@ -1391,6 +1483,142 @@ const isOneWayAvailable =
 
 bookingType === "oneway" ? isOneWayServiceAvailable(pickup, drop) : true;
 
+// ---------------- KR-SHARED DOOR-TO-DOOR ----------------
+if (bookingType === "shared") {
+  const sharedRoute = getKrSharedDirectionalRoute(pickup, drop);
+  const routeEligible = !!sharedRoute;
+  const advanceDays = calendarDaysBetween(input.bookingDate || "", pickupDate);
+  const advanceBookingEligible =
+    advanceDays === null ? null : advanceDays >= KR_SHARED_MIN_ADVANCE_DAYS;
+  const selectedDepartureTime = String(input.sharedDepartureTime || pickupTime || "").trim();
+  const departureTimeEligible = (KR_SHARED_DEPARTURE_TIMES as readonly string[]).includes(selectedDepartureTime);
+
+  // Shared fare = 35% of the same route's private One-Way customer fare.
+  // Reuse the existing One-Way engine so the existing hub, interstate,
+  // toll, buffer, discount, night and promotion rules remain authoritative.
+  // No held Local 20-KM Point-to-Point logic is invoked here.
+  const privateFare = calculateFare({
+    ...input,
+    bookingType: "oneway",
+    serviceType: "outstation",
+  });
+
+  const privateOneWayFare = privateFare.finalFare;
+  const sharedBasePerPersonFare = Math.round(
+    privateOneWayFare * KR_SHARED_PRIVATE_FARE_PERCENT / 100,
+  );
+  // Public KR-SHARED promotion: an additional 10% off the 35% shared base fare.
+  const sharedDiscountPercent = 10;
+  const perPersonFare = Math.round(
+    sharedBasePerPersonFare * (1 - sharedDiscountPercent / 100),
+  );
+  const sharedDiscountAmount = sharedBasePerPersonFare - perPersonFare;
+  const passengerCount = Math.max(
+    1,
+    Math.floor(safeNumber(input.sharedPassengerCount, 1)),
+  );
+  const totalFare = perPersonFare * passengerCount;
+  const bookedSeats =
+    input.sharedBookedSeats === undefined
+      ? undefined
+      : Math.floor(safeNumber(input.sharedBookedSeats));
+  const cancellationAllowed =
+    bookedSeats === undefined ? null : bookedSeats < KR_SHARED_MINIMUM_SEATS;
+  const bookingEligible =
+    !routeEligible || !privateFare.isOneWayAvailable || !departureTimeEligible
+      ? false
+      : advanceBookingEligible === null
+        ? null
+        : advanceBookingEligible;
+
+  const sharedPolicy: SharedTaxiPolicyResult = {
+    model: "KR-SHARED",
+    onlineBookingRequired: true,
+    minimumAdvanceBookingDays: KR_SHARED_MIN_ADVANCE_DAYS,
+    seatConfirmationHoursBefore: KR_SHARED_SEAT_CONFIRMATION_HOURS,
+    minimumSeatsPerDeparture: KR_SHARED_MINIMUM_SEATS,
+    operatorCancellationRefundPercent: KR_SHARED_REFUND_PERCENT,
+    luggageAllowancePerPassenger: 1,
+    pickupMode: "door-to-door",
+    dropMode: "door-to-door",
+    fleetSource: "vendor-network",
+    departurePeriods: ["morning", "evening"],
+    departureTimes: [...KR_SHARED_DEPARTURE_TIMES],
+    selectedDepartureTime,
+    departureTimeEligible,
+    fixedDailySchedule: true,
+    exactDepartureTimesFinalized: true,
+    supportedDirectionalRoutes: [
+      "Korba → Bilaspur",
+      "Bilaspur → Korba",
+      "Korba → Raipur",
+      "Raipur → Korba",
+      "Bilaspur → Raipur",
+      "Raipur → Bilaspur",
+    ],
+    routeEligible,
+    advanceBookingEligible,
+    bookingEligible,
+    bookedSeats,
+    operatorCancellationAllowed: cancellationAllowed,
+    refundPercent: cancellationAllowed ? KR_SHARED_REFUND_PERCENT : 0,
+  };
+
+  const sharedBreakdown = [
+    `KR-SHARED Door-to-Door route: ${sharedRoute || "Unsupported route"}`,
+    `Private One-Way customer fare: ₹${privateOneWayFare}`,
+    `Shared fare rule: ${KR_SHARED_PRIVATE_FARE_PERCENT}% of private One-Way fare per passenger`,
+    `Selected daily departure: ${selectedDepartureTime || "Not selected"}${departureTimeEligible ? "" : " (invalid or not selected)"}`,
+    `Shared base fare per passenger (35% of private fare): ₹${sharedBasePerPersonFare}`,
+    `Public shared discount (${sharedDiscountPercent}%): -₹${sharedDiscountAmount} per passenger`,
+    `Final Shared Taxi fare per passenger: ₹${perPersonFare}`,
+    `Passenger count in this booking: ${passengerCount}`,
+    `Total booking fare: ₹${totalFare}`,
+    `Online booking required; minimum ${KR_SHARED_MIN_ADVANCE_DAYS} days advance booking.`,
+    `Seat confirmation is scheduled ${KR_SHARED_SEAT_CONFIRMATION_HOURS} hours before journey.`,
+    `Minimum ${KR_SHARED_MINIMUM_SEATS} booked seats per departure; below this, operator may cancel with ${KR_SHARED_REFUND_PERCENT}% refund.`,
+    "One luggage item is allowed per passenger.",
+    "Door-to-door pickup and drop within the defined city service limits.",
+    "Vendor-network cab allocation; fixed daily departure slots: 06:00 AM, 08:00 AM, 04:00 PM and 06:00 PM.",
+    ...(advanceDays === null
+      ? ["Advance-booking eligibility: not evaluated because bookingDate or pickupDate is missing."]
+      : [`Advance-booking lead time: ${advanceDays} day(s); ${advanceBookingEligible ? "eligible" : "not eligible"}.`]),
+  ];
+
+  return {
+    actualDistance: actualOneWayKm,
+    billedDistance: privateFare.billedDistance,
+    rateUsed: privateFare.rateUsed,
+    strikeFare: makeStrikeFare(sharedBasePerPersonFare * passengerCount),
+    finalFare: totalFare,
+    discountPercent: sharedDiscountPercent,
+    durationMinutes: privateFare.durationMinutes,
+    haltCharges: 0,
+    autoCorrectedService: "outstation",
+    isOneWayAvailable: bookingEligible === true && routeEligible && privateFare.isOneWayAvailable,
+    sharedPerPersonFare: perPersonFare,
+    sharedBasePerPersonFare,
+    sharedDiscountPercent,
+    sharedDiscountAmount: sharedDiscountAmount * passengerCount,
+    sharedPrivateOneWayFare: privateOneWayFare,
+    sharedPassengerCount: passengerCount,
+    sharedTotalFare: totalFare,
+    sharedPolicy,
+    festivalSurchargePercent: privateFare.festivalSurchargePercent,
+    nightSurchargePercent: privateFare.nightSurchargePercent,
+    nightSurchargeAmount: privateFare.nightSurchargeAmount,
+    appliedFestivalRule: privateFare.appliedFestivalRule,
+    appliedCoupon: privateFare.appliedCoupon,
+    festivalIncreaseAmount: privateFare.festivalIncreaseAmount,
+    couponDiscountAmount: privateFare.couponDiscountAmount,
+    baseDiscountPercent: sharedDiscountPercent,
+    baseDiscountAmount: sharedDiscountAmount * passengerCount,
+    routeClassification: privateFare.routeClassification,
+    hubCategory: privateFare.hubCategory,
+    calculationBreakdown: sharedBreakdown,
+  };
+}
+
 // ---------------- LOCAL RENTAL ----------------
 
 if (bookingType === "local" || serviceType === "local") {
@@ -1535,6 +1763,13 @@ routeClassification === "interstate" &&
 
 fareCalculationOneWayKm > ONEWAY_BUFFER_THRESHOLD_KM;
 
+// KR-700+ is a separate customer-rate tier. It starts only when the
+// actual one-side interstate distance is greater than 700 KM (701+).
+// Existing >500 KM long-distance buffer and B2B logic are unchanged.
+const isKr700PlusInterstate =
+  routeClassification === "interstate" &&
+  actualOneWayKm > 700;
+
 const isShortOneWay = fareCalculationOneWayKm < 80;
 
 // Non-Major One-Way has its own fare formula:
@@ -1572,6 +1807,10 @@ const isNonMajorOneWay = hubCategory === "non-major" || isKorbaOdisha;
 const b2cRate = isKorbaOdisha
 
 ? (vehicle.korbaOdishaB2CRate ?? vehicle.interstateB2CRate)
+
+: isKr700PlusInterstate
+
+? (vehicle.kr700PlusB2CRate ?? vehicle.interstateB2CRate)
 
 : isLongInterstate
 
@@ -1757,6 +1996,7 @@ calculationBreakdown: [
 `Route Classification: ${routeClassification}`,
 `Hub Category: ${hubCategory}`,
 `B2C Rate Applied: ₹${b2cRate}/KM`,
+...(isKr700PlusInterstate ? ["KR-700+ tier applied: actual interstate one-way distance is above 700 KM."] : []),
 ...(baseDiscountEligible ? [`Base fare discount: ${BASE_FARE_DISCOUNT_PERCENT}% = ₹${baseDiscountAmount}`] : ["Base fare discount: Not eligible below 70 KM actual one-side distance."]),
 `Discounted base fare: ₹${discountedBaseFare}`,
 `Night surcharge: ${nightPercent}% = ₹${nightSurchargeAmount}`,

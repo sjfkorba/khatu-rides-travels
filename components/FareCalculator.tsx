@@ -45,7 +45,7 @@ interface FareCalculatorProps {
   onBookNow?: (vehicle: any, routeData: any) => void;
 }
 
-type MainTab = "oneway" | "roundtrip" | "local";
+type MainTab = "oneway" | "roundtrip" | "local" | "shared";
 type SelectedLocation = { placeId: string; description: string };
 type Suggestion = { place_id: string; description: string };
 type FestivalRecord = { id: string; name: string; increasePercent: number; startAt: string; endAt: string; isActive: boolean };
@@ -96,6 +96,16 @@ function formatBookingDate(value: string) {
       });
 }
 
+function formatSharedDepartureTime(value: string) {
+  const labels: Record<string, string> = {
+    "06:00": "06:00 AM",
+    "08:00": "08:00 AM",
+    "16:00": "04:00 PM",
+    "18:00": "06:00 PM",
+  };
+  return labels[value] || value || "Not selected";
+}
+
 function buildBookingEnquiryMessage(
   vehicle: any,
   routeData: any,
@@ -106,7 +116,9 @@ function buildBookingEnquiryMessage(
       ? "One Way"
       : routeData.bookingType === "roundtrip"
         ? "Round Trip"
-        : "Local Rental";
+        : routeData.bookingType === "shared"
+          ? "KR-SHARED Door-to-Door"
+          : "Local Rental";
 
   const lines = [
     " नमस्कार Khatu Rides Travels Co.!",
@@ -118,11 +130,21 @@ function buildBookingEnquiryMessage(
     `Pickup: ${routeData.pickup || "Not specified"}`,
     ...(routeData.drop ? [`Drop: ${routeData.drop}`] : []),
     `Pickup Date: ${formatBookingDate(routeData.pickupDate)}`,
-    `Pickup Time: ${routeData.pickupTime || "As discussed"}`,
+    `Pickup Time: ${routeData.bookingType === "shared" ? `${formatSharedDepartureTime(routeData.sharedDepartureTime || "")}` : routeData.pickupTime || "As discussed"}`,
     ...(routeData.bookingType === "roundtrip"
       ? [
           `Return Date: ${formatBookingDate(routeData.returnDate)}`,
           `Return Time: ${routeData.returnTime || "As discussed"}`,
+        ]
+      : []),
+    ...(routeData.bookingType === "shared"
+      ? [
+          `Passengers: ${routeData.sharedPassengerCount || 1}`,
+          `Departure Time: ${formatSharedDepartureTime(routeData.sharedDepartureTime || "")}`,
+          "Service: Door-to-door pickup and drop",
+          "Advance booking: Minimum 7 days",
+          "Seat confirmation: 48 hours before journey",
+          "Luggage: 1 item per passenger",
         ]
       : []),
     ...(routeData.bookingType === "local" && routeData.localPackageLabel
@@ -149,6 +171,13 @@ function buildBookingEnquiryMessage(
 
 function today() {
   const d = new Date();
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
+}
+
+function dateAfterDays(days: number) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
   const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
   return local.toISOString().slice(0, 10);
 }
@@ -180,6 +209,9 @@ export default function FareCalculator({
   const [returnDate, setReturnDate] = useState("");
   const [returnTime, setReturnTime] = useState("");
   const [localPackage, setLocalPackage] = useState<LocalPackageType>("8hr80km");
+  const [sharedPassengerCount, setSharedPassengerCount] = useState(1);
+  const [sharedDeparturePeriod, setSharedDeparturePeriod] = useState<"morning" | "evening">("morning");
+  const [sharedDepartureTime, setSharedDepartureTime] = useState<"06:00" | "08:00" | "16:00" | "18:00">("06:00");
   const [route, setRoute] = useState<any>(null);
   const [fareOptions, setFareOptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -297,8 +329,12 @@ export default function FareCalculator({
       setError("कृपया Pickup location चुनें।");
       return;
     }
-    if (!pickupDate || !pickupTime) {
-      setError("कृपया अपनी Pickup Date और Pickup Time select करें।");
+    if (!pickupDate || (tab !== "shared" && !pickupTime)) {
+      setError(tab === "shared" ? "कृपया Shared Taxi की Pickup Date select करें।" : "कृपया अपनी Pickup Date और Pickup Time select करें।");
+      return;
+    }
+    if (tab === "shared" && pickupDate < dateAfterDays(7)) {
+      setError("KR-SHARED booking के लिए journey date कम-से-कम 7 दिन advance होनी चाहिए।");
       return;
     }
     if (tab === "roundtrip" && (!returnDate || !returnTime)) {
@@ -343,13 +379,15 @@ export default function FareCalculator({
 
       // Load current promotion records from Firestore for this journey date.
       // Final promotion validation must also happen inside the trusted order API.
-      const [festivalSnapshot, couponSnapshot] = await Promise.all([
-        getDocs(collection(db, "festival_fares")),
-        getDocs(collection(db, "route_coupons")),
-      ]);
-      const festivals = festivalSnapshot.docs.map((d) => ({ id: d.id, ...d.data() } as FestivalRecord));
-      const coupons = couponSnapshot.docs.map((d) => ({ id: d.id, ...d.data() } as CouponRecord));
-      const activeFestival = festivals
+      const [festivalSnapshot, couponSnapshot] = tab === "shared"
+        ? [null, null] as const
+        : await Promise.all([
+            getDocs(collection(db, "festival_fares")),
+            getDocs(collection(db, "route_coupons")),
+          ]);
+      const festivals = festivalSnapshot ? festivalSnapshot.docs.map((d) => ({ id: d.id, ...d.data() } as FestivalRecord)) : [];
+      const coupons = couponSnapshot ? couponSnapshot.docs.map((d) => ({ id: d.id, ...d.data() } as CouponRecord)) : [];
+      const activeFestival = tab === "shared" ? null : festivals
         .filter((x) => x.isActive && Number(x.increasePercent) > 0 && inValidity(x.startAt, x.endAt, pickupDate))
         .sort((a, b) => Number(b.increasePercent) - Number(a.increasePercent))[0] || null;
       setFestivalRule(activeFestival);
@@ -362,11 +400,14 @@ export default function FareCalculator({
           tab !== "local" && from.includes(couponFrom) && to.includes(couponTo);
       }));
       setAppliedCoupon(null); setCouponMessage(""); setAppliedCampaign(null); setCampaignMessage(""); setCampaignCouponCode("");
-      const campaignQuery = new URLSearchParams({ bookingType: tab, pickupDate, pickupTime, pickup: pickup?.description || "", drop: drop?.description || "" });
-      const campaignResponse = await fetch(`/api/fare-promotions?${campaignQuery.toString()}`, { cache: "no-store" });
-      const campaignData = await campaignResponse.json();
-      if (!campaignResponse.ok || campaignData.success !== true) throw new Error(campaignData.error || "Discount campaigns load nahi ho paye.");
-      const autoCampaigns = oneWayDiscountEligible && Array.isArray(campaignData.campaigns) ? campaignData.campaigns as FarePromotion[] : [];
+      let autoCampaigns: FarePromotion[] = [];
+      if (tab !== "shared") {
+        const campaignQuery = new URLSearchParams({ bookingType: tab, pickupDate, pickupTime, pickup: pickup?.description || "", drop: drop?.description || "" });
+        const campaignResponse = await fetch(`/api/fare-promotions?${campaignQuery.toString()}`, { cache: "no-store" });
+        const campaignData = await campaignResponse.json();
+        if (!campaignResponse.ok || campaignData.success !== true) throw new Error(campaignData.error || "Discount campaigns load nahi ho paye.");
+        autoCampaigns = oneWayDiscountEligible && Array.isArray(campaignData.campaigns) ? campaignData.campaigns as FarePromotion[] : [];
+      }
       setAutomaticCampaigns(autoCampaigns);
 
       const bookingType: BookingType = tab;
@@ -386,7 +427,10 @@ export default function FareCalculator({
               drop: drop?.description || "",
             }),
             pickupDate,
-            pickupTime,
+            pickupTime: tab === "shared" ? sharedDepartureTime : pickupTime,
+            bookingDate: today(),
+            sharedPassengerCount: tab === "shared" ? sharedPassengerCount : undefined,
+            sharedDepartureTime: tab === "shared" ? sharedDepartureTime : undefined,
             returnDate: tab === "roundtrip" ? returnDate : undefined,
             returnTime: tab === "roundtrip" ? returnTime : undefined,
             localPackage,
@@ -402,7 +446,9 @@ export default function FareCalculator({
           const baseFare = discountedBaseFare + baseDiscountAmount;
           const festivalPercent = activeFestival ? Number(activeFestival.increasePercent) : 0;
           const festivalRawAmount = fareAfterNight * festivalPercent / 100;
-          const festivalAdjustedFare = roundFare(fareAfterNight + festivalRawAmount);
+          const festivalAdjustedFare = tab === "shared"
+            ? fareAfterNight
+            : roundFare(fareAfterNight + festivalRawAmount);
           const bestCampaign = chooseBestAutomaticPromotion(autoCampaigns, { bookingType, pickupDate, pickupTime, pickup: pickup?.description || "", drop: drop?.description || "", fare: festivalAdjustedFare });
           const campaignDiscount = bestCampaign?.discountAmount || 0;
           const campaignFinalFare = bestCampaign ? Math.max(0, festivalAdjustedFare - campaignDiscount) : festivalAdjustedFare;
@@ -431,6 +477,10 @@ export default function FareCalculator({
         }
       );
 
+      if (tab === "shared" && !options[0]?.sharedPolicy?.routeEligible) {
+        throw new Error("KR-SHARED अभी केवल Korba, Bilaspur और Raipur के बीच छह approved directions पर उपलब्ध है।");
+      }
+
       const resultPayload = {
         pickup: pickup?.description || "",
         drop: drop?.description || "",
@@ -439,7 +489,10 @@ export default function FareCalculator({
         bookingType,
         serviceType: tab === "local" ? "local" : "outstation",
         pickupDate,
-        pickupTime,
+        pickupTime: tab === "shared" ? sharedDepartureTime : pickupTime,
+        sharedPassengerCount: tab === "shared" ? sharedPassengerCount : undefined,
+        sharedDeparturePeriod: tab === "shared" ? sharedDeparturePeriod : undefined,
+        sharedDepartureTime: tab === "shared" ? sharedDepartureTime : undefined,
         returnDate,
         returnTime,
         distanceKm,
@@ -465,6 +518,10 @@ export default function FareCalculator({
   }
 
   function applyBestOfferForVehicle(vehicleType: VehicleType) {
+    if (tab === "shared") {
+      setCampaignMessage("KR-SHARED fare follows the locked 35% private One-Way fare rule. Promotions are not applied in this module.");
+      return;
+    }
     const option = fareOptions.find((item) => item.vehicleType === vehicleType);
     if (!option) return;
     if (tab === "oneway" && Number(route?.distanceKm || 0) < 70) {
@@ -518,6 +575,10 @@ export default function FareCalculator({
   }
 
   async function applyVehicleCouponCode(vehicleType: VehicleType) {
+    if (tab === "shared") {
+      setCampaignMessage("Coupons are not applicable to KR-SHARED bookings.");
+      return;
+    }
     const code = campaignCouponCode.trim().toUpperCase();
     if (!code) {
       setCampaignMessage("Coupon code enter karein.");
@@ -536,6 +597,10 @@ export default function FareCalculator({
   }
 
   async function applyDiscountCampaignCoupon() {
+    if (tab === "shared") {
+      setCampaignMessage("Coupons are not applicable to KR-SHARED bookings.");
+      return;
+    }
     const code = campaignCouponCode.trim().toUpperCase();
     if (!code) { setCampaignMessage("Coupon code enter karein."); return; }
     if (tab === "oneway" && Number(route?.distanceKm || 0) < 70) {
@@ -569,6 +634,10 @@ export default function FareCalculator({
   }
 
   function applyRouteCoupon(found: CouponRecord) {
+    if (tab === "shared") {
+      setCouponMessage("Route coupons are not applicable to KR-SHARED bookings.");
+      return;
+    }
     setCouponMessage("");
     if (tab === "oneway" && Number(route?.distanceKm || 0) < 70) {
       setCouponMessage("70 KM se kam One Way route par coupon ya discount applicable nahi hai.");
@@ -622,7 +691,10 @@ export default function FareCalculator({
     bookingType: tab,
     serviceType: tab === "local" ? "local" : "outstation",
     pickupDate,
-    pickupTime,
+    pickupTime: tab === "shared" ? sharedDepartureTime : pickupTime,
+    sharedPassengerCount: tab === "shared" ? sharedPassengerCount : undefined,
+    sharedDeparturePeriod: tab === "shared" ? sharedDeparturePeriod : undefined,
+    sharedDepartureTime: tab === "shared" ? sharedDepartureTime : undefined,
     returnDate,
     returnTime,
     distanceKm:
@@ -695,9 +767,31 @@ export default function FareCalculator({
         vehicleType: bookingOption.vehicleType,
         vehicleLabel: bookingOption.vehicle?.label || bookingOption.vehicleType,
         totalFare: Number(bookingOption.finalFare),
+        ...(tab === "shared" ? {
+          sharedService: true,
+          sharedModel: "KR-SHARED",
+          sharedPerPersonFare: Number(bookingOption.sharedPerPersonFare || 0),
+          sharedBasePerPersonFare: Number(bookingOption.sharedBasePerPersonFare || 0),
+          sharedDiscountPercent: Number(bookingOption.sharedDiscountPercent || 10),
+          sharedDiscountAmount: Number(bookingOption.sharedDiscountAmount || 0),
+          sharedPassengerCount,
+          sharedTotalFare: Number(bookingOption.sharedTotalFare || bookingOption.finalFare || 0),
+          sharedDeparturePeriod,
+          sharedDepartureTime,
+          sharedDepartureTimes: bookingOption.sharedPolicy?.departureTimes || ["06:00", "08:00", "16:00", "18:00"],
+          sharedFarePercent: 35,
+          minimumAdvanceBookingDays: 7,
+          seatConfirmationHoursBefore: 48,
+          minimumSeatsPerDeparture: 2,
+          operatorCancellationRefundPercent: 100,
+          luggageAllowancePerPassenger: 1,
+          pickupMode: "door-to-door",
+          dropMode: "door-to-door",
+          fleetSource: "vendor-network",
+        } : {}),
         fareBreakdown: {
           baseFare: bookingOption.baseFare,
-          baseDiscountPercent: bookingOption.baseDiscountPercent || 10,
+          baseDiscountPercent: bookingOption.baseDiscountPercent || 0,
           baseDiscountAmount: bookingOption.baseDiscountAmount || 0,
           discountedBaseFare: bookingOption.discountedBaseFare ?? null,
           nightSurchargePercent: bookingOption.nightSurchargePercent || 0,
@@ -783,14 +877,22 @@ export default function FareCalculator({
     const total = Number(bookingOption.finalFare || 0);
     const advance = Math.round(total * 0.25);
     const balance = Math.max(0, total - advance);
-    const tripLabel = tab === "oneway" ? "One Way" : tab === "roundtrip" ? "Round Trip" : "Local Rental";
-    const inclusionItems = [
-      "Base fare and fuel charges",
-      "Driver allowance",
-      "GST and applicable taxes as shown",
-      "Toll, state tax and permit as per fare conditions",
-      "Air-conditioned vehicle",
-    ];
+    const tripLabel = tab === "oneway" ? "One Way" : tab === "roundtrip" ? "Round Trip" : tab === "shared" ? "KR-SHARED Door-to-Door" : "Local Rental";
+    const inclusionItems = tab === "shared"
+      ? [
+          "Door-to-door pickup and drop within service limits",
+          "Shared fare calculated at 35% of private One-Way fare per passenger",
+          "One luggage item per passenger",
+          "Vendor-network cab allocation",
+          "Seat confirmation 48 hours before journey",
+        ]
+      : [
+          "Base fare and fuel charges",
+          "Driver allowance",
+          "GST and applicable taxes as shown",
+          "Toll, state tax and permit as per fare conditions",
+          "Air-conditioned vehicle",
+        ];
 
     return (
       <main className="min-h-screen bg-[#fffaf5] px-3 py-3 text-slate-900 sm:px-5 sm:py-5">
@@ -806,7 +908,7 @@ export default function FareCalculator({
           <div className="mb-3 grid gap-3 rounded-xl bg-[#eaf8fc] px-4 py-3 sm:grid-cols-[1fr_auto] sm:items-center">
             <div className="min-w-0">
               <p className="truncate text-sm font-extrabold sm:text-base">{pickup?.description || "Pickup"} <span className="text-orange-500">→</span> {tab === "local" ? "Local Rental" : drop?.description || "Destination"}</p>
-              <p className="mt-0.5 text-xs text-slate-600">{formatBookingDate(pickupDate)} · {pickupTime} · {tripLabel}</p>
+              <p className="mt-0.5 text-xs text-slate-600">{formatBookingDate(pickupDate)} · {tab === "shared" ? `${formatSharedDepartureTime(sharedDepartureTime)} departure` : pickupTime} · {tripLabel}</p>
             </div>
             <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs">
               <div><span className="text-slate-500">Selected cab</span><p className="font-bold">{bookingOption.vehicle?.label || bookingOption.vehicleType}</p></div>
@@ -862,6 +964,7 @@ export default function FareCalculator({
                       className="mt-1.5 min-h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-orange-400 focus:bg-white" placeholder="Email address" />
                   </label>
                   <div className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600 sm:col-span-2">
+                    {tab === "shared" && <p className="mb-2 font-extrabold text-orange-700">KR-SHARED · {sharedPassengerCount} passenger(s) · {money(Number(bookingOption.sharedPerPersonFare || 0))} per passenger</p>}
                     <span className="font-bold text-slate-800">Pickup:</span> {pickup?.description || "—"}
                     {tab !== "local" && <><span className="mx-2 text-slate-300">|</span><span className="font-bold text-slate-800">Drop:</span> {drop?.description || "—"}</>}
                   </div>
@@ -870,9 +973,23 @@ export default function FareCalculator({
             </div>
 
             <aside className="space-y-3 lg:sticky lg:top-4">
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                <strong>Free cancellation:</strong> Contact our team as early as possible for cancellation assistance.
-              </div>
+              {tab === "shared" ? (
+                <div className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-3 text-xs leading-5 text-blue-950">
+                  <strong>KR-SHARED booking policy</strong>
+                  <ul className="mt-1 list-disc space-y-0.5 pl-4">
+                    <li>Online booking only; minimum 7 days advance.</li>
+                    <li>Daily departure slots: 06:00 AM, 08:00 AM, 04:00 PM and 06:00 PM.</li>
+                    <li>Seat confirmation 48 hours before journey.</li>
+                    <li>One luggage item per passenger.</li>
+                    <li>If fewer than 2 seats are booked for a departure, operator may cancel and refund 100% to the original payment mode.</li>
+                    <li>Your selected departure slot is the scheduled pickup time.</li>
+                  </ul>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                  <strong>Free cancellation:</strong> Contact our team as early as possible for cancellation assistance.
+                </div>
+              )}
               <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                 <h2 className="mb-3 text-base font-extrabold">Payment Options</h2>
                 <div className="space-y-2">
@@ -947,10 +1064,12 @@ export default function FareCalculator({
                       ? "ONE WAY"
                       : tab === "roundtrip"
                         ? "ROUND TRIP"
-                        : "LOCAL RENTAL"}
+                        : tab === "shared"
+                          ? "KR-SHARED DOOR-TO-DOOR"
+                          : "LOCAL RENTAL"}
                   </span>
                   <span className="text-xs text-slate-500">
-                    {pickupDate} · {pickupTime}
+                    {formatBookingDate(pickupDate)} · {tab === "shared" ? `${formatSharedDepartureTime(sharedDepartureTime)} departure` : pickupTime}
                   </span>
                 </div>
 
@@ -1072,7 +1191,19 @@ export default function FareCalculator({
               const localConfig = tab === "local"
                 ? LOCAL_PACKAGES[option.vehicleType as VehicleType][localPackage]
                 : null;
-              const conditions = tab === "oneway"
+              const conditions = tab === "shared"
+                ? [
+                    ["Service", "KR-SHARED Door-to-Door"],
+                    ["Per Passenger", money(Number(option.sharedPerPersonFare || 0))],
+                    ["Passenger Count", String(sharedPassengerCount)],
+                    ["Advance Booking", "Minimum 7 days"],
+                    ["Seat Confirmation", "48 hours before journey"],
+                    ["Luggage", "1 item per passenger"],
+                    ["Minimum Seats", "2 seats per departure"],
+                    ["Operator Cancellation", "If fewer than 2 seats are booked: 100% refund"],
+                    ["Departure", `${formatSharedDepartureTime(sharedDepartureTime)} departure`],
+                  ]
+                : tab === "oneway"
                 ? [
                     ["Toll Charges", "Included"],
                     ["Driver Fooding", "Included"],
@@ -1124,6 +1255,7 @@ export default function FareCalculator({
                   <div className="mx-3 mb-3 rounded-xl bg-gradient-to-r from-red-600 to-red-500 px-3 py-2.5 text-center text-white shadow-sm">
                     <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-red-100">Final Payable</p>
                     <p className="text-[32px] font-black leading-tight tracking-tight">{money(fare)}</p>
+                    {tab === "shared" && <p className="mt-0.5 text-[11px] font-bold text-red-100"><span className="line-through opacity-75">{money(Number(option.sharedBasePerPersonFare || 0))}</span> {money(Number(option.sharedPerPersonFare || 0))} per passenger × {sharedPassengerCount} · 10% OFF</p>}
                   </div>
 
                   <div className="mx-3 mb-3 overflow-hidden rounded-xl border border-blue-200 bg-white">
@@ -1131,6 +1263,22 @@ export default function FareCalculator({
                       Fare Breakdown
                     </div>
                     <div className="space-y-0.5 p-3 text-[13px]">
+                      {tab === "shared" && (
+                        <>
+                          <div className="flex items-center justify-between gap-3 py-1.5 font-bold text-slate-900">
+                            <span>Fare per passenger (after 10% OFF)</span><strong>{money(Number(option.sharedPerPersonFare || 0))}</strong>
+                          </div>
+                          <div className="flex items-center justify-between gap-3 py-1.5 text-slate-600">
+                            <span>Shared base fare / passenger</span><strong className="line-through">{money(Number(option.sharedBasePerPersonFare || 0))}</strong>
+                          </div>
+                          <div className="flex items-center justify-between gap-3 rounded-lg bg-green-50 px-2.5 py-2 font-bold text-green-700">
+                            <span>Public discount (10%)</span><strong>−{money(Number(option.sharedDiscountAmount || 0))}</strong>
+                          </div>
+                          <div className="flex items-center justify-between gap-3 py-1.5 text-slate-600">
+                            <span>Passenger count</span><strong>{sharedPassengerCount}</strong>
+                          </div>
+                        </>
+                      )}
                       {tab === "oneway" && (
                         <div className="flex items-center justify-between gap-3 py-1 text-[11px] text-slate-500">
                           <span>{option.routeClassification === "interstate" ? "Interstate Rate" : option.routeClassification === "korba-odisha" ? "Korba–Odisha Rate" : "One Way Rate"}</span>
@@ -1193,7 +1341,7 @@ export default function FareCalculator({
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 bg-slate-50/70 px-3 py-2">
+                  {tab !== "shared" && <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 bg-slate-50/70 px-3 py-2">
                     <button type="button" onClick={() => applyBestOfferForVehicle(option.vehicleType as VehicleType)}
                       className="inline-flex min-h-9 flex-1 items-center justify-center gap-1 rounded-lg bg-green-700 px-2 py-2 text-[10px] font-extrabold text-white">
                       <Zap size={12} /> Apply Offer
@@ -1212,7 +1360,7 @@ export default function FareCalculator({
                           className="rounded-md bg-green-700 px-3 text-[10px] font-bold text-white disabled:opacity-50">{campaignBusy ? "..." : "Apply"}</button>
                       </div>
                     )}
-                  </div>
+                  </div>}
 
                   <div className="flex items-center justify-between border-t border-slate-100 px-3 py-2.5">
                     <button type="button"
@@ -1221,9 +1369,10 @@ export default function FareCalculator({
                       {isExpanded ? "Hide Details" : "View Details"}
                       {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
                     </button>
-                    <button type="button" onClick={() => { setBookingOption(option); setPaymentError(""); }}
-                      className="rounded-lg bg-orange-600 px-5 py-2.5 text-xs font-extrabold text-white shadow-sm hover:bg-orange-700">
-                      Book Cab
+                    <button type="button" disabled={tab === "shared" && option.sharedPolicy?.bookingEligible !== true}
+                      onClick={() => { setBookingOption(option); setPaymentError(""); }}
+                      className="rounded-lg bg-orange-600 px-5 py-2.5 text-xs font-extrabold text-white shadow-sm hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-40">
+                      {tab === "shared" && option.sharedPolicy?.bookingEligible !== true ? "Not Eligible" : "Book Cab"}
                     </button>
                   </div>
 
@@ -1236,8 +1385,9 @@ export default function FareCalculator({
                         </div>
                         <p className="mt-3 border-t border-slate-100 pt-2 leading-5 text-[10px] text-slate-500">Any additional applicable charge will be communicated before booking confirmation.</p>
                       </div>
-                      <button type="button" onClick={() => { setBookingOption(option); setPaymentError(""); }}
-                        className="w-full rounded-xl bg-orange-700 px-4 py-3 text-sm font-extrabold text-white">Book Your Cab</button>
+                      <button type="button" disabled={tab === "shared" && option.sharedPolicy?.bookingEligible !== true}
+                        onClick={() => { setBookingOption(option); setPaymentError(""); }}
+                        className="w-full rounded-xl bg-orange-700 px-4 py-3 text-sm font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-40">{tab === "shared" && option.sharedPolicy?.bookingEligible !== true ? "Not Eligible" : "Book Your Cab"}</button>
                     </div>
                   )}
                 </article>
@@ -1259,9 +1409,9 @@ export default function FareCalculator({
                 <p className="text-[11px] text-slate-500">Home › Select Car</p>
                 <p className="mt-1 text-sm font-extrabold text-slate-900">{pickup?.description?.split(",")[0]} - {drop?.description?.split(",")[0] || "Local Rental"}</p>
               </div>
-              <div><p className="text-xs text-slate-500">Trip Type</p><p className="font-bold">{tab === "oneway" ? "One way" : tab === "roundtrip" ? "Round trip" : "Local"}</p></div>
+              <div><p className="text-xs text-slate-500">Trip Type</p><p className="font-bold">{tab === "oneway" ? "One way" : tab === "roundtrip" ? "Round trip" : tab === "shared" ? "KR-SHARED" : "Local"}</p></div>
               <div><p className="text-xs text-slate-500">Pick up</p><p className="font-bold">{formatBookingDate(pickupDate)}</p></div>
-              <div><p className="text-xs text-slate-500">Time</p><p className="font-bold">{pickupTime}</p></div>
+              <div><p className="text-xs text-slate-500">{tab === "shared" ? "Departure" : "Time"}</p><p className="font-bold">{tab === "shared" ? `${formatSharedDepartureTime(sharedDepartureTime)} departure` : pickupTime}</p></div>
               <button type="button" onClick={() => setShowResults(false)} className="rounded-full bg-white px-5 py-2 font-semibold text-orange-600 shadow-sm hover:bg-orange-50">Modify Booking</button>
             </div>
 
@@ -1296,17 +1446,18 @@ export default function FareCalculator({
                           <h2 className="text-xl font-bold text-slate-800">{option.vehicle?.label || option.vehicleType}</h2>
                           <span className="text-xs italic text-slate-500">or similar</span>
                           <span className="rounded bg-slate-950 px-2 py-0.5 text-[10px] font-bold text-white">4.8 ★</span>
-                          <span className="rounded-full bg-green-50 px-2.5 py-1 text-[10px] font-bold text-green-700">Available</span>
+                          <span className="rounded-full bg-green-50 px-2.5 py-1 text-[10px] font-bold text-green-700">{tab === "shared" ? "Seat confirmation pending" : "Available"}</span>
                         </div>
                         <p className="mt-1 text-xs italic text-slate-500">{option.vehicleType === "sedan" ? "4 seater AC Cab" : option.vehicleType === "ertiga" ? "6+1 seater AC Cab" : "Premium AC Cab"}</p>
                         <div className="mt-3 space-y-2 text-xs text-slate-700">
-                          <p className="flex items-center gap-2"><ShieldCheck size={16} className="text-orange-500"/> Driver details confirmed before journey</p>
+                          <p className="flex items-center gap-2"><ShieldCheck size={16} className="text-orange-500"/> {tab === "shared" ? "Vendor-network vehicle; driver details confirmed before journey" : "Driver details confirmed before journey"}</p>
+                          {tab === "shared" && <p className="font-semibold text-blue-800">Door-to-door service · 1 luggage item per passenger · Seat confirmation 48 hours before journey</p>}
                           <p className="flex items-center gap-2"><RouteIcon size={16} className="text-orange-500"/> {tab === "local" ? `${LOCAL_PACKAGES[option.vehicleType as VehicleType][localPackage].kms} KM package included` : `${Number(route?.distanceKm || 0)} KM ${tab === "oneway" ? "one side" : "one-side route distance"}`}</p>
                           {option.couponPercent > 0 && <p className="font-bold text-green-700">Coupon {option.couponCode} applied · {option.couponPercent}% OFF</p>}
                           {festivalRule && <p className="font-semibold text-orange-700">{festivalRule.name}: {festivalRule.increasePercent}% seasonal fare adjustment</p>}
                         </div>
 
-                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                        {tab !== "shared" && <div className="mt-3 flex flex-wrap items-center gap-2">
                           <button
                             type="button"
                             onClick={() => applyBestOfferForVehicle(option.vehicleType as VehicleType)}
@@ -1321,7 +1472,6 @@ export default function FareCalculator({
                           >
                             Enter Coupon
                           </button>
-                        </div>
                         {couponEntryVehicle === option.vehicleType && (
                           <div className="mt-2 flex max-w-[390px] gap-1.5">
                             <input
@@ -1337,6 +1487,7 @@ export default function FareCalculator({
                             </button>
                           </div>
                         )}
+                        </div>}
                         <button type="button" onClick={() => setExpandedConditions((current) => ({...current, [option.vehicleType]: !current[option.vehicleType]}))} className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-orange-600 hover:text-orange-700">
                           Inclusions and Exclusions {isExpanded ? <ChevronUp size={15}/> : <ChevronDown size={15}/>}
                         </button>
@@ -1345,10 +1496,11 @@ export default function FareCalculator({
                       <div className="flex h-full flex-col items-end justify-center border-l border-slate-100 pl-5 text-right">
                         {hasDiscount && <p className="text-xs font-bold text-green-600">● {discountPercent}% OFF <span className="font-normal text-slate-400 line-through">{money(crossedFare)}</span></p>}
                         <p className="mt-1 text-3xl font-black tracking-tight text-sky-500">{money(fare)}</p>
+                        {tab === "shared" && <p className="mt-1 text-xs font-extrabold text-slate-700">{money(Number(option.sharedPerPersonFare || 0))} / passenger × {sharedPassengerCount}</p>}
                         <p className="mt-1 text-[11px] text-slate-500">Final payable fare</p>
                         {option.festivalPercent > 0 && <p className="mt-1 text-[10px] text-slate-400">Includes festival pricing</p>}
-                        <button type="button" onClick={() => { setBookingOption(option); setPaymentError(""); }} className="mt-3 min-w-[155px] rounded-md bg-orange-500 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-orange-600">
-                          SELECT CAB
+                        <button type="button" disabled={tab === "shared" && option.sharedPolicy?.bookingEligible !== true} onClick={() => { setBookingOption(option); setPaymentError(""); }} className="mt-3 min-w-[155px] rounded-md bg-orange-500 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-40">
+                          {tab === "shared" && option.sharedPolicy?.bookingEligible !== true ? "NOT ELIGIBLE" : "SELECT CAB"}
                         </button>
                       </div>
                     </div>
@@ -1375,9 +1527,11 @@ export default function FareCalculator({
                           </div>
                         </div>
                         <div className="rounded-xl border border-orange-100 bg-white p-4">
-                          <h3 className="mb-3 text-sm font-extrabold">Trip Inclusions & Conditions</h3>
-                          <p className="text-xs leading-6 text-slate-600">Toll, parking, driver fooding, night halt and package limits follow the selected trip type and applicable route conditions. Any additional charge will be communicated before booking confirmation.</p>
-                          <button type="button" onClick={() => { setBookingOption(option); setPaymentError(""); }} className="mt-4 w-full rounded-lg bg-orange-500 px-4 py-3 text-sm font-extrabold text-white hover:bg-orange-600">SELECT THIS CAB</button>
+                          <h3 className="mb-3 text-sm font-extrabold">{tab === "shared" ? "KR-SHARED Policy" : "Trip Inclusions & Conditions"}</h3>
+                          <p className="text-xs leading-6 text-slate-600">{tab === "shared"
+                            ? "This fare is 35% of the calculated private One-Way customer fare per passenger. Online booking is mandatory with at least 7 days advance notice. Seats are confirmed 48 hours before journey. If fewer than 2 seats are booked for a departure, the operator may cancel and issue a 100% refund to the original payment mode."
+                            : "Toll, parking, driver fooding, night halt and package limits follow the selected trip type and applicable route conditions. Any additional charge will be communicated before booking confirmation."}</p>
+                          <button type="button" disabled={tab === "shared" && option.sharedPolicy?.bookingEligible !== true} onClick={() => { setBookingOption(option); setPaymentError(""); }} className="mt-4 w-full rounded-lg bg-orange-500 px-4 py-3 text-sm font-extrabold text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-40">{tab === "shared" && option.sharedPolicy?.bookingEligible !== true ? "NOT ELIGIBLE" : "SELECT THIS CAB"}</button>
                         </div>
                       </div>
                     )}
@@ -1407,11 +1561,12 @@ export default function FareCalculator({
 
         <section className="h-auto rounded-[18px] border border-orange-100 bg-white p-3 shadow-md shadow-orange-100/40 sm:rounded-[22px] sm:p-4 lg:p-5">
           {/* Trip type */}
-          <div className="mx-auto mb-3 grid max-w-[520px] grid-cols-3 gap-1 rounded-lg border border-orange-200 bg-white p-1 sm:mb-3 sm:gap-0">
+          <div className="mx-auto mb-3 grid max-w-[760px] grid-cols-2 gap-1 rounded-lg border border-orange-200 bg-white p-1 sm:grid-cols-4 sm:gap-0">
             {([
               ["oneway", "One Way"],
               ["roundtrip", "Round Trip"],
               ["local", "Local Rental"],
+              ["shared", "KR-SHARED"],
             ] as [MainTab, string][]).map(([id, label]) => (
               <button
                 key={id}
@@ -1532,7 +1687,7 @@ export default function FareCalculator({
                 <CalendarDays className="hidden h-5 w-5 shrink-0 text-orange-700 sm:block" />
                 <input
                   type="date"
-                  min={today()}
+                  min={tab === "shared" ? dateAfterDays(7) : today()}
                   value={pickupDate}
                   required
                   onChange={(e) => { setPickupDate(e.target.value); setError(""); }}
@@ -1559,38 +1714,35 @@ export default function FareCalculator({
                   </select>
                 </div>
               </div>
+            ) : tab === "roundtrip" ? (
+              <div className="min-w-0">
+                <label className={fieldLabelClass()}>RETURN DATE</label>
+                <div className={inputShellClass()}>
+                  <CalendarDays className="hidden h-5 w-5 shrink-0 text-orange-700 sm:block" />
+                  <input type="date" min={pickupDate} value={returnDate} required
+                    onChange={(e) => { setReturnDate(e.target.value); setError(""); }}
+                    className="w-full min-w-0 bg-transparent text-[12px] font-semibold outline-none sm:text-sm"
+                    aria-label="Return date" />
+                </div>
+              </div>
+            ) : tab === "shared" ? (
+              <div className="min-w-0">
+                <label className={fieldLabelClass()}>PASSENGERS</label>
+                <div className={inputShellClass()}>
+                  <select value={sharedPassengerCount} onChange={(e) => setSharedPassengerCount(Number(e.target.value))}
+                    className="w-full min-w-0 bg-transparent text-sm font-bold outline-none" aria-label="Number of passengers">
+                    {[1, 2, 3, 4, 5, 6].map((count) => <option key={count} value={count}>{count} {count === 1 ? "Passenger" : "Passengers"}</option>)}
+                  </select>
+                </div>
+              </div>
             ) : (
               <div className="min-w-0">
-                <label className={fieldLabelClass()}>
-                  {tab === "roundtrip" ? "RETURN DATE" : "PICKUP TIME"}
-                </label>
+                <label className={fieldLabelClass()}>PICKUP TIME</label>
                 <div className={inputShellClass()}>
-                  {tab === "roundtrip" ? (
-                    <>
-                      <CalendarDays className="hidden h-5 w-5 shrink-0 text-orange-700 sm:block" />
-                      <input
-                        type="date"
-                        min={pickupDate}
-                        value={returnDate}
-                        required
-                        onChange={(e) => { setReturnDate(e.target.value); setError(""); }}
-                        className="w-full min-w-0 bg-transparent text-[12px] font-semibold outline-none sm:text-sm"
-                        aria-label="Return date"
-                      />
-                    </>
-                  ) : (
-                    <>
-                      <Clock3 className="hidden h-5 w-5 shrink-0 text-orange-700 sm:block" />
-                      <input
-                        type="time"
-                        value={pickupTime}
-                        required
-                        onChange={(e) => { setPickupTime(e.target.value); setError(""); }}
-                        className="w-full min-w-0 bg-transparent text-sm font-semibold outline-none"
-                        aria-label="Pickup time"
-                      />
-                    </>
-                  )}
+                  <Clock3 className="hidden h-5 w-5 shrink-0 text-orange-700 sm:block" />
+                  <input type="time" value={pickupTime} required
+                    onChange={(e) => { setPickupTime(e.target.value); setError(""); }}
+                    className="w-full min-w-0 bg-transparent text-sm font-semibold outline-none" aria-label="Pickup time" />
                 </div>
               </div>
             )}
@@ -1607,6 +1759,29 @@ export default function FareCalculator({
                     onChange={(e) => { setPickupTime(e.target.value); setError(""); }}
                     className="w-full min-w-0 bg-transparent text-sm font-semibold outline-none" aria-label="Pickup time" />
                 </div>
+              </div>
+            )}
+
+            {tab === "shared" && (
+              <div className="w-full sm:max-w-xs">
+                <label className={fieldLabelClass()}>PICKUP TIME SLOT</label>
+                <div className={inputShellClass()}>
+                  <Clock3 className="hidden h-5 w-5 shrink-0 text-orange-700 sm:block" />
+                  <select value={sharedDepartureTime}
+                    onChange={(e) => {
+                      const selected = e.target.value as "06:00" | "08:00" | "16:00" | "18:00";
+                      setSharedDepartureTime(selected);
+                      setSharedDeparturePeriod(selected === "06:00" || selected === "08:00" ? "morning" : "evening");
+                      setError("");
+                    }}
+                    className="w-full bg-transparent text-sm font-bold outline-none" aria-label="Select shared taxi pickup time" required>
+                    <option value="06:00">06:00 AM</option>
+                    <option value="08:00">08:00 AM</option>
+                    <option value="16:00">04:00 PM</option>
+                    <option value="18:00">06:00 PM</option>
+                  </select>
+                </div>
+                <p className="mt-1 text-[10px] text-slate-500">Daily fixed slots: 6 AM, 8 AM, 4 PM and 6 PM.</p>
               </div>
             )}
 
@@ -1654,6 +1829,12 @@ export default function FareCalculator({
             </div>
           </div>
 
+          {tab === "shared" && (
+            <div className="mt-3 grid gap-2 rounded-xl border border-blue-200 bg-blue-50 p-3 text-[11px] leading-5 text-blue-950 sm:grid-cols-2 sm:text-xs">
+              <p><strong>KR-SHARED Door-to-Door:</strong> Supported routes are Korba, Bilaspur and Raipur between the six approved directions. Pickup and drop are door-to-door within service limits.</p>
+              <p><strong>Booking rules:</strong> Minimum 7 days advance · Seat confirmation 48 hours before journey · 1 luggage item per passenger · Below 2 booked seats, operator may cancel with 100% refund.</p>
+            </div>
+          )}
           {error && (
             <p className="mt-3 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-xs font-semibold text-orange-700 sm:text-sm">
               {error}

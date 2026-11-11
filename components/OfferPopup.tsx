@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -9,15 +8,16 @@ import {
   ArrowRight,
   ArrowLeft,
   CarFront,
-  Zap,
   BadgeCheck,
   Tag,
+  BellRing,
+  CalendarDays,
+  Info,
+  Megaphone,
 } from "lucide-react";
 
 import {
   collection,
-  query,
-  where,
   getDocs,
 } from "firebase/firestore";
 
@@ -26,19 +26,32 @@ import { db } from "@/lib/firebase";
 type Offer = {
   fromCity: string;
   toCity: string;
-  tripType: string;
-  vehicleType: string;
+  tripType?: string;
+  vehicleType?: string;
   strikeFare?: number | string;
   offerFare: number | string;
   offerAvailable?: boolean;
+  priority?: number;
 };
 
+type ImportantNotice = {
+  popupType: "notice";
+  isActive: boolean;
+  noticeTitle?: string;
+  noticeMessage?: string;
+  buttonLink?: string;
+  buttonText?: string;
+  priority?: number;
+};
+
+type PopupScreen = "notice" | "offer";
+
 const palettes = [
-  { start: "#ff1687", end: "#ff633d", accent: "#ffe66d" },
-  { start: "#753cff", end: "#ed168c", accent: "#59f2ff" },
-  { start: "#ff5a24", end: "#ff0878", accent: "#ffe66d" },
-  { start: "#00b9e9", end: "#6446ff", accent: "#ffdb70" },
-  { start: "#16a34a", end: "#00b9e9", accent: "#fef08a" },
+  { start: "#f43f8e", end: "#fb923c", accent: "#facc15" },
+  { start: "#7c3aed", end: "#db2777", accent: "#22d3ee" },
+  { start: "#0891b2", end: "#4f46e5", accent: "#fbbf24" },
+  { start: "#16a34a", end: "#0d9488", accent: "#fde047" },
+  { start: "#ea580c", end: "#e11d48", accent: "#a3e635" },
 ];
 
 const slugify = (value: string) =>
@@ -46,17 +59,22 @@ const slugify = (value: string) =>
 
 const formatFare = (value: number | string) => {
   const amount = Number(value);
-
   return Number.isFinite(amount)
     ? amount.toLocaleString("en-IN")
     : String(value);
 };
 
+const sortByPriority = <T extends { priority?: number }>(items: T[]) =>
+  [...items].sort(
+    (a, b) => Number(b.priority || 0) - Number(a.priority || 0)
+  );
+
 export default function OfferPopup() {
   const [isOpen, setIsOpen] = useState(false);
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [notice, setNotice] = useState<ImportantNotice | null>(null);
+  const [screen, setScreen] = useState<PopupScreen>("notice");
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [direction, setDirection] = useState<1 | -1>(1);
   const [isFlipping, setIsFlipping] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -64,65 +82,86 @@ export default function OfferPopup() {
   const isFlippingRef = useRef(false);
   const indexRef = useRef(0);
 
-  // Fetch all active offers from Firebase
+  // Load the Important Notice first, then load active offers.
   useEffect(() => {
     let cancelled = false;
 
-    async function fetchOffers() {
+    async function fetchPopupContent() {
       try {
         const offersRef = collection(db, "special_offers");
 
-        const offersQuery = query(
-          offersRef,
-          where("offerAvailable", "==", true)
-        );
-
-        const snapshot = await getDocs(offersQuery);
+        // Read the collection once to avoid requiring a new composite index.
+        const snapshot = await getDocs(offersRef);
 
         if (cancelled) return;
 
-        const validOffers = snapshot.docs
-          .map((document) => document.data() as Offer)
-          .filter(
-            (offer) =>
-              typeof offer.fromCity === "string" &&
-              offer.fromCity.trim().length > 0 &&
-              typeof offer.toCity === "string" &&
-              offer.toCity.trim().length > 0 &&
-              offer.offerFare !== undefined &&
-              offer.offerFare !== null &&
-              offer.offerFare !== ""
-          );
+        const documents = snapshot.docs.map((document) => document.data());
 
+        const activeNotices = sortByPriority(
+          documents
+            .filter(
+              (data) =>
+                data.popupType === "notice" &&
+                data.isActive === true
+            )
+            .map((data) => data as ImportantNotice)
+            .filter(
+              (item) =>
+                item.isActive === true &&
+                item.popupType === "notice" &&
+                !!item.noticeTitle?.trim() &&
+                !!item.noticeMessage?.trim()
+            )
+        );
+
+        const validOffers = sortByPriority(
+          documents
+            .filter((data) => data.offerAvailable === true && data.popupType !== "notice")
+            .map((data) => data as Offer)
+            .filter(
+              (offer) =>
+                typeof offer.fromCity === "string" &&
+                offer.fromCity.trim().length > 0 &&
+                typeof offer.toCity === "string" &&
+                offer.toCity.trim().length > 0 &&
+                offer.offerFare !== undefined &&
+                offer.offerFare !== null &&
+                offer.offerFare !== ""
+            )
+        );
+
+        const firstNotice = activeNotices[0] || null;
+
+        setNotice(firstNotice);
         setOffers(validOffers);
 
-        if (validOffers.length > 0) {
+        if (firstNotice) {
+          setScreen("notice");
+          setIsOpen(true);
+        } else if (validOffers.length > 0) {
+          setScreen("offer");
           setIsOpen(true);
         }
       } catch (error) {
-        console.error("Error fetching special offers:", error);
+        console.error("Error fetching popup content:", error);
       } finally {
         if (!cancelled) setIsLoading(false);
       }
     }
 
-    fetchOffers();
+    fetchPopupContent();
 
     return () => {
       cancelled = true;
     };
   }, []);
 
-  // Clear pending animation timers
   useEffect(() => {
     return () => {
-      if (flipTimeout.current) {
-        clearTimeout(flipTimeout.current);
-      }
+      if (flipTimeout.current) clearTimeout(flipTimeout.current);
     };
   }, []);
 
-  // Close on Escape
   useEffect(() => {
     if (!isOpen) return;
 
@@ -131,23 +170,26 @@ export default function OfferPopup() {
     };
 
     window.addEventListener("keydown", onKeyDown);
-
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [isOpen]);
 
-  // 3D paper flip navigation
+  const openOffers = () => {
+    if (offers.length > 0) {
+      setScreen("offer");
+      setCurrentIndex(0);
+      indexRef.current = 0;
+    } else {
+      setIsOpen(false);
+    }
+  };
+
   const changeOffer = (step: number) => {
     if (offers.length <= 1 || isFlippingRef.current) return;
 
     isFlippingRef.current = true;
     setIsFlipping(true);
 
-    const nextDirection: 1 | -1 = step >= 0 ? 1 : -1;
-    setDirection(nextDirection);
-
-    if (flipTimeout.current) {
-      clearTimeout(flipTimeout.current);
-    }
+    if (flipTimeout.current) clearTimeout(flipTimeout.current);
 
     flipTimeout.current = setTimeout(() => {
       const nextIndex =
@@ -157,410 +199,380 @@ export default function OfferPopup() {
       setCurrentIndex(nextIndex);
       setIsFlipping(false);
       isFlippingRef.current = false;
-    }, 360);
+    }, 260);
   };
 
-  // Auto flip every 4 seconds
+  // Auto rotate offers only after the notice has been shown.
   useEffect(() => {
-    if (!isOpen || offers.length <= 1) return;
+    if (!isOpen || screen !== "offer" || offers.length <= 1) return;
 
-    const interval = window.setInterval(() => {
-      changeOffer(1);
-    }, 4000);
-
+    const interval = window.setInterval(() => changeOffer(1), 4500);
     return () => window.clearInterval(interval);
-  }, [isOpen, offers.length]);
+  }, [isOpen, screen, offers.length]);
 
-  if (isLoading || !isOpen || offers.length === 0) {
+  if (isLoading || !isOpen || (screen === "offer" && offers.length === 0)) {
     return null;
   }
 
   const offer = offers[currentIndex];
   const palette = palettes[currentIndex % palettes.length];
-
-  const tripType = String(offer.tripType || "oneway").toLowerCase();
+  const tripType = String(offer?.tripType || "oneway").toLowerCase();
   const bookingPath =
     tripType === "oneway" ? "outstation-cabs" : "cab-service";
+  const bookUrl = offer
+    ? `/${bookingPath}/${slugify(offer.fromCity)}-to-${slugify(offer.toCity)}`
+    : "#booking-form";
 
-  const bookUrl =
-    `/${bookingPath}/${slugify(offer.fromCity)}-to-${slugify(
-      offer.toCity
-    )}`;
+  const noticeButtonLink = notice?.buttonLink?.trim() || "#booking-form";
+  const noticeButtonIsExternal =
+    noticeButtonLink.startsWith("http://") ||
+    noticeButtonLink.startsWith("https://");
 
   return (
     <div
-      className="kr-offer-backdrop fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-[#020817]/80 p-3 backdrop-blur-md sm:p-5"
+      className="kr-popup-backdrop fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-slate-950/55 p-3 backdrop-blur-sm"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
-          setIsOpen(false);
-        }
+        if (event.target === event.currentTarget) setIsOpen(false);
       }}
     >
-      {/* PERSPECTIVE STAGE */}
-      <div className="kr-offer-stage relative my-auto w-full max-w-[370px] sm:max-w-[390px]">
-
-        {/* BACK PAPER LAYER 2 */}
-        <div
-          aria-hidden="true"
-          className="kr-paper kr-paper-back absolute inset-0 rounded-[30px]"
-          style={{
-            background: `linear-gradient(135deg, ${palette.end}, ${palette.accent})`,
-          }}
-        />
-
-        {/* BACK PAPER LAYER 1 */}
-        <div
-          aria-hidden="true"
-          className="kr-paper kr-paper-middle absolute inset-0 rounded-[30px]"
-          style={{
-            background: `linear-gradient(135deg, ${palette.start}, ${palette.end})`,
-          }}
-        />
-
-        {/* MULTICOLOR GLOWING FRAME */}
-        <div
-          className="kr-offer-frame relative rounded-[30px] p-[2px]"
-          style={{
-            background: `linear-gradient(135deg, ${palette.start}, ${palette.accent}, ${palette.end}, ${palette.start})`,
-            boxShadow: `0 0 25px ${palette.start}30, 0 0 55px ${palette.end}20`,
-          }}
-        >
-          {/* MAIN CARD */}
-          <div
-            className={`kr-offer-card relative isolate overflow-hidden rounded-[28px] bg-[#09162f] px-5 pb-5 pt-6 text-white sm:px-7 sm:pb-6 sm:pt-7 ${
-              isFlipping
-                ? direction === 1
-                  ? "kr-flip-out-next"
-                  : "kr-flip-out-prev"
-                : "kr-flip-in"
-            }`}
-            aria-live="polite"
-          >
-            {/* BACKGROUND GLOW */}
+      <div
+        className="kr-popup-shell relative my-auto w-full max-w-[340px] sm:max-w-[360px]"
+        role="dialog"
+        aria-modal="true"
+        aria-label={screen === "notice" ? "Important notice" : "Special offer"}
+      >
+        {/* Multicolour outer border */}
+        <div className="rounded-[25px] bg-[linear-gradient(125deg,#ec4899,#f97316,#eab308,#06b6d4,#8b5cf6)] p-[2px] shadow-[0_18px_60px_rgba(15,23,42,0.28)]">
+          <div className="relative overflow-hidden rounded-[23px] bg-white">
+            {/* Compact colour accents */}
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute -right-20 -top-20 -z-10 h-56 w-56 rounded-full blur-[70px]"
-              style={{ backgroundColor: `${palette.start}55` }}
-            />
-
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute -bottom-24 -left-20 -z-10 h-56 w-56 rounded-full blur-[75px]"
-              style={{ backgroundColor: `${palette.end}45` }}
-            />
-
-            {/* GRID TEXTURE */}
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 -z-10 opacity-[0.055]"
+              className="pointer-events-none absolute -right-12 -top-14 h-36 w-36 rounded-full opacity-20 blur-2xl"
               style={{
-                backgroundImage:
-                  "linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px)",
-                backgroundSize: "23px 23px",
+                background:
+                  screen === "notice"
+                    ? "linear-gradient(135deg,#f97316,#ec4899)"
+                    : `linear-gradient(135deg,${palette.start},${palette.end})`,
               }}
             />
-
-            {/* TOP HIGHLIGHT */}
             <div
               aria-hidden="true"
-              className="absolute left-1/2 top-0 h-[3px] w-2/3 -translate-x-1/2 rounded-full"
-              style={{
-                background: `linear-gradient(90deg, transparent, ${palette.accent}, transparent)`,
-              }}
+              className="pointer-events-none absolute -bottom-16 -left-12 h-32 w-32 rounded-full bg-cyan-300/30 blur-2xl"
             />
 
-            {/* CLOSE */}
-            <button
-              type="button"
-              aria-label="Close offers"
-              onClick={() => setIsOpen(false)}
-              className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/[0.08] text-white/75 transition-all duration-300 hover:rotate-90 hover:bg-white/15 hover:text-white sm:right-4 sm:top-4"
+            {/* Header */}
+            <div
+              className="relative flex items-center justify-between px-4 pb-3 pt-3.5"
+              style={{
+                background:
+                  screen === "notice"
+                    ? "linear-gradient(110deg,#fff1f2 0%,#fff7ed 52%,#fefce8 100%)"
+                    : `linear-gradient(110deg,${palette.start}12,${palette.end}12)`,
+              }}
             >
-              <X size={18} />
-            </button>
-
-            {/* OFFER BADGE */}
-            <div className="relative z-10 mb-6 flex justify-center sm:mb-7">
-              <div
-                className="inline-flex items-center gap-2 rounded-full border px-3.5 py-2"
-                style={{
-                  borderColor: `${palette.accent}65`,
-                  background: `linear-gradient(100deg, ${palette.start}22, ${palette.end}20)`,
-                  boxShadow: `0 0 20px ${palette.start}18`,
-                }}
-              >
-                <Sparkles
-                  size={15}
-                  style={{ color: palette.accent }}
-                />
-
-                <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-white sm:text-[11px]">
-                  Today&apos;s Mega Offer
-                </span>
-
-                <span
-                  className="h-1.5 w-1.5 animate-pulse rounded-full"
-                  style={{ backgroundColor: palette.accent }}
-                />
-              </div>
-            </div>
-
-            {/* ROUTE */}
-            <div className="relative z-10 mb-4 text-center">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
-                Your next journey
-              </p>
-
-              <h2 className="text-[26px] font-black leading-tight tracking-tight text-white [overflow-wrap:anywhere] sm:text-[29px]">
-                {offer.fromCity}
-                <span
-                  className="mx-1.5"
-                  style={{ color: palette.accent }}
+              <div className="flex min-w-0 items-center gap-2.5">
+                <div
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-md"
+                  style={{
+                    background:
+                      screen === "notice"
+                        ? "linear-gradient(135deg,#f97316,#e11d48)"
+                        : `linear-gradient(135deg,${palette.start},${palette.end})`,
+                  }}
                 >
-                  to
-                </span>
-                {offer.toCity}
-              </h2>
-            </div>
-
-            {/* VEHICLE CHIP */}
-            <div className="relative z-10 mb-5 flex flex-wrap items-center justify-center gap-2">
-              <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-white/10 bg-white/[0.055] px-3.5 py-2">
-                <CarFront
-                  size={17}
-                  style={{ color: palette.accent }}
-                />
-
-                <span className="text-[12px] font-bold text-slate-100 sm:text-[13px]">
-                  {offer.vehicleType || "Sedan"} AC Cab
-                </span>
-
-                <span
-                  className="h-1 w-1 rounded-full"
-                  style={{ backgroundColor: palette.end }}
-                />
-
-                <span className="text-[11px] font-medium capitalize text-slate-400">
-                  {tripType}
-                </span>
-              </div>
-            </div>
-
-            {/* FARE PANEL */}
-            <div className="relative z-10 mb-5 w-full rounded-[22px] border border-white/[0.12] bg-gradient-to-br from-white/[0.09] to-white/[0.025] px-3 py-4 sm:mb-6 sm:py-5">
-              <div className="mb-2 flex items-center justify-center gap-1.5">
-                <Tag
-                  size={12}
-                  style={{ color: palette.accent }}
-                />
-
-                <p className="text-[9px] font-extrabold uppercase tracking-[0.18em] text-slate-300 sm:text-[10px]">
-                  Your Exclusive Fare
-                </p>
+                  {screen === "notice" ? (
+                    <BellRing size={18} />
+                  ) : (
+                    <Sparkles size={18} />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-600">
+                    Khatu Rides Travels Co.
+                  </p>
+                  <h2 className="truncate text-[17px] font-extrabold leading-tight text-slate-900">
+                    {screen === "notice" ? "Important Notice" : "Special Offers"}
+                  </h2>
+                </div>
               </div>
 
-              {offer.strikeFare !== undefined &&
-                offer.strikeFare !== null &&
-                offer.strikeFare !== "" && (
-                  <div className="mb-1.5 flex flex-wrap items-center justify-center gap-2">
-                    <span className="text-[13px] font-semibold text-slate-400 line-through decoration-orange-400">
-                      ₹{formatFare(offer.strikeFare)}
-                    </span>
+              <button
+                type="button"
+                aria-label="Close popup"
+                onClick={() => setIsOpen(false)}
+                className="ml-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white/90 text-slate-500 shadow-sm transition hover:rotate-90 hover:bg-slate-100 hover:text-slate-900"
+              >
+                <X size={17} />
+              </button>
+            </div>
 
-                    <span
-                      className="rounded-md px-2 py-1 text-[9px] font-black uppercase tracking-wide"
-                      style={{
-                        backgroundColor: `${palette.end}25`,
-                        color: palette.accent,
-                      }}
-                    >
-                      Special Price
+            {/* Content */}
+            {screen === "notice" && notice ? (
+              <div className="relative px-4 pb-4 pt-3.5">
+                {/* High-contrast customer information label */}
+                <div className="mb-3 flex items-center">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-rose-500 via-pink-500 to-orange-400 p-[1.5px] shadow-[0_4px_12px_rgba(236,72,153,0.18)]">
+                    <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-orange-400 text-white shadow-sm">
+                        <Info size={12} strokeWidth={2.8} />
+                      </span>
+                      <span className="text-[11px] font-black uppercase tracking-[0.13em] text-rose-700">
+                        Customer Information
+                      </span>
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-orange-500" />
                     </span>
                   </div>
-                )}
+                </div>
 
-              <div className="flex items-baseline justify-center gap-1">
-                <span
-                  className="text-[26px] font-bold sm:text-[30px]"
-                  style={{ color: palette.accent }}
-                >
-                  ₹
-                </span>
+                {/* Notice title and message are presented as a distinct highlight card */}
+                <div className="overflow-hidden rounded-2xl border border-orange-200/90 bg-[linear-gradient(135deg,#fff7ed_0%,#fff1f2_52%,#f5f3ff_100%)] p-3 shadow-[0_5px_18px_rgba(244,63,94,0.08)]">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 via-rose-500 to-fuchsia-600 text-white shadow-[0_5px_12px_rgba(225,29,72,0.22)]">
+                      <Megaphone size={19} strokeWidth={2.2} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <span className="mb-0.5 block text-[9px] font-extrabold uppercase tracking-[0.16em] text-rose-600">
+                        Important Update
+                      </span>
+                      <h3 className="break-words text-[20px] font-black leading-[1.15] tracking-[-0.02em] text-slate-950">
+                        {notice.noticeTitle || "Important Notice"}
+                      </h3>
+                    </div>
+                  </div>
 
-                <span className="text-[clamp(43px,12vw,60px)] font-black leading-none tracking-[-0.065em] text-white [text-shadow:0_0_25px_rgba(255,255,255,0.12)]">
-                  {formatFare(offer.offerFare)}
-                </span>
-              </div>
+                  <div className="mt-3 rounded-xl border border-white/90 border-l-[3px] border-l-rose-400 bg-white/90 px-3 py-2.5 shadow-sm">
+                    <p className="whitespace-pre-line text-[15px] font-medium leading-[1.55] text-slate-700">
+                      {notice.noticeMessage}
+                    </p>
+                  </div>
+                </div>
 
-              <div className="mt-3 flex items-center justify-center gap-1.5">
-                <Zap
-                  size={13}
-                  style={{ color: palette.end }}
-                />
-
-                <span className="text-[10px] font-medium text-slate-300 sm:text-[11px]">
-                  Premium ride. Smarter fare.
-                </span>
-              </div>
-            </div>
-
-            {/* BOOK NOW */}
-            <Link
-              href={bookUrl}
-              onClick={() => setIsOpen(false)}
-              className="group relative z-10 flex w-full items-center justify-center gap-2.5 overflow-hidden rounded-2xl border border-white/30 px-4 py-4 text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.98]"
-              style={{
-                background: `linear-gradient(105deg, ${palette.start}, ${palette.end})`,
-                boxShadow: `0 7px 26px ${palette.start}45`,
-              }}
-            >
-              <span className="kr-button-shimmer pointer-events-none absolute inset-y-0 left-[-80%] w-1/2 skew-x-[-22deg] bg-gradient-to-r from-transparent via-white/45 to-transparent" />
-
-              <span className="relative z-10 text-[16px] font-black tracking-wide sm:text-[17px]">
-                Book Your Ride
-              </span>
-
-              <ArrowRight
-                size={21}
-                className="relative z-10 transition-transform duration-300 group-hover:translate-x-1"
-              />
-            </Link>
-
-            {/* DOT NAVIGATION */}
-            {offers.length > 1 && (
-              <div className="relative z-10 mt-5 flex flex-col items-center gap-2.5">
-                <div className="flex items-center justify-center gap-1">
-                  <button
-                    type="button"
-                    aria-label="Previous offer"
-                    onClick={() => changeOffer(-1)}
-                    disabled={isFlipping}
-                    className="mr-1 flex h-7 w-7 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white disabled:opacity-40"
-                  >
-                    <ArrowLeft size={14} />
-                  </button>
-
-                  {offers.map((_, index) => {
-                    const selected = index === currentIndex;
-                    const dotPalette =
-                      palettes[index % palettes.length];
-
-                    return (
-                      <button
-                        key={index}
-                        type="button"
-                        aria-label={`Show offer ${index + 1}`}
-                        aria-current={selected ? "true" : undefined}
-                        onClick={() =>
-                          changeOffer(
-                            (index - currentIndex + offers.length) %
-                              offers.length
-                          )
-                        }
-                        disabled={isFlipping}
-                        className="flex h-6 items-center justify-center px-0.5 disabled:cursor-wait"
-                      >
-                        <span
-                          className={`block h-2 rounded-full transition-all duration-300 ${
-                            selected ? "w-7" : "w-2"
-                          }`}
-                          style={{
-                            backgroundColor: selected
-                              ? dotPalette.accent
-                              : "#53617a",
-                            boxShadow: selected
-                              ? `0 0 12px ${dotPalette.accent}80`
-                              : "none",
-                          }}
-                        />
-                      </button>
-                    );
-                  })}
+                <div className="mt-4 flex items-center gap-2">
+                  {offers.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={openOffers}
+                      className="group flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[linear-gradient(100deg,#f97316,#ec4899,#8b5cf6)] px-4 py-2.5 text-[14px] font-extrabold text-white shadow-[0_7px_18px_rgba(236,72,153,0.22)] transition hover:-translate-y-0.5 active:translate-y-0"
+                    >
+                      View Offers
+                      <ArrowRight
+                        size={16}
+                        className="transition-transform group-hover:translate-x-1"
+                      />
+                    </button>
+                  ) : noticeButtonIsExternal ? (
+                    <a
+                      href={noticeButtonLink}
+                      onClick={() => setIsOpen(false)}
+                      className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[linear-gradient(100deg,#f97316,#ec4899)] px-4 py-2.5 text-[14px] font-extrabold text-white shadow-md"
+                    >
+                      {notice.buttonText || "Book Now"}
+                      <ArrowRight size={16} />
+                    </a>
+                  ) : (
+                    <Link
+                      href={noticeButtonLink}
+                      onClick={() => setIsOpen(false)}
+                      className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[linear-gradient(100deg,#f97316,#ec4899)] px-4 py-2.5 text-[14px] font-extrabold text-white shadow-md"
+                    >
+                      {notice.buttonText || "Book Now"}
+                      <ArrowRight size={16} />
+                    </Link>
+                  )}
 
                   <button
                     type="button"
-                    aria-label="Next offer"
-                    onClick={() => changeOffer(1)}
-                    disabled={isFlipping}
-                    className="ml-1 flex h-7 w-7 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white disabled:opacity-40"
+                    onClick={() => setIsOpen(false)}
+                    className="min-h-11 rounded-xl border border-slate-200 bg-white px-4 py-2 text-[13px] font-bold text-slate-600 transition hover:bg-slate-50"
                   >
-                    <ArrowRight size={14} />
+                    Close
                   </button>
                 </div>
 
-                <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Offer {currentIndex + 1} of {offers.length}
-                </p>
+                {offers.length > 0 && (
+                  <p className="mt-2 text-center text-[11px] font-semibold text-slate-500">
+                    {offers.length} active {offers.length === 1 ? "offer" : "offers"} available after this notice
+                  </p>
+                )}
               </div>
-            )}
+            ) : offer ? (
+              <div
+                className={`relative px-4 pb-4 pt-3.5 ${
+                  isFlipping ? "kr-offer-changing" : ""
+                }`}
+                aria-live="polite"
+              >
+                <div className="mb-2 flex items-center justify-center gap-1.5">
+                  <Sparkles size={13} style={{ color: palette.start }} />
+                  <span
+                    className="text-[11px] font-black uppercase tracking-[0.14em]"
+                    style={{ color: palette.start }}
+                  >
+                    Limited Time Offer
+                  </span>
+                  <Sparkles size={13} style={{ color: palette.end }} />
+                </div>
 
-            {/* TRUST FOOTER */}
-            <div className="relative z-10 mt-4 flex items-center justify-center gap-1.5">
-              <BadgeCheck size={13} className="text-emerald-400" />
+                <div className="text-center">
+                  <h3 className="break-words text-[25px] font-black leading-tight tracking-tight text-slate-900">
+                    {offer.fromCity}
+                    <span
+                      className="mx-1.5"
+                      style={{ color: palette.start }}
+                    >
+                      to
+                    </span>
+                    {offer.toCity}
+                  </h3>
 
-              <span className="text-[10px] font-medium text-slate-400">
-                Khatu Rides Travels Co.
+                  <div className="mt-2 inline-flex max-w-full items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5">
+                    <CarFront size={15} style={{ color: palette.start }} />
+                    <span className="truncate text-[13px] font-bold text-slate-700">
+                      {offer.vehicleType || "Sedan"} AC Cab
+                    </span>
+                    <span className="h-1 w-1 rounded-full bg-slate-300" />
+                    <span className="text-[11px] font-semibold capitalize text-slate-600">
+                      {tripType}
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  className="mt-3 rounded-2xl border px-3 py-3 text-center"
+                  style={{
+                    borderColor: `${palette.start}35`,
+                    background: `linear-gradient(120deg,${palette.start}0D,${palette.end}12,${palette.accent}18)`,
+                  }}
+                >
+                  <div className="mb-1 flex items-center justify-center gap-1.5">
+                    <Tag size={12} style={{ color: palette.start }} />
+                    <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-600">
+                      Exclusive Fare
+                    </span>
+                  </div>
+
+                  <div className="flex items-baseline justify-center gap-2">
+                    {offer.strikeFare !== undefined &&
+                      offer.strikeFare !== null &&
+                      offer.strikeFare !== "" && (
+                        <span className="text-[12px] font-semibold text-slate-400 line-through">
+                          ₹{formatFare(offer.strikeFare)}
+                        </span>
+                      )}
+                    <span
+                      className="text-[36px] font-black leading-none tracking-tight"
+                      style={{ color: palette.start }}
+                    >
+                      ₹{formatFare(offer.offerFare)}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[12px] font-medium text-slate-600">
+                    Special fare for your journey
+                  </p>
+                </div>
+
+                <Link
+                  href={bookUrl}
+                  onClick={() => setIsOpen(false)}
+                  className="group mt-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[14px] font-extrabold text-white shadow-md transition hover:-translate-y-0.5 active:translate-y-0"
+                  style={{
+                    background: `linear-gradient(100deg,${palette.start},${palette.end})`,
+                    boxShadow: `0 7px 18px ${palette.start}35`,
+                  }}
+                >
+                  Book Your Ride
+                  <ArrowRight
+                    size={16}
+                    className="transition-transform group-hover:translate-x-1"
+                  />
+                </Link>
+
+                {offers.length > 1 && (
+                  <div className="mt-2.5 flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      aria-label="Previous offer"
+                      onClick={() => changeOffer(-1)}
+                      disabled={isFlipping}
+                      className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-100 disabled:opacity-40"
+                    >
+                      <ArrowLeft size={14} />
+                    </button>
+
+                    <div className="flex items-center gap-1.5">
+                      {offers.map((_, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          aria-label={`Show offer ${index + 1}`}
+                          aria-current={index === currentIndex ? "true" : undefined}
+                          onClick={() => {
+                            if (isFlippingRef.current) return;
+                            const step =
+                              (index - currentIndex + offers.length) %
+                              offers.length;
+                            changeOffer(step);
+                          }}
+                          disabled={isFlipping}
+                          className="flex h-6 items-center px-0.5 disabled:cursor-wait"
+                        >
+                          <span
+                            className={`block h-1.5 rounded-full transition-all ${
+                              index === currentIndex ? "w-5" : "w-1.5"
+                            }`}
+                            style={{
+                              backgroundColor:
+                                index === currentIndex
+                                  ? palettes[index % palettes.length].start
+                                  : "#cbd5e1",
+                            }}
+                          />
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      aria-label="Next offer"
+                      onClick={() => changeOffer(1)}
+                      disabled={isFlipping}
+                      className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-100 disabled:opacity-40"
+                    >
+                      <ArrowRight size={14} />
+                    </button>
+                    <span className="ml-1 text-[11px] font-bold text-slate-500">
+                      {currentIndex + 1}/{offers.length}
+                    </span>
+                  </div>
+                )}
+              </div>
+            ) : null}
+
+            {/* Small trust footer */}
+            <div className="relative flex items-center justify-center gap-1.5 border-t border-slate-100 px-3 py-2.5">
+              <BadgeCheck size={12} className="text-emerald-500" />
+              <span className="text-[10px] font-semibold text-slate-500">
+                Trusted rides • Reliable service
               </span>
+              <CalendarDays size={11} className="ml-1 text-slate-300" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* 3D PAPER FLIP ANIMATIONS */}
       <style jsx>{`
-        .kr-offer-stage {
-          perspective: 1200px;
-          perspective-origin: 50% 50%;
+        .kr-popup-shell {
+          animation: kr-popup-enter 280ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
         }
 
-        .kr-offer-frame {
-          transform-style: preserve-3d;
-          transform-origin: center center;
-          backface-visibility: hidden;
-          animation: kr-frame-enter 500ms ease-out both;
+        .kr-offer-changing {
+          animation: kr-offer-change 260ms ease both;
         }
 
-        .kr-offer-card {
-          transform-origin: center center;
-          transform-style: preserve-3d;
-          backface-visibility: hidden;
-        }
-
-        .kr-paper {
-          transform-origin: center center;
-          pointer-events: none;
-        }
-
-        .kr-paper-back {
-          transform: rotate(4deg) translateY(7px) translateZ(-8px);
-          opacity: 0.8;
-        }
-
-        .kr-paper-middle {
-          transform: rotate(-2.5deg) translateY(4px) translateZ(-4px);
-          opacity: 0.9;
-        }
-
-        .kr-flip-out-next {
-          animation: kr-flip-out-next 360ms ease-in both;
-        }
-
-        .kr-flip-out-prev {
-          animation: kr-flip-out-prev 360ms ease-in both;
-        }
-
-        .kr-flip-in {
-          animation: kr-flip-in 500ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
-        }
-
-        .kr-button-shimmer {
-          animation: kr-shimmer 4s ease-in-out infinite;
-        }
-
-        @keyframes kr-frame-enter {
+        @keyframes kr-popup-enter {
           from {
             opacity: 0;
-            transform: translateY(12px) scale(0.96);
+            transform: translateY(10px) scale(0.97);
           }
           to {
             opacity: 1;
@@ -568,63 +580,25 @@ export default function OfferPopup() {
           }
         }
 
-        @keyframes kr-flip-out-next {
+        @keyframes kr-offer-change {
           0% {
             opacity: 1;
-            transform: perspective(1000px) rotateY(0deg) scale(1);
+            transform: translateX(0);
           }
-          100% {
-            opacity: 0;
-            transform: perspective(1000px) rotateY(-72deg) scale(0.94);
-          }
-        }
-
-        @keyframes kr-flip-out-prev {
-          0% {
-            opacity: 1;
-            transform: perspective(1000px) rotateY(0deg) scale(1);
-          }
-          100% {
-            opacity: 0;
-            transform: perspective(1000px) rotateY(72deg) scale(0.94);
-          }
-        }
-
-        @keyframes kr-flip-in {
-          0% {
-            opacity: 0;
-            transform: perspective(1000px) rotateY(65deg) scale(0.94);
-          }
-          65% {
-            opacity: 1;
-            transform: perspective(1000px) rotateY(-6deg) scale(1.01);
+          50% {
+            opacity: 0.45;
+            transform: translateX(-8px);
           }
           100% {
             opacity: 1;
-            transform: perspective(1000px) rotateY(0deg) scale(1);
-          }
-        }
-
-        @keyframes kr-shimmer {
-          0%, 70% {
-            left: -80%;
-          }
-          95%, 100% {
-            left: 140%;
+            transform: translateX(0);
           }
         }
 
         @media (prefers-reduced-motion: reduce) {
-          .kr-offer-frame,
-          .kr-flip-out-next,
-          .kr-flip-out-prev,
-          .kr-flip-in,
-          .kr-button-shimmer {
+          .kr-popup-shell,
+          .kr-offer-changing {
             animation: none !important;
-          }
-
-          .kr-offer-card {
-            transform: none !important;
           }
         }
       `}</style>
