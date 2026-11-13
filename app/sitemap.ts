@@ -174,9 +174,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // ==========================================
   // 3. EXISTING STATIC ROUTES
   // ==========================================
+ 
+  // ==========================================
+  // 3. EXISTING STATIC ROUTES
+  // ==========================================
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: siteUrl, lastModified: now, changeFrequency: "weekly", priority: 1 },
-    { url: `${siteUrl}/tour-packages`, lastModified: now, changeFrequency: "weekly", priority: 0.95 }, // New Base Tour Page
+    { url: `${siteUrl}/tour-packages`, lastModified: now, changeFrequency: "weekly", priority: 0.95 },
     { url: `${siteUrl}/about-us`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${siteUrl}/contact-us`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${siteUrl}/blog`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
@@ -184,7 +188,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${siteUrl}/terms-and-conditions`, lastModified: now, changeFrequency: "yearly", priority: 0.5 },
     { url: `${siteUrl}/refund-policy`, lastModified: now, changeFrequency: "yearly", priority: 0.5 },
     { url: `${siteUrl}/payment-terms`, lastModified: now, changeFrequency: "yearly", priority: 0.5 },
-    
+
     // Service Pages
     { url: `${siteUrl}/services/one-way-taxi-raipur`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
     { url: `${siteUrl}/services/one-way-taxi-korba`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
@@ -206,13 +210,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${siteUrl}/routes/raipur-to-bilaspur-taxi`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${siteUrl}/routes/bilaspur-to-raipur-taxi`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${siteUrl}/routes/raipur-to-raigarh-taxi`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${siteUrl}/routes/raigarh-to-raipur-taxi`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${siteUrl}/routes/raipur-airport-taxi`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+
+    // Removed confirmed 404:
+    // /routes/raigarh-to-raipur-taxi
+    // /routes/raipur-airport-taxi
 
     // Blogs
     { url: `${siteUrl}/blog/raipur-to-korba-taxi-fare-guide`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${siteUrl}/blog/deoghar-sawan-yatra-taxi-service`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
   ];
+
 
   // ==========================================
   // 4. COMBINE ALL ARRAYS INTO ONE RETURN

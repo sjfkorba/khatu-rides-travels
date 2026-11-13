@@ -47,7 +47,7 @@ export type ServiceType = "outstation" | "local";
 
 export type HubCategory = "major" | "semi-major" | "non-major";
 
-export type RouteClassification = "domestic" | "interstate" | "korba-odisha";
+export type RouteClassification = "domestic" | "interstate" | "korba-odisha" | "raigarh-odisha";
 
 export type LocalPackageType = "4hr40km" | "8hr80km" | "12hr120km";
 
@@ -881,9 +881,17 @@ export function inferRouteClassification(
   const pickupIsOdisha = ODISHA_PLACE_HINTS.some((place) => pickup.includes(place));
   const dropIsOdisha = ODISHA_PLACE_HINTS.some((place) => drop.includes(place));
 
-  // Preserve the dedicated Korba–Odisha pricing in both directions.
+  // Preserve the existing Korba–Odisha special pricing in both directions.
   if ((pickupIsKorba && dropIsOdisha) || (dropIsKorba && pickupIsOdisha)) {
     return "korba-odisha";
+  }
+
+  // Raigarh ↔ Odisha follows the SAME dedicated pricing formula and configured
+  // Korba–Odisha vehicle rates. It is separately labelled for clear reporting.
+  const pickupIsRaigarh = pickup.includes("raigarh") || pickup.includes("raigarh district");
+  const dropIsRaigarh = drop.includes("raigarh") || drop.includes("raigarh district");
+  if ((pickupIsRaigarh && dropIsOdisha) || (dropIsRaigarh && pickupIsOdisha)) {
+    return "raigarh-odisha";
   }
 
   // An explicit classification supplied by the caller takes precedence.
@@ -1753,7 +1761,7 @@ const billedOneWayKm = fareCalculationOneWayKm + longDistanceBuffer;
 
 const roundTripBaseKm = billedOneWayKm * 2;
 
-const isKorbaOdisha = routeClassification === "korba-odisha";
+const isOdishaSpecialRoute = routeClassification === "korba-odisha" || routeClassification === "raigarh-odisha";
 
 const isRaipurJharsuguda = isRaipurJharsugudaRoute(pickup, drop);
 
@@ -1802,9 +1810,9 @@ crysta: { fixed: 1600, ratePerKm: 15 },
 
 };
 
-const isNonMajorOneWay = hubCategory === "non-major" || isKorbaOdisha;
+const isNonMajorOneWay = hubCategory === "non-major" || isOdishaSpecialRoute;
 
-const b2cRate = isKorbaOdisha
+const b2cRate = isOdishaSpecialRoute
 
 ? (vehicle.korbaOdishaB2CRate ?? vehicle.interstateB2CRate)
 
@@ -1826,7 +1834,7 @@ const b2cRate = isKorbaOdisha
 
 : vehicle.oneWayB2CRate;
 
-const b2bMinRate = isKorbaOdisha
+const b2bMinRate = isOdishaSpecialRoute
 
 ? (vehicle.korbaOdishaB2BMinRate ?? vehicle.interstateB2BMinRate)
 
@@ -1836,7 +1844,7 @@ const b2bMinRate = isKorbaOdisha
 
 : vehicle.oneWayB2BMinRate;
 
-const b2bMaxRate = isKorbaOdisha
+const b2bMaxRate = isOdishaSpecialRoute
 
 ? (vehicle.korbaOdishaB2BMaxRate ?? vehicle.interstateB2BMaxRate)
 
@@ -1856,7 +1864,7 @@ const b2bMaxRate = isKorbaOdisha
 
 // One-Way formula. It does NOT use the Korba-Odisha/Non-Major formula.
 
-const effectiveHub = isKorbaOdisha
+const effectiveHub = isOdishaSpecialRoute
 
 ? HUB_PERCENTAGES["non-major"]
 
@@ -1979,7 +1987,7 @@ baseDiscountAmount,
 
 routeClassification,
 
-hubCategory: isKorbaOdisha ? "non-major" : hubCategory,
+hubCategory: isOdishaSpecialRoute ? "non-major" : hubCategory,
 
 calculationBreakdown: [
 
@@ -2000,6 +2008,8 @@ calculationBreakdown: [
 ...(baseDiscountEligible ? [`Base fare discount: ${BASE_FARE_DISCOUNT_PERCENT}% = ₹${baseDiscountAmount}`] : ["Base fare discount: Not eligible below 70 KM actual one-side distance."]),
 `Discounted base fare: ₹${discountedBaseFare}`,
 `Night surcharge: ${nightPercent}% = ₹${nightSurchargeAmount}`,
+
+...(isOdishaSpecialRoute ? [`Odisha special route pricing applied: ${routeClassification} (same formula and rates as Korba–Odisha).`] : []),
 
 ...(isRaipurJharsuguda ? [
 

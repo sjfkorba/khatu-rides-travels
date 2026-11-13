@@ -204,8 +204,8 @@ export default function FareCalculator({
   const [activeField, setActiveField] = useState<"pickup" | "drop" | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [searching, setSearching] = useState(false);
-  const [pickupDate, setPickupDate] = useState("");
-  const [pickupTime, setPickupTime] = useState("");
+  const [pickupDate, setPickupDate] = useState(today());
+  const [pickupTime, setPickupTime] = useState("09:00");
   const [returnDate, setReturnDate] = useState("");
   const [returnTime, setReturnTime] = useState("");
   const [localPackage, setLocalPackage] = useState<LocalPackageType>("8hr80km");
@@ -1573,6 +1573,11 @@ export default function FareCalculator({
                 type="button"
                 onClick={() => {
                   setTab(id);
+                  if (id === "shared") {
+                    setPickupDate((current) => current < dateAfterDays(7) ? dateAfterDays(7) : current);
+                  } else {
+                    setPickupDate((current) => current < today() ? today() : current);
+                  }
                   setError("");
                   setSuggestions([]);
                   setActiveField(null);
@@ -1787,7 +1792,21 @@ export default function FareCalculator({
 
             {tab === "roundtrip" && (
               <div className="grid w-full grid-cols-2 gap-2 sm:max-w-md sm:gap-3">
-                <div>
+                <div className="min-w-0">
+                  <label className={fieldLabelClass()}>PICKUP TIME</label>
+                  <div className={inputShellClass()}>
+                    <Clock3 className="hidden h-5 w-5 shrink-0 text-orange-700 sm:block" />
+                    <input
+                      type="time"
+                      value={pickupTime}
+                      required
+                      onChange={(e) => { setPickupTime(e.target.value); setError(""); }}
+                      className="w-full min-w-0 bg-transparent text-sm font-semibold outline-none"
+                      aria-label="Pickup time"
+                    />
+                  </div>
+                </div>
+                <div className="min-w-0">
                   <label className={fieldLabelClass()}>RETURN TIME</label>
                   <div className={inputShellClass()}>
                     <Clock3 className="hidden h-5 w-5 shrink-0 text-orange-700 sm:block" />
@@ -1801,11 +1820,9 @@ export default function FareCalculator({
                     />
                   </div>
                 </div>
-                <div className="flex items-end">
-                  <p className="pb-2 text-[10px] leading-4 text-slate-500 sm:text-xs">
-                    Return time is used to plan your round trip.
-                  </p>
-                </div>
+                <p className="col-span-2 text-[10px] leading-4 text-slate-500 sm:text-xs">
+                  Pickup time and return time help us plan your round trip.
+                </p>
               </div>
             )}
 
