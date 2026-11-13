@@ -683,6 +683,13 @@ export default function FareCalculator({
     })));
   }
 
+  // Same-date journeys requested between 8 PM and 8 AM are call-confirmation only.
+  const isSameNightCallOnly = (() => {
+    const now = new Date();
+    const minutes = now.getHours() * 60 + now.getMinutes();
+    return pickupDate === today() && (minutes >= 1200 || minutes < 480) && tab !== "shared";
+  })();
+
   const resultData = {
     pickup: pickup?.description || "",
     drop: drop?.description || "",
@@ -1279,10 +1286,10 @@ export default function FareCalculator({
                           </div>
                         </>
                       )}
-                      {tab === "oneway" && (
+                      {tab === "oneway" && !isSameNightCallOnly && (
                         <div className="flex items-center justify-between gap-3 py-1 text-[11px] text-slate-500">
-                          <span>{option.routeClassification === "interstate" ? "Interstate Rate" : option.routeClassification === "korba-odisha" ? "Korba–Odisha Rate" : "One Way Rate"}</span>
-                          <strong>{money(Number(option.rateUsed || 0))} / KM</strong>
+                          {/* <span>{option.routeClassification === "interstate" ? "Interstate Rate" : option.routeClassification === "korba-odisha" ? "Korba–Odisha Rate" : "One Way Rate"}</span>
+                          <strong>{money(Number(option.rateUsed || 0))} / KM</strong> */}
                         </div>
                       )}
                       <div className="flex items-center justify-between gap-3 py-1.5 font-bold text-slate-900">
@@ -1499,9 +1506,13 @@ export default function FareCalculator({
                         {tab === "shared" && <p className="mt-1 text-xs font-extrabold text-slate-700">{money(Number(option.sharedPerPersonFare || 0))} / passenger × {sharedPassengerCount}</p>}
                         <p className="mt-1 text-[11px] text-slate-500">Final payable fare</p>
                         {option.festivalPercent > 0 && <p className="mt-1 text-[10px] text-slate-400">Includes festival pricing</p>}
-                        <button type="button" disabled={tab === "shared" && option.sharedPolicy?.bookingEligible !== true} onClick={() => { setBookingOption(option); setPaymentError(""); }} className="mt-3 min-w-[155px] rounded-md bg-orange-500 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-40">
-                          {tab === "shared" && option.sharedPolicy?.bookingEligible !== true ? "NOT ELIGIBLE" : "SELECT CAB"}
-                        </button>
+                        {isSameNightCallOnly ? (
+                          <button type="button" onClick={() => handleCallEnquiry(option.vehicle, resultData)} className="mt-3 inline-flex min-h-11 min-w-[155px] items-center justify-center gap-2 rounded-md bg-green-600 px-5 py-3 text-sm font-extrabold text-white hover:bg-green-700"><Phone size={17} /> CALL NOW</button>
+                        ) : (
+                          <button type="button" disabled={tab === "shared" && option.sharedPolicy?.bookingEligible !== true} onClick={() => { setBookingOption(option); setPaymentError(""); }} className="mt-3 min-w-[155px] rounded-md bg-orange-500 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-40">
+                            {tab === "shared" && option.sharedPolicy?.bookingEligible !== true ? "NOT ELIGIBLE" : "SELECT CAB"}
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -1531,7 +1542,11 @@ export default function FareCalculator({
                           <p className="text-xs leading-6 text-slate-600">{tab === "shared"
                             ? "This fare is 35% of the calculated private One-Way customer fare per passenger. Online booking is mandatory with at least 7 days advance notice. Seats are confirmed 48 hours before journey. If fewer than 2 seats are booked for a departure, the operator may cancel and issue a 100% refund to the original payment mode."
                             : "Toll, parking, driver fooding, night halt and package limits follow the selected trip type and applicable route conditions. Any additional charge will be communicated before booking confirmation."}</p>
-                          <button type="button" disabled={tab === "shared" && option.sharedPolicy?.bookingEligible !== true} onClick={() => { setBookingOption(option); setPaymentError(""); }} className="mt-4 w-full rounded-lg bg-orange-500 px-4 py-3 text-sm font-extrabold text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-40">{tab === "shared" && option.sharedPolicy?.bookingEligible !== true ? "NOT ELIGIBLE" : "SELECT THIS CAB"}</button>
+                          {isSameNightCallOnly ? (
+                            <button type="button" onClick={() => handleCallEnquiry(option.vehicle, resultData)} className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-3 text-sm font-extrabold text-white hover:bg-green-700"><Phone size={17} /> CALL NOW</button>
+                          ) : (
+                            <button type="button" disabled={tab === "shared" && option.sharedPolicy?.bookingEligible !== true} onClick={() => { setBookingOption(option); setPaymentError(""); }} className="mt-4 w-full rounded-lg bg-orange-500 px-4 py-3 text-sm font-extrabold text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-40">{tab === "shared" && option.sharedPolicy?.bookingEligible !== true ? "NOT ELIGIBLE" : "SELECT THIS CAB"}</button>
+                          )}
                         </div>
                       </div>
                     )}
