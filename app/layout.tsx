@@ -2,19 +2,8 @@
 
 import Script from "next/script";
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import SiteChrome from "@/components/SiteChrome";
-
-// ============================================================
-// GLOBAL FONT
-// ============================================================
-
-const sansFont = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-sans",
-});
 
 // ============================================================
 // WEBSITE CONFIG
@@ -160,7 +149,19 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en-IN" className={`${sansFont.variable} scroll-smooth`}>
+    <html
+      lang="en-IN"
+      className="scroll-smooth"
+      style={
+        {
+          // Local system fonts: no build-time Google Fonts download required.
+          "--font-sans":
+            "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif",
+          fontFamily:
+            "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif",
+        } as React.CSSProperties
+      }
+    >
       <head>
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=AW-18502918680"
