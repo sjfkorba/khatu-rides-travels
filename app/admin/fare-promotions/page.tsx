@@ -39,7 +39,7 @@ type BookingType = "one-way" | "round-trip" | "local" | "shared";
 type DiscountType = "percentage" | "fixed";
 type OfferMode = "automatic" | "coupon";
 type RouteScope = "all" | "selected";
-type TabKey = "campaign" | "festival" | "coupon" | "special";
+type TabKey = "campaign" | "festival" | "coupon" | "special" | "location";
 
 type Festival = {
   id: string;
@@ -91,6 +91,17 @@ type Campaign = {
   allowStacking: boolean;
   priority: number;
   isActive: boolean;
+};
+
+type LocationFareRule = {
+  id: string;
+  pickupLocation: string;
+  pickupNormalized: string;
+  increasePercent: number;
+  isActive: boolean;
+  startedAt: string;
+  expiresAt: string;
+  createdAt?: unknown;
 };
 
 type SpecialPopupRecord = {
@@ -147,12 +158,14 @@ const tabs: Array<{ id: TabKey; label: string; shortLabel: string }> = [
   { id: "festival", label: "Festival Fare", shortLabel: "Festival" },
   { id: "coupon", label: "Route Coupons", shortLabel: "Coupons" },
   { id: "special", label: "Popup Offers", shortLabel: "Popups" },
+  { id: "location", label: "Pickup Fare Increase", shortLabel: "Location" },
 ];
 
 function AppTabIcon({ tab }: { tab: TabKey }) {
   if (tab === "campaign") return <Sparkles size={19} />;
   if (tab === "festival") return <CalendarDays size={19} />;
   if (tab === "coupon") return <Ticket size={19} />;
+  if (tab === "location") return <MapPin size={19} />;
   return <BellRing size={19} />;
 }
 
@@ -244,6 +257,9 @@ export default function FarePromotionsAdminPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [popupRecords, setPopupRecords] = useState<SpecialPopupRecord[]>([]);
+  const [locationRules, setLocationRules] = useState<LocationFareRule[]>([]);
+  const [pickupLocation, setPickupLocation] = useState("");
+  const [locationIncrease, setLocationIncrease] = useState("10");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -298,7 +314,7 @@ export default function FarePromotionsAdminPage() {
   const [popupOfferFare, setPopupOfferFare] = useState("");
 
   useEffect(() => {
-    let ready = [false, false, false, false];
+    let ready = [false, false, false, false, false];
     const finish = () => {
       if (ready.every(Boolean)) setLoading(false);
     };
@@ -350,12 +366,19 @@ export default function FarePromotionsAdminPage() {
       setPopupRecords,
       false,
     );
+    const unsubscribeLocationRules = subscribe(
+      "pickup_location_fare_rules",
+      4,
+      setLocationRules,
+      false,
+    );
 
     return () => {
       unsubscribeFestivals();
       unsubscribeCoupons();
       unsubscribeCampaigns();
       unsubscribePopups();
+      unsubscribeLocationRules();
     };
   }, []);
 
@@ -372,8 +395,9 @@ export default function FarePromotionsAdminPage() {
       totalFestivals: festivals.length,
       totalCoupons: coupons.length,
       totalPopupItems: popupRecords.length,
+      activeLocationRules: locationRules.filter((rule) => rule.isActive && new Date(rule.expiresAt).getTime() > now).length,
     };
-  }, [campaigns, festivals, coupons, popupRecords]);
+  }, [campaigns, festivals, coupons, popupRecords, locationRules]);
 
   const resetMessages = () => {
     setError("");
@@ -425,6 +449,46 @@ export default function FarePromotionsAdminPage() {
       setError(
         saveError instanceof Error ? saveError.message : "Save failed.",
       );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const createLocationFareRule = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    resetMessages();
+    const location = pickupLocation.trim();
+    const percentage = Number(locationIncrease);
+    if (!location) return setError("Pickup location enter karein.");
+    if (!Number.isFinite(percentage) || percentage <= 0 || percentage > 100) {
+      return setError("Fare increase 1% se 100% ke beech hona chahiye.");
+    }
+    const normalized = normalize(location);
+    const existingActive = locationRules.find(
+      (rule) => rule.pickupNormalized === normalized && rule.isActive && new Date(rule.expiresAt).getTime() > Date.now(),
+    );
+    if (existingActive) {
+      return setError("Is pickup location par pehle se active rule hai. Pehle use pause karein.");
+    }
+    setBusy(true);
+    try {
+      const startedAt = new Date();
+      const expiresAt = new Date(startedAt.getTime() + 24 * 60 * 60 * 1000);
+      await addDoc(collection(db, "pickup_location_fare_rules"), {
+        pickupLocation: location,
+        pickupNormalized: normalized,
+        increasePercent: percentage,
+        isActive: true,
+        startedAt: startedAt.toISOString(),
+        expiresAt: expiresAt.toISOString(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      setPickupLocation("");
+      setLocationIncrease("10");
+      setMessage(`Pickup location fare increase ${location} ke liye 24 hours activate ho gaya.`);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Location fare rule save failed.");
     } finally {
       setBusy(false);
     }
@@ -709,7 +773,7 @@ export default function FarePromotionsAdminPage() {
   };
 
   const toggle = async (
-    type: "festival" | "coupon" | "campaign" | "special",
+    type: "festival" | "coupon" | "campaign" | "special" | "location",
     id: string,
     active: boolean,
     specialKind?: "notice" | "offer",
@@ -721,7 +785,9 @@ export default function FarePromotionsAdminPage() {
           ? "route_coupons"
           : type === "special"
             ? "special_offers"
-            : "fare_promotions";
+            : type === "location"
+              ? "pickup_location_fare_rules"
+              : "fare_promotions";
     try {
       const statusUpdate =
         type === "special" && specialKind === "offer"
@@ -738,7 +804,7 @@ export default function FarePromotionsAdminPage() {
   };
 
   const remove = async (
-    type: "festival" | "coupon" | "campaign" | "special",
+    type: "festival" | "coupon" | "campaign" | "special" | "location",
     id: string,
   ) => {
     if (!window.confirm("Kya aap is record ko delete karna chahte hain?")) return;
@@ -749,7 +815,9 @@ export default function FarePromotionsAdminPage() {
           ? "route_coupons"
           : type === "special"
             ? "special_offers"
-            : "fare_promotions";
+            : type === "location"
+              ? "pickup_location_fare_rules"
+              : "fare_promotions";
     try {
       await deleteDoc(doc(db, path, id));
     } catch (deleteError) {
@@ -1373,6 +1441,100 @@ export default function FarePromotionsAdminPage() {
     </div>
   );
 
+  const renderLocationFareRules = () => {
+    const now = Date.now();
+    const sortedRules = [...locationRules].sort(
+      (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
+    );
+    return (
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(320px,380px)_minmax(0,1fr)]">
+        <form onSubmit={createLocationFareRule} className={`${cardClass} space-y-5 p-4 sm:p-6`}>
+          <SectionTitle
+            eyebrow="Dynamic pickup pricing"
+            title="Pickup Location Fare Increase"
+            description="Selected pickup location par 24 hours ke liye extra fare apply karein."
+            icon={<MapPin size={21} />}
+          />
+          <FormField label="Pickup Location">
+            <input
+              className={fieldClass}
+              value={pickupLocation}
+              onChange={(event) => setPickupLocation(event.target.value)}
+              placeholder="Example: Korba, Industrial Area"
+              maxLength={100}
+            />
+          </FormField>
+          <FormField label="Fare Increase (%)">
+            <div className="relative">
+              <input
+                className={`${fieldClass} pr-11`}
+                type="number"
+                min="1"
+                max="100"
+                step="0.5"
+                value={locationIncrease}
+                onChange={(event) => setLocationIncrease(event.target.value)}
+              />
+              <Percent className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
+            </div>
+          </FormField>
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
+            Rule enable hote hi start hoga aur 24 hours baad automatically expire ho jayega. Aap beech mein kabhi bhi Pause kar sakte hain.
+          </div>
+          <button disabled={busy} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-600 to-orange-500 px-5 text-[15px] font-black text-white shadow-lg shadow-rose-100 disabled:opacity-60">
+            <Plus size={19} /> {busy ? "Activating..." : "Enable for 24 Hours"}
+          </button>
+        </form>
+
+        <section className={`${cardClass} overflow-hidden`}>
+          <div className="border-b border-slate-100 bg-gradient-to-r from-rose-50 to-white p-4 sm:p-5">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-rose-600">Firestore · pickup_location_fare_rules</p>
+            <h2 className="mt-1 text-lg font-black">Pickup Location Rules</h2>
+            <p className="mt-0.5 text-xs text-slate-500">{locationRules.filter((rule) => rule.isActive && new Date(rule.expiresAt).getTime() > now).length} currently active</p>
+          </div>
+          {loading ? (
+            <p className="p-5 text-sm text-slate-500">Loading location rules...</p>
+          ) : sortedRules.length === 0 ? (
+            <p className="p-6 text-sm text-slate-500">No pickup location fare rules created yet.</p>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {sortedRules.map((rule) => {
+                const expired = new Date(rule.expiresAt).getTime() <= now;
+                const active = rule.isActive && !expired;
+                return (
+                  <article key={rule.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-black text-slate-900">{rule.pickupLocation}</h3>
+                        <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${active ? "bg-emerald-50 text-emerald-700" : expired ? "bg-amber-50 text-amber-800" : "bg-slate-100 text-slate-600"}`}>
+                          {active ? "Active" : expired ? "Expired" : "Paused"}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-2xl font-black text-rose-600">+{rule.increasePercent}%</p>
+                      <p className="mt-1 text-xs text-slate-500">Started: {dateLabel(rule.startedAt)}</p>
+                      <p className="text-xs text-slate-500">Expires: {dateLabel(rule.expiresAt)}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      {!expired && (
+                        <button type="button" onClick={() => toggle("location", rule.id, rule.isActive)} className="flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-3 text-xs font-extrabold text-slate-700 sm:flex-none">
+                          {rule.isActive ? <Pause size={14} /> : <Play size={14} />}
+                          {rule.isActive ? "Pause" : "Activate"}
+                        </button>
+                      )}
+                      <button type="button" onClick={() => remove("location", rule.id)} className="flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-extrabold text-rose-700">
+                        <Trash2 size={14} /> Delete
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      </div>
+    );
+  };
+
   const renderSpecialPopups = () => {
     const notices = popupRecords
       .filter((record) => record.popupType === "notice" || !!record.noticeTitle)
@@ -1579,7 +1741,7 @@ export default function FarePromotionsAdminPage() {
           )}
 
           {/* Desktop navigation */}
-          <nav className="hidden rounded-[22px] border border-slate-200/80 bg-white p-1.5 shadow-sm sm:grid sm:grid-cols-4 sm:gap-1">
+          <nav className="hidden rounded-[22px] border border-slate-200/80 bg-white p-1.5 shadow-sm sm:grid sm:grid-cols-5 sm:gap-1">
             {tabs.map((item) => (
               <button
                 key={item.id}
@@ -1611,6 +1773,7 @@ export default function FarePromotionsAdminPage() {
           {tab === "festival" && renderFestivals()}
           {tab === "coupon" && renderCoupons()}
           {tab === "special" && renderSpecialPopups()}
+          {tab === "location" && renderLocationFareRules()}
 
           <div className="flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 p-3.5 text-[11px] leading-5 text-amber-900">
             <Info size={16} className="mt-0.5 shrink-0" />
@@ -1630,7 +1793,7 @@ export default function FarePromotionsAdminPage() {
 
       {/* Android-style bottom navigation on mobile */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-2 pb-[max(env(safe-area-inset-bottom),8px)] pt-2 shadow-[0_-8px_28px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:hidden">
-        <div className="mx-auto grid max-w-xl grid-cols-4 gap-1">
+        <div className="mx-auto grid max-w-xl grid-cols-5 gap-1">
           {tabs.map((item) => {
             const selected = tab === item.id;
             return (

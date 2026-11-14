@@ -4,8 +4,6 @@ import Razorpay from "razorpay";
 
 import { FieldValue, type DocumentReference } from "firebase-admin/firestore";
 
-
-
 import { getServerRouteDistance } from "@/lib/google-route";
 
 import { getAdminDb } from "@/lib/firebase-admin";
@@ -14,33 +12,25 @@ import { calculateFare, roundCustomerFare } from "@/lib/fareCalculator";
 
 import { getPromotionEligibilityReason, calculatePromotionDiscount, type FarePromotion } from "@/lib/fare-promotions";
 
-
-
 import type {
 
-  BookingType,
+  BookingType,
 
-  VehicleType,
+  VehicleType,
 
-  LocalPackageType,
+  LocalPackageType,
 
-  FestivalFareRule,
+  FestivalFareRule,
 
-  RouteCouponRule,
+  RouteCouponRule,
 
 } from "@/lib/fareCalculator";
-
-
 
 export const runtime = "nodejs";
 
 export const dynamic = "force-dynamic";
 
-
-
 const ADVANCE_PAYMENT_PERCENT = 25;
-
-
 
 const ALLOWED_BOOKING_TYPES: BookingType[] = ["oneway", "roundtrip", "local"];
 
@@ -48,890 +38,916 @@ const ALLOWED_VEHICLE_TYPES: VehicleType[] = ["sedan", "ertiga", "crysta"];
 
 const ALLOWED_LOCAL_PACKAGES: LocalPackageType[] = ["4hr40km", "8hr80km", "12hr120km"];
 
-
-
 function cleanText(value: unknown, maxLength = 180): string {
 
-  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
 
 }
-
-
 
 function isValidEmail(email: string): boolean {
 
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 }
-
-
 
 function isValidMobile(mobile: string): boolean {
 
-  return /^[6-9]\d{9}$/.test(mobile);
+  return /^[6-9]\d{9}$/.test(mobile);
 
 }
-
-
 
 function errorResponse(message: string, status: number) {
 
-  return NextResponse.json(
+  return NextResponse.json(
 
-    { success: false, error: message },
+    { success: false, error: message },
 
-    { status, headers: { "Cache-Control": "no-store" } },
+    { status, headers: { "Cache-Control": "no-store" } },
 
-  );
+  );
 
 }
-
-
 
 function normalize(value: unknown): string {
-
-  return String(value ?? "").trim().toLocaleLowerCase("en-IN").replace(/\s+/g, " ");
-
+  return String(value ?? "").trim().toLocaleLowerCase("en-IN").replace(/\s+/g, " ");
 }
 
+// Match city names even when Google Places returns "Bilaspur, Chhattisgarh, India".
+function normalizePickupCity(value: unknown): string {
+  return normalize(value)
+    .split(",")[0]
+    .replace(/\b(city|district)\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
+function timestampMillis(value: unknown): number {
+  if (typeof value === "string") {
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  if (value && typeof value === "object") {
+    const v = value as { toDate?: () => Date; seconds?: number; _seconds?: number };
+    if (typeof v.toDate === "function") return v.toDate().getTime();
+    const seconds = Number(v.seconds ?? v._seconds);
+    if (Number.isFinite(seconds) && seconds > 0) return seconds * 1000;
+  }
+  return 0;
+}
+
+function ceilCustomerFare(value: number): number {
+  return Math.ceil(Math.max(0, value) / 100) * 100;
+}
 
 function asDateString(value: unknown): string {
 
-  if (typeof value === "string") return value;
+  if (typeof value === "string") return value;
 
-  if (value && typeof value === "object" && "toDate" in value) {
+  if (value && typeof value === "object" && "toDate" in value) {
 
-    const date = (value as { toDate: () => Date }).toDate();
+    const date = (value as { toDate: () => Date }).toDate();
 
-    return date.toISOString();
+    return date.toISOString();
 
-  }
+  }
 
-  return "";
+  return "";
 
 }
 
-
-
 export async function POST(req: Request) {
 
-  let bookingRef: DocumentReference | null = null;
+  let bookingRef: DocumentReference | null = null;
 
+  try {
 
+    // 1. Razorpay configuration
 
-  try {
+    const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
 
-    // 1. Razorpay configuration
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
-    const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+    if (!keyId || !keySecret) {
 
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+      return errorResponse("Razorpay keys are not configured.", 500);
 
+    }
 
+    // 2. Request body
 
-    if (!keyId || !keySecret) {
+    let body: Record<string, any>;
 
-      return errorResponse("Razorpay keys are not configured.", 500);
+    try {
 
-    }
+      body = await req.json();
 
+    } catch {
 
+      return errorResponse("Invalid request body.", 400);
 
-    // 2. Request body
+    }
 
-    let body: Record<string, any>;
+    const booking = body?.booking ?? body;
 
-    try {
+    if (!booking || typeof booking !== "object") {
 
-      body = await req.json();
+      return errorResponse("Booking details are required.", 400);
 
-    } catch {
+    }
 
-      return errorResponse("Invalid request body.", 400);
+    // 3. Passenger details
 
-    }
+    const passenger = {
 
+      name: cleanText(booking.passenger?.name, 100),
 
+      mobile: cleanText(booking.passenger?.mobile, 10),
 
-    const booking = body?.booking ?? body;
+      email: cleanText(booking.passenger?.email, 160).toLowerCase(),
 
-    if (!booking || typeof booking !== "object") {
+    };
 
-      return errorResponse("Booking details are required.", 400);
+    if (
 
-    }
+      passenger.name.length < 2 ||
 
+      !isValidMobile(passenger.mobile) ||
 
+      !isValidEmail(passenger.email)
 
-    // 3. Passenger details
+    ) {
 
-    const passenger = {
+      return errorResponse(
 
-      name: cleanText(booking.passenger?.name, 100),
+        "Valid passenger name, 10-digit mobile number and email are required.",
 
-      mobile: cleanText(booking.passenger?.mobile, 10),
+        400,
 
-      email: cleanText(booking.passenger?.email, 160).toLowerCase(),
+      );
 
-    };
+    }
 
+    // 4. Journey details
 
+    const pickup = cleanText(booking.pickup);
 
-    if (
+    const drop = cleanText(booking.drop);
 
-      passenger.name.length < 2 ||
+    const pickupDate = cleanText(booking.pickupDate, 10);
 
-      !isValidMobile(passenger.mobile) ||
+    const pickupTime = cleanText(booking.pickupTime, 5);
 
-      !isValidEmail(passenger.email)
+    const returnDate = cleanText(booking.returnDate, 10);
 
-    ) {
+    const returnTime = cleanText(booking.returnTime, 5);
 
-      return errorResponse(
+    const bookingType = cleanText(booking.bookingType) as BookingType;
 
-        "Valid passenger name, 10-digit mobile number and email are required.",
+    const vehicleType = cleanText(booking.vehicleType) as VehicleType;
 
-        400,
+    const vehicleLabel = cleanText(booking.vehicleLabel || booking.vehicleType, 100);
 
-      );
+    if (
 
-    }
+      !pickup ||
 
+      !pickupDate ||
 
+      !pickupTime ||
 
-    // 4. Journey details
+      !vehicleLabel ||
 
-    const pickup = cleanText(booking.pickup);
+      !ALLOWED_BOOKING_TYPES.includes(bookingType) ||
 
-    const drop = cleanText(booking.drop);
+      !ALLOWED_VEHICLE_TYPES.includes(vehicleType)
 
-    const pickupDate = cleanText(booking.pickupDate, 10);
+    ) {
 
-    const pickupTime = cleanText(booking.pickupTime, 5);
+      return errorResponse("Invalid journey or vehicle details.", 400);
 
-    const returnDate = cleanText(booking.returnDate, 10);
+    }
 
-    const returnTime = cleanText(booking.returnTime, 5);
+    if (bookingType !== "local" && !drop) {
 
-    const bookingType = cleanText(booking.bookingType) as BookingType;
+      return errorResponse("Drop location is required.", 400);
 
-    const vehicleType = cleanText(booking.vehicleType) as VehicleType;
+    }
 
-    const vehicleLabel = cleanText(booking.vehicleLabel || booking.vehicleType, 100);
+    if (bookingType === "roundtrip" && (!returnDate || returnDate < pickupDate)) {
 
+      return errorResponse("Valid return date is required.", 400);
 
+    }
 
-    if (
+    // 5. Local package
 
-      !pickup ||
+    const requestedPackage = cleanText(booking.localPackage) as LocalPackageType;
 
-      !pickupDate ||
+    const localPackage: LocalPackageType = ALLOWED_LOCAL_PACKAGES.includes(requestedPackage)
 
-      !pickupTime ||
+      ? requestedPackage
 
-      !vehicleLabel ||
+      : "8hr80km";
 
-      !ALLOWED_BOOKING_TYPES.includes(bookingType) ||
+    // 6. Server-side route distance. Never trust distance submitted by browser.
 
-      !ALLOWED_VEHICLE_TYPES.includes(vehicleType)
+    let distanceKm = 0;
 
-    ) {
+    let duration = "0s";
 
-      return errorResponse("Invalid journey or vehicle details.", 400);
+    const stops: string[] = Array.isArray(booking.stops)
 
-    }
+      ? booking.stops
 
+          .filter((item: unknown): item is string => typeof item === "string")
 
+          .map((item: string) => item.trim())
 
-    if (bookingType !== "local" && !drop) {
+          .filter(Boolean)
 
-      return errorResponse("Drop location is required.", 400);
+          .slice(0, 5)
 
-    }
+      : [];
 
+    if (bookingType !== "local") {
 
+      const serverRoute = await getServerRouteDistance(pickup, drop, stops);
 
-    if (bookingType === "roundtrip" && (!returnDate || returnDate < pickupDate)) {
+      distanceKm = Number(serverRoute.distanceKm);
 
-      return errorResponse("Valid return date is required.", 400);
+      duration = String(serverRoute.duration || "0s");
 
-    }
+      if (!Number.isFinite(distanceKm) || distanceKm <= 0) {
 
+        return errorResponse("Unable to verify route distance. Please calculate the fare again.", 400);
 
+      }
 
-    // 5. Local package
+    }
 
-    const requestedPackage = cleanText(booking.localPackage) as LocalPackageType;
+    // 7. Load promotion rules from trusted Firestore source.
 
-    const localPackage: LocalPackageType = ALLOWED_LOCAL_PACKAGES.includes(requestedPackage)
+    const db = getAdminDb();
 
-      ? requestedPackage
+    const [festivalSnapshot, couponSnapshot, campaignSnapshot, pickupRuleSnapshot] = await Promise.all([
+      db.collection("festival_fares").get(),
+      db.collection("route_coupons").get(),
+      db.collection("fare_promotions").where("isActive", "==", true).get(),
+      db.collection("pickup_location_fare_rules").get(),
+    ]);
 
-      : "8hr80km";
+    const festivalRules: FestivalFareRule[] = festivalSnapshot.docs.map((doc) => {
 
+      const data = doc.data();
 
+      return {
 
-    // 6. Server-side route distance. Never trust distance submitted by browser.
+        id: doc.id,
 
-    let distanceKm = 0;
+        name: cleanText(data.name, 120),
 
-    let duration = "0s";
+        increasePercent: Number(data.increasePercent || 0),
 
-    const stops: string[] = Array.isArray(booking.stops)
+        isActive: data.isActive === true,
 
-      ? booking.stops
+        startAt: asDateString(data.startAt),
 
-          .filter((item: unknown): item is string => typeof item === "string")
+        endAt: asDateString(data.endAt),
 
-          .map((item: string) => item.trim())
+        status: data.status,
 
-          .filter(Boolean)
+        fareTypes: Array.isArray(data.fareTypes) ? data.fareTypes : undefined,
 
-          .slice(0, 5)
+        scope: data.scope,
 
-      : [];
+      } as FestivalFareRule;
 
+    });
 
+    const couponRules: RouteCouponRule[] = couponSnapshot.docs.map((doc) => {
 
-    if (bookingType !== "local") {
+      const data = doc.data();
 
-      const serverRoute = await getServerRouteDistance(pickup, drop, stops);
+      return {
 
-      distanceKm = Number(serverRoute.distanceKm);
+        id: doc.id,
 
-      duration = String(serverRoute.duration || "0s");
+        code: cleanText(data.code, 30).toUpperCase(),
 
+        from: cleanText(data.from, 120),
 
+        to: cleanText(data.to, 120),
 
-      if (!Number.isFinite(distanceKm) || distanceKm <= 0) {
+        fromNormalized: cleanText(data.fromNormalized, 120),
 
-        return errorResponse("Unable to verify route distance. Please calculate the fare again.", 400);
+        toNormalized: cleanText(data.toNormalized, 120),
 
-      }
+        discountPercent: Number(data.discountPercent || 0),
 
-    }
+        startAt: asDateString(data.startAt),
 
+        endAt: asDateString(data.endAt),
 
+        isActive: data.isActive === true,
 
-    // 7. Load promotion rules from trusted Firestore source.
+        usageCount: Number(data.usageCount || 0),
 
-    const db = getAdminDb();
+      };
 
+    });
 
+    // 8. Recalculate final fare on the server using the same fare engine.
 
-    const [festivalSnapshot, couponSnapshot, campaignSnapshot] = await Promise.all([
+    // Client totalFare/finalFare/advance values are deliberately ignored.
 
-      db.collection("festival_fares").get(),
+    const fareResult = calculateFare({
 
-      db.collection("route_coupons").get(),
+      distance: distanceKm,
 
-      db.collection("fare_promotions").where("isActive", "==", true).get(),
+      vehicleType,
 
-    ]);
+      bookingType,
 
+      serviceType: bookingType === "local" ? "local" : "outstation",
 
+      pickup,
 
-    const festivalRules: FestivalFareRule[] = festivalSnapshot.docs.map((doc) => {
+      drop,
 
-      const data = doc.data();
+      pickupDate,
 
-      return {
+      pickupTime,
 
-        id: doc.id,
+      returnDate: returnDate || undefined,
 
-        name: cleanText(data.name, 120),
+      returnTime: returnTime || undefined,
 
-        increasePercent: Number(data.increasePercent || 0),
+      localPackage,
 
-        isActive: data.isActive === true,
+      localHours: Number.isFinite(Number(booking.localHours))
 
-        startAt: asDateString(data.startAt),
+        ? Number(booking.localHours)
 
-        endAt: asDateString(data.endAt),
+        : undefined,
 
-        status: data.status,
+      localKilometers: Number.isFinite(Number(booking.localKilometers))
 
-        fareTypes: Array.isArray(data.fareTypes) ? data.fareTypes : undefined,
+        ? Number(booking.localKilometers)
 
-        scope: data.scope,
+        : undefined,
 
-      } as FestivalFareRule;
-
-    });
-
-
-
-    const couponRules: RouteCouponRule[] = couponSnapshot.docs.map((doc) => {
-
-      const data = doc.data();
-
-      return {
-
-        id: doc.id,
-
-        code: cleanText(data.code, 30).toUpperCase(),
-
-        from: cleanText(data.from, 120),
-
-        to: cleanText(data.to, 120),
-
-        fromNormalized: cleanText(data.fromNormalized, 120),
-
-        toNormalized: cleanText(data.toNormalized, 120),
-
-        discountPercent: Number(data.discountPercent || 0),
-
-        startAt: asDateString(data.startAt),
-
-        endAt: asDateString(data.endAt),
-
-        isActive: data.isActive === true,
-
-        usageCount: Number(data.usageCount || 0),
-
-      };
-
-    });
-
-
-
-    // Only the coupon code selected by the customer is considered.
-
-    const requestedCampaignId = cleanText(booking.campaignId || booking.appliedCampaign?.id || booking.fareBreakdown?.campaignId, 140);
-
-    const requestedCampaignCode = cleanText(booking.campaignCode || booking.fareBreakdown?.campaignCode, 30).toUpperCase();
-
-    const couponCode = requestedCampaignId ? "" : cleanText(
-
-      booking.couponCode || booking.appliedCoupon?.code || booking.selectedCoupon?.code, 30,
-
-    ).toUpperCase();
-
-
-
-    // 8. Recalculate final fare on the server using the same fare engine.
-
-    // Client totalFare/finalFare/advance values are deliberately ignored.
-
-    const fareResult = calculateFare({
-
-      distance: distanceKm,
-
-      vehicleType,
-
-      bookingType,
-
-      serviceType: bookingType === "local" ? "local" : "outstation",
-
-      pickup,
-
-      drop,
-
-      pickupDate,
-
-      pickupTime,
-
-      returnDate: returnDate || undefined,
-
-      returnTime: returnTime || undefined,
-
-      localPackage,
-
-      localHours: Number.isFinite(Number(booking.localHours))
-
-        ? Number(booking.localHours)
-
-        : undefined,
-
-      localKilometers: Number.isFinite(Number(booking.localKilometers))
-
-        ? Number(booking.localKilometers)
-
-        : undefined,
       // Apply festival and route coupon below, matching Fare Results order.
 
-      bookingDate: pickupDate,
+      bookingDate: pickupDate,
 
-    });
+    });
 
+    if (bookingType === "oneway" && !fareResult.isOneWayAvailable) {
 
+      return errorResponse("One-way service is not available for this route.", 400);
 
-    if (bookingType === "oneway" && !fareResult.isOneWayAvailable) {
+    }
 
-      return errorResponse("One-way service is not available for this route.", 400);
+    // Apply the same active pickup-location increase used by the customer fare calculator.
+    // The rule is read from trusted Firestore; browser-submitted rule/fare values are ignored.
+    const now = Date.now();
+    const pickupCity = normalizePickupCity(pickup);
+    const activePickupRule = pickupRuleSnapshot.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .filter((rule: any) => {
+        const ruleCity = normalizePickupCity(rule.pickupNormalized || rule.pickupLocation);
+        const percent = Number(rule.increasePercent || 0);
+        const startedAt = timestampMillis(rule.startedAt);
+        const expiresAt = timestampMillis(rule.expiresAt);
+        return rule.isActive === true && !!pickupCity && ruleCity === pickupCity &&
+          Number.isFinite(percent) && percent > 0 && percent <= 100 &&
+          (!startedAt || startedAt <= now) && expiresAt > now;
+      })
+      .sort((a: any, b: any) => Number(b.increasePercent || 0) - Number(a.increasePercent || 0))[0] as any || null;
 
-    }
+    const pickupIncreasePercent = activePickupRule ? Number(activePickupRule.increasePercent) : 0;
 
+    // Pickup-surge bookings cannot use any base, coupon or campaign discount.
+    const requestedCampaignId = activePickupRule ? "" : cleanText(booking.campaignId || booking.appliedCampaign?.id || booking.fareBreakdown?.campaignId, 140);
+    const requestedCampaignCode = activePickupRule ? "" : cleanText(booking.campaignCode || booking.fareBreakdown?.campaignCode, 30).toUpperCase();
+    const couponCode = activePickupRule ? "" : (requestedCampaignId ? "" : cleanText(
+      booking.couponCode || booking.appliedCoupon?.code || booking.selectedCoupon?.code, 30,
+    ).toUpperCase());
 
+    // Validate the selected AUTO / COUPON campaign again on the server.
 
-    // Validate the selected AUTO / COUPON campaign again on the server.
+    // Browser-submitted discount amounts are never trusted.
 
-    // Browser-submitted discount amounts are never trusted.
-
-    let appliedCampaign: FarePromotion | null = null;
+    let appliedCampaign: FarePromotion | null = null;
 
     let campaignDiscountAmount = 0;
 
     // Match Fare Results: base fare -> festival -> route coupon -> campaign.
+
     const journeyAt = new Date(`${pickupDate}T12:00:00+05:30`).getTime();
+
     const isWithinJourneyDate = (startAt: string, endAt: string) => {
+
       const start = new Date(startAt).getTime();
+
       const end = new Date(endAt).getTime();
+
       return Number.isFinite(journeyAt) && Number.isFinite(start) &&
+
         Number.isFinite(end) && journeyAt >= start && journeyAt <= end;
+
     };
 
     const selectedFestival = festivalRules
+
       .filter((rule) => rule.isActive === true && Number(rule.increasePercent) > 0 &&
+
         !!rule.startAt && !!rule.endAt && isWithinJourneyDate(rule.startAt, rule.endAt))
+
       .sort((a, b) => Number(b.increasePercent) - Number(a.increasePercent))[0] || null;
 
-    const baseFare = Number(fareResult.finalFare || 0);
+    const engineFare = Number(fareResult.finalFare || 0);
+    const engineNightSurchargeAmount = Number(fareResult.nightSurchargeAmount || 0);
+    const engineNightSurchargePercent = Number(fareResult.nightSurchargePercent || 0);
+    const engineBaseDiscountAmount = Number(fareResult.baseDiscountAmount || 0);
+
+    // When pickup surge is active, remove the normal 10% base discount and
+    // recompute night surcharge on the undiscounted base, exactly as the UI does.
+    const undiscountedBaseFare = activePickupRule
+      ? Math.max(0, engineFare - engineNightSurchargeAmount + engineBaseDiscountAmount)
+      : Math.max(0, engineFare - engineNightSurchargeAmount);
+    const nightSurchargeAmount = activePickupRule
+      ? Math.round(undiscountedBaseFare * engineNightSurchargePercent / 100)
+      : engineNightSurchargeAmount;
+    const fareAfterNight = activePickupRule
+      ? undiscountedBaseFare + nightSurchargeAmount
+      : engineFare;
+
+    const baseFare = activePickupRule
+      ? undiscountedBaseFare
+      : Math.max(0, fareAfterNight - engineNightSurchargeAmount + engineBaseDiscountAmount);
     const festivalPercent = Number(selectedFestival?.increasePercent || 0);
-    const festivalIncreaseAmount = baseFare * festivalPercent / 100;
-    const festivalAdjustedFare = roundCustomerFare(baseFare + festivalIncreaseAmount);
+    const festivalIncreaseAmount = fareAfterNight * festivalPercent / 100;
+    const festivalAdjustedFare = activePickupRule
+      ? ceilCustomerFare(fareAfterNight + festivalIncreaseAmount)
+      : roundCustomerFare(fareAfterNight + festivalIncreaseAmount);
+
+    const pickupLocationPercentageFare = activePickupRule
+      ? ceilCustomerFare(festivalAdjustedFare * (1 + pickupIncreasePercent / 100))
+      : festivalAdjustedFare;
+    const b2bCost = Number(fareResult.b2bMaxFare ?? fareResult.b2bMinFare ?? 0);
+    const pickupLocationMarginFloor = activePickupRule && b2bCost > 0
+      ? ceilCustomerFare(b2bCost + 500)
+      : 0;
+    const pickupLocationFinalFare = activePickupRule
+      ? Math.max(pickupLocationPercentageFare, pickupLocationMarginFloor)
+      : festivalAdjustedFare;
 
     const selectedCoupon = couponCode
+
       ? couponRules.find((rule) => {
+
           const from = normalize(pickup);
+
           const to = normalize(drop);
+
           const couponFrom = normalize(rule.fromNormalized || rule.from);
+
           const couponTo = normalize(rule.toNormalized || rule.to);
+
           return rule.isActive === true && rule.code?.toUpperCase() === couponCode &&
+
             Number(rule.discountPercent) > 0 && Number(rule.discountPercent) <= 100 &&
+
             !!rule.startAt && !!rule.endAt && isWithinJourneyDate(rule.startAt, rule.endAt) &&
+
             from.includes(couponFrom) && to.includes(couponTo);
+
         }) || null
+
       : null;
 
     if (couponCode && !selectedCoupon) {
+
       return errorResponse("Selected route coupon is no longer valid for this journey.", 409);
+
     }
 
     const couponPercent = Number(selectedCoupon?.discountPercent || 0);
+
     const fareAfterCoupon = selectedCoupon
-      ? roundCustomerFare(festivalAdjustedFare * (1 - couponPercent / 100))
-      : festivalAdjustedFare;
+      ? roundCustomerFare(pickupLocationFinalFare * (1 - couponPercent / 100))
+      : pickupLocationFinalFare;
 
     let totalFare = fareAfterCoupon;
 
-    if (requestedCampaignId) {
+    if (requestedCampaignId && !activePickupRule) {
 
-      const campaignDoc = campaignSnapshot.docs.find((d) => d.id === requestedCampaignId);
+      const campaignDoc = campaignSnapshot.docs.find((d) => d.id === requestedCampaignId);
 
-      if (!campaignDoc) return errorResponse("This discount campaign is no longer active.", 409);
+      if (!campaignDoc) return errorResponse("This discount campaign is no longer active.", 409);
 
-      const d = campaignDoc.data();
+      const d = campaignDoc.data();
 
-      const asDate = (v: any) => typeof v === "string" ? v : v && typeof v.toDate === "function" ? v.toDate().toISOString() : "";
+      const asDate = (v: any) => typeof v === "string" ? v : v && typeof v.toDate === "function" ? v.toDate().toISOString() : "";
 
-      appliedCampaign = {
+      appliedCampaign = {
 
-        id: campaignDoc.id, name: cleanText(d.name, 120),
+        id: campaignDoc.id, name: cleanText(d.name, 120),
 
-        discountType: d.discountType === "fixed" ? "fixed" : "percentage", discountValue: Number(d.discountValue || 0),
+        discountType: d.discountType === "fixed" ? "fixed" : "percentage", discountValue: Number(d.discountValue || 0),
 
-        bookingTypes: Array.isArray(d.bookingTypes) ? d.bookingTypes : [],
+        bookingTypes: Array.isArray(d.bookingTypes) ? d.bookingTypes : [],
 
-        routeScope: d.routeScope === "selected" ? "selected" : "all",
+        routeScope: d.routeScope === "selected" ? "selected" : "all",
 
-        selectedRoutes: Array.isArray(d.selectedRoutes) ? d.selectedRoutes : [],
+        selectedRoutes: Array.isArray(d.selectedRoutes) ? d.selectedRoutes : [],
 
-        offerMode: d.offerMode === "coupon" ? "coupon" : "automatic", couponCode: cleanText(d.couponCode, 30),
+        offerMode: d.offerMode === "coupon" ? "coupon" : "automatic", couponCode: cleanText(d.couponCode, 30),
 
-        startAt: asDate(d.startAt), endAt: asDate(d.endAt), activeDays: Array.isArray(d.activeDays) ? d.activeDays.map(Number) : [],
+        startAt: asDate(d.startAt), endAt: asDate(d.endAt), activeDays: Array.isArray(d.activeDays) ? d.activeDays.map(Number) : [],
 
-        minimumFare: Number(d.minimumFare || 0), maximumDiscount: d.maximumDiscount == null ? null : Number(d.maximumDiscount),
+        minimumFare: Number(d.minimumFare || 0), maximumDiscount: d.maximumDiscount == null ? null : Number(d.maximumDiscount),
 
-        usageLimit: d.usageLimit == null ? null : Number(d.usageLimit), usageCount: Number(d.usageCount || 0),
+        usageLimit: d.usageLimit == null ? null : Number(d.usageLimit), usageCount: Number(d.usageCount || 0),
 
-        perCustomerLimit: d.perCustomerLimit == null ? null : Number(d.perCustomerLimit),
+        perCustomerLimit: d.perCustomerLimit == null ? null : Number(d.perCustomerLimit),
 
-        allowStacking: d.allowStacking === true, priority: Number(d.priority || 0), isActive: d.isActive === true,
+        allowStacking: d.allowStacking === true, priority: Number(d.priority || 0), isActive: d.isActive === true,
 
-      };
+      };
 
-      if (appliedCampaign.offerMode === "coupon" && (!requestedCampaignCode || requestedCampaignCode !== appliedCampaign.couponCode?.toUpperCase())) {
+      if (appliedCampaign.offerMode === "coupon" && (!requestedCampaignCode || requestedCampaignCode !== appliedCampaign.couponCode?.toUpperCase())) {
 
-        return errorResponse("Campaign coupon code is invalid.", 400);
+        return errorResponse("Campaign coupon code is invalid.", 400);
 
-      }
+      }
 
-      if (appliedCampaign.offerMode === "automatic" && requestedCampaignCode) {
+      if (appliedCampaign.offerMode === "automatic" && requestedCampaignCode) {
 
-        return errorResponse("Automatic campaign does not accept a coupon code.", 400);
+        return errorResponse("Automatic campaign does not accept a coupon code.", 400);
 
-      }
+      }
 
-      const reason = getPromotionEligibilityReason(appliedCampaign, {
+      const reason = getPromotionEligibilityReason(appliedCampaign, {
 
-        bookingType, pickupDate, pickupTime, pickup, drop, fare: totalFare, offerMode: appliedCampaign.offerMode,
+        bookingType, pickupDate, pickupTime, pickup, drop, fare: totalFare, offerMode: appliedCampaign.offerMode,
 
-      });
+      });
 
-      if (reason) return errorResponse(`Discount campaign is not eligible: ${reason}.`, 409);
+      if (reason) return errorResponse(`Discount campaign is not eligible: ${reason}.`, 409);
 
-      campaignDiscountAmount = calculatePromotionDiscount(appliedCampaign, totalFare);
+      campaignDiscountAmount = calculatePromotionDiscount(appliedCampaign, totalFare);
 
-      if (campaignDiscountAmount <= 0) return errorResponse("Campaign discount is zero for this fare.", 409);
+      if (campaignDiscountAmount <= 0) return errorResponse("Campaign discount is zero for this fare.", 409);
 
-      totalFare = Math.max(0, totalFare - campaignDiscountAmount);
+      totalFare = Math.max(0, totalFare - campaignDiscountAmount);
 
-    }
+    }
 
+    if (!Number.isFinite(totalFare) || totalFare < 1) {
 
+      return errorResponse("Unable to calculate a valid booking fare.", 400);
 
+    }
 
+    // 9. Calculate advance from the final fare (after festival and coupon).
 
-    if (!Number.isFinite(totalFare) || totalFare < 1) {
+    const advanceAmount = Math.round((totalFare * ADVANCE_PAYMENT_PERCENT) / 100);
 
-      return errorResponse("Unable to calculate a valid booking fare.", 400);
+    const remainingFare = Math.max(0, totalFare - advanceAmount);
 
-    }
+    if (!Number.isSafeInteger(advanceAmount) || advanceAmount < 1) {
 
+      return errorResponse("Unable to calculate a valid advance payment.", 400);
 
+    }
 
-    // 9. Calculate advance from the final fare (after festival and coupon).
+    const advanceAmountPaise = advanceAmount * 100;
 
-    const advanceAmount = Math.round((totalFare * ADVANCE_PAYMENT_PERCENT) / 100);
+    // 10. Save pending booking before creating the Razorpay order.
 
-    const remainingFare = Math.max(0, totalFare - advanceAmount);
+    const newBookingRef = db.collection("online_bookings").doc();
 
+    bookingRef = newBookingRef;
 
+    const appliedFestival = selectedFestival ? { id: selectedFestival.id, name: selectedFestival.name, increasePercent: festivalPercent } : null;
 
-    if (!Number.isSafeInteger(advanceAmount) || advanceAmount < 1) {
+    const appliedCoupon = selectedCoupon ? { id: selectedCoupon.id, code: selectedCoupon.code, discountPercent: couponPercent } : null;
 
-      return errorResponse("Unable to calculate a valid advance payment.", 400);
+    await newBookingRef.set({
 
-    }
+      bookingId: newBookingRef.id,
 
+      status: "payment_pending",
 
+      paymentStatus: "created",
 
-    const advanceAmountPaise = advanceAmount * 100;
+      passenger,
 
+      pickup,
 
+      drop: drop || null,
 
-    // 10. Save pending booking before creating the Razorpay order.
+      pickupDate,
 
-    const newBookingRef = db.collection("online_bookings").doc();
+      pickupTime,
 
-    bookingRef = newBookingRef;
+      returnDate: returnDate || null,
 
+      returnTime: returnTime || null,
 
+      bookingType,
 
-    const appliedFestival = selectedFestival ? { id: selectedFestival.id, name: selectedFestival.name, increasePercent: festivalPercent } : null;
+      serviceType: bookingType === "local" ? "local" : "outstation",
 
-    const appliedCoupon = selectedCoupon ? { id: selectedCoupon.id, code: selectedCoupon.code, discountPercent: couponPercent } : null;
+      vehicleType,
 
+      vehicleLabel,
 
+      distanceKm,
 
-    await newBookingRef.set({
+      estimatedDuration: duration,
 
-      bookingId: newBookingRef.id,
+      localPackage: bookingType === "local" ? localPackage : null,
 
-      status: "payment_pending",
+      totalFare,
+      pickupLocationRuleId: activePickupRule?.id || null,
+      pickupLocationName: activePickupRule ? cleanText(activePickupRule.pickupLocation, 120) : null,
+      pickupLocationIncreasePercent: pickupIncreasePercent,
+      pickupLocationIncreaseAmount: activePickupRule ? pickupLocationFinalFare - festivalAdjustedFare : 0,
+      nightSurchargeAmount,
+      pickupLocationMarginFloor,
+      pickupLocationRuleApplied: Boolean(activePickupRule),
 
-      paymentStatus: "created",
+      baseFareBeforePromotions: baseFare,
 
-      passenger,
+      festivalIncreasePercent: festivalPercent,
 
-      pickup,
+      festivalIncreaseAmount,
 
-      drop: drop || null,
+      appliedFestival,
 
-      pickupDate,
+      couponCode: appliedCoupon?.code || null,
 
-      pickupTime,
+      couponDiscountPercent: couponPercent,
 
-      returnDate: returnDate || null,
+      couponDiscountAmount: activePickupRule ? 0 : festivalAdjustedFare - fareAfterCoupon,
 
-      returnTime: returnTime || null,
+      appliedCoupon,
 
-      bookingType,
+      campaignId: appliedCampaign?.id || null,
 
-      serviceType: bookingType === "local" ? "local" : "outstation",
+      appliedCampaign: appliedCampaign ? { id: appliedCampaign.id, name: appliedCampaign.name, offerMode: appliedCampaign.offerMode, couponCode: appliedCampaign.offerMode === "coupon" ? appliedCampaign.couponCode : null, discountType: appliedCampaign.discountType, discountValue: appliedCampaign.discountValue, discountAmount: campaignDiscountAmount } : null,
 
-      vehicleType,
+      campaignDiscountAmount,
 
-      vehicleLabel,
+      fareCalculationBreakdown: [
+        ...(fareResult.calculationBreakdown || []),
+        ...(activePickupRule ? [`Pickup location increase (${pickupIncreasePercent}%): +₹${pickupLocationFinalFare - festivalAdjustedFare}`] : []),
+        ...(appliedCampaign ? [`Campaign ${appliedCampaign.name}: -₹${campaignDiscountAmount}`] : []),
+      ],
 
-      distanceKm,
+      advancePercentage: ADVANCE_PAYMENT_PERCENT,
 
-      estimatedDuration: duration,
+      advanceDue: advanceAmount,
 
-      localPackage: bookingType === "local" ? localPackage : null,
+      advancePaid: 0,
 
-      totalFare,
+      remainingFare,
 
-      baseFareBeforePromotions: baseFare,
+      paymentProvider: "razorpay",
 
-      festivalIncreasePercent: festivalPercent,
+      createdAt: FieldValue.serverTimestamp(),
 
-      festivalIncreaseAmount,
+      updatedAt: FieldValue.serverTimestamp(),
 
-      appliedFestival,
+    });
 
-      couponCode: appliedCoupon?.code || null,
+    // Reserve one campaign use atomically for this payment-pending booking.
 
-      couponDiscountPercent: couponPercent,
+    // Pending attempts count against usage caps to prevent simultaneous oversubscription.
 
-      couponDiscountAmount: festivalAdjustedFare - fareAfterCoupon,
+    if (appliedCampaign) {
 
-      appliedCoupon,
+      const campaignRef = db.collection("fare_promotions").doc(appliedCampaign.id);
 
-      campaignId: appliedCampaign?.id || null,
+      await db.runTransaction(async (tx) => {
 
-      appliedCampaign: appliedCampaign ? { id: appliedCampaign.id, name: appliedCampaign.name, offerMode: appliedCampaign.offerMode, couponCode: appliedCampaign.offerMode === "coupon" ? appliedCampaign.couponCode : null, discountType: appliedCampaign.discountType, discountValue: appliedCampaign.discountValue, discountAmount: campaignDiscountAmount } : null,
+        const current = await tx.get(campaignRef);
 
-      campaignDiscountAmount,
+        if (!current.exists || current.data()?.isActive !== true) throw new Error("Discount campaign was paused before checkout.");
 
-      fareCalculationBreakdown: [...(fareResult.calculationBreakdown || []), ...(appliedCampaign ? [`Campaign ${appliedCampaign.name}: -₹${campaignDiscountAmount}`] : [])],
+        const data = current.data() || {};
 
-      advancePercentage: ADVANCE_PAYMENT_PERCENT,
+        const used = Number(data.usageCount || 0);
 
-      advanceDue: advanceAmount,
+        const limit = data.usageLimit == null ? null : Number(data.usageLimit);
 
-      advancePaid: 0,
+        if (limit != null && used >= limit) throw new Error("Discount campaign usage limit has been reached.");
 
-      remainingFare,
+        const perCustomer = data.perCustomerLimit == null ? null : Number(data.perCustomerLimit);
 
-      paymentProvider: "razorpay",
+        if (perCustomer != null) {
 
-      createdAt: FieldValue.serverTimestamp(),
+          const q = db.collection("online_bookings").where("campaignId", "==", appliedCampaign!.id).where("passenger.mobile", "==", passenger.mobile);
 
-      updatedAt: FieldValue.serverTimestamp(),
+          const previous = await tx.get(q);
 
-    });
+          const priorCustomerUses = previous.docs.filter((doc) => doc.id !== newBookingRef.id).length;
 
+          if (priorCustomerUses >= perCustomer) throw new Error("You have already used this offer the maximum allowed number of times.");
 
+        }
 
-    // Reserve one campaign use atomically for this payment-pending booking.
+        tx.update(campaignRef, { usageCount: FieldValue.increment(1), updatedAt: FieldValue.serverTimestamp() });
 
-    // Pending attempts count against usage caps to prevent simultaneous oversubscription.
+      });
 
-    if (appliedCampaign) {
+    }
 
-      const campaignRef = db.collection("fare_promotions").doc(appliedCampaign.id);
+    // 11. Create Razorpay order for exactly the calculated advance.
 
-      await db.runTransaction(async (tx) => {
+    const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
 
-        const current = await tx.get(campaignRef);
+    const order = await razorpay.orders.create({
 
-        if (!current.exists || current.data()?.isActive !== true) throw new Error("Discount campaign was paused before checkout.");
+      amount: advanceAmountPaise,
 
-        const data = current.data() || {};
+      currency: "INR",
 
-        const used = Number(data.usageCount || 0);
+      receipt: `krt_${newBookingRef.id.slice(0, 25)}`,
 
-        const limit = data.usageLimit == null ? null : Number(data.usageLimit);
+      notes: {
 
-        if (limit != null && used >= limit) throw new Error("Discount campaign usage limit has been reached.");
+        bookingId: newBookingRef.id,
 
-        const perCustomer = data.perCustomerLimit == null ? null : Number(data.perCustomerLimit);
+        pickup: pickup.slice(0, 120),
 
-        if (perCustomer != null) {
+        drop: (drop || "Local Rental").slice(0, 120),
 
-          const q = db.collection("online_bookings").where("campaignId", "==", appliedCampaign!.id).where("passenger.mobile", "==", passenger.mobile);
+        vehicle: vehicleLabel,
 
-          const previous = await tx.get(q);
+        passengerName: passenger.name,
 
-          const priorCustomerUses = previous.docs.filter((doc) => doc.id !== newBookingRef.id).length;
+        passengerMobile: passenger.mobile,
 
-          if (priorCustomerUses >= perCustomer) throw new Error("You have already used this offer the maximum allowed number of times.");
+        passengerEmail: passenger.email,
 
-        }
+        journeyDate: pickupDate,
 
-        tx.update(campaignRef, { usageCount: FieldValue.increment(1), updatedAt: FieldValue.serverTimestamp() });
+        journeyTime: pickupTime,
 
-      });
+        bookingType,
 
-    }
+        totalFare: String(totalFare),
 
+        festivalIncreasePercent: String(festivalPercent),
 
+        festivalIncreaseAmount: String(festivalIncreaseAmount),
 
-    // 11. Create Razorpay order for exactly the calculated advance.
+        couponCode: appliedCoupon?.code || "",
 
-    const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
+        couponDiscountPercent: String(couponPercent),
 
+        couponDiscountAmount: String(activePickupRule ? 0 : festivalAdjustedFare - fareAfterCoupon),
 
+        campaignId: appliedCampaign?.id || "",
 
-    const order = await razorpay.orders.create({
+        campaignDiscountAmount: String(campaignDiscountAmount),
 
-      amount: advanceAmountPaise,
+        advancePercentage: String(ADVANCE_PAYMENT_PERCENT),
 
-      currency: "INR",
+        advanceAmount: String(advanceAmount),
 
-      receipt: `krt_${newBookingRef.id.slice(0, 25)}`,
+        remainingFare: String(remainingFare),
 
-      notes: {
+      },
 
-        bookingId: newBookingRef.id,
+    });
 
-        pickup: pickup.slice(0, 120),
+    // 12. Update pending booking with Razorpay order details.
 
-        drop: (drop || "Local Rental").slice(0, 120),
+    await newBookingRef.update({
 
-        vehicle: vehicleLabel,
+      razorpayOrderId: order.id,
 
-        passengerName: passenger.name,
+      razorpayOrderAmount: advanceAmountPaise,
 
-        passengerMobile: passenger.mobile,
+      paymentStatus: "order_created",
 
-        passengerEmail: passenger.email,
+      updatedAt: FieldValue.serverTimestamp(),
 
-        journeyDate: pickupDate,
+    });
 
-        journeyTime: pickupTime,
+    // 13. Response to frontend.
 
-        bookingType,
+    return NextResponse.json(
 
-        totalFare: String(totalFare),
+      {
 
-        festivalIncreasePercent: String(festivalPercent),
+        success: true,
 
-        festivalIncreaseAmount: String(festivalIncreaseAmount),
+        bookingId: newBookingRef.id,
 
-        couponCode: appliedCoupon?.code || "",
+        orderId: order.id,
 
-        couponDiscountPercent: String(couponPercent),
+        keyId,
 
-        couponDiscountAmount: String(festivalAdjustedFare - fareAfterCoupon),
+        amount: order.amount,
 
-        campaignId: appliedCampaign?.id || "",
+        currency: order.currency,
 
-        campaignDiscountAmount: String(campaignDiscountAmount),
+        totalFare,
+        pickupLocationFareRule: activePickupRule ? {
+          id: activePickupRule.id,
+          pickupLocation: cleanText(activePickupRule.pickupLocation, 120),
+          increasePercent: pickupIncreasePercent,
+          increaseAmount: pickupLocationFinalFare - festivalAdjustedFare,
+          marginFloorApplied: pickupLocationMarginFloor > pickupLocationPercentageFare,
+        } : null,
 
-        advancePercentage: String(ADVANCE_PAYMENT_PERCENT),
+        advancePercentage: ADVANCE_PAYMENT_PERCENT,
 
-        advanceAmount: String(advanceAmount),
+        advanceDue: advanceAmount,
 
-        remainingFare: String(remainingFare),
+        paymentAmountRupees: advanceAmount,
 
-      },
+        remainingFare,
 
-    });
+        appliedFestival,
 
+        festivalIncreasePercent: festivalPercent,
 
+        festivalIncreaseAmount,
 
-    // 12. Update pending booking with Razorpay order details.
+        appliedCoupon,
 
-    await newBookingRef.update({
+        couponDiscountPercent: couponPercent,
 
-      razorpayOrderId: order.id,
+        couponDiscountAmount: activePickupRule ? 0 : festivalAdjustedFare - fareAfterCoupon,
 
-      razorpayOrderAmount: advanceAmountPaise,
+        appliedCampaign: appliedCampaign ? { id: appliedCampaign.id, name: appliedCampaign.name, offerMode: appliedCampaign.offerMode, discountAmount: campaignDiscountAmount } : null,
 
-      paymentStatus: "order_created",
+        campaignDiscountAmount,
 
-      updatedAt: FieldValue.serverTimestamp(),
+        fareBreakdown: [
+          ...(fareResult.calculationBreakdown || []),
+          ...(activePickupRule ? [`Pickup location increase (${pickupIncreasePercent}%): +₹${pickupLocationFinalFare - festivalAdjustedFare}`] : []),
+        ],
 
-    });
+        message: `Please pay ${ADVANCE_PAYMENT_PERCENT}% advance to confirm your booking.`,
 
+      },
 
+      { status: 200, headers: { "Cache-Control": "no-store" } },
 
-    // 13. Response to frontend.
+    );
 
-    return NextResponse.json(
+  } catch (error) {
 
-      {
+    console.error("Khatu Rides Create Order Error:", error);
 
-        success: true,
+    if (bookingRef) {
 
-        bookingId: newBookingRef.id,
+      try {
 
-        orderId: order.id,
+        await bookingRef.update({
 
-        keyId,
+          status: "order_creation_failed",
 
-        amount: order.amount,
+          paymentStatus: "order_creation_failed",
 
-        currency: order.currency,
+          updatedAt: FieldValue.serverTimestamp(),
 
-        totalFare,
+        });
 
-        advancePercentage: ADVANCE_PAYMENT_PERCENT,
+      } catch (updateError) {
 
-        advanceDue: advanceAmount,
+        console.error("Unable to mark booking order failure:", updateError);
 
-        paymentAmountRupees: advanceAmount,
+      }
 
-        remainingFare,
+    }
 
-        appliedFestival,
+    return NextResponse.json(
 
-        festivalIncreasePercent: festivalPercent,
+      {
 
-        festivalIncreaseAmount,
+        success: false,
 
-        appliedCoupon,
+        error: error instanceof Error
 
-        couponDiscountPercent: couponPercent,
+          ? error.message
 
-        couponDiscountAmount: festivalAdjustedFare - fareAfterCoupon,
+          : "Unable to create booking payment order.",
 
-        appliedCampaign: appliedCampaign ? { id: appliedCampaign.id, name: appliedCampaign.name, offerMode: appliedCampaign.offerMode, discountAmount: campaignDiscountAmount } : null,
+      },
 
-        campaignDiscountAmount,
+      { status: 500, headers: { "Cache-Control": "no-store" } },
 
-        fareBreakdown: fareResult.calculationBreakdown || [],
+    );
 
-        message: `Please pay ${ADVANCE_PAYMENT_PERCENT}% advance to confirm your booking.`,
-
-      },
-
-      { status: 200, headers: { "Cache-Control": "no-store" } },
-
-    );
-
-  } catch (error) {
-
-    console.error("Khatu Rides Create Order Error:", error);
-
-
-
-    if (bookingRef) {
-
-      try {
-
-        await bookingRef.update({
-
-          status: "order_creation_failed",
-
-          paymentStatus: "order_creation_failed",
-
-          updatedAt: FieldValue.serverTimestamp(),
-
-        });
-
-      } catch (updateError) {
-
-        console.error("Unable to mark booking order failure:", updateError);
-
-      }
-
-    }
-
-
-
-    return NextResponse.json(
-
-      {
-
-        success: false,
-
-        error: error instanceof Error
-
-          ? error.message
-
-          : "Unable to create booking payment order.",
-
-      },
-
-      { status: 500, headers: { "Cache-Control": "no-store" } },
-
-    );
-
-  }
+  }
 
 }

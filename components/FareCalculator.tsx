@@ -50,13 +50,30 @@ type SelectedLocation = { placeId: string; description: string };
 type Suggestion = { place_id: string; description: string };
 type FestivalRecord = { id: string; name: string; increasePercent: number; startAt: string; endAt: string; isActive: boolean };
 type CouponRecord = { id: string; code: string; from: string; to: string; fromNormalized?: string; toNormalized?: string; discountPercent: number; startAt: string; endAt: string; isActive: boolean };
+type PickupLocationFareRule = { id: string; pickupLocation: string; pickupNormalized?: string; increasePercent: number; isActive: boolean; startedAt?: any; expiresAt: any };
 
 const normalizePlace = (value: string) => value.trim().toLocaleLowerCase("en-IN").replace(/\s+/g, " ");
+// Google Places returns full labels such as "Bilaspur, Chhattisgarh, India",
+// while admin rules are usually saved as only "Bilaspur". Match the city
+// component on both sides so a valid pickup rule is not missed.
+const pickupLocationKey = (value: string) => normalizePlace(value)
+  .split(",")[0]
+  .replace(/\b(city|district)\b/g, "")
+  .replace(/[^\p{L}\p{N}]+/gu, " ")
+  .trim();
 const roundFare = (value: number) => Math.max(0, Math.round(value / 100) * 100);
 const inValidity = (start: string, end: string, date: string) => {
   const journey = new Date(`${date}T12:00:00`).getTime();
   return Number.isFinite(journey) && journey >= new Date(start).getTime() && journey <= new Date(end).getTime();
 };
+const timestampMillis = (value: any): number => {
+  if (!value) return 0;
+  if (typeof value?.toMillis === "function") return value.toMillis();
+  if (typeof value?.seconds === "number") return value.seconds * 1000;
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+const ceilFare = (value: number) => Math.max(0, Math.ceil(value / 100) * 100);
 
 const localPackages: { id: LocalPackageType; label: string }[] = [
   { id: "4hr40km", label: "4 Hr / 40 KM" },
@@ -224,6 +241,7 @@ export default function FareCalculator({
   const [showRouteMap, setShowRouteMap] = useState(false);
   const [expandedConditions, setExpandedConditions] = useState<Record<string, boolean>>({});
   const [festivalRule, setFestivalRule] = useState<FestivalRecord | null>(null);
+  const [pickupLocationRule, setPickupLocationRule] = useState<PickupLocationFareRule | null>(null);
   const [availableCoupons, setAvailableCoupons] = useState<CouponRecord[]>([]);
   const [appliedCoupon, setAppliedCoupon] = useState<CouponRecord | null>(null);
   const [couponMessage, setCouponMessage] = useState("");
@@ -379,19 +397,35 @@ export default function FareCalculator({
 
       // Load current promotion records from Firestore for this journey date.
       // Final promotion validation must also happen inside the trusted order API.
-      const [festivalSnapshot, couponSnapshot] = tab === "shared"
-        ? [null, null] as const
-        : await Promise.all([
-            getDocs(collection(db, "festival_fares")),
-            getDocs(collection(db, "route_coupons")),
-          ]);
-      const festivals = festivalSnapshot ? festivalSnapshot.docs.map((d) => ({ id: d.id, ...d.data() } as FestivalRecord)) : [];
-      const coupons = couponSnapshot ? couponSnapshot.docs.map((d) => ({ id: d.id, ...d.data() } as CouponRecord)) : [];
+      const [festivalSnapshot, couponSnapshot, pickupRuleSnapshot] = await Promise.all([
+        getDocs(collection(db, "festival_fares")),
+        getDocs(collection(db, "route_coupons")),
+        getDocs(collection(db, "pickup_location_fare_rules")),
+      ]);
+      const festivals = festivalSnapshot.docs.map((d) => ({ id: d.id, ...d.data() } as FestivalRecord));
+      const coupons = couponSnapshot.docs.map((d) => ({ id: d.id, ...d.data() } as CouponRecord));
+      const now = Date.now();
+      const pickupNormalized = pickupLocationKey(pickup?.description || "");
+      const activePickupRule = pickupRuleSnapshot.docs
+        .map((d) => ({ id: d.id, ...d.data() } as PickupLocationFareRule))
+        .filter((rule) => {
+          const ruleLocation = pickupLocationKey(rule.pickupNormalized || rule.pickupLocation || "");
+          const startsAt = rule.startedAt ? timestampMillis(rule.startedAt) : 0;
+          const expiresAt = timestampMillis(rule.expiresAt);
+          return rule.isActive === true &&
+            Number(rule.increasePercent) > 0 &&
+            Number(rule.increasePercent) <= 100 &&
+            startsAt <= now &&
+            expiresAt > now &&
+            Boolean(ruleLocation) && ruleLocation === pickupNormalized;
+        })
+        .sort((a, b) => Number(b.increasePercent) - Number(a.increasePercent))[0] || null;
+      setPickupLocationRule(activePickupRule);
       const activeFestival = tab === "shared" ? null : festivals
         .filter((x) => x.isActive && Number(x.increasePercent) > 0 && inValidity(x.startAt, x.endAt, pickupDate))
         .sort((a, b) => Number(b.increasePercent) - Number(a.increasePercent))[0] || null;
       setFestivalRule(activeFestival);
-      setAvailableCoupons(coupons.filter((x) => {
+      setAvailableCoupons(activePickupRule ? [] : coupons.filter((x) => {
         const from = normalizePlace(pickup?.description || "");
         const to = normalizePlace(drop?.description || "");
         const couponFrom = normalizePlace(x.fromNormalized || x.from);
@@ -438,24 +472,64 @@ export default function FareCalculator({
 
           // Fare engine finalFare already includes the eligible night surcharge.
           // Keep the pre-night base separate so every adjustment is visible to customers.
-          const fareAfterNight = Number(result.finalFare || 0);
-          const nightSurchargeAmount = Number(result.nightSurchargeAmount || 0);
-          const baseDiscountPercent = Number(result.baseDiscountPercent ?? (oneWayDiscountEligible ? 10 : 0));
-          const baseDiscountAmount = Number(result.baseDiscountAmount || 0);
+          const engineFareAfterNight = Number(result.finalFare || 0);
+          const engineNightSurchargeAmount = Number(result.nightSurchargeAmount || 0);
+          const engineBaseDiscountPercent = Number(result.baseDiscountPercent ?? (oneWayDiscountEligible ? 10 : 0));
+          const engineBaseDiscountAmount = Number(result.baseDiscountAmount || 0);
+          const nightSurchargePercent = Number(result.nightSurchargePercent || 0);
+          // Pickup-location surge bookings are full-fare bookings: restore the
+          // base discount and recalculate night surcharge on the undiscounted base.
+          const undiscountedBaseFare = activePickupRule
+            ? Math.max(0, engineFareAfterNight - engineNightSurchargeAmount + engineBaseDiscountAmount)
+            : Math.max(0, engineFareAfterNight - engineNightSurchargeAmount);
+          const nightSurchargeAmount = activePickupRule
+            ? Math.round(undiscountedBaseFare * nightSurchargePercent / 100)
+            : engineNightSurchargeAmount;
+          const fareAfterNight = activePickupRule
+            ? undiscountedBaseFare + nightSurchargeAmount
+            : engineFareAfterNight;
+          const baseDiscountPercent = activePickupRule ? 0 : engineBaseDiscountPercent;
+          const baseDiscountAmount = activePickupRule ? 0 : engineBaseDiscountAmount;
           const discountedBaseFare = Math.max(0, fareAfterNight - nightSurchargeAmount);
           const baseFare = discountedBaseFare + baseDiscountAmount;
           const festivalPercent = activeFestival ? Number(activeFestival.increasePercent) : 0;
           const festivalRawAmount = fareAfterNight * festivalPercent / 100;
+          // For pickup-surge bookings, do not round the pre-surge subtotal down.
+          // Otherwise the breakdown (Base + Night) can exceed the displayed
+          // "Fare before pickup increase" amount by up to ₹99.
           const festivalAdjustedFare = tab === "shared"
             ? fareAfterNight
-            : roundFare(fareAfterNight + festivalRawAmount);
-          const bestCampaign = chooseBestAutomaticPromotion(autoCampaigns, { bookingType, pickupDate, pickupTime, pickup: pickup?.description || "", drop: drop?.description || "", fare: festivalAdjustedFare });
+            : activePickupRule
+              ? ceilFare(fareAfterNight + festivalRawAmount)
+              : roundFare(fareAfterNight + festivalRawAmount);
+          const locationIncreasePercent = activePickupRule ? Number(activePickupRule.increasePercent) : 0;
+          const locationPercentageFare = activePickupRule
+            ? ceilFare(festivalAdjustedFare * (1 + locationIncreasePercent / 100))
+            : festivalAdjustedFare;
+          const vendorCostForMargin = Number(result.b2bMaxFare ?? result.b2bMinFare);
+          const hasVendorCost = Number.isFinite(vendorCostForMargin) && vendorCostForMargin > 0;
+          const locationMarginFloor = activePickupRule && hasVendorCost ? ceilFare(vendorCostForMargin + 500) : 0;
+          const pickupLocationMinimumFare = activePickupRule
+            ? Math.max(locationPercentageFare, locationMarginFloor)
+            : festivalAdjustedFare;
+          const bestCampaign = activePickupRule ? null : chooseBestAutomaticPromotion(autoCampaigns, { bookingType, pickupDate, pickupTime, pickup: pickup?.description || "", drop: drop?.description || "", fare: festivalAdjustedFare });
           const campaignDiscount = bestCampaign?.discountAmount || 0;
-          const campaignFinalFare = bestCampaign ? Math.max(0, festivalAdjustedFare - campaignDiscount) : festivalAdjustedFare;
+          const campaignDiscountedFare = bestCampaign ? Math.max(0, festivalAdjustedFare - campaignDiscount) : festivalAdjustedFare;
+          const campaignFinalFare = activePickupRule
+            ? Math.max(campaignDiscountedFare, pickupLocationMinimumFare)
+            : campaignDiscountedFare;
           return {
             vehicleType,
             vehicle: VEHICLES[vehicleType],
             ...result,
+            pickupLocationRuleId: activePickupRule?.id || null,
+            pickupLocationName: activePickupRule?.pickupLocation || "",
+            pickupLocationIncreasePercent: locationIncreasePercent,
+            pickupLocationIncreaseAmount: activePickupRule ? Math.max(0, pickupLocationMinimumFare - festivalAdjustedFare) : 0,
+            pickupLocationMarginFloor: locationMarginFloor,
+            pickupLocationMinimumFare,
+            pickupLocationMarginProtected: Boolean(activePickupRule && hasVendorCost),
+            pickupLocationRuleApplied: Boolean(activePickupRule),
             baseFare,
             baseDiscountPercent,
             baseDiscountAmount,
@@ -471,7 +545,7 @@ export default function FareCalculator({
             couponAmount: 0,
             campaignId: bestCampaign?.campaign.id || "", campaignName: bestCampaign?.campaign.name || "",
             campaignDiscountType: bestCampaign?.campaign.discountType || "", campaignDiscountValue: bestCampaign?.campaign.discountValue || 0,
-            campaignDiscountAmount: campaignDiscount, campaignPriority: bestCampaign?.campaign.priority || 0,
+            campaignDiscountAmount: Math.max(0, festivalAdjustedFare - campaignFinalFare), campaignPriority: bestCampaign?.campaign.priority || 0,
             campaignOfferMode: bestCampaign?.campaign.offerMode || "", finalFare: campaignFinalFare,
           };
         }
@@ -500,6 +574,12 @@ export default function FareCalculator({
         route: routeData,
         fareOptions: options,
         festivalRule: activeFestival,
+        pickupLocationFareRule: activePickupRule ? {
+          id: activePickupRule.id,
+          pickupLocation: activePickupRule.pickupLocation,
+          increasePercent: Number(activePickupRule.increasePercent),
+          expiresAt: activePickupRule.expiresAt,
+        } : null,
         appliedCampaign: options.find((x) => x.campaignId)?.campaignId || null,
       };
 
@@ -524,6 +604,10 @@ export default function FareCalculator({
     }
     const option = fareOptions.find((item) => item.vehicleType === vehicleType);
     if (!option) return;
+    if (option.pickupLocationRuleApplied) {
+      setCampaignMessage("इस pickup location पर increased fare लागू है; इस booking पर कोई discount या offer लागू नहीं होगा।");
+      return;
+    }
     if (tab === "oneway" && Number(route?.distanceKm || 0) < 70) {
       setCampaignMessage("70 KM se kam One Way route par koi discount ya offer applicable nahi hai.");
       return;
@@ -562,11 +646,13 @@ export default function FareCalculator({
             campaignName: best.campaign.name,
             campaignDiscountType: best.campaign.discountType,
             campaignDiscountValue: best.campaign.discountValue,
-            campaignDiscountAmount: best.discountAmount,
+            campaignDiscountAmount: Math.max(0, before - (item.pickupLocationRuleApplied ? Math.max(Math.max(0, before - best.discountAmount), Number(item.pickupLocationMinimumFare || 0)) : Math.max(0, before - best.discountAmount))),
             campaignPriority: best.campaign.priority || 0,
             campaignOfferMode: best.campaign.offerMode || "automatic",
             campaignCode: best.campaign.couponCode || "",
-            finalFare: Math.max(0, before - best.discountAmount),
+            finalFare: item.pickupLocationRuleApplied
+              ? Math.max(Math.max(0, before - best.discountAmount), Number(item.pickupLocationMinimumFare || 0))
+              : Math.max(0, before - best.discountAmount),
           }
         : item
     ));
@@ -597,6 +683,10 @@ export default function FareCalculator({
   }
 
   async function applyDiscountCampaignCoupon() {
+    if (fareOptions.some((option) => option.pickupLocationRuleApplied)) {
+      setCampaignMessage("इस pickup location पर increased fare लागू है; coupon या discount उपलब्ध नहीं है।");
+      return;
+    }
     if (tab === "shared") {
       setCampaignMessage("Coupons are not applicable to KR-SHARED bookings.");
       return;
@@ -622,7 +712,20 @@ export default function FareCalculator({
         const couponWins = couponDiscount > currentDiscount || (couponDiscount === currentDiscount && couponDiscount > 0 && Number(campaign.priority || 0) > Number(option.campaignPriority || 0));
         if (couponWins) couponWon = true;
         if (!couponWins) return option;
-        return { ...option, campaignId: campaign.id, campaignName: campaign.name, campaignDiscountType: campaign.discountType, campaignDiscountValue: campaign.discountValue, campaignDiscountAmount: couponDiscount, campaignPriority: campaign.priority, campaignOfferMode: "coupon", campaignCode: campaign.couponCode || "", finalFare: Math.max(0, before - couponDiscount) };
+        return {
+          ...option,
+          campaignId: campaign.id,
+          campaignName: campaign.name,
+          campaignDiscountType: campaign.discountType,
+          campaignDiscountValue: campaign.discountValue,
+          campaignDiscountAmount: Math.max(0, before - (option.pickupLocationRuleApplied ? Math.max(Math.max(0, before - couponDiscount), Number(option.pickupLocationMinimumFare || 0)) : Math.max(0, before - couponDiscount))),
+          campaignPriority: campaign.priority,
+          campaignOfferMode: "coupon",
+          campaignCode: campaign.couponCode || "",
+          finalFare: option.pickupLocationRuleApplied
+            ? Math.max(Math.max(0, before - couponDiscount), Number(option.pickupLocationMinimumFare || 0))
+            : Math.max(0, before - couponDiscount),
+        };
       });
       if (!next.some((x) => x.campaignId)) throw new Error("Is fare/vehicle par coupon eligible nahi hai.");
       setAppliedCoupon(null);
@@ -634,6 +737,10 @@ export default function FareCalculator({
   }
 
   function applyRouteCoupon(found: CouponRecord) {
+    if (fareOptions.some((option) => option.pickupLocationRuleApplied)) {
+      setCouponMessage("इस pickup location पर increased fare लागू है; coupon या discount उपलब्ध नहीं है।");
+      return;
+    }
     if (tab === "shared") {
       setCouponMessage("Route coupons are not applicable to KR-SHARED bookings.");
       return;
@@ -667,7 +774,16 @@ export default function FareCalculator({
     setFareOptions((current) => current.map((option) => {
       const beforeDiscount = Number(option.festivalAdjustedFare ?? option.finalFare ?? 0);
       const discounted = roundFare(beforeDiscount * (1 - Number(found.discountPercent) / 100));
-      return { ...option, couponCode: found.code, couponPercent: Number(found.discountPercent), couponAmount: beforeDiscount - discounted, finalFare: discounted };
+      const finalFare = option.pickupLocationRuleApplied
+        ? Math.max(discounted, Number(option.pickupLocationMinimumFare || 0))
+        : discounted;
+      return {
+        ...option,
+        couponCode: found.code,
+        couponPercent: Number(found.discountPercent),
+        couponAmount: Math.max(0, beforeDiscount - finalFare),
+        finalFare,
+      };
     }));
   }
 
@@ -677,17 +793,48 @@ export default function FareCalculator({
     setFareOptions((current) => current.map((option) => ({
       ...option,
       couponCode: "", couponPercent: 0, couponAmount: 0,
-      finalFare: Number(option.campaignDiscountAmount || 0) > 0
-        ? Number(option.festivalAdjustedFare ?? option.baseFare ?? option.finalFare ?? 0) - Number(option.campaignDiscountAmount || 0)
-        : Number(option.festivalAdjustedFare ?? option.baseFare ?? option.finalFare ?? 0),
+      finalFare: Math.max(
+        option.pickupLocationRuleApplied ? Number(option.pickupLocationMinimumFare || 0) : 0,
+        Number(option.campaignDiscountAmount || 0) > 0
+          ? Number(option.festivalAdjustedFare ?? option.baseFare ?? option.finalFare ?? 0) - Number(option.campaignDiscountAmount || 0)
+          : Number(option.festivalAdjustedFare ?? option.baseFare ?? option.finalFare ?? 0)
+      ),
     })));
   }
 
-  // Same-date journeys requested between 8 PM and 8 AM are call-confirmation only.
+  // Call-only rule:
+  // 1) Current local time must be between 8:00 PM and 8:00 AM.
+  // 2) Selected journey date + pickup time must fall in this same overnight window.
+  // 3) The selected pickup datetime must still be in the future.
+  // This correctly handles after-midnight journeys (e.g. 01:30 AM today
+  // belongs to the night that started yesterday at 8:00 PM).
   const isSameNightCallOnly = (() => {
+    if (tab === "shared" || !pickupDate || !pickupTime) return false;
+
     const now = new Date();
-    const minutes = now.getHours() * 60 + now.getMinutes();
-    return pickupDate === today() && (minutes >= 1200 || minutes < 480) && tab !== "shared";
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    const isCurrentTimeInNightWindow = nowMinutes >= 20 * 60 || nowMinutes < 8 * 60;
+    if (!isCurrentTimeInNightWindow) return false;
+
+    const [year, month, day] = pickupDate.split("-").map(Number);
+    const [hours, minutes] = pickupTime.split(":").map(Number);
+    if (![year, month, day, hours, minutes].every(Number.isFinite)) return false;
+
+    // Construct in the browser's local timezone, matching the user's selected local pickup time.
+    const journeyDateTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
+    if (Number.isNaN(journeyDateTime.getTime()) || journeyDateTime <= now) return false;
+
+    const nightStart = new Date(now);
+    if (nowMinutes < 8 * 60) {
+      nightStart.setDate(nightStart.getDate() - 1);
+    }
+    nightStart.setHours(20, 0, 0, 0);
+
+    const nightEnd = new Date(nightStart);
+    nightEnd.setDate(nightEnd.getDate() + 1);
+    nightEnd.setHours(8, 0, 0, 0);
+
+    return journeyDateTime >= nightStart && journeyDateTime < nightEnd;
   })();
 
   const resultData = {
@@ -714,16 +861,19 @@ export default function FareCalculator({
         ? localPackages.find((item) => item.id === localPackage)?.label || ""
         : "",
     festivalRule,
+    pickupLocationFareRule: pickupLocationRule ? {
+      id: pickupLocationRule.id,
+      pickupLocation: pickupLocationRule.pickupLocation,
+      increasePercent: Number(pickupLocationRule.increasePercent),
+      expiresAt: pickupLocationRule.expiresAt,
+    } : null,
     appliedCoupon: appliedCoupon ? { code: appliedCoupon.code, discountPercent: appliedCoupon.discountPercent } : null,
     appliedCampaign: appliedCampaign ? { id: appliedCampaign.id, name: appliedCampaign.name, couponCode: appliedCampaign.couponCode || "", offerMode: appliedCampaign.offerMode } : null,
     route,
   };
 
-  function handleCallEnquiry(vehicle: any, routeData: any) {
-    if (onBookCall) {
-      onBookCall(vehicle, routeData);
-      return;
-    }
+  function handleCallEnquiry(_vehicle: any, _routeData: any) {
+    // Always open the device/browser phone dialer for the Khatu Rides number.
     window.location.href = `tel:+91${KHATU_RIDES_PHONE}`;
   }
 
@@ -807,6 +957,10 @@ export default function FareCalculator({
           festivalPercent: bookingOption.festivalPercent,
           festivalAmount: bookingOption.festivalAmount,
           festivalAdjustedFare: bookingOption.festivalAdjustedFare,
+          pickupLocationRuleApplied: Boolean(bookingOption.pickupLocationRuleApplied),
+          pickupLocationName: bookingOption.pickupLocationName || "",
+          pickupLocationIncreasePercent: Number(bookingOption.pickupLocationIncreasePercent || 0),
+          pickupLocationIncreaseAmount: Number(bookingOption.pickupLocationIncreaseAmount || 0),
           couponCode: bookingOption.couponCode || "",
           couponPercent: bookingOption.couponPercent || 0,
           couponAmount: bookingOption.couponAmount || 0,
@@ -912,6 +1066,11 @@ export default function FareCalculator({
             <h1 className="text-lg font-extrabold sm:text-xl">Review Your Booking</h1>
           </div>
 
+          {bookingOption.pickupLocationRuleApplied && (
+           <div className="mb-3 rounded-lg border border-red-900 bg-red-900 px-3 py-2 text-xs font-bold leading-5 text-white">
+  वाहन की उपलब्धता सीमित होने के कारण इस pickup location पर किराया सामान्य से थोड़ा अधिक है। असुविधा के लिए खेद है।
+</div>
+          )}
           <div className="mb-3 grid gap-3 rounded-xl bg-[#eaf8fc] px-4 py-3 sm:grid-cols-[1fr_auto] sm:items-center">
             <div className="min-w-0">
               <p className="truncate text-sm font-extrabold sm:text-base">{pickup?.description || "Pickup"} <span className="text-orange-500">→</span> {tab === "local" ? "Local Rental" : drop?.description || "Destination"}</p>
@@ -1301,6 +1460,11 @@ export default function FareCalculator({
                           <strong>−{money(Number(option.baseDiscountAmount))}</strong>
                         </div>
                       )}
+                      {option.pickupLocationRuleApplied && (
+                        <div className="flex items-center justify-between gap-3 py-1.5 text-slate-500">
+                          <span>Discount</span><strong>0% (Not applicable)</strong>
+                        </div>
+                      )}
                       {Number(option.nightSurchargeAmount || 0) > 0 && (
                         <div className="flex items-center justify-between gap-3 py-1.5 text-orange-700">
                           <span>Night Charge (+{option.nightSurchargePercent || 20}%)</span>
@@ -1311,6 +1475,12 @@ export default function FareCalculator({
                         <div className="flex items-center justify-between gap-3 py-1.5 text-amber-700">
                           <span>{festivalRule?.name || "Festival Fare"} (+{option.festivalPercent}%)</span>
                           <strong>+{money(Number(option.festivalAmount))}</strong>
+                        </div>
+                      )}
+                      {option.pickupLocationRuleApplied && Number(option.pickupLocationIncreaseAmount || 0) > 0 && (
+                        <div className="flex items-center justify-between gap-3 py-1.5 text-amber-800">
+                          <span>Pickup location availability adjustment (+{option.pickupLocationIncreasePercent}%)</span>
+                          <strong>+{money(Number(option.pickupLocationIncreaseAmount))}</strong>
                         </div>
                       )}
                       {Number(option.campaignDiscountAmount || 0) > 0 && (
@@ -1348,7 +1518,7 @@ export default function FareCalculator({
                     </div>
                   </div>
 
-                  {tab !== "shared" && <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 bg-slate-50/70 px-3 py-2">
+                  {tab !== "shared" && !option.pickupLocationRuleApplied && <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 bg-slate-50/70 px-3 py-2">
                     <button type="button" onClick={() => applyBestOfferForVehicle(option.vehicleType as VehicleType)}
                       className="inline-flex min-h-9 flex-1 items-center justify-center gap-1 rounded-lg bg-green-700 px-2 py-2 text-[10px] font-extrabold text-white">
                       <Zap size={12} /> Apply Offer
@@ -1403,6 +1573,11 @@ export default function FareCalculator({
           </section>
 
           {festivalRule && <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 text-[10px] leading-4 text-amber-900 sm:text-xs"><span className="inline-flex h-5 items-center rounded-full bg-amber-100 px-2 font-extrabold uppercase tracking-wide">Seasonal fare</span><strong>{festivalRule.name}</strong><span>+{festivalRule.increasePercent}% automatically applied for this journey date.</span></div>}
+          {pickupLocationRule && fareOptions.some((option) => option.pickupLocationRuleApplied) && (
+            <div className="mb-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] leading-4 text-amber-900 sm:text-xs">
+              वाहन की उपलब्धता सीमित होने के कारण इस pickup location पर किराया सामान्य से थोड़ा अधिक है। असुविधा के लिए खेद है।
+            </div>
+          )}
           {(campaignMessage || couponMessage) && (
             <p role="status" className="mb-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-[10px] font-semibold text-green-800">
               {campaignMessage || couponMessage}
@@ -1528,8 +1703,15 @@ export default function FareCalculator({
                             <div className="flex justify-between"><span>Base Fare</span><strong>{money(Number(option.baseFare ?? fare))}</strong></div>
                             {Number(option.baseDiscountAmount || 0) > 0 && <div className="flex justify-between text-green-700"><span>Base Discount ({option.baseDiscountPercent || 10}%)</span><strong>−{money(Number(option.baseDiscountAmount))}</strong></div>}
                             {Number(option.nightSurchargeAmount || 0) > 0 && <div className="flex justify-between text-orange-700"><span>Night Surcharge</span><strong>+{money(Number(option.nightSurchargeAmount))}</strong></div>}
+                            {option.pickupLocationRuleApplied && Number(option.pickupLocationIncreaseAmount || 0) > 0 && (
+                              <div className="flex justify-between text-amber-800">
+                                <span>Pickup Location Fare Increase ({Number(option.pickupLocationIncreasePercent || 0)}%)</span>
+                                <strong>+{money(Number(option.pickupLocationIncreaseAmount))}</strong>
+                              </div>
+                            )}
                             {option.festivalPercent > 0 && <div className="flex justify-between text-orange-700"><span>{festivalRule?.name || "Festival Increase"} ({option.festivalPercent}%)</span><strong>+{money(Number(option.festivalAmount || 0))}</strong></div>}
-                            <div className="flex justify-between border-t pt-2"><span>Fare before coupon</span><strong>{money(Number(option.festivalAdjustedFare ?? fare))}</strong></div>
+                            <div className="flex justify-between border-t pt-2"><span>{option.pickupLocationRuleApplied ? "Fare before pickup increase" : "Fare before coupon"}</span><strong>{money(Number(option.festivalAdjustedFare ?? fare))}</strong></div>
+                            {option.pickupLocationRuleApplied && <div className="flex justify-between border-t pt-2 font-semibold"><span>Fare after pickup increase (before coupon)</span><strong>{money(Number(option.finalFare ?? fare))}</strong></div>}
                             {option.campaignDiscountAmount > 0 && <div className="flex justify-between text-green-700"><span>{option.campaignName || "Campaign Discount"}</span><strong>−{money(Number(option.campaignDiscountAmount))}</strong></div>}
                             {option.couponPercent > 0 && <div className="flex justify-between text-green-700"><span>Coupon · {option.couponCode}</span><strong>−{money(Number(option.couponAmount))}</strong></div>}
                             <div className="flex justify-between border-t pt-2 text-sm font-black"><span>Total Payable</span><strong>{money(fare)}</strong></div>

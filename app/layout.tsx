@@ -4,8 +4,7 @@ import Script from "next/script";
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-import SiteFooter from "@/components/SiteFooter";
-import OfferPopup from "@/components/OfferPopup"; // ✅ Yahan Offer Popup Import kiya gaya hai
+import SiteChrome from "@/components/SiteChrome";
 
 // ============================================================
 // GLOBAL FONT
@@ -24,7 +23,7 @@ const sansFont = Plus_Jakarta_Sans({
 const siteUrl = "https://khaturidescg.in";
 
 // ============================================================
-// GLOBAL SEO METADATA (Updated from Google Ads Search Terms)
+// GLOBAL SEO METADATA
 // ============================================================
 
 export const metadata: Metadata = {
@@ -39,9 +38,6 @@ export const metadata: Metadata = {
     "Chhattisgarh's top-rated taxi service operating primarily from Raipur and Korba. We provide 24/7 airport transfers from Swami Vivekananda Airport, corporate monthly car rentals in Korba/Raipur, and outstation cabs across Bilaspur, Durg, Bhilai, Raigarh, and Ambikapur. Book Innova, Ertiga, and Sedans for one-way drops, round trips, and local hourly rentals.",
 
   keywords: [
-    // ========================================================
-    // 1. PROVEN ADS SEARCH TERMS (Highest Clicks & CTR)
-    // ========================================================
     "cab booking in raipur",
     "one way taxi raipur",
     "raipur airport taxi service",
@@ -53,10 +49,6 @@ export const metadata: Metadata = {
     "raipur to bilaspur taxi",
     "car rental in korba",
     "raipur taxi service",
-
-    // ========================================================
-    // 2. RAIPUR & KORBA HIGH-INTENT (IMMEDIATE LEAD)
-    // ========================================================
     "taxi service in raipur",
     "taxi service in korba",
     "cab booking number raipur",
@@ -65,34 +57,22 @@ export const metadata: Metadata = {
     "24x7 taxi service in korba",
     "raipur local taxi booking",
     "korba cab hire",
-    
-    // ========================================================
-    // 3. TOP REVENUE ROUTES (KORBA <-> RAIPUR <-> BILASPUR)
-    // ========================================================
     "one way taxi raipur to korba",
     "korba to raipur cab fare",
     "raipur to raigarh taxi",
     "korba to jagdalpur outstation cab",
-    
-    // ========================================================
-    // 4. CORPORATE & B2B (INDUSTRIAL KORBA & RAIPUR)
-    // ========================================================
     "corporate car rental raipur",
     "monthly taxi service korba",
     "cab service near ntpc korba",
     "balco korba taxi hire",
     "commercial vehicle on rent raipur",
     "luxury car rental korba",
-
-    // ========================================================
-    // 5. REST OF CHHATTISGARH & PREMIUM FLEET
-    // ========================================================
     "chhattisgarh taxi service",
     "durg bhilai cab service",
     "ambikapur to raipur cab",
     "innova crysta on rent in raipur",
     "ertiga cab booking korba",
-    "swift dzire taxi korba"
+    "swift dzire taxi korba",
   ],
 
   alternates: {
@@ -101,7 +81,8 @@ export const metadata: Metadata = {
 
   openGraph: {
     title: "Khatu Rides Travels Co. | Best Taxi Service in Raipur & Korba",
-    description: "Trusted outstation, corporate, and airport taxi network operating heavily in Raipur, Korba, Bilaspur, and across Chhattisgarh.",
+    description:
+      "Trusted outstation, corporate, and airport taxi network operating heavily in Raipur, Korba, Bilaspur, and across Chhattisgarh.",
     url: siteUrl,
     siteName: "Khatu Rides Travels Co.",
     locale: "en_IN",
@@ -130,79 +111,62 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // ==========================================================
-  // LOCAL BUSINESS SCHEMA (Optimized for Korba & Raipur)
-  // ==========================================================
-
   const businessSchema = {
     "@context": "https://schema.org",
     "@type": "TaxiService",
-    "name": "Khatu Rides Travels Co.",
-    "url": siteUrl,
-    "logo": `${siteUrl}/logo.png`,
-    "image": `${siteUrl}/hero/main%20image.png`,
-    "telephone": [
-      "+919244137353",
-      "+918319376115"
-    ],
-    "priceRange": "₹₹",
-    "description": "Premium taxi service headquartered in Korba and Raipur. We offer fast Swami Vivekananda Airport transfers, corporate monthly rentals in industrial hubs, and outstation trips across Bilaspur, Durg, Bhilai, Raigarh, and Ambikapur.",
-    "provider": {
+    name: "Khatu Rides Travels Co.",
+    url: siteUrl,
+    logo: `${siteUrl}/logo.png`,
+    image: `${siteUrl}/hero/main%20image.png`,
+    telephone: ["+919244137353", "+918319376115"],
+    priceRange: "₹₹",
+    description:
+      "Premium taxi service headquartered in Korba and Raipur. We offer fast Swami Vivekananda Airport transfers, corporate monthly rentals in industrial hubs, and outstation trips across Bilaspur, Durg, Bhilai, Raigarh, and Ambikapur.",
+    provider: {
       "@type": "LocalBusiness",
-      "name": "Khatu Rides Travels Co.",
-      "telephone": "+919244137353",
-      "priceRange": "₹₹"
+      name: "Khatu Rides Travels Co.",
+      telephone: "+919244137353",
+      priceRange: "₹₹",
     },
-    // Priority Area Array: Google reads the first elements as most important
-    "areaServed": [
-      { "@type": "AdministrativeArea", "name": "Korba" },
-      { "@type": "AdministrativeArea", "name": "Raipur" },
-      { "@type": "AdministrativeArea", "name": "Chhattisgarh" },
-      { "@type": "AdministrativeArea", "name": "Bilaspur" },
-      { "@type": "AdministrativeArea", "name": "Durg" },
-      { "@type": "AdministrativeArea", "name": "Bhilai" },
-      { "@type": "AdministrativeArea", "name": "Raigarh" },
-      { "@type": "AdministrativeArea", "name": "Ambikapur" },
-      { "@type": "AdministrativeArea", "name": "Jagdalpur" },
-      { "@type": "AdministrativeArea", "name": "Jharsuguda" }
+    areaServed: [
+      { "@type": "AdministrativeArea", name: "Korba" },
+      { "@type": "AdministrativeArea", name: "Raipur" },
+      { "@type": "AdministrativeArea", name: "Chhattisgarh" },
+      { "@type": "AdministrativeArea", name: "Bilaspur" },
+      { "@type": "AdministrativeArea", name: "Durg" },
+      { "@type": "AdministrativeArea", name: "Bhilai" },
+      { "@type": "AdministrativeArea", name: "Raigarh" },
+      { "@type": "AdministrativeArea", name: "Ambikapur" },
+      { "@type": "AdministrativeArea", name: "Jagdalpur" },
+      { "@type": "AdministrativeArea", name: "Jharsuguda" },
     ],
-    "serviceType": [
+    serviceType: [
       "Raipur Airport Transfers",
       "Korba Corporate Car Rentals",
       "One Way Taxi Drop",
       "Round Trip Intercity Cab",
-      "Monthly Commercial Fleet"
+      "Monthly Commercial Fleet",
     ],
-    "availableChannel": {
+    availableChannel: {
       "@type": "ServiceChannel",
-      "servicePhone": {
+      servicePhone: {
         "@type": "ContactPoint",
-        "telephone": "+919244137353",
-        "contactType": "booking help desk",
-        "areaServed": ["Korba", "Raipur", "IN"],
-        "availableLanguage": ["Hindi", "English"]
-      }
-    }
+        telephone: "+919244137353",
+        contactType: "booking help desk",
+        areaServed: ["Korba", "Raipur", "IN"],
+        availableLanguage: ["Hindi", "English"],
+      },
+    },
   };
-
-  // ==========================================================
-  // PAGE
-  // ==========================================================
 
   return (
     <html lang="en-IN" className={`${sansFont.variable} scroll-smooth`}>
       <head>
-        {/* ====================================================
-            GOOGLE TAG MANAGER / ADS BASE SCRIPT
-        ==================================================== */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=AW-18502918680"
           strategy="afterInteractive"
         />
 
-        {/* ====================================================
-            GOOGLE ANALYTICS + GOOGLE ADS
-        ==================================================== */}
         <Script id="google-tag-and-conversions" strategy="afterInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
@@ -237,9 +201,6 @@ export default function RootLayout({
           `}
         </Script>
 
-        {/* ====================================================
-            GLOBAL TAXI SERVICE JSON-LD
-        ==================================================== */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -249,19 +210,12 @@ export default function RootLayout({
       </head>
 
       <body className="antialiased bg-slate-50 text-slate-800 min-h-screen flex flex-col overflow-x-hidden">
-        
-        {/* ====================================================
-            OFFER POPUP
-        ==================================================== */}
-        <OfferPopup />
-
-        {/* MAIN WEBSITE CONTENT */}
         <main className="flex-grow w-full flex flex-col">
           {children}
         </main>
 
-        {/* PUBLIC WEBSITE FOOTER */}
-        <SiteFooter />
+        {/* Public popup and footer are hidden automatically on every /admin route. */}
+        <SiteChrome />
       </body>
     </html>
   );
