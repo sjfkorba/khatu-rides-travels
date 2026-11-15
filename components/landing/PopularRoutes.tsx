@@ -167,13 +167,13 @@ export default function PopularRoutes() {
 
                     {/* SINGLE MINIMAL BADGE */}
                     <div className="absolute left-3 top-3">
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-white/50 bg-white/90 px-3 py-1.5 text-[10px] font-bold text-slate-800 shadow-sm backdrop-blur-md">
+                      {/* <span className="inline-flex items-center gap-1.5 rounded-full border border-white/50 bg-white/90 px-3 py-1.5 text-[10px] font-bold text-slate-800 shadow-sm backdrop-blur-md">
                         <CarFront
                           size={13}
                           className="text-orange-500"
                         />
                         One-way & Outstation
-                      </span>
+                      </span> */}
                     </div>
 
                     {/* SMALL CORNER ICON (ab ispe click karne se page khulega) */}
