@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -6,6 +7,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { Calculator, ChevronRight, Phone } from "lucide-react";
 import { PHONE, PHONE_DISPLAY } from "./data";
+
+const SECOND_PHONE = "9893694232";
+const SECOND_PHONE_DISPLAY = "98936 94232";
 
 const WHATSAPP_URL = "https://wa.me/919244137353";
 
@@ -49,19 +53,33 @@ export default function Navbar() {
     setOpen(false);
   };
 
+  const handleCall = (phone: string, e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+
+    const telUrl = `tel:${phone}`;
+
+    if (
+      typeof window !== "undefined" &&
+      typeof (window as any).gtag_report_conversion === "function"
+    ) {
+      (window as any).gtag_report_conversion(telUrl);
+    } else {
+      window.location.href = telUrl;
+    }
+  };
+
   return (
     <header className="sticky top-0 z-[100] border-b border-orange-100 bg-[#fffaf5]/95 shadow-[0_2px_12px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+
       <div className="mx-auto flex h-[56px] max-w-[1440px] items-center justify-between px-3 sm:px-5 lg:h-[62px] lg:px-7">
-        {/* =========================================================
-            BRAND LOGO
-        ========================================================= */}
+
+        {/* BRAND LOGO */}
         <Link
           href="/"
           onClick={closeMenu}
           aria-label="Khatu Rides Travels Co. Home"
           className="flex shrink-0 items-center drop-shadow-sm"
         >
-          {/* Note: Ensure your nav_logo.png is visible on dark backgrounds, or use a white/transparent variant here */}
           <Image
             src="/new_logo.png"
             alt="Khatu Rides Travels Co."
@@ -72,9 +90,7 @@ export default function Navbar() {
           />
         </Link>
 
-        {/* =========================================================
-            DESKTOP NAVIGATION
-        ========================================================= */}
+        {/* DESKTOP NAVIGATION */}
         <nav className="hidden items-center gap-1 xl:flex">
           {links.map((link) => {
             const isCalculator = link.href === "/fare-calculator";
@@ -107,6 +123,7 @@ export default function Navbar() {
                     strokeWidth={2.8}
                   />
                 )}
+
                 {isActive && (
                   <span
                     aria-hidden="true"
@@ -118,11 +135,10 @@ export default function Navbar() {
           })}
         </nav>
 
-        {/* =========================================================
-            DESKTOP CTA
-        ========================================================= */}
-        <div className="hidden items-center gap-3 lg:flex">
-          {/* WhatsApp - Premium Dark Variant */}
+        {/* DESKTOP CONTACT BUTTONS */}
+        <div className="hidden items-center gap-2 lg:flex">
+
+          {/* WHATSAPP */}
           <a
             href={WHATSAPP_URL}
             target="_blank"
@@ -134,47 +150,45 @@ export default function Navbar() {
             WhatsApp
           </a>
 
-          {/* Call - High Contrast White Variant */}
+          {/* PRIMARY NUMBER */}
           <a
             href={`tel:${PHONE}`}
-            aria-label={`Call Khatu Rides Travels at ${PHONE_DISPLAY}`}
-            onClick={(e) => {
-              e.preventDefault();
-              const telUrl = `tel:${PHONE}`;
-              if (typeof window !== "undefined" && typeof (window as any).gtag_report_conversion === "function") {
-                (window as any).gtag_report_conversion(telUrl);
-              } else {
-                window.location.href = telUrl;
-              }
-            }}
-            className="group flex h-8 items-center gap-2 rounded-lg bg-orange-500 px-4 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-sm transition hover:bg-orange-600"
+            onClick={(e) => handleCall(PHONE, e)}
+            aria-label={`Call Khatu Rides at ${PHONE_DISPLAY}`}
+            className="group flex h-8 items-center gap-1.5 rounded-lg bg-orange-500 px-3 text-[10px] font-extrabold tracking-wide text-white shadow-sm transition hover:bg-orange-600"
           >
-            <Phone
-              className="h-3.5 w-3.5 transition-transform duration-300 group-hover:scale-110"
-              strokeWidth={2.8}
-            />
-            Call Now
+            <Phone className="h-3.5 w-3.5" strokeWidth={2.8} />
+            {PHONE_DISPLAY}
           </a>
+
+          {/* SECONDARY NUMBER */}
+          <a
+            href={`tel:${SECOND_PHONE}`}
+            onClick={(e) => handleCall(SECOND_PHONE, e)}
+            aria-label={`Call Khatu Rides at ${SECOND_PHONE_DISPLAY}`}
+            className="group flex h-8 items-center gap-1.5 rounded-lg bg-orange-600 px-3 text-[10px] font-extrabold tracking-wide text-white shadow-sm transition hover:bg-orange-700"
+          >
+            <Phone className="h-3.5 w-3.5" strokeWidth={2.8} />
+            {SECOND_PHONE_DISPLAY}
+          </a>
+
         </div>
 
-        {/* =========================================================
-            MOBILE ACTIONS
-        ========================================================= */}
+        {/* MOBILE ACTIONS */}
         <div className="flex items-center gap-2 lg:hidden">
-          {/* Call */}
+
+          {/* PRIMARY CALL */}
           <a
             href={`tel:${PHONE}`}
-            aria-label={`Call Khatu Rides Travels at ${PHONE_DISPLAY}`}
+            onClick={(e) => handleCall(PHONE, e)}
+            aria-label={`Call ${PHONE_DISPLAY}`}
             className="flex h-8 items-center gap-1.5 rounded-lg bg-orange-500 px-3 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-sm transition active:scale-95"
           >
-            <Phone
-              className="h-3.5 w-3.5"
-              strokeWidth={2.8}
-            />
+            <Phone className="h-3.5 w-3.5" strokeWidth={2.8} />
             Call
           </a>
 
-          {/* Menu Toggle */}
+          {/* MENU TOGGLE */}
           <button
             type="button"
             aria-label={open ? "Close navigation menu" : "Open navigation menu"}
@@ -200,15 +214,17 @@ export default function Navbar() {
               </span>
             )}
           </button>
+
         </div>
       </div>
 
-      {/* =========================================================
-          MOBILE MENU
-      ========================================================= */}
+      {/* MOBILE MENU */}
       {open && (
-        <div className="absolute top-full left-0 w-full border-b border-orange-100 bg-[#fffaf5]/98 shadow-[0_12px_28px_rgba(15,23,42,0.12)] backdrop-blur-2xl lg:hidden">
+        <div className="absolute left-0 top-full w-full border-b border-orange-100 bg-[#fffaf5]/98 shadow-[0_12px_28px_rgba(15,23,42,0.12)] backdrop-blur-2xl lg:hidden">
+
           <nav className="mx-auto max-w-[1440px] px-3 py-3 sm:px-5">
+
+            {/* NAVIGATION LINKS */}
             <div className="grid gap-1">
               {links.map((link) => {
                 const isCalculator = link.href === "/fare-calculator";
@@ -250,34 +266,52 @@ export default function Navbar() {
               })}
             </div>
 
-            {/* Mobile CTA */}
+            {/* MOBILE CONTACT BUTTONS */}
             <div className="mt-3 grid grid-cols-2 gap-2 border-t border-orange-100 pt-3">
+
+              {/* WHATSAPP */}
               <a
                 href={WHATSAPP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Chat with Khatu Rides Travels on WhatsApp"
-                className="flex min-h-[38px] items-center justify-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 text-[10px] font-extrabold uppercase tracking-wide text-green-700 transition active:scale-[0.98]"
+                className="col-span-2 flex min-h-[40px] items-center justify-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 text-[11px] font-extrabold uppercase tracking-wide text-green-700 transition active:scale-[0.98]"
               >
                 <WhatsAppIcon className="h-[18px] w-[18px]" />
                 WhatsApp
               </a>
 
+              {/* PRIMARY NUMBER */}
               <a
                 href={`tel:${PHONE}`}
-                onClick={closeMenu}
-                className="flex min-h-[38px] items-center justify-center gap-2 rounded-lg bg-orange-500 px-3 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-sm transition active:scale-[0.98]"
+                onClick={(e) => {
+                  closeMenu();
+                  handleCall(PHONE, e);
+                }}
+                className="flex min-h-[40px] items-center justify-center gap-2 rounded-lg bg-orange-500 px-2 text-[10px] font-extrabold text-white shadow-sm transition active:scale-[0.98]"
               >
-                <Phone
-                  className="h-3.5 w-3.5"
-                  strokeWidth={2.8}
-                />
-                Call Now
+                <Phone className="h-3.5 w-3.5" strokeWidth={2.8} />
+                {PHONE_DISPLAY}
               </a>
+
+              {/* SECONDARY NUMBER */}
+              <a
+                href={`tel:${SECOND_PHONE}`}
+                onClick={(e) => {
+                  closeMenu();
+                  handleCall(SECOND_PHONE, e);
+                }}
+                className="flex min-h-[40px] items-center justify-center gap-2 rounded-lg bg-orange-600 px-2 text-[10px] font-extrabold text-white shadow-sm transition active:scale-[0.98]"
+              >
+                <Phone className="h-3.5 w-3.5" strokeWidth={2.8} />
+                {SECOND_PHONE_DISPLAY}
+              </a>
+
             </div>
           </nav>
         </div>
       )}
+
     </header>
   );
 }

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import {
   ArrowRight, ArrowUpRight, CalendarCheck, CarFront,
-  CircleHelp, Gauge, MapPin, MessageSquareText, Settings2, Wallet, Zap
+  CircleHelp, Gauge, MapPin, MessageSquareText, Settings2,
+  Wallet, Zap, Banknote, Landmark, BookOpenCheck, ReceiptText,
 } from "lucide-react";
 
 const quickActions = [
@@ -11,6 +12,7 @@ const quickActions = [
   { label: "Open fare engine", href: "/admin/fare-calculator", icon: Gauge, tone: "blue" },
   { label: "View enquiries", href: "/admin/leads", icon: MessageSquareText, tone: "violet" },
   { label: "Manage advance bookings", href: "/admin/advance-bookings", icon: CarFront, tone: "green" },
+  { label: "Cash & Accounts", href: "/admin/accounts", icon: Wallet, tone: "blue" },
 ];
 
 function MetricCard({ title, value, note, icon: Icon, tint }: {
@@ -67,6 +69,36 @@ export default function AdminDashboardPage() {
             <div className="rounded-2xl border border-white/10 bg-white/[0.08] p-4"><div className="flex items-center gap-2 text-blue-100"><Wallet size={16}/><span className="text-[11px] font-bold">Dual fare view</span></div><p className="mt-2 text-xs text-white/70">Customer B2C · Vendor B2B</p></div>
             <div className="rounded-2xl border border-white/10 bg-white/[0.08] p-4"><div className="flex items-center gap-2 text-blue-100"><Settings2 size={16}/><span className="text-[11px] font-bold">Fare intelligence</span></div><p className="mt-2 text-xs text-white/70">Pickup rules · Coupons · Surcharges</p></div>
           </div>
+        </div>
+      </section>
+
+      {/* Cash & Accounts module entry point */}
+      <section className="relative overflow-hidden rounded-[26px] border border-blue-100 bg-white p-5 shadow-sm sm:p-6">
+        <div className="pointer-events-none absolute -right-10 -top-12 h-44 w-44 rounded-full bg-blue-50"/>
+        <div className="relative flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
+          <div className="flex min-w-0 items-start gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-200">
+              <Wallet size={27}/>
+            </div>
+            <div className="min-w-0">
+              <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wider text-emerald-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"/> Finance workspace
+              </div>
+              <h2 className="text-lg font-black tracking-tight text-slate-950 sm:text-xl">Cash & Accounts Management</h2>
+              <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-500 sm:text-sm">
+                Manage daily cashbook entries, cash-in-hand, bank balances, customer collections, vendor and driver payments, party khata and transaction reports.
+              </p>
+            </div>
+          </div>
+          <Link href="/admin/accounts" className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-700 px-5 text-sm font-extrabold text-white shadow-md shadow-blue-200 transition hover:bg-blue-800">
+            Open Cash & Accounts <ArrowRight size={16}/>
+          </Link>
+        </div>
+        <div className="relative mt-5 grid grid-cols-2 gap-2 border-t border-slate-100 pt-4 sm:grid-cols-4">
+          <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-3"><Banknote size={17} className="shrink-0 text-emerald-600"/><span className="text-[11px] font-bold text-slate-700">Cashbook</span></div>
+          <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-3"><Landmark size={17} className="shrink-0 text-blue-600"/><span className="text-[11px] font-bold text-slate-700">Bank Accounts</span></div>
+          <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-3"><BookOpenCheck size={17} className="shrink-0 text-violet-600"/><span className="text-[11px] font-bold text-slate-700">Party Khata</span></div>
+          <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-3"><ReceiptText size={17} className="shrink-0 text-orange-600"/><span className="text-[11px] font-bold text-slate-700">Reports & Export</span></div>
         </div>
       </section>
 
