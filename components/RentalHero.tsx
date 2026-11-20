@@ -8,6 +8,7 @@ import Icon from "./Icons";
 export default function RentalHero({ initialCity = "" }: { initialCity?: string }) {
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
+  const [mobileError, setMobileError] = useState("");
   const [city, setCity] = useState(initialCity);
   const [packageType, setPackageType] = useState("8 Hours / 80 Kms");
   const [travelDate, setTravelDate] = useState("");
@@ -21,9 +22,24 @@ export default function RentalHero({ initialCity = "" }: { initialCity?: string 
   const whatsappMessage = `Hello Khatu Rides, I need a local car rental in ${city}:\n*Package:* ${packageType}\n*Name:* ${name}\n*Mobile:* ${mobile}\n*Date:* ${travelDate || "Flexible"}\n*Car:* ${car}\n*Note:* ${note || "-"}`;
   const whatsappUrl = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(whatsappMessage)}`;
 
+  const handleMobileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digitsOnly = e.target.value.replace(/\D/g, "").slice(0, 10);
+    setMobile(digitsOnly);
+    if (mobileError && digitsOnly.length === 10) {
+      setMobileError("");
+    }
+  };
+
   const handleQuickBook = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !mobile || !city) return;
+
+    if (!/^\d{10}$/.test(mobile)) {
+      setMobileError("Please enter exact 10-digit mobile number.");
+      return;
+    }
+
+    setMobileError("");
     setIsSubmitting(true);
 
     // Hum drop location ki jagah package type pass kar rahe hain API ko
@@ -121,7 +137,7 @@ export default function RentalHero({ initialCity = "" }: { initialCity?: string 
                   <p className="text-slate-300 text-sm leading-relaxed">
                     Thanks {name}, your local rental request for {packageType} in {city} is confirmed. Our team will contact you.
                   </p>
-                  <button onClick={() => setIsSubmitted(false)} className="text-pink-400 hover:text-pink-300 text-sm font-semibold mt-4">
+                  <button onClick={() => { setIsSubmitted(false); setMobileError(""); }} className="text-pink-400 hover:text-pink-300 text-sm font-semibold mt-4">
                     Book another car
                   </button>
                 </div>
@@ -135,7 +151,21 @@ export default function RentalHero({ initialCity = "" }: { initialCity?: string 
                     
                     <div className="relative col-span-2 sm:col-span-1">
                       <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Mobile</label>
-                      <input type="tel" required value={mobile} onChange={(e) => setMobile(e.target.value)} className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-4 py-3 font-semibold text-white focus:border-pink-500 focus:outline-none" />
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        maxLength={10}
+                        minLength={10}
+                        pattern="[0-9]{10}"
+                        title="Please enter exact 10-digit mobile number"
+                        required
+                        value={mobile}
+                        onChange={handleMobileChange}
+                        className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-4 py-3 font-semibold text-white focus:border-pink-500 focus:outline-none"
+                      />
+                      {mobileError && (
+                        <p className="mt-1 text-xs font-semibold text-rose-400">{mobileError}</p>
+                      )}
                     </div>
 
                     <div className="relative col-span-2">

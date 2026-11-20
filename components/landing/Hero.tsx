@@ -164,7 +164,8 @@ export default function Hero() {
   // Handle Form Submit -> Send Email & Show Thank You Screen
   const handleQuickBook = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pickup || !drop || !name || !mobile) return;
+    // Enquiry tabhi submit hogi jab mobile number exactly 10 digits ka ho.
+    if (!pickup || !drop || !name || !/^\d{10}$/.test(mobile)) return;
     setIsSubmitting(true);
 
     const enquiryData = {
@@ -413,8 +414,12 @@ export default function Hero() {
                       <input 
                         type="tel" 
                         required
+                        inputMode="numeric"
+                        pattern="[0-9]{10}"
+                        maxLength={10}
+                        title="Please enter exactly 10 digits"
                         value={mobile}
-                        onChange={(e) => setMobile(e.target.value)}
+                        onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
                         className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-900 transition placeholder:text-slate-400 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-400/15"
                       />
                     </div>

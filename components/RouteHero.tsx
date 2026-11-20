@@ -22,6 +22,7 @@ export default function RouteHero({
   const [tripType, setTripType] = useState("One-Way");
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
+  const [mobileError, setMobileError] = useState("");
   const [pickup, setPickup] = useState(initialPickup);
   const [drop, setDrop] = useState(initialDrop);
 
@@ -172,9 +173,24 @@ export default function RouteHero({
   const whatsappMessage = `Hello Khatu Rides, I need an enquiry:\n*Trip Type:* ${tripType}\n*Name:* ${name}\n*Mobile:* ${mobile}\n*From:* ${pickup}\n*To:* ${drop}\n*Date:* ${travelDate || "Flexible"}\n*Car:* ${car}\n*Note:* ${note || "-"}\n\nPlease share the best fare.`;
   const whatsappUrl = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(whatsappMessage)}`;
 
+  const handleMobileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digitsOnly = e.target.value.replace(/\D/g, "").slice(0, 10);
+    setMobile(digitsOnly);
+    if (mobileError && digitsOnly.length === 10) {
+      setMobileError("");
+    }
+  };
+
   const handleQuickBook = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pickup || !drop || !name || !mobile) return;
+
+    if (!/^\d{10}$/.test(mobile)) {
+      setMobileError("Please enter exact 10-digit mobile number.");
+      return;
+    }
+
+    setMobileError("");
     setIsSubmitting(true);
 
     const enquiryData = { tripType, name, mobile, pickup, drop, travelDate: travelDate || "Flexible", car, note: note || "-" };
@@ -208,6 +224,7 @@ export default function RouteHero({
     setDrop(initialDrop);
     setName("");
     setMobile("");
+    setMobileError("");
     setNote("");
   };
 
@@ -382,7 +399,21 @@ export default function RouteHero({
                     
                     <div className="relative col-span-2 sm:col-span-1">
                       <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Mobile</label>
-                      <input type="tel" required value={mobile} onChange={(e) => setMobile(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-900 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-400/15" />
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        maxLength={10}
+                        minLength={10}
+                        pattern="[0-9]{10}"
+                        title="Please enter exact 10-digit mobile number"
+                        required
+                        value={mobile}
+                        onChange={handleMobileChange}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-900 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-400/15"
+                      />
+                      {mobileError && (
+                        <p className="mt-1 text-xs font-semibold text-red-500">{mobileError}</p>
+                      )}
                     </div>
 
                     <div className="relative col-span-2 sm:col-span-1" ref={pickupFieldRef}>
