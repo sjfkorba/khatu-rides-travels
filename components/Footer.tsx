@@ -2,7 +2,6 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  Car,
   ChevronRight,
   MapPin,
   MessageCircle,
@@ -209,6 +208,7 @@ export default function Footer() {
                           <p className="text-[10px] font-extrabold uppercase tracking-wider text-amber-600">
                             {office.type}
                           </p>
+
                           <p className="text-sm font-extrabold text-[#10233F]">
                             {office.city}
                           </p>
@@ -252,6 +252,72 @@ export default function Footer() {
                 </TrackedWhatsAppButton>
 
               </div>
+
+              {/* SOCIAL MEDIA LINKS */}
+              <div className="mt-6">
+                <h3 className="text-sm font-extrabold text-[#10233F]">
+                  Follow Us
+                </h3>
+
+                <div className="mt-3 flex items-center gap-3">
+
+                  {/* YOUTUBE */}
+                  <a
+                    href="https://www.youtube.com/@KhatuRidesOneWayTaxi"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Visit Khatu Rides on YouTube"
+                    title="YouTube - Khatu Rides"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600 transition-all duration-200 hover:-translate-y-1 hover:bg-red-600 hover:text-white"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      width="22"
+                      height="22"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8ZM9.6 15.6V8.4l6.3 3.6-6.3 3.6Z" />
+                    </svg>
+                  </a>
+
+                  {/* INSTAGRAM */}
+                  <a
+                    href="https://www.instagram.com/khaturides/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Visit Khatu Rides on Instagram"
+                    title="Instagram - Khatu Rides"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-pink-50 text-pink-600 transition-all duration-200 hover:-translate-y-1 hover:bg-gradient-to-br hover:from-purple-600 hover:via-pink-600 hover:to-orange-500 hover:text-white"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      width="22"
+                      height="22"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <rect x="3" y="3" width="18" height="18" rx="5" />
+                      <circle cx="12" cy="12" r="4" />
+                      <circle
+                        cx="17.5"
+                        cy="6.5"
+                        r="1"
+                        fill="currentColor"
+                        stroke="none"
+                      />
+                    </svg>
+                  </a>
+
+                </div>
+              </div>
+
             </div>
 
             {/* GOOGLE MAP */}
