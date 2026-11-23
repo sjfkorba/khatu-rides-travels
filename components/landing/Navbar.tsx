@@ -20,7 +20,7 @@ const links = [
   { label: "Travel Invoice", href: "/my-invoices" },
   { label: "Fleet", href: "/fleet" },
   { label: "Services", href: "/services" },
-  { label: "Book Online", href: "/fare-calculator" },
+  { label: "Book Online", href: "/online-taxi-booking" },
 ];
 
 function WhatsAppIcon({ className = "h-5 w-5" }: { className?: string }) {

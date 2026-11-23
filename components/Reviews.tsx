@@ -24,8 +24,8 @@ export default function Reviews() {
   const [isHovered, setIsHovered] = useState(false);
 
   const reviewsData: ReviewsData = { 
-    avg: 4.7, 
-    total: 46,
+    avg: 4.8, 
+    total: 59,
     reviews: [
       { reviewId: "AbFvOqnmaY", reviewer: { displayName: "Tarun Soni" }, starRating: "FIVE", comment: "Well services by driver and services provider overall excellent experience." },
       { reviewId: "AbFvOqnU3U5", reviewer: { displayName: "Aman Sahu" }, starRating: "FIVE", comment: "Korba best taxi service khatu rides travels co. Best service nid and celn car good dr service" },
