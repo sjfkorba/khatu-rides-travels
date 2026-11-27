@@ -42,6 +42,8 @@ const CUSTOM_TOUR_SLUGS = [
 
 const createRouteSlug = (from: string, to: string) => `${from.toLowerCase()}-to-${to.toLowerCase()}`;
 
+const boostPriority = (priority: number) => Math.min(1, Number((priority + 0.1).toFixed(2)));
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
 
@@ -58,7 +60,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
           url: `${siteUrl}/cab-service/${createRouteSlug(HUBS[i], HUBS[j])}`,
           lastModified: now,
           changeFrequency: "weekly",
-          priority: 0.8,
+          priority: boostPriority(0.8),
         });
       }
     }
@@ -67,7 +69,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // B. City Taxi Pages
   const dynamicCityRoutes: MetadataRoute.Sitemap = HUBS.map((hub) => ({
     url: `${siteUrl}/taxi-service-in/${hub.toLowerCase()}`,
-    lastModified: now, changeFrequency: "weekly", priority: 0.85,
+    lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.85),
   }));
 
   // C. Airport Transfer Routes
@@ -76,11 +78,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     for (const airport of AIRPORTS) {
       dynamicAirportRoutes.push({
         url: `${siteUrl}/airport-taxi/${createRouteSlug(hub, airport)}`,
-        lastModified: now, changeFrequency: "weekly", priority: 0.85,
+        lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.85),
       });
       dynamicAirportRoutes.push({
         url: `${siteUrl}/airport-taxi/${createRouteSlug(airport, hub)}`,
-        lastModified: now, changeFrequency: "weekly", priority: 0.85,
+        lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.85),
       });
     }
   }
@@ -92,7 +94,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       if (origin !== dest) {
         dynamicTouristRoutes.push({
           url: `${siteUrl}/tourist-taxi/${createRouteSlug(origin, dest)}`,
-          lastModified: now, changeFrequency: "weekly", priority: 0.85,
+          lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.85),
         });
       }
     }
@@ -105,7 +107,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       if (origin !== dest) {
         dynamicOutstationRoutes.push({
           url: `${siteUrl}/outstation-cabs/${createRouteSlug(origin, dest)}`,
-          lastModified: now, changeFrequency: "weekly", priority: 0.85,
+          lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.85),
         });
       }
     }
@@ -114,19 +116,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // F. Corporate B2B Pages
   const dynamicCorporateRoutes: MetadataRoute.Sitemap = PREMIUM_HUBS.map((city) => ({
     url: `${siteUrl}/corporate-taxi/${city}`,
-    lastModified: now, changeFrequency: "weekly", priority: 0.9,
+    lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.9),
   }));
 
   // G. Local Car Rental
   const dynamicRentalRoutes: MetadataRoute.Sitemap = PREMIUM_HUBS.map((city) => ({
     url: `${siteUrl}/car-rental/${city}`,
-    lastModified: now, changeFrequency: "weekly", priority: 0.85,
+    lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.85),
   }));
 
   // H. Wedding Taxi
   const dynamicWeddingRoutes: MetadataRoute.Sitemap = PREMIUM_HUBS.map((city) => ({
     url: `${siteUrl}/wedding-taxi/${city}`,
-    lastModified: now, changeFrequency: "monthly", priority: 0.8,
+    lastModified: now, changeFrequency: "monthly", priority: boostPriority(0.8),
   }));
 
   // I. One-Way Taxi Routes
@@ -134,7 +136,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   for (const city of ONE_WAY_CITIES) {
     dynamicOneWayRoutes.push({
       url: `${siteUrl}/one-way-taxi/${city}`,
-      lastModified: now, changeFrequency: "weekly", priority: 0.9,
+      lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.9),
     });
   }
   for (const origin of ONE_WAY_CITIES) {
@@ -142,7 +144,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       if (origin !== dest) {
         dynamicOneWayRoutes.push({
           url: `${siteUrl}/one-way-taxi/${createRouteSlug(origin, dest)}`,
-          lastModified: now, changeFrequency: "weekly", priority: 0.85,
+          lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.85),
         });
       }
     }
@@ -155,7 +157,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   for (const slug of CUSTOM_TOUR_SLUGS) {
     dynamicTourPackageRoutes.push({
       url: `${siteUrl}/tour-packages/${slug}`,
-      lastModified: now, changeFrequency: "weekly", priority: 0.95, // High priority
+      lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.95), // High priority
     });
   }
 
@@ -165,7 +167,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       if (origin !== dest) {
         dynamicTourPackageRoutes.push({
           url: `${siteUrl}/tour-packages/${createRouteSlug(origin, dest)}-tour-package`,
-          lastModified: now, changeFrequency: "weekly", priority: 0.9,
+          lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.9),
         });
       }
     }
@@ -179,46 +181,42 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // 3. EXISTING STATIC ROUTES
   // ==========================================
   const staticRoutes: MetadataRoute.Sitemap = [
-    { url: siteUrl, lastModified: now, changeFrequency: "weekly", priority: 1 },
-    { url: `${siteUrl}/tour-packages`, lastModified: now, changeFrequency: "weekly", priority: 0.95 },
-    { url: `${siteUrl}/online-taxi-booking`, lastModified: now, changeFrequency: "weekly", priority: 0.95 },
-    { url: `${siteUrl}/about-us`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
-    { url: `${siteUrl}/contact-us`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
-    { url: `${siteUrl}/blog`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
-    { url: `${siteUrl}/privacy-policy`, lastModified: now, changeFrequency: "yearly", priority: 0.5 },
-    { url: `${siteUrl}/terms-and-conditions`, lastModified: now, changeFrequency: "yearly", priority: 0.5 },
-    { url: `${siteUrl}/refund-policy`, lastModified: now, changeFrequency: "yearly", priority: 0.5 },
-    { url: `${siteUrl}/payment-terms`, lastModified: now, changeFrequency: "yearly", priority: 0.5 },
+    { url: siteUrl, lastModified: now, changeFrequency: "weekly", priority: boostPriority(1) },
+    { url: `${siteUrl}/tour-packages`, lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.95) },
+    { url: `${siteUrl}/online-taxi-booking`, lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.95) },
+    { url: `${siteUrl}/about-us`, lastModified: now, changeFrequency: "monthly", priority: boostPriority(0.8) },
+    { url: `${siteUrl}/contact-us`, lastModified: now, changeFrequency: "monthly", priority: boostPriority(0.8) },
+    { url: `${siteUrl}/blog`, lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.9) },
+    { url: `${siteUrl}/privacy-policy`, lastModified: now, changeFrequency: "yearly", priority: boostPriority(0.5) },
+    { url: `${siteUrl}/terms-and-conditions`, lastModified: now, changeFrequency: "yearly", priority: boostPriority(0.5) },
+    { url: `${siteUrl}/refund-policy`, lastModified: now, changeFrequency: "yearly", priority: boostPriority(0.5) },
+    { url: `${siteUrl}/payment-terms`, lastModified: now, changeFrequency: "yearly", priority: boostPriority(0.5) },
 
     // Service Pages
-    { url: `${siteUrl}/services/one-way-taxi-raipur`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
-    { url: `${siteUrl}/services/one-way-taxi-korba`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
-    { url: `${siteUrl}/services/one-way-taxi-bilaspur`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
-    { url: `${siteUrl}/services/one-way-taxi-raigarh`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
-    { url: `${siteUrl}/services/one-way-taxi-jharsuguda`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
-    { url: `${siteUrl}/services/one-way-taxi-ambikapur`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
-    { url: `${siteUrl}/services/one-way-taxi-jagdalpur`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
-    { url: `${siteUrl}/services/one-way-taxi-durg-bhilai`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
-    { url: `${siteUrl}/services/puri-to-raipur-cab-one-way-taxi`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${siteUrl}/services/one-way-taxi-raipur`, lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.9) },
+    { url: `${siteUrl}/services/one-way-taxi-korba`, lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.9) },
+    { url: `${siteUrl}/services/one-way-taxi-bilaspur`, lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.9) },
+    { url: `${siteUrl}/services/one-way-taxi-raigarh`, lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.9) },
+    { url: `${siteUrl}/services/one-way-taxi-jharsuguda`, lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.9) },
+    { url: `${siteUrl}/services/one-way-taxi-ambikapur`, lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.9) },
+    { url: `${siteUrl}/services/one-way-taxi-jagdalpur`, lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.9) },
+    { url: `${siteUrl}/services/one-way-taxi-durg-bhilai`, lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.9) },
+    { url: `${siteUrl}/services/puri-to-raipur-cab-one-way-taxi`, lastModified: now, changeFrequency: "monthly", priority: boostPriority(0.8) },
 
     // Old Routes
-    { url: `${siteUrl}/routes/raipur-to-korba-taxi`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${siteUrl}/routes/chakarbhata-airport-to-korba-taxi`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${siteUrl}/routes/korba-to-chakarbhata-airport-taxi`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${siteUrl}/routes/bilaspur-to-raipur-airport-taxi`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${siteUrl}/routes/raipur-airport-to-bilaspur-taxi`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${siteUrl}/routes/korba-to-raipur-taxi`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${siteUrl}/routes/raipur-to-bilaspur-taxi`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${siteUrl}/routes/bilaspur-to-raipur-taxi`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${siteUrl}/routes/raipur-to-raigarh-taxi`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-
-    // Removed confirmed 404:
-    // /routes/raigarh-to-raipur-taxi
-    // /routes/raipur-airport-taxi
+    { url: `${siteUrl}/routes/raipur-to-korba-taxi`, lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.8) },
+    { url: `${siteUrl}/routes/chakarbhata-airport-to-korba-taxi`, lastModified: now, changeFrequency: "weekly", primary: boostPriority(0.8) } as MetadataRoute.Sitemap[number],
+    { url: `${siteUrl}/routes/korba-to-chakarbhata-airport-taxi`, lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.8) },
+    { url: `${siteUrl}/routes/bilaspur-to-raipur-airport-taxi`, lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.8) },
+    { url: `${siteUrl}/routes/raipur-airport-to-bilaspur-taxi`, lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.8) },
+    { url: `${siteUrl}/routes/korba-to-raipur-taxi`, lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.8) },
+    { url: `${siteUrl}/routes/raipur-to-bilaspur-taxi`, lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.8) },
+    { url: `${siteUrl}/routes/bilaspur-to-raipur-taxi`, lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.8) },
+    { url: `${siteUrl}/routes/raipur-to-raigarh-taxi`, lastModified: now, changeFrequency: "weekly", priority: boostPriority(0.8) },
 
     // Blogs
-    { url: `${siteUrl}/blog/raipur-to-korba-taxi-fare-guide`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
-    { url: `${siteUrl}/blog/deoghar-sawan-yatra-taxi-service`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${siteUrl}/blog/raipur-to-korba-taxi-fare-guide`, lastModified: now, changeFrequency: "monthly", priority: boostPriority(0.8) },
+    { url: `${siteUrl}/blog/deoghar-sawan-yatra-taxi-service`, lastModified: now, changeFrequency: "monthly", priority: boostPriority(0.8) },
   ];
 
 

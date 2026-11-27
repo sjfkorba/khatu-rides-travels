@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     "Khatu Rides Travels Co. is Chhattisgarh's trusted 24/7 taxi, one-way cab, and car rental service operating from Korba (Bus Stand Road) and Raipur. Book airport transfers for Swami Vivekananda Airport (Raipur), Jharsuguda (JRG), Bilaspur (Chakarbhata), Darima (Ambikapur) & Ranchi, corporate monthly cabs (NTPC, BALCO, SECL), and intercity taxis across Bilaspur, Uslapur, Raigarh, Durg-Bhilai, Ambikapur, Garhwa, Daltonganj, Varanasi, Renukoot, Prayagraj, Ayodhya, Patna & Gaya. Clean Swift Dzire, Ertiga, Innova Crysta & Tempo Traveller with verified drivers and zero hidden charges.",
 
   applicationName: "Khatu Rides Travels Co.",
-  category: "Travel & Transportation",
+  category: "Taxi Service & Car Rental Co.",
   authors: [{ name: "Khatu Rides Travels Co.", url: siteUrl }],
   creator: "Khatu Rides Travels Co.",
   publisher: "Khatu Rides Travels Co.",
@@ -48,6 +48,13 @@ export const metadata: Metadata = {
     "Khatu Rides Korba",
     "Khatu Rides Raipur",
     "Khatu Rides One-Way Taxi Raipur",
+    "rahul travels",
+    "rahul travels jagdalpur",
+    "rahul travels raipur",
+    "rahul travels bilaspur",
+    "rahul travels raigarh",
+    "rahul travels jharsuguda",
+    "rahul travels korba",
     "taxi service",
     "cab service",
     "car rental company",
@@ -583,12 +590,17 @@ export default function RootLayout({
         ],
       },
 
-      // 2. WEBSITE ENTITY
+      // 2. WEBSITE ENTITY (Google Site Name)
       {
         "@type": "WebSite",
         "@id": `${siteUrl}/#website`,
         url: siteUrl,
         name: "Khatu Rides Travels Co.",
+        alternateName: [
+          "Khatu Rides",
+          "Khatu Rides Travels",
+          "khaturidescg.in",
+        ],
         publisher: {
           "@id": `${siteUrl}/#organization`,
         },
